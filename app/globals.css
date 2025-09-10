@@ -1,0 +1,203 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===================== THEME / BRAND ===================== */
+:root{
+  --ntf-500:#178DFF;   /* CTA */
+  --ntf-600:#0F74D1;   /* hover/pressed */
+  color-scheme: dark;  /* dark fisso */
+}
+html,body{ @apply h-full; }
+
+/* Dark static */
+body{
+  background-color:#0b1220;   /* sfondo */
+  color:#e5e7eb;              /* inchiostro */
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* ===================== UTILITIES (palette, helpers) ===================== */
+@layer utilities{
+  /* superfici scure (default) */
+  .bg-premium-surface  { background-color:#0f1726; }                /* card */
+  .bg-premium-surface2 { background-color:rgba(255,255,255,.06); }   /* chip/badge */
+  .text-premium-ink    { color:#e5e7eb; }
+  .text-premium-sub    { color:#94a3b8; }
+  .border-premium-line { border-color:rgba(255,255,255,.12); }
+
+  /* nomi “d_” compatibili col vecchio codice */
+  .bg-premium-d_bg       { background-color:#0b1220; }
+  .bg-premium-d_card     { background-color:#0f1726; }
+  .text-premium-d_text   { color:#e5e7eb; }
+  .border-premium-d_line { border-color:rgba(255,255,255,.12); }
+
+  /* brand accent */
+  .bg-ntf-accent  { background-color:var(--ntf-500,#3b82f6); }
+  .bg-ntf-accent2 { background-color:var(--ntf-600,#2563eb); }
+
+  /* glass helpers */
+  .bg-premium-surface-80 { background-color:rgb(15 23 38 / .80); }
+  .bg-premium-dark-80    { background-color:rgb(11 18 32 / .80); }
+  .bg-premium-dark-70    { background-color:rgb(11 18 32 / .70); }
+}
+
+/* ===================== LAYOUT ===================== */
+.container{ @apply mx-auto w-full max-w-2xl px-3 sm:px-4; }
+
+.card{
+  @apply rounded-2xl border p-3 sm:p-5 shadow-sm;
+  background-color:#0f1726;
+  border-color:rgba(255,255,255,.12);
+}
+
+/* ===================== TOPBAR ===================== */
+.topbar{
+  @apply sticky top-0 z-30 w-full border-b backdrop-blur;
+  background-color:rgb(11 18 32 / .80);
+  border-color:rgba(255,255,255,.12);
+}
+
+/* Brand (logo + testo) */
+.brand{ @apply flex items-center gap-2 font-semibold; color:#e5e7eb; }
+.brand img{
+  width:36px; height:36px; border-radius:8px;
+  display:block; object-fit:contain; object-position:center;
+}
+.brand-name{ @apply hidden sm:inline; }
+
+/* ===================== NAV TABS (Chat/Dashboard) ===================== */
+.nav-tabs{ @apply flex items-center gap-1 sm:gap-2; }
+.nav-tab{
+  @apply inline-flex items-center h-9 px-3 rounded-xl text-sm transition-colors select-none;
+  color:#cbd5e1;
+}
+.nav-tab:hover{ color:#fff; background-color:rgba(255,255,255,.10); }
+.nav-tab.is-active{
+  color:#fff;
+  background-color:rgba(255,255,255,.10);
+  box-shadow: inset 0 -2px 0 0 var(--ntf-500,#3b82f6);
+}
+
+/* ===== Auth ===== */
+.auth-actions{ @apply flex items-center gap-2; }
+.auth-link{
+  @apply inline-flex items-center h-9 px-3 rounded-xl text-sm transition-colors;
+  color:#fff;
+}
+.auth-link:hover{ background-color:rgba(255,255,255,.10); }
+
+/* ===================== BUTTONS ===================== */
+.btn{
+  @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition-colors;
+  color:#e5e7eb;
+  background-color:#0f1726;
+  border:1px solid rgba(255,255,255,.12);
+}
+.btn:hover{ background-color:rgb(15 23 38 / .70); }
+.btn-primary{
+  @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition-colors;
+  color:#fff; background-color:var(--ntf-500,#3b82f6);
+}
+.btn-primary:hover{ background-color:var(--ntf-600,#2563eb); }
+.btn-ghost{
+  @apply inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm transition-colors border border-transparent;
+  color:#e5e7eb;
+}
+.btn-outline{
+  @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition-colors;
+  color:#e5e7eb; background:transparent; border:1px solid rgba(255,255,255,.20);
+}
+.btn-ghost:hover,
+.btn-outline:hover{ background-color:rgb(255 255 255 / .10); }
+
+/* ===================== FORM ===================== */
+.input{
+  @apply w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2;
+  color:#e5e7eb;
+  background-color:#0b1220;
+  border-color:rgba(255,255,255,.18);
+  --tw-ring-color: rgb(52 211 153); /* emerald-400 */
+}
+.label{ @apply block text-sm; color:#94a3b8; }
+
+/* ===================== BADGE / CHIP ===================== */
+.badge{
+  @apply inline-flex items-center rounded-full px-3 py-0.5 text-[12px];
+  background-color:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.20);
+  color:#e5e7eb;
+}
+.chip{
+  @apply inline-flex items-center rounded-full px-3.5 py-1.5 text-[14px];
+  background-color:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.20);
+  color:#e5e7eb;
+}
+
+/* ===================== CHAT ===================== */
+.chat-shell{
+  display:grid; grid-template-rows:auto 1fr auto;
+  height:min(78svh,760px); gap:.75rem;
+}
+.chat-scroll{ @apply overflow-y-auto pr-1; }
+
+/* bubble base */
+.chat-bubble{
+  @apply max-w-[90%] md:max-w-[85%] rounded-2xl px-4 py-3 text-[16px] leading-relaxed;
+  color:#e8eef6; background-color:rgba(255,255,255,.09);
+}
+.chat-bubble > * + *{ margin-top:.5rem; }
+.chat-bubble p{ margin:.35rem 0; }
+.chat-bubble ul{ @apply my-1 pl-5 list-disc; }
+.chat-bubble .muted{ color:#94a3b8; }
+
+/* varianti ruolo */
+.chat-bubble-user{
+  /* spinta a destra la gestisce il wrapper, qui solo colore */
+  color:#fff;
+  background-color:var(--ntf-500,#3b82f6);
+}
+.chat-bubble-bot{
+  color:#e8eef6;
+  background-color:rgba(255,255,255,.09);
+}
+
+
+
+/* ===================== Progress 3 step ===================== */
+.progress3{ @apply w-full flex items-center gap-2 select-none; }
+.progress3-seg{ @apply h-1.5 flex-1 rounded-full; background-color:rgba(255,255,255,.18); }
+.progress3-seg.is-active{ background-color:var(--ntf-500,#3b82f6); }
+.progress3-labels{ @apply mt-1 flex w-full justify-between text-[11px]; color:#94a3b8; }
+
+/* ===================== META / ACCESSIBILITA ===================== */
+.meta{ @apply text-[11px] mt-1; color:#94a3b8; }
+
+:where(a,button,[role="button"]):focus-visible{
+  outline:2px solid var(--ntf-500,#3b82f6);
+  outline-offset:2px;
+}
+
+/* Scrollbar */
+*{ scrollbar-width:thin; scrollbar-color:#334155 transparent; }
+
+/* Pill/email nell’header */
+.pill{
+  @apply rounded-full px-3 py-1 text-xs;
+  color:#e5e7eb; background-color:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.20);
+}
+
+/* Subnav */
+.subnav{ @apply text-sm font-medium; color:#cbd5e1; }
+
+/* container più ampio su desktop */
+@layer utilities{ @screen lg{ .container{ @apply max-w-4xl; } } }
+
+/* chat un filo più alta su desktop */
+@media (min-width:1024px){ .chat-shell{ height:min(80svh,780px);} }
+
+/* progress più alto su desktop */
+@media (min-width:1024px){ .progress3-seg{ height:8px; } }
