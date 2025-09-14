@@ -1,5 +1,6 @@
+// lib/types.ts
 export type Step =
-  | 'problem' | 'post-quote' | 'name' | 'phone' | 'email'
+  | 'problem' | 'clarification' | 'post-quote' | 'name' | 'phone' | 'email'
   | 'city' | 'address' | 'timeslot' | 'confirm' | 'sending' | 'done';
 
 export type AiResult = {
@@ -11,10 +12,11 @@ export type AiResult = {
   price_low?: number;
   price_high?: number;
   est_minutes?: number;
+  clarification_question?: string;
+  requires_specialist_contact?: boolean; // <-- Flag per lavori complessi
   source?: 'n8n' | 'local' | 'none';
 };
 
-// Questo tipo non è più usato nella nuova versione della chat, ma lo lascio per compatibilità futura
 export type PhotonFeature = {
   properties?: {
     name?: string; city?: string; postcode?: string; country?: string;
@@ -22,4 +24,3 @@ export type PhotonFeature = {
   };
   geometry?: { coordinates?: [number, number] };
 };
-

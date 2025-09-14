@@ -1,154 +1,219 @@
+// app/api/assist/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { AiResult } from '@/lib/types';
+import { getFallbackResponse } from "@/lib/chat-copy";
 
-// --- DIZIONARIO DELLE CONOSCENZE DELL'ASSISTENTE ---
-// Ogni categoria ora ha una "domanda di chiarimento" per le richieste generiche.
-const CATEGORIES_CONFIG = {
-  imbianchino: {
-    keywords: ['tinteggiare', 'tingere', 'imbiancare', 'verniciare', 'pitturare', 'rasatura', 'stucco', 'pareti', 'soffitto', 'muro'],
-    clarification_question: "Certo! Per farti un preventivo preciso, potresti dirmi quante stanze sono da tinteggiare?",
-    pricePerUnit: 180, timePerUnit: 120, basePrice: 50,
-    unitKeywords: ['stanza', 'stanze', 'camera', 'camere', 'locale', 'locali', 'cucina', 'salotto', 'soggiorno', 'bagno']
+// --- Tipi aggiornati con 'contact_specialist' ---
+type StandardCategoryConfig = {
+  type: 'standard';
+  keywords: string[];
+  clarification_question: string;
+  priceRange: [number, number];
+  est_minutes: number;
+  weight?: number;
+};
+type UnitBasedCategoryConfig = {
+  type: 'unit_based';
+  keywords: string[];
+  clarification_question: string;
+  pricePerUnit: number;
+  timePerUnit: number;
+  basePrice: number;
+  unitKeywords: string[];
+  weight?: number;
+};
+type SpecialistCategoryConfig = {
+  type: 'contact_specialist';
+  keywords: string[];
+  clarification_question: string;
+  weight?: number;
+};
+type CategoryConfig = StandardCategoryConfig | UnitBasedCategoryConfig | SpecialistCategoryConfig;
+
+// --- DIZIONARIO DEFINITIVO ALLINEATO A TELEGRAM ---
+const CATEGORIES_CONFIG: Record<string, CategoryConfig> = {
+  // --- CATEGORIE CHE RICHIEDONO PREVENTIVO (PESO ALTO) ---
+  trasloco: {
+    type: 'contact_specialist',
+    keywords: ['trasloco', 'spostare', 'sgombero', 'svuotare', 'cantina', 'garage', 'trasporto', 'portare via mobili'],
+    clarification_question: "Per un trasloco o sgombero serve un preventivo dettagliato. Per iniziare, potresti indicarmi il punto di partenza, quello di arrivo e la quantità di merce da trasportare? (es. 'da Livorno centro a Pisa, una cucina e una camera da letto').",
+    weight: 20
+  },
+  muratore: {
+    type: 'contact_specialist',
+    keywords: ['ristrutturazione', 'demolire', 'costruire', 'tramezzo', 'massetto', 'rifare bagno', 'rifare cucina', 'pavimento', 'impermeabilizzazione'],
+    clarification_question: "Per lavori di muratura importanti facciamo sempre un preventivo su misura. Puoi descrivermi brevemente il lavoro che hai in mente?",
+    weight: 15
+  },
+  // --- CATEGORIE CON STIMA IMMEDIATA (dalla più specifica alla più generica) ---
+  "trattamento-muffa": {
+    type: 'standard',
+    keywords: ['muffa', 'macchia umidità', 'alone', 'condensa', 'angolo nero', 'antimuffa'],
+    clarification_question: "Riguarda un piccolo angolo, una parete intera o più punti della casa?",
+    priceRange: [80, 140], est_minutes: 90, weight: 10
+  },
+  "piccoli-lavori-murari": {
+    type: 'standard',
+    keywords: ['crepa', 'buco nel muro', 'stuccare', 'riparare muro', 'intonaco', 'piastrella rotta', 'battiscopa'],
+    clarification_question: "Capito, un piccolo lavoro di muratura. Si tratta di una crepa, un buco da stuccare o una piastrella da sostituire?",
+    priceRange: [70, 120], est_minutes: 75, weight: 10
   },
   idraulico: { 
-    keywords: ['lavandino', 'rubinetto', 'sifone', 'wc', 'scarico', 'perdita', 'acqua', 'caldaia', 'scaldabagno', 'boiler', 'tubo', 'doccia'],
-    clarification_question: "Ok, ti aiuto volentieri. Il problema riguarda una perdita, uno scarico bloccato o altro?",
-    priceRange: [70, 90] 
+    type: 'standard',
+    keywords: ['lavandino', 'rubinetto', 'miscelatore', 'sifone', 'wc', 'water', 'sciacquone', 'scarico', 'perdita', 'gocciola', 'allagato', 'infiltrazione', 'acqua', 'caldaia', 'scaldabagno', 'boiler', 'tubo', 'tubatura', 'flessibile', 'doccia', 'bidet', 'sanitari', 'disotturazione', 'sturare', 'ingorgo', 'termosifone', 'calorifero', 'radiatore', 'valvola'],
+    clarification_question: "Riguarda una perdita, uno scarico bloccato o un problema alla caldaia?",
+    priceRange: [70, 120], est_minutes: 60
   },
   elettricista: { 
-    keywords: ['presa', 'interruttore', 'corrente', 'luce', 'cavi', 'quadro', 'salvavita', 'cortocircuito', 'scintille'],
-    clarification_question: "Capito. Per darti una mano, puoi dirmi se il problema è su una presa, un interruttore o riguarda le luci?",
-    priceRange: [70, 90]
+    type: 'standard',
+    keywords: ['presa', 'interruttore', 'corrente', 'luce', 'cavi', 'quadro elettrico', 'salvavita', 'cortocircuito', 'scintille', 'lampadario', 'contatore', 'scossa', 'blackout', 'citofono', 'videocitofono', 'cavo antenna', 'impianto elettrico', 'messa a terra'],
+    clarification_question: "Riguarda una presa, un interruttore, le luci o è saltata la corrente in generale?",
+    priceRange: [70, 110], est_minutes: 60
   },
   fabbro: { 
-      keywords: ['porta', 'serratura', 'chiave', 'bloccata', 'sblocco', 'cancello'], 
-      priceRange: [100, 150] 
+      type: 'standard',
+      keywords: ['porta', 'portone', 'porta blindata', 'serratura', 'chiave', 'bloccata', 'incastrata', 'sblocco', 'apriporta', 'cancello', 'cilindro europeo', 'difesa', 'cambiare serratura'], 
+      clarification_question: "La porta è bloccata e non riesci ad entrare, oppure vuoi cambiare la serratura per sicurezza?",
+      priceRange: [100, 180], est_minutes: 75
   },
-  // Aggiungiamo domande anche alle altre categorie per coerenza
-  serramenti: { 
-      keywords: ['finestra', 'infisso', 'tapparella', 'persiana', 'zanzariera', 'vetro'], 
-      clarification_question: "Certo. Il problema è su una finestra, una tapparella o una porta finestra?",
-      priceRange: [80, 120] 
+  serramentista: { 
+      type: 'standard',
+      keywords: ['finestra', 'infisso', 'tapparella', 'persiana', 'zanzariera', 'vetro', 'maniglia', 'avvolgibile', 'cinghia', 'corda', 'motorizzazione', 'basculante', 'garage'], 
+      clarification_question: "Il problema riguarda una tapparella bloccata o una finestra che non si chiude bene?",
+      priceRange: [80, 150], est_minutes: 90
+  },
+  climatizzazione: {
+      type: 'standard',
+      keywords: ['condizionatore', 'climatizzatore', 'clima', 'aria condizionata', 'pompa di calore', 'split', 'non raffredda', 'non scalda', 'perde acqua', 'ricarica gas', 'filtri', 'fan coil', 'motore esterno'],
+      clarification_question: "Non fa più aria fredda/calda, perde acqua dall'unità interna o ha bisogno di manutenzione?",
+      priceRange: [90, 160], est_minutes: 90
+  },
+  giardinaggio: {
+      type: 'standard',
+      keywords: ['giardino', 'siepe', 'tagliare', 'potare', 'rasare', 'prato', 'erba', 'decespugliatore', 'irrigazione', 'piante', 'albero'],
+      clarification_question: "Hai bisogno di tagliare la siepe, rasare il prato o un altro tipo di manutenzione?",
+      priceRange: [70, 130], est_minutes: 120
   },
   tuttofare: { 
-      keywords: ['montare', 'appendere', 'fissare', 'sistemare', 'piccoli lavori', 'mensola', 'quadro', 'lampadario'], 
-      priceRange: [60, 80] 
+      type: 'standard',
+      keywords: ['montare', 'smontare', 'appendere', 'fissare', 'sistemare', 'piccoli lavori', 'mensola', 'quadro', 'specchio', 'bastone tenda', 'tende', 'mobile', 'scaffale', 'silicone', 'montaggio tv'], 
+      clarification_question: "Hai già tutto il materiale necessario (viti, tasselli, etc.) o dobbiamo pensare a tutto noi?",
+      priceRange: [60, 90], est_minutes: 60, weight: 5
+  },
+  imbianchino: {
+    type: 'unit_based',
+    keywords: ['tinteggiare', 'dipingere', 'imbiancare', 'verniciare', 'pitturare', 'rasatura', 'pareti', 'soffitto'],
+    clarification_question: "Quante stanze sarebbero da imbiancare circa?",
+    pricePerUnit: 250, timePerUnit: 240, basePrice: 80,
+    unitKeywords: ['stanza', 'stanze', 'camera', 'camere', 'locale', 'locali', 'cucina', 'salotto', 'soggiorno', 'bagno'],
+    weight: 2
   }
 };
 
-// --- FUNZIONI DI ANALISI DEL TESTO ---
-
-function extractUnitCount(text: string, unitKeywords: string[]): number {
-  const words = text.toLowerCase().split(/[\s,.;-]+/);
-  let count = 0;
-  const numberWords: { [key: string]: number } = { 'una': 1, 'un': 1, 'due': 2, 'tre': 3, 'quattro': 4, 'cinque': 5 };
-  
-  words.forEach((word, i) => {
-    if (unitKeywords.includes(word)) {
-      const prevWord = words[i - 1];
-      if (!isNaN(parseInt(prevWord))) {
-        count += parseInt(prevWord);
-      } else if (numberWords[prevWord]) {
-        count += numberWords[prevWord];
-      }
+function extractUnitCount(text: string): number {
+    const s = text.toLowerCase();
+    const numberWords: { [key: string]: number } = { 'una': 1, 'un': 1, 'due': 2, 'tre': 3, 'quattro': 4, 'cinque': 5, 'sei': 6, 'sette': 7, 'otto': 8, 'nove': 9, 'dieci': 10 };
+    const match = s.match(/(\d+|una|due|tre|quattro|cinque|sei|sette|otto|nove|dieci)/);
+    if (match) {
+        const numPart = match[1];
+        if (!isNaN(parseInt(numPart))) return parseInt(numPart);
+        if (numberWords[numPart]) return numberWords[numPart];
     }
-  });
-
-  const mentionedUnits = new Set(words.filter(w => unitKeywords.includes(w)));
-  if (count === 0 && mentionedUnits.size > 0) {
-      count = mentionedUnits.size;
-  }
-
-  return count;
+    if (s.includes('stanza') || s.includes('camera')) return 1;
+    return 0;
 }
 
-// --- LOGICA DI CLASSIFICAZIONE POTENZIATA ---
-function classify(text: string): AiResult | { category: 'none', summary: string } {
-  const s = text.toLowerCase();
-  let bestCategory = 'tuttofare';
+function classifyAndPrepare(text: string): AiResult {
+  const s = text.toLowerCase().trim();
+  
+  const greetings = ['ciao', 'salve', 'buongiorno', 'buonasera', 'ehi', 'yo'];
+  if (greetings.includes(s)) {
+      return {
+          category: 'none',
+          summary: 'Ciao! Sono Niki, il tuo assistente virtuale. Descrivi il problema che hai in casa e ti aiuterò a trovare una soluzione e una stima dei costi.'
+      };
+  }
+
+  let bestCategory: string | null = null;
   let maxScore = 0;
 
-  // 1. Calcolo del punteggio
-  for (const [category, config] of Object.entries(CATEGORIES_CONFIG)) {
+  for (const cat in CATEGORIES_CONFIG) {
+    const config = CATEGORIES_CONFIG[cat];
     let score = 0;
     for (const keyword of config.keywords) {
       if (s.includes(keyword)) {
-        score += (category === 'imbianchino' ? 10 : 1);
+        score += config.weight || 1;
       }
     }
     if (score > maxScore) {
       maxScore = score;
-      bestCategory = category;
+      bestCategory = cat;
     }
   }
 
-  const config = (CATEGORIES_CONFIG as any)[bestCategory];
+  if (!bestCategory || maxScore === 0) {
+    return { category: 'none', summary: getFallbackResponse() };
+  }
 
-  // --- SOLUZIONE: Logica di chiarimento per richieste generiche ---
-  if (bestCategory === 'imbianchino') {
-    const units = extractUnitCount(s, config.unitKeywords);
-    // Se la richiesta è generica (es. "tingere casa") e non troviamo stanze, facciamo una domanda.
-    if (units === 0) {
-      return { category: 'none', summary: config.clarification_question };
+  const config = CATEGORIES_CONFIG[bestCategory];
+  const urgency = s.includes('urgente') || s.includes('subito') || s.includes('allagato') || s.includes('scossa') ? 'alta' : 'media';
+  
+  if (config.type === 'contact_specialist') {
+      return {
+          category: bestCategory,
+          urgency,
+          summary: text,
+          clarification_question: config.clarification_question,
+          requires_specialist_contact: true 
+      };
+  }
+
+  if (config.type === 'unit_based') {
+    const units = extractUnitCount(s);
+    if (units > 0) {
+        const price_low = Math.ceil((config.basePrice + (config.pricePerUnit * units * 0.9)) / 10) * 10;
+        const price_high = Math.ceil((config.basePrice + (config.pricePerUnit * units * 1.1)) / 10) * 10;
+        return {
+            category: bestCategory, urgency, summary: text,
+            clarification_question: `Mi confermi che si tratta di circa ${units} stanz${units > 1 ? 'e' : 'a'}?`,
+            price_low, price_high, est_minutes: config.timePerUnit * units
+        };
     }
-    // Se troviamo stanze, procediamo con la stima
-    const price_low = Math.ceil((config.basePrice + (config.pricePerUnit * units * 0.9)) / 5) * 5;
-    const price_high = Math.ceil((config.basePrice + (config.pricePerUnit * units * 1.1)) / 5) * 5;
-    const est_minutes = config.timePerUnit * units;
-    
     return {
-        category: bestCategory,
-        urgency: 'media',
-        summary: text,
-        price_low,
-        price_high,
-        est_minutes
+        category: bestCategory, urgency, summary: text,
+        clarification_question: config.clarification_question
     };
   }
-  
-  // Logica di chiarimento per altre categorie se la richiesta è troppo breve/generica
-  if (s.length < 20 && config.clarification_question && maxScore > 0) {
-      const genericWords = ['problema', 'guasto', 'rotto', 'aiuto', 'quanto costa'];
-      if(genericWords.some(w => s.includes(w))) {
-          return { category: 'none', summary: config.clarification_question };
-      }
-  }
 
-
-  // Se la richiesta è sufficientemente dettagliata, fornisce una stima standard
-  const [price_low, price_high] = config.priceRange;
+  const [price_low, price_high] = (config as StandardCategoryConfig).priceRange;
   return {
-    category: bestCategory,
-    urgency: s.includes('urgente') || s.includes('subito') ? 'alta' : 'media',
-    summary: text,
-    price_low,
-    price_high,
-    est_minutes: 60
+    category: bestCategory, urgency, summary: text,
+    clarification_question: config.clarification_question,
+    price_low, price_high, est_minutes: config.est_minutes
   };
 }
 
-// --- GESTIONE ROUTE API ---
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const message = String(body.message || '');
 
-    if (message.trim().length < 4) {
+    if (message.trim().length < 4 && !greetings.includes(message.toLowerCase().trim())) {
       return NextResponse.json({
         ok: true,
-        data: { category: 'none', summary: 'Per darti una stima precisa, descrivi meglio il problema. Esempio: "perdita sotto il lavandino in cucina"' }
+        data: { category: 'none', summary: 'Per poterti aiutare, per favore descrivi un po\' meglio il problema.' }
       });
     }
 
-    const result = classify(message);
+    const result = classifyAndPrepare(message);
     return NextResponse.json({ ok: true, data: result });
 
   } catch (e: any) {
-    console.error("API Assist Error:", e);
+    console.error("[API Assist Error]:", e);
     return NextResponse.json(
-      { ok: false, error: "Errore interno del server durante l'analisi." },
+      { ok: false, error: "Errore interno del server durante l'analisi della richiesta." },
       { status: 500 }
     );
   }
 }
-
+const greetings = ['ciao', 'salve', 'buongiorno', 'buonasera', 'ehi', 'yo'];

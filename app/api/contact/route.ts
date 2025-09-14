@@ -4,22 +4,18 @@ import { auth } from '@/auth';
 import { randomUUID, createHmac } from 'crypto';
 import { z } from 'zod';
 
-// --- DICHIARAZIONE DEI TIPI GLOBALI PER RISOLVERE L'ERRORE ---
-// Diciamo a TypeScript che l'oggetto globalThis avrà una nostra proprietà
-// personalizzata chiamata __bucket, che è una Mappa.
 declare global {
   var __bucket: Map<string, { count: number; reset: number }>;
 }
-// --- FINE DELLA DICHIARAZIONE ---
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const ContactSchema = z.object({
-  message: z.string().min(3, { message: "Il messaggio è troppo corto" }).max(2000),
+  message: z.string().min(3).max(2000),
   name: z.string().optional(),
   phone: z.string().optional(),
-  email: z.string().email({ message: "Formato email non valido" }).optional().or(z.literal('')),
+  email: z.string().email().optional().or(z.literal('')),
   city: z.string().optional(),
   address: z.string().optional(),
   timeslot: z.string().optional(),
@@ -30,6 +26,7 @@ const ContactSchema = z.object({
     price_high: z.number().optional(),
     est_minutes: z.number().optional(),
     summary: z.string().optional(),
+    requires_specialist_contact: z.boolean().optional(),
   }).optional(),
 }).strict();
 
@@ -48,9 +45,7 @@ function hmacSignature(secret: string, payload: string) {
 
 async function rateLimit(key: string) {
   const WINDOW_MS = 60_000;
-  const MAX_REQ = 10;
-  
-  // Ora TypeScript conosce il tipo di __bucket e non darà più errore.
+  const MAX_REQ = 15;
   globalThis.__bucket ||= new Map<string, { count: number; reset: number }>();
   const now = Date.now();
   const b = globalThis.__bucket.get(key);
@@ -73,13 +68,7 @@ export async function POST(req: Request) {
     // @ts-ignore
     const userId = session?.userId ?? `u_${randomUUID().slice(0, 8)}`;
 
-    let body: unknown;
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json({ ok: false, error: 'JSON non valido', correlationId }, { status: 400 });
-    }
-    
+    const body = await req.json();
     const parsed = ContactSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
@@ -116,7 +105,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Impossibile inoltrare la richiesta', correlationId }, { status: 502 });
     }
 
-    const responseData = await res.json().catch(() => null);
+    const responseData = await res.json().catch(() => ({}));
+    
+    // Log per il debug futuro
+    console.log(`[DEBUG] Dati ricevuti da n8n per cid=${correlationId}:`, responseData);
 
     return NextResponse.json({
       ok: true,
