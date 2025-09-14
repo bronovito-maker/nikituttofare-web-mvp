@@ -137,10 +137,20 @@ const ChatInterface = (): JSX.Element => {
     const endRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
+    const scrollToBottom = () => {
         endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
         if (!loading) inputRef.current?.focus();
     }, [msgs, loading]);
+
+    const handleInputFocus = () => {
+        setTimeout(() => {
+            scrollToBottom();
+        }, 150);
+    };
 
     const addMessage = (role: 'user' | 'assistant', content: ReactNode) => setMsgs(prev => [...prev, { id: Date.now() + Math.random(), role, content }]);
     
@@ -249,8 +259,6 @@ const ChatInterface = (): JSX.Element => {
                     const isOutOfZone = newCity.toLowerCase() !== MAIN_CITY && newCity.toLowerCase() !== '';
                     setForm((f) => ({ ...f, city: newCity }));
                     
-                    // --- MODIFICA CHIAVE ---
-                    // Se siamo fuori zona, mostriamo la stima aggiornata, altrimenti andiamo avanti.
                     if (aiResult && !aiResult.requires_specialist_contact && isOutOfZone) {
                         replaceLastBotMessage(<EstimateBlock ai={aiResult} isOutOfZone={isOutOfZone} />);
                         addMessage('assistant', chatCopy.askForAddress);
@@ -325,6 +333,7 @@ const ChatInterface = (): JSX.Element => {
                     <form onSubmit={handleSend} className="flex items-center gap-2">
                         <input
                             ref={inputRef}
+                            onFocus={handleInputFocus}
                             className="w-full px-4 py-2.5 bg-secondary border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-ring"
                             placeholder="Descrivi il tuo problema..."
                             value={input}
