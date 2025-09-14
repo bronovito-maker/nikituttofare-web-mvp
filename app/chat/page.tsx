@@ -136,36 +136,54 @@ const ChatInterface = (): JSX.Element => {
     const [form, setForm] = useState<Partial<ChatFormState>>({});
     const inputRef = useRef<HTMLInputElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     const scrollToBottom = (behavior: 'smooth' | 'auto' = 'smooth') => {
         if (scrollContainerRef.current) {
             scrollContainerRef.current.scrollTo({
                 top: scrollContainerRef.current.scrollHeight,
-                behavior: behavior,
+                behavior,
             });
         }
     };
 
     useEffect(() => {
-        scrollToBottom();
-        if (!loading) inputRef.current?.focus();
-    }, [msgs, loading]);
+        scrollToBottom(isInitialLoad ? 'auto' : 'smooth');
+        if (isInitialLoad && inputRef.current) {
+            inputRef.current.focus();
+            setIsInitialLoad(false);
+        }
+    }, [msgs, isInitialLoad]);
 
     const handleInputFocus = () => {
         setTimeout(() => scrollToBottom('smooth'), 150);
     };
 
-    const addMessage = (role: 'user' | 'assistant', content: ReactNode) => setMsgs(prev => [...prev, { id: Date.now() + Math.random(), role, content }]);
+    const handleScrollInteraction = () => {
+        if (document.activeElement === inputRef.current) {
+            inputRef.current?.blur();
+        }
+    };
+
+    const addMessage = (role: 'user' | 'assistant', content: ReactNode) => {
+        setMsgs(prev => [...prev, { id: Date.now() + Math.random(), role, content }]);
+    };
     
-    const replaceLastBotMessage = (content: ReactNode) => setMsgs(prev => {
-        const last = prev[prev.length - 1];
-        if (last && last.role === 'assistant') return [...prev.slice(0, -1), { ...last, content }];
-        return [...prev, {id: Date.now() + Math.random(), role: 'assistant', content}];
-    });
+    const replaceLastBotMessage = (content: ReactNode) => {
+        setMsgs(prev => {
+            const last = prev[prev.length - 1];
+            if (last && last.role === 'assistant') {
+                return [...prev.slice(0, -1), { ...last, content }];
+            }
+            return [...prev, { id: Date.now() + Math.random(), role: 'assistant', content }];
+        });
+    };
     
     const handleSuggestionClick = (text: string) => {
         setInput(text);
-        setTimeout(() => { inputRef.current?.form?.requestSubmit() }, 50);
+        setTimeout(() => {
+            inputRef.current?.form?.requestSubmit();
+        }, 50);
     };
 
     const handleSend = async (e: React.FormEvent) => {
@@ -174,6 +192,10 @@ const ChatInterface = (): JSX.Element => {
         if (!text || loading) return;
 
         addMessage('user', text);
+        if (inputRef.current) {
+            inputRef.current.blur();
+        }
+        
         setInput('');
         setLoading(true);
 
@@ -196,7 +218,6 @@ const ChatInterface = (): JSX.Element => {
                     }
                     break;
                 }
-
                 case 'clarification': {
                     addMessage('assistant', <Typing />);
                     const fullMessage = `${form.message || ''}\n\nRisposta: ${text}`;
@@ -218,7 +239,6 @@ const ChatInterface = (): JSX.Element => {
                     setStep('post-quote');
                     break;
                 }
-
                 case 'post-quote': {
                     addMessage('assistant', <Typing />);
                     if (isAffirmative(text)) {
@@ -230,14 +250,12 @@ const ChatInterface = (): JSX.Element => {
                     }
                     break;
                 }
-                
                 case 'name':
                     addMessage('assistant', <Typing />);
                     setForm((f) => ({ ...f, name: text }));
                     replaceLastBotMessage(chatCopy.askForPhone);
                     setStep('phone');
                     break;
-
                 case 'phone':
                     addMessage('assistant', <Typing />);
                     if (!phoneOk(text)) {
@@ -248,14 +266,12 @@ const ChatInterface = (): JSX.Element => {
                     replaceLastBotMessage(chatCopy.askForEmail);
                     setStep('email');
                     break;
-
                 case 'email':
                     addMessage('assistant', <Typing />);
                     setForm((f) => ({...f, email: /^(no|niente|salta)$/i.test(text) ? '' : text }));
                     replaceLastBotMessage(chatCopy.askForCity);
                     setStep('city');
                     break;
-
                 case 'city': {
                     addMessage('assistant', <Typing />);
                     const newCity = text.trim();
@@ -272,14 +288,12 @@ const ChatInterface = (): JSX.Element => {
                     setStep('address');
                     break;
                 }
-
                 case 'address':
                     addMessage('assistant', <Typing />);
                     setForm((f) => ({...f, address: text}));
                     replaceLastBotMessage(chatCopy.askForTimeslot);
                     setStep('timeslot');
                     break;
-                
                 case 'timeslot':
                     addMessage('assistant', <Typing />);
                     const finalForm = {...form, timeslot: /^(no|niente|nessuna)$/i.test(text) ? 'Nessuna preferenza' : text};
@@ -287,7 +301,6 @@ const ChatInterface = (): JSX.Element => {
                     replaceLastBotMessage(<RecapBlock form={finalForm} ai={aiResult} />);
                     setStep('confirm');
                     break;
-                
                 case 'confirm': {
                     addMessage('assistant', <Typing />);
                     if (!isAffirmative(text)) {
@@ -322,7 +335,11 @@ const ChatInterface = (): JSX.Element => {
 
     return (
         <div className="w-full max-w-3xl mx-auto flex flex-col bg-background h-full shadow-lg border border-border rounded-t-xl">
-            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
+            <div 
+                ref={scrollContainerRef} 
+                className="flex-1 overflow-y-auto"
+                onTouchStart={handleScrollInteraction}
+            >
                 {msgs.length === 0 ? (
                     <ChatIntroScreen onSuggestionClick={handleSuggestionClick} />
                 ) : (
@@ -343,7 +360,6 @@ const ChatInterface = (): JSX.Element => {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             disabled={loading}
-                            autoFocus
                         />
                         <button type="submit" className="flex-shrink-0 w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center hover:bg-primary/90 disabled:bg-primary/70 disabled:cursor-not-allowed transition-colors" disabled={loading || !input.trim()} aria-label="Invia messaggio">
                            {loading ? <LoaderCircle size={20} className="animate-spin"/> : <SendHorizontal size={20} />}
