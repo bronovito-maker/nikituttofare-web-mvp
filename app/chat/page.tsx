@@ -81,8 +81,13 @@ const RecapBlock = ({ form, ai }: { form: Partial<ChatFormState>; ai: AiResult |
     const price_low = (ai.price_low ?? 0) + (isOutOfZone ? OUT_OF_ZONE_FEE : 0);
     const price_high = (ai.price_high ?? 0) + (isOutOfZone ? OUT_OF_ZONE_FEE : 0);
     const price = ai.requires_specialist_contact ? "Preventivo su misura" : `~${price_low}–${price_high}€`;
-    const summary = `Montaggio mensole (materiale incluso da noi)`;
     
+    // Miglioramento per il riassunto
+    let summaryText = form.message || '—';
+    if (ai.category === 'tuttofare' && form.message?.includes('Fate voi')) {
+        summaryText = 'Montaggio mensole (materiale incluso)';
+    }
+
     return (
       <div className="space-y-1">
         <div className="font-medium text-foreground">Riepilogo finale</div>
@@ -90,7 +95,7 @@ const RecapBlock = ({ form, ai }: { form: Partial<ChatFormState>; ai: AiResult |
           <div>👤 {form.name || '—'}</div>
           <div>📞 {form.phone || '—'}</div>
           <div>📍 {form.address || '—'}, {form.city || ''}</div>
-          <div>📝 {ai.category === 'tuttofare' ? summary : form.message || '—'}</div>
+          <div>📝 {summaryText}</div>
           <div>🏷️ Servizio: <span className="font-medium text-foreground capitalize">{ai.category}</span></div>
           <div>💶 Stima: <span className="font-medium text-foreground">{price}</span></div>
           {isOutOfZone && !ai.requires_specialist_contact && <div className='text-amber-500 font-semibold'>⚠️ Include {OUT_OF_ZONE_FEE}€ di trasferta.</div>}
@@ -138,6 +143,7 @@ const ChatInterface = (): JSX.Element => {
     
     const inputRef = useRef<HTMLInputElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const formRef = useRef<HTMLFormElement>(null); // Aggiunto riferimento al form
     const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     const [stickToBottom, setStickToBottom] = useState(true);
@@ -205,7 +211,7 @@ const ChatInterface = (): JSX.Element => {
         };
       
         vv.addEventListener('resize', handler);
-        handler(); 
+        handler();
       
         return () => vv.removeEventListener('resize', handler);
       }, []);
@@ -234,7 +240,9 @@ const ChatInterface = (): JSX.Element => {
     
     const handleSuggestionClick = (text: string) => {
         setInput(text);
-        setTimeout(() => inputRef.current?.form?.requestSubmit(), 50);
+        setTimeout(() => {
+            formRef.current?.requestSubmit();
+        }, 50);
     };
 
     const handleSend = async (e: React.FormEvent) => {
@@ -250,9 +258,137 @@ const ChatInterface = (): JSX.Element => {
 
         try {
             switch (step) {
-                case 'problem': { /* ... */ }
-                case 'clarification': { /* ... */ }
-                // ... (tutta la logica 'switch' rimane invariata)
+                case 'problem': {
+                    setForm({ message: text });
+                    addMessage('assistant', <Typing />);
+                    const res = await fetch('/api/assist', { method: 'POST', body: JSON.stringify({ message: text }), headers: {'Content-Type': 'application/json'} });
+                    const { ok, data, error } = await res.json();
+                    if (!ok) throw new Error(error);
+
+                    setAiResult(data);
+                    
+                    if (data.category === 'none' || !data.clarification_question) {
+                        replaceLastBotMessage(data.summary);
+                    } else {
+                        replaceLastBotMessage(chatCopy.clarification(data.category, data.clarification_question));
+                        setStep('clarification');
+                    }
+                    break;
+                }
+                case 'clarification': {
+                    addMessage('assistant', <Typing />);
+                    const fullMessage = `${form.message}\nRisposta: ${text}`;
+                    setForm(f => ({...f, message: fullMessage}));
+                    
+                    const res = await fetch('/api/assist', { method: 'POST', body: JSON.stringify({ message: fullMessage, originalCategory: aiResult?.category }), headers: {'Content-Type': 'application/json'} });
+                    const { ok, data, error } = await res.json();
+                    if (!ok) throw new Error(error);
+                    
+                    setAiResult(data);
+
+                    // Miglioramento della risposta contestuale
+                    let responseText = '';
+                    if (data.category === 'tuttofare' && text.toLowerCase().includes('fate voi')) {
+                        responseText = 'Perfetto, pensiamo a tutto noi. La stima include anche la piccola ferramenta necessaria. Ecco i dettagli:';
+                    }
+
+                    if (data.requires_specialist_contact) {
+                        replaceLastBotMessage(chatCopy.specialistIntro);
+                        addMessage('assistant', chatCopy.specialistProceed);
+                    } else {
+                        if (responseText) addMessage('assistant', responseText);
+                        replaceLastBotMessage(<EstimateBlock ai={data} />);
+                        addMessage('assistant', chatCopy.estimateIntro);
+                    }
+                    setStep('post-quote');
+                    break;
+                }
+                case 'post-quote': {
+                    addMessage('assistant', <Typing />);
+                    if (isAffirmative(text)) {
+                        replaceLastBotMessage(chatCopy.askForName);
+                        setStep('name');
+                    } else {
+                        replaceLastBotMessage(chatCopy.askForFeedbackOnNo);
+                        setStep('clarification');
+                    }
+                    break;
+                }
+                case 'name':
+                    addMessage('assistant', <Typing />);
+                    setForm((f) => ({ ...f, name: text }));
+                    replaceLastBotMessage(chatCopy.askForPhone);
+                    setStep('phone');
+                    break;
+                case 'phone':
+                    addMessage('assistant', <Typing />);
+                    if (!phoneOk(text)) {
+                        replaceLastBotMessage('Per favore, inserisci un numero di telefono valido.');
+                        return; 
+                    }
+                    setForm((f) => ({ ...f, phone: text }));
+                    replaceLastBotMessage(chatCopy.askForEmail);
+                    setStep('email');
+                    break;
+                case 'email':
+                    addMessage('assistant', <Typing />);
+                    setForm((f) => ({...f, email: /^(no|niente|salta)$/i.test(text) ? '' : text }));
+                    replaceLastBotMessage(chatCopy.askForCity);
+                    setStep('city');
+                    break;
+                case 'city': {
+                    addMessage('assistant', <Typing />);
+                    const newCity = text.trim();
+                    const isOutOfZone = newCity.toLowerCase() !== MAIN_CITY && newCity.toLowerCase() !== '';
+                    setForm((f) => ({ ...f, city: newCity }));
+                    
+                    if (aiResult && !aiResult.requires_specialist_contact && isOutOfZone) {
+                        replaceLastBotMessage(<EstimateBlock ai={aiResult} isOutOfZone={isOutOfZone} />);
+                        addMessage('assistant', chatCopy.askForAddress);
+                    } else {
+                        // Miglioramento della risposta per la città
+                        replaceLastBotMessage(`Ottimo, siamo a ${newCity}. Per completare, qual è l'indirizzo dell'intervento?`);
+                    }
+                    
+                    setStep('address');
+                    break;
+                }
+                case 'address':
+                    addMessage('assistant', <Typing />);
+                    setForm((f) => ({...f, address: text}));
+                    replaceLastBotMessage(chatCopy.askForTimeslot);
+                    setStep('timeslot');
+                    break;
+                case 'timeslot':
+                    addMessage('assistant', <Typing />);
+                    const finalForm = {...form, timeslot: /^(no|niente|nessuna)$/i.test(text) ? 'Nessuna preferenza' : text};
+                    setForm(finalForm);
+                    replaceLastBotMessage(<RecapBlock form={finalForm} ai={aiResult} />);
+                    setStep('confirm');
+                    break;
+                case 'confirm': {
+                    addMessage('assistant', <Typing />);
+                    if (!isAffirmative(text)) {
+                        replaceLastBotMessage(chatCopy.requestCancelled);
+                        setStep('done');
+                        return;
+                    }
+                    
+                    const contactRes = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, ai: aiResult }) });
+                    const contactData = await contactRes.json();
+                    if (!contactData.ok) throw new Error(contactData.error || 'Errore durante l\'invio della richiesta.');
+                    
+                    replaceLastBotMessage(<div dangerouslySetInnerHTML={{ __html: chatCopy.requestSent(contactData.ticketId) }} />);
+                    
+                    if (session) {
+                        addMessage('assistant', <>La richiesta è stata salvata. Puoi visualizzarla nella tua <Link href="/dashboard" className="underline font-semibold text-primary">Dashboard</Link>.</>);
+                    } else {
+                        addMessage('assistant', <AuthCTA/>);
+                    }
+                    setStep('done');
+                    break;
+                }
+                case 'done': break;
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Si è verificato un errore.';
@@ -296,7 +432,7 @@ const ChatInterface = (): JSX.Element => {
 
             {step !== 'done' && (
               <div className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-card/80 backdrop-blur-sm border-t border-border">
-                <form onSubmit={handleSend} className="flex items-center gap-2">
+                <form ref={formRef} onSubmit={handleSend} className="flex items-center gap-2">
                   <input
                     ref={inputRef}
                     onFocus={handleInputFocus}
