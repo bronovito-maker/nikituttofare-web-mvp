@@ -249,7 +249,9 @@ const ChatInterface = (): JSX.Element => {
                     const isOutOfZone = newCity.toLowerCase() !== MAIN_CITY && newCity.toLowerCase() !== '';
                     setForm((f) => ({ ...f, city: newCity }));
                     
-                    if (aiResult && !aiResult.requires_specialist_contact) {
+                    // --- MODIFICA CHIAVE ---
+                    // Se siamo fuori zona, mostriamo la stima aggiornata, altrimenti andiamo avanti.
+                    if (aiResult && !aiResult.requires_specialist_contact && isOutOfZone) {
                         replaceLastBotMessage(<EstimateBlock ai={aiResult} isOutOfZone={isOutOfZone} />);
                         addMessage('assistant', chatCopy.askForAddress);
                     } else {

@@ -59,6 +59,7 @@ export default function RegisterPage() {
     } catch (err: any) {
       setError(err.message);
     } finally {
+        // Evitiamo di fermare il loader se il redirect è già in corso
         if (!success) setLoading(false);
     }
   };

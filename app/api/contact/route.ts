@@ -112,7 +112,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      ticketId: responseData?.ticketId ?? null,
+      // --- MODIFICA CHIAVE ---
+      // Cerca il ticketId nel primo oggetto dell'array `data` se esiste
+      ticketId: responseData?.data?.[0]?.ticketId ?? responseData?.ticketId ?? null,
       correlationId,
     });
 
