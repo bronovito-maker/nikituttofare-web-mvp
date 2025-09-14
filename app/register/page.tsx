@@ -1,119 +1,122 @@
+// app/register/page.tsx
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { LoaderCircle } from 'lucide-react';
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
-  const [password, setPassword] = useState('');
-  const [password2, setPassword2] = useState('');
-  const [error, setError] = useState<string | undefined>();
-  const [ok, setOk] = useState(false);
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  async function onSubmit(e: React.FormEvent) {
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (loading) return;
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
 
-    setError(undefined);
+    // Validazione lato client
+    if (password !== confirmPassword) {
+      setError('Le password non coincidono.');
+      setLoading(false);
+      return;
+    }
 
-    const em = email.trim();
-    const n = name.trim();
-    const p1 = password.trim();
-    const p2 = password2.trim();
-
-    if (!em || !p1 || p1 !== p2) {
-      setError('Controlla email e che le password coincidano.');
+    if (password.length < 8) {
+      setError('La password deve essere di almeno 8 caratteri.');
+      setLoading(false);
       return;
     }
 
     try {
-      setLoading(true);
+      // Chiamata alla nostra nuova API di registrazione
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: em, name: n, password: p1 }),
+        body: JSON.stringify({ name, email, password }),
       });
-      const j = await res.json();
 
-      if (!j.ok) {
-        setError(j.error || 'Registrazione non riuscita');
-        return;
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Si è verificato un errore.');
       }
 
-      setOk(true);
-      setTimeout(() => router.push('/login'), 1200);
-    } catch {
-      setError('Qualcosa è andato storto. Riprova tra poco.');
-    } finally {
+      // Registrazione riuscita
+      setSuccess('Registrazione completata! Sarai reindirizzato al login...');
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000); // Attendi 2 secondi prima di reindirizzare
+
+    } catch (err: any) {
+      setError(err.message);
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="container mt-6">
-      <div className="card">
-        <h1 className="text-xl font-semibold mb-3">Crea un account</h1>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-secondary/50 p-4">
+      <div className="w-full max-w-sm rounded-xl border bg-card text-card-foreground shadow-lg">
+        <form onSubmit={handleRegister} className="p-6 sm:p-8">
+          <div className="mb-6 text-center">
+            <h1 className="text-2xl font-bold tracking-tight">Crea un account</h1>
+            <p className="text-sm text-muted-foreground">
+              Registrati per salvare le tue richieste
+            </p>
+          </div>
 
-        <form onSubmit={onSubmit} className="space-y-3">
-          <input
-            className="input w-full"
-            type="text"
-            placeholder="Nome (opzionale)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <input
-            className="input w-full"
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-          />
-          <input
-            className="input w-full"
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="new-password"
-          />
-          <input
-            className="input w-full"
-            type="password"
-            placeholder="Ripeti password"
-            value={password2}
-            onChange={(e) => setPassword2(e.target.value)}
-            required
-            autoComplete="new-password"
-          />
-
-          {error && (
-            <div className="text-red-600 text-sm">{error}</div>
-          )}
-          {ok && (
-            <div className="text-green-600 text-sm">
-              Registrazione ok! Reindirizzo…
+          {error && <div className="mb-4 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-center text-sm text-destructive">{error}</div>}
+          {success && <div className="mb-4 rounded-md border border-green-500/50 bg-green-500/10 p-3 text-center text-sm text-green-500">{success}</div>}
+          
+          <div className="space-y-4">
+            {/* Campo Nome */}
+            <div className="space-y-2">
+              <label htmlFor="name" className="text-sm font-medium">Nome</label>
+              <input id="name" name="name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Mario Rossi" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
             </div>
-          )}
 
-          <button className="btn-primary w-full" type="submit" disabled={loading}>
-            {loading ? '...' : 'Registrati'}
+            {/* Campo Email */}
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium">Email</label>
+              <input id="email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@esempio.com" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+            </div>
+            
+            {/* Campo Password */}
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm font-medium">Password</label>
+              <input id="password" name="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+            </div>
+
+            {/* Campo Conferma Password */}
+            <div className="space-y-2">
+              <label htmlFor="confirmPassword" className="text-sm font-medium">Conferma Password</label>
+              <input id="confirmPassword" name="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+            </div>
+          </div>
+          
+          <button type="submit" disabled={loading || !!success} className="mt-6 inline-flex h-10 w-full items-center justify-center whitespace-nowrap rounded-md bg-primary text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 disabled:opacity-50">
+            {loading ? <LoaderCircle className="h-5 w-5 animate-spin" /> : 'Registrati'}
           </button>
         </form>
 
-        <div className="text-sm mt-3">
-          Hai già un account?{' '}
-          <a className="underline" href="/login">
-            Accedi
-          </a>
+        <div className="border-t bg-secondary/50 p-4 text-center text-sm">
+          <p className="text-muted-foreground">
+            Hai già un account?{' '}
+            <Link href="/login" className="font-semibold text-primary underline-offset-4 hover:underline">
+              Accedi
+            </Link>
+          </p>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

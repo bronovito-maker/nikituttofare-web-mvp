@@ -1,3 +1,5 @@
+// lib/noco.ts
+
 export async function getUserByEmail(base: string, token: string, tableId: string, email: string) {
   const urlBase = base.replace(/\/$/, "");
   const where = encodeURIComponent(`(email,eq,${email})`);
@@ -7,6 +9,7 @@ export async function getUserByEmail(base: string, token: string, tableId: strin
   const list = data?.list ?? data?.records ?? [];
   return Array.isArray(list) && list[0] ? list[0] : null;
 }
+
 export async function createUser(base: string, token: string, tableId: string, rec: any) {
   const urlBase = base.replace(/\/$/, "");
   const url = `${urlBase}/tables/${encodeURIComponent(tableId)}/records`;

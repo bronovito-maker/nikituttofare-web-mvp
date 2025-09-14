@@ -1,45 +1,43 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getUserByEmail, createUser } from "@/lib/noco";
-import { hashPassword } from "@/lib/crypto";
+// app/api/register/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { getUserByEmail, createUser } from '@/lib/noco'; // Assumiamo che creerai la funzione createUser
+import bcrypt from 'bcryptjs';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const email = String(body.email || "").toLowerCase().trim();
-    const password = String(body.password || "");
-    const name = String(body.name || "").trim();
+    const { name, email, password } = await req.json();
 
-    if (!email || !password) {
-      return NextResponse.json({ ok: false, error: "Email e password sono obbligatori" }, { status: 400 });
+    // 1. Validazione base dei dati
+    if (!name || !email || !password || password.length < 8) {
+      return NextResponse.json({ error: 'Dati forniti non validi o password troppo corta.' }, { status: 400 });
     }
 
-    const base = process.env.NOCO_BASE_URL || process.env.NOCODB_BASE_URL || "";
-    const token = process.env.NOCO_API_TOKEN || process.env.NOCODB_TOKEN || "";
-    const usersTable = process.env.NOCO_USERS_TABLE_ID || process.env.NOCODB_TABLE_ID_USERS || "";
-    if (!base || !token || !usersTable) {
-      return NextResponse.json({ ok: false, error: "Missing NocoDB env" }, { status: 500 });
+    // 2. Controlla se l'utente esiste già
+    const base = process.env.NOCO_BASE_URL || "";
+    const token = process.env.NOCO_API_TOKEN || "";
+    const usersTable = process.env.NOCO_USERS_TABLE_ID || "";
+
+    const existingUser = await getUserByEmail(base, token, usersTable, email);
+    if (existingUser) {
+      return NextResponse.json({ error: 'Un utente con questa email esiste già.' }, { status: 409 }); // 409 Conflict
     }
 
-    const exists = await getUserByEmail(base, token, usersTable, email);
-    if (exists) return NextResponse.json({ ok: false, error: "Email già registrata" }, { status: 409 });
+    // 3. Cripta la password
+    const password_hash = await bcrypt.hash(password, 10);
 
-    const password_hash = await hashPassword(password);
-    const rec = await createUser(base, token, usersTable, {
-      email, name: name || email.split("@")[0], password_hash, createdAt: new Date().toISOString()
+    // 4. Crea il nuovo utente nel database
+    // NOTA: Dovrai creare la funzione `createUser` nel tuo file `lib/noco.ts`
+    // per fare una richiesta POST a NocoDB e inserire i dati.
+    const newUser = await createUser(base, token, usersTable, {
+      name,
+      email: email.toLowerCase(),
+      password_hash,
     });
 
-    // opzionale: webhook n8n di benvenuto
-    const welcome = process.env.N8N_WELCOME_URL;
-    if (welcome) {
-      fetch(welcome, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name: rec?.name, userId: rec?.id }),
-      }).catch(() => {});
-    }
+    return NextResponse.json({ success: true, userId: newUser.id }, { status: 201 }); // 201 Created
 
-    return NextResponse.json({ ok: true, userId: rec?.id });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || String(e) }, { status: 500 });
+  } catch (error: any) {
+    console.error("Errore nell'API di registrazione:", error);
+    return NextResponse.json({ error: 'Errore interno del server.' }, { status: 500 });
   }
 }

@@ -1,152 +1,154 @@
 import { NextRequest, NextResponse } from "next/server";
+import { AiResult } from '@/lib/types';
 
-type AiResult = {
-  category?: string;
-  urgency?: 'bassa'|'media'|'alta'|'critica'|string;
-  feasible?: boolean;
-  summary?: string;
-  price?: number;
-  price_low?: number;
-  price_high?: number;
-  est_minutes?: number;
-  source?: 'n8n'|'local';
+// --- DIZIONARIO DELLE CONOSCENZE DELL'ASSISTENTE ---
+// Ogni categoria ora ha una "domanda di chiarimento" per le richieste generiche.
+const CATEGORIES_CONFIG = {
+  imbianchino: {
+    keywords: ['tinteggiare', 'tingere', 'imbiancare', 'verniciare', 'pitturare', 'rasatura', 'stucco', 'pareti', 'soffitto', 'muro'],
+    clarification_question: "Certo! Per farti un preventivo preciso, potresti dirmi quante stanze sono da tinteggiare?",
+    pricePerUnit: 180, timePerUnit: 120, basePrice: 50,
+    unitKeywords: ['stanza', 'stanze', 'camera', 'camere', 'locale', 'locali', 'cucina', 'salotto', 'soggiorno', 'bagno']
+  },
+  idraulico: { 
+    keywords: ['lavandino', 'rubinetto', 'sifone', 'wc', 'scarico', 'perdita', 'acqua', 'caldaia', 'scaldabagno', 'boiler', 'tubo', 'doccia'],
+    clarification_question: "Ok, ti aiuto volentieri. Il problema riguarda una perdita, uno scarico bloccato o altro?",
+    priceRange: [70, 90] 
+  },
+  elettricista: { 
+    keywords: ['presa', 'interruttore', 'corrente', 'luce', 'cavi', 'quadro', 'salvavita', 'cortocircuito', 'scintille'],
+    clarification_question: "Capito. Per darti una mano, puoi dirmi se il problema è su una presa, un interruttore o riguarda le luci?",
+    priceRange: [70, 90]
+  },
+  fabbro: { 
+      keywords: ['porta', 'serratura', 'chiave', 'bloccata', 'sblocco', 'cancello'], 
+      priceRange: [100, 150] 
+  },
+  // Aggiungiamo domande anche alle altre categorie per coerenza
+  serramenti: { 
+      keywords: ['finestra', 'infisso', 'tapparella', 'persiana', 'zanzariera', 'vetro'], 
+      clarification_question: "Certo. Il problema è su una finestra, una tapparella o una porta finestra?",
+      priceRange: [80, 120] 
+  },
+  tuttofare: { 
+      keywords: ['montare', 'appendere', 'fissare', 'sistemare', 'piccoli lavori', 'mensola', 'quadro', 'lampadario'], 
+      priceRange: [60, 80] 
+  }
 };
 
-function isGreeting(text: string): boolean {
-  const t = (text || '').toLowerCase().trim();
-  const starts = ['ciao','buongiorno','buonasera','salve','hey','hola'];
-  return starts.some(w => t.startsWith(w)) || ['ciao','hey','hola'].includes(t);
+// --- FUNZIONI DI ANALISI DEL TESTO ---
+
+function extractUnitCount(text: string, unitKeywords: string[]): number {
+  const words = text.toLowerCase().split(/[\s,.;-]+/);
+  let count = 0;
+  const numberWords: { [key: string]: number } = { 'una': 1, 'un': 1, 'due': 2, 'tre': 3, 'quattro': 4, 'cinque': 5 };
+  
+  words.forEach((word, i) => {
+    if (unitKeywords.includes(word)) {
+      const prevWord = words[i - 1];
+      if (!isNaN(parseInt(prevWord))) {
+        count += parseInt(prevWord);
+      } else if (numberWords[prevWord]) {
+        count += numberWords[prevWord];
+      }
+    }
+  });
+
+  const mentionedUnits = new Set(words.filter(w => unitKeywords.includes(w)));
+  if (count === 0 && mentionedUnits.size > 0) {
+      count = mentionedUnits.size;
+  }
+
+  return count;
 }
 
-function isTooGeneric(text: string): boolean {
-  const t = (text || '').toLowerCase().trim();
-  if (t.length < 8) return true;
-  const generic = ['aiuto', 'help', 'info', 'informazioni', 'preventivo', 'problema'];
-  return generic.includes(t);
-}
+// --- LOGICA DI CLASSIFICAZIONE POTENZIATA ---
+function classify(text: string): AiResult | { category: 'none', summary: string } {
+  const s = text.toLowerCase();
+  let bestCategory = 'tuttofare';
+  let maxScore = 0;
 
-function localClassify(text: string): AiResult {
-  const s = (text || '').toLowerCase();
-  const has = (...keys: string[]) => keys.some(k => s.includes(k));
+  // 1. Calcolo del punteggio
+  for (const [category, config] of Object.entries(CATEGORIES_CONFIG)) {
+    let score = 0;
+    for (const keyword of config.keywords) {
+      if (s.includes(keyword)) {
+        score += (category === 'imbianchino' ? 10 : 1);
+      }
+    }
+    if (score > maxScore) {
+      maxScore = score;
+      bestCategory = category;
+    }
+  }
 
-  // Categoria (solo i gruppi Telegram + tuttofare)
-  let category: string = 'tuttofare';
-  if (has('lavandino','rubinetto','sifone','wc','scarico','perdita','acqua','caldaia','scaldabagno','boiler'))
-    category = 'idraulico';
-  if (has('presa','interruttore','corto','scintille','corrente','differenziale','quadro'))
-    category = 'elettricista';
-  if (has('porta','serratura','chiave','bloccata','sblocco'))
-    category = 'fabbro';
-  if (has('muro','intonaco','cartongesso','mattoni','muratore','tramezzo','forare','stuccare','rasare'))
-    category = 'muratore';
-  if (has('condizionatore','clima','split','aria condizionata'))
-    category = 'clima';
-  if (has('finestra','infisso','serramento','porta finestra','vetro','tapparella','zanzariera'))
-    category = 'serramenti';
-  if (has('trasloco','scatole','trasporto mobili','furgone','smontare','rimontare','svuota','sgombero'))
-    category = 'trasloco';
+  const config = (CATEGORIES_CONFIG as any)[bestCategory];
 
-  // Urgenza
-  let urgency: AiResult['urgency'] = 'media';
-  if (has('subito','urgente','adesso','stasera','oggi')) urgency = 'alta';
-  if (has('perdita','allag','gas','corto','scintille','fuoco','fumo','porta bloccata','chiuso fuori'))
-    urgency = 'critica';
+  // --- SOLUZIONE: Logica di chiarimento per richieste generiche ---
+  if (bestCategory === 'imbianchino') {
+    const units = extractUnitCount(s, config.unitKeywords);
+    // Se la richiesta è generica (es. "tingere casa") e non troviamo stanze, facciamo una domanda.
+    if (units === 0) {
+      return { category: 'none', summary: config.clarification_question };
+    }
+    // Se troviamo stanze, procediamo con la stima
+    const price_low = Math.ceil((config.basePrice + (config.pricePerUnit * units * 0.9)) / 5) * 5;
+    const price_high = Math.ceil((config.basePrice + (config.pricePerUnit * units * 1.1)) / 5) * 5;
+    const est_minutes = config.timePerUnit * units;
+    
+    return {
+        category: bestCategory,
+        urgency: 'media',
+        summary: text,
+        price_low,
+        price_high,
+        est_minutes
+    };
+  }
+  
+  // Logica di chiarimento per altre categorie se la richiesta è troppo breve/generica
+  if (s.length < 20 && config.clarification_question && maxScore > 0) {
+      const genericWords = ['problema', 'guasto', 'rotto', 'aiuto', 'quanto costa'];
+      if(genericWords.some(w => s.includes(w))) {
+          return { category: 'none', summary: config.clarification_question };
+      }
+  }
 
-  // Fattibilità
-  let feasible = true;
 
-  // Prezzi base indicativi per categoria (tarabili)
-  const base: Record<string, {price:number, minutes:number}> = {
-    'idraulico': { price: 90, minutes: 60 },
-    'elettricista': { price: 90, minutes: 60 },
-    'fabbro': { price: 120, minutes: 60 },
-    'muratore': { price: 110, minutes: 120 },
-    'clima': { price: 120, minutes: 90 },
-    'serramenti': { price: 130, minutes: 90 },
-    'trasloco': { price: 150, minutes: 180 },
-    'tuttofare': { price: 70, minutes: 60 }
+  // Se la richiesta è sufficientemente dettagliata, fornisce una stima standard
+  const [price_low, price_high] = config.priceRange;
+  return {
+    category: bestCategory,
+    urgency: s.includes('urgente') || s.includes('subito') ? 'alta' : 'media',
+    summary: text,
+    price_low,
+    price_high,
+    est_minutes: 60
   };
-  const ref = base[category] || base['tuttofare'];
-
-  let price = ref.price;
-  let est_minutes = ref.minutes;
-  if (urgency === 'critica') { price += 30; est_minutes = Math.max(30, est_minutes - 10); }
-  if (has('diagnosi','sopralluogo','preventivo')) { price -= 10; est_minutes += 10; }
-
-  // Incertezza → range più ampio
-  const uncertain = ['forse','non so','credo','vecchio','anni','datato','problema da tempo'].some(k => s.includes(k));
-  const varPerc = urgency === 'critica' ? 0.25 : (uncertain ? 0.22 : 0.15);
-  const price_low = Math.max(0, Math.round(price * (1 - varPerc)));
-  const price_high = Math.round(price * (1 + varPerc));
-
-  // Summary
-  let summary = (text || '').trim();
-  if (summary.length > 160) summary = summary.slice(0, 157) + '...';
-
-  return { category, urgency, feasible, price, price_low, price_high, est_minutes, summary, source: 'local' };
 }
 
+// --- GESTIONE ROUTE API ---
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const message = String(body.message || '');
 
-    // 0) Saluti e messaggi troppo generici: niente preventivo, solo guida
-    if (isGreeting(message)) {
+    if (message.trim().length < 4) {
       return NextResponse.json({
         ok: true,
-        data: {
-          category: 'none',
-          summary: '👋 Ciao! Siamo qui per prenderti per mano e risolvere il tuo problema senza pensieri: idraulico, elettricista, fabbro, muratore, clima, serramenti, trasloco e piccoli lavori. Raccontami in una frase cosa succede (es. “perdita dal lavandino in bagno”) e preparo subito una stima chiara.'
-        }
-      });
-    }
-    if (isTooGeneric(message)) {
-      return NextResponse.json({
-        ok: true,
-        data: {
-          category: 'none',
-          summary: 'Per poterti aiutare al meglio, scrivimi in una riga cosa succede e dove (es. “presa cucina fa scintille”, “manca acqua calda in bagno”, “devo montare una mensola in salotto”). Così preparo una stima precisa e trasparente.'
-        }
+        data: { category: 'none', summary: 'Per darti una stima precisa, descrivi meglio il problema. Esempio: "perdita sotto il lavandino in cucina"' }
       });
     }
 
-    const url = process.env.N8N_CLASSIFY_URL || '';
+    const result = classify(message);
+    return NextResponse.json({ ok: true, data: result });
 
-    // 1) prova n8n se configurato
-    if (url) {
-      try {
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message, context: body.context || {} })
-        });
-        const text = await res.text();
-        let data: any; try { data = JSON.parse(text); } catch { data = { raw: text }; }
-        if (res.ok) {
-          const normalized: AiResult = {
-            category: data.category ?? data.data?.category,
-            urgency: data.urgency ?? data.data?.urgency,
-            feasible: typeof data.feasible === 'boolean' ? data.feasible : (data.data?.feasible ?? true),
-            summary: data.summary ?? data.data?.summary ?? message,
-            price: data.price ?? data.data?.price,
-            price_low: data.price_low ?? data.data?.price_low,
-            price_high: data.price_high ?? data.data?.price_high,
-            est_minutes: data.est_minutes ?? data.data?.est_minutes,
-            source: 'n8n'
-          };
-          return NextResponse.json({ ok: true, data: normalized });
-        }
-      } catch (_) {
-        // fallback su locale
-      }
-    }
-
-    // 2) fallback locale
-    const local = localClassify(message);
-    return NextResponse.json({ ok: true, data: local });
-  } catch {
-    const local = localClassify('');
-    return NextResponse.json({ ok: true, data: local });
+  } catch (e: any) {
+    console.error("API Assist Error:", e);
+    return NextResponse.json(
+      { ok: false, error: "Errore interno del server durante l'analisi." },
+      { status: 500 }
+    );
   }
 }
+

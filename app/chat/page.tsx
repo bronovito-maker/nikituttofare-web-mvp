@@ -1,536 +1,335 @@
+// app/chat/page.tsx
 'use client';
 
 import React, { useEffect, useRef, useState, ReactNode } from 'react';
 import Link from 'next/link';
-import ChatBubble from '@/components/ChatBubble';
-import { copy, getTone, useEmoji } from '@/lib/tone';
+import { useSession } from 'next-auth/react';
+import { SendHorizontal } from 'lucide-react';
 
-/* ───────── Types ───────── */
-type Step =
-  | 'problem' | 'post-quote' | 'name' | 'phone' | 'email'
-  | 'city' | 'address' | 'timeslot' | 'confirm' | 'sending' | 'done';
+/* ───────── Costanti di Configurazione ───────── */
+const OUT_OF_ZONE_FEE = 30;
+const MAIN_CITY = 'livorno';
 
+/* ───────── Tipi Interni ───────── */
+interface ChatFormState {
+    message: string;
+    name: string;
+    phone: string;
+    email: string;
+    city: string;
+    address: string;
+    timeslot: string;
+}
 type AiResult = {
-  category?: string;
-  urgency?: 'bassa' | 'media' | 'alta' | 'critica' | string;
-  feasible?: boolean;
-  summary?: string;
-  price?: number;
-  price_low?: number;
-  price_high?: number;
-  est_minutes?: number;
-  source?: 'n8n' | 'local' | 'none';
+    category?: string;
+    urgency?: string;
+    price_low?: number;
+    price_high?: number;
+    est_minutes?: number;
+    summary?: string;
 };
+type Step = 'problem' | 'post-quote' | 'name' | 'phone' | 'email' | 'city' | 'address' | 'timeslot' | 'confirm' | 'done';
+type Msg = { id: number; role: 'user' | 'assistant'; content: ReactNode };
 
-type PhotonFeature = {
-  properties?: {
-    name?: string; city?: string; postcode?: string; country?: string;
-    street?: string; housenumber?: string;
-  };
-  geometry?: { coordinates?: [number, number] };
-};
+/* ───────── Funzioni Helper ───────── */
+const isAffirmative = (text: string) => /^(s|si|sì|ok|va bene|procedi|confermo)/i.test(text);
+const phoneOk = (v: string) => v.replace(/[^\d+]/g, '').length >= 8;
 
-/* ───────── Geo ───────── */
-const LIVORNO = { lat: 43.551, lng: 10.308 };
-const BBOX = { minLon: 9.877, minLat: 43.235, maxLon: 10.743, maxLat: 43.865 };
-const COVER_RADIUS_M = 35000;
-function distanceMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
-  const R = 6371000;
-  const dLat = (b.lat - a.lat) * Math.PI / 180;
-  const dLon = (b.lng - a.lng) * Math.PI / 180;
-  const sLat1 = a.lat * Math.PI / 180;
-  const sLat2 = b.lat * Math.PI / 180;
-  const A = Math.sin(dLat / 2) ** 2 + Math.cos(sLat1) * Math.cos(sLat2) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(A));
-}
-
-/* ───────── Helpers ───────── */
-const PROFANITY = ['cazzo', 'merda', 'stronzo', 'vaffanc', 'minchia', 'porca', 'fuck', 'shit', 'porco dio' , 'porcamadonna', 'porca madonna' , ' porcodio ' , 'puttana' ];
-
-/** Sceglie un prezzo “operativo” da inviare anche se manca `price` ma ci sono low/high */
-function pickOpsPrice(ai?: AiResult | null): number | null {
-  if (!ai) return null;
-  const cand = [ai.price, ai.price_high, ai.price_low].find(
-    (v) => typeof v === 'number' && !Number.isNaN(v)
-  );
-  return typeof cand === 'number' ? Math.round(cand) : null;
-}
-
-/* Quick replies */
-function QuickReplies({ items, onPick }: { items: string[]; onPick: (s: string) => void }) {
-  return (
+/* ───────── Componenti UI di Supporto ───────── */
+const QuickReplies = ({ items, onPick }: { items: string[]; onPick: (s: string) => void }) => (
     <div className="flex flex-wrap gap-2 mt-2">
-      {items.map((t) => (
-        <button key={t} type="button" onClick={() => onPick(t)} className="chip cursor-pointer">
-          {t}
-        </button>
-      ))}
+        {items.map((t) => (
+            <button key={t} type="button" onClick={() => onPick(t)} className="px-3 py-1.5 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-300 rounded-full text-sm hover:bg-blue-500/20 dark:hover:bg-blue-500/30 transition-colors">
+                {t}
+            </button>
+        ))}
     </div>
-  );
-}
+);
 
-/* Progress bar 3 segmenti */
-function Progress3({ stage }: { stage: 0 | 1 | 2 }) {
-  return (
-    <div>
-      <div className="progress3">
-        <div className={`progress3-seg ${stage >= 0 ? 'is-active' : ''}`} />
-        <div className={`progress3-seg ${stage >= 1 ? 'is-active' : ''}`} />
-        <div className={`progress3-seg ${stage >= 2 ? 'is-active' : ''}`} />
-      </div>
-      <div className="progress3-labels">
-        <span>Descrizione</span><span>Stima</span><span>Dati &amp; invio</span>
-      </div>
-    </div>
-  );
-}
-
-/* CTA auth in bubble */
-function AuthCTA() {
-  return (
-    <div className="flex gap-2 mt-2">
-      <Link href="/register" className="btn-outline">Registrati</Link>
-      <Link href="/login" className="btn-primary">Accedi</Link>
-    </div>
-  );
-}
-
-/* Intro bubble (concisa) */
-function Intro({ badges, coverage }: { badges: string[]; coverage: string[] }) {
-  return (
-    <div className="space-y-2">
+const Intro = ({ onQuickReply }: { onQuickReply: (text: string) => void }) => (
+    <div className="space-y-3">
       <div className="leading-relaxed">
-        <div className="font-medium">Ciao, sono NikiTuttoFare. Dimmi cosa non funziona o per cosa ti serve una mano.</div>
-        <div className="text-premium-sub">Ti preparo un preventivo senza impegno.</div>
+        <p className="font-medium text-gray-800 dark:text-gray-100">Ciao, sono Niki. Come posso aiutarti oggi?</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">Descrivi il tuo problema e ti fornirò una stima gratuita.</p>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {badges.map((b, i) => (<span key={i} className="badge">{b}</span>))}
-      </div>
-      <div className="text-xs text-premium-sub">Copertura: {coverage.join(' · ')}</div>
+      <QuickReplies items={['Perdita lavandino', 'Presa non funziona', 'Serratura bloccata', 'Montare una mensola']} onPick={onQuickReply} />
     </div>
-  );
-}
+);
 
-/* Stima */
-function EstimateBlock({ ai }: { ai: AiResult }) {
-  const price =
-    typeof ai.price_low === 'number' && typeof ai.price_high === 'number'
-      ? `~${ai.price_low}–${ai.price_high}€`
-      : typeof ai.price === 'number'
-        ? `~${ai.price}€`
-        : '—';
-  return (
-    <div className="space-y-1">
-      <div className="font-medium">Stima iniziale</div>
-      <div className="text-sm leading-6">
-        {ai.category && <div>🏷️ Servizio: {ai.category}</div>}
-        {ai.urgency && <div>⚡ Urgenza: {ai.urgency}</div>}
-        <div>💶 Stima: {price}</div>
-        {typeof ai.est_minutes === 'number' && <div>⏱️ Tempo: {ai.est_minutes} min</div>}
-        {ai.summary && <div className="mt-1 text-premium-sub">{ai.summary}</div>}
-      </div>
-      <div className="text-xs text-premium-sub">
-        Il totale viene confermato prima dell’intervento. Include uscita + 60 min.
-      </div>
-    </div>
-  );
-}
+const EstimateBlock = ({ ai, isOutOfZone }: { ai: AiResult; isOutOfZone?: boolean }) => {
+    const final_price_low = (ai.price_low ?? 0) + (isOutOfZone ? OUT_OF_ZONE_FEE : 0);
+    const final_price_high = (ai.price_high ?? 0) + (isOutOfZone ? OUT_OF_ZONE_FEE : 0);
+    const price = `~${final_price_low}–${final_price_high}€`;
 
-/* Riepilogo */
-function RecapBlock({
-  name, phone, email, address, city, message, ai
-}: {
-  name: string; phone: string; email: string; address: string; city: string; message: string; ai: AiResult | null;
-}) {
-  const price =
-    ai && typeof (ai as any)?.price_low === 'number' && typeof (ai as any)?.price_high === 'number'
-      ? `~${(ai as any).price_low}–${(ai as any).price_high}€`
-      : ai && typeof ai.price === 'number'
-        ? `~${ai.price}€`
-        : '—';
-  return (
-    <div className="space-y-1">
-      <div className="font-medium">Riepilogo</div>
-      <div className="text-sm leading-6">
-        <div>👤 {name || '—'}</div>
-        <div>📞 {phone || '—'}</div>
-        <div>✉️ {email || '—'}</div>
-        <div>📍 {address || '—'}{city ? `, ${city}` : ''}</div>
-        <div>📝 {message || '—'}</div>
-        {ai?.category && <div>🏷️ Servizio: {ai.category}</div>}
-        {ai?.urgency && <div>⚡ Urgenza: {ai.urgency}</div>}
-        <div>💶 Stima: {price}</div>
-        {typeof ai?.est_minutes === 'number' && <div>⏱️ Tempo: {ai.est_minutes} min</div>}
-      </div>
-      <div className="text-sm mt-1">Confermi l’invio per trovare il tuo tecnico? (sì/no)</div>
-    </div>
-  );
-}
-
-type Msg = { role: 'user' | 'assistant'; content: ReactNode };
-
-/* Normalizza “pittura” → imbianchino */
-const PAINT_RE = /(tinteggi|tintegg|imbianc|vernici|cartongesso|rasatura|stucc|muro|parete|pareti|soffitto)/i;
-function normalizeCategory(userText: string, aiCat?: string) {
-  if (PAINT_RE.test(userText)) return 'imbianchino';
-  return (aiCat && aiCat !== 'none') ? aiCat : 'tuttofare';
-}
-
-/* ───────── Component ───────── */
-export default function ChatPage() {
-  const tone = getTone();
-  const txt = copy(tone);
-  useEmoji();
-
-  const [msgs, setMsgs] = useState<Msg[]>([
-    { role: 'assistant', content: <Intro badges={txt.trustBadges} coverage={txt.coverageChips} /> },
-  ]);
-
-  const [step, setStep] = useState<Step>('problem');
-  const [stage, setStage] = useState<0 | 1 | 2>(0);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [ai, setAi] = useState<AiResult | null>(null);
-
-  const [form, setForm] = useState<any>({
-    name: '', phone: '', email: '', city: '', address: '', timeslot: '', message: '',
-    geo: undefined as undefined | { lat: number; lng: number }
-  });
-
-  /* Autoscroll con rispetto reduced-motion */
-  const endRef = useRef<HTMLDivElement>(null);
-  const reduceMotionRef = useRef(false);
-  useEffect(() => {
-    reduceMotionRef.current = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-  }, []);
-  const scrollToBottom = () =>
-    endRef.current?.scrollIntoView({
-      behavior: reduceMotionRef.current ? 'auto' : 'smooth',
-      block: 'end' as ScrollLogicalPosition
-    });
-  useEffect(() => { scrollToBottom(); }, [msgs, step]);
-
-  /* LocalStorage: salva solo form/step/stage */
-  useEffect(() => {
-    try {
-      const s = localStorage.getItem('ntf-chat'); if (!s) return;
-      const saved = JSON.parse(s);
-      if (saved.form) setForm(saved.form);
-      if (saved.step) setStep(saved.step);
-      if (saved.stage !== undefined) setStage(saved.stage);
-    } catch { /* noop */ }
-  }, []);
-  useEffect(() => {
-    try { localStorage.setItem('ntf-chat', JSON.stringify({ form, step, stage })); } catch { /* noop */ }
-  }, [form, step, stage]);
-
-  const addUser = (content: ReactNode) =>
-    setMsgs((m) => [...m, { role: 'user', content }]);
-  const addBot = (content: ReactNode) =>
-    setMsgs((m) => [...m, { role: 'assistant', content }]);
-
-  /* Autocomplete indirizzo (solo step address) */
-  const [addrOpts, setAddrOpts] = useState<Array<{ label: string; value: { address: string; city: string; lat: number; lng: number } }>>([]);
-  const addrTimer = useRef<any>(0);
-  useEffect(() => {
-    if (step !== 'address') return;
-    if (addrTimer.current) clearTimeout(addrTimer.current);
-    addrTimer.current = setTimeout(async () => {
-      const q = input.trim();
-      if (!q) { setAddrOpts([]); return; }
-      try {
-        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lang=it&limit=5&bbox=${BBOX.minLon},${BBOX.minLat},${BBOX.maxLon},${BBOX.maxLat}`;
-        const r = await fetch(url);
-        const j = await r.json();
-        const opts = ((j.features as PhotonFeature[]) || []).map((f) => {
-          const p = f.properties || {};
-          const label = [p.name, p.street, p.housenumber, p.postcode, p.city].filter(Boolean).join(' ');
-          const coords = f.geometry?.coordinates || [0, 0];
-          return {
-            label: label || p.name || '',
-            value: { address: label || '', city: p.city || '', lat: coords[1], lng: coords[0] }
-          };
-        }).filter(o => o.label);
-        setAddrOpts(opts);
-      } catch { setAddrOpts([]); }
-    }, 250);
-  }, [input, step]);
-
-  /* Geolocazione */
-  async function useMyLocation() {
-    if (!navigator.geolocation) { addBot('Il browser non supporta la geolocalizzazione.'); return; }
-    navigator.geolocation.getCurrentPosition((pos) => {
-      const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      setForm((f: any) => ({ ...f, geo: c }));
-      const d = distanceMeters(LIVORNO, c);
-      if (d > COVER_RADIUS_M) addBot('Posizione fuori copertura standard: possiamo intervenire con extra spostamento (+€30) o indicami un altro indirizzo.');
-      else addBot('Posizione in copertura ✅ (puoi comunque indicare l’indirizzo esatto).');
-    }, () => addBot('Non sono riuscito a leggere la posizione. Puoi inserire l’indirizzo manualmente.'));
-  }
-
-  const isProfane = (t: string) => PROFANITY.some((w) => (t || '').toLowerCase().includes(w));
-  const phoneOk = (v: string) => v.replace(/[^\d+]/g, '').length >= 8;
-
-  /* Flow */
-  async function handleSend() {
-    if (!input.trim() || loading) return;
-    const text = input.trim();
-    addUser(text);
-    setInput('');
-
-    if (isProfane(text) && step === 'problem') {
-      addBot('Capisco, vediamo di risolvere subito 😊 È in cucina o in bagno?');
-      return;
-    }
-
-    switch (step) {
-      case 'problem': {
-        setLoading(true);
-        addBot('Un attimo…');
-        try {
-          const res = await fetch('/api/assist', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: text })
-          });
-          const j = await res.json(); if (!j.ok) throw new Error(j.error || 'Errore');
-
-          const raw: AiResult = j.data || {};
-          const normalized: AiResult = { ...raw, category: normalizeCategory(text, raw.category) };
-          setAi(normalized);
-          setForm((f: any) => ({
-            ...f,
-            message: text,
-            category: normalized.category,
-            urgency: normalized.urgency,
-            price: normalized.price,
-            price_low: (normalized as any).price_low,
-            price_high: (normalized as any).price_high,
-            est_minutes: normalized.est_minutes
-          }));
-
-          if (
-            normalized.category === 'none' ||
-            (!normalized.price && !normalized.price_low && !normalized.price_high)
-          ) {
-            // Messaggio guida conciso
-            addBot('Ok! Dimmi in una frase cosa succede e dove. Es.: "perdita sotto il lavandino in cucina", "scintille da una presa in salotto", "porta bloccata, Livorno".');
-            setStage(0);
-            return;
-          }
-
-          setStage(1);
-          addBot(<EstimateBlock ai={normalized} />);
-          addBot('Se ti va bene, procediamo: scrivi "sì" oppure aggiungi dettagli.');
-          setStep('post-quote');
-        } catch {
-          addBot('Ops, qualcosa non ha funzionato. Riprova.');
-        } finally { setLoading(false); }
-        break;
-      }
-
-      case 'post-quote': {
-        if (/^(s|si|sì|ok|va bene)/i.test(text)) {
-          setStage(2); addBot('Come ti chiami?'); setStep('name');
-        } else {
-          setForm((f: any) => ({ ...f, message: `${f.message || ''}\nDettagli: ${text}` }));
-          addBot('Perfetto, vuoi procedere? (scrivi "sì")');
-        }
-        break;
-      }
-
-      case 'name':
-        setForm((f: any) => ({ ...f, name: text })); addBot('Numero di telefono?'); setStep('phone'); break;
-
-      case 'phone':
-        if (!phoneOk(text)) { addBot('Un numero valido? (Es: +39 333 1234567)'); return; }
-        setForm((f: any) => ({ ...f, phone: text })); addBot('Email (opzionale). Scrivi "no" per saltare.'); setStep('email'); break;
-
-      case 'email':
-        setForm((f: any) => ({ ...f, email: text.toLowerCase() === 'no' ? '' : text })); addBot('Città?'); setStep('city'); break;
-
-      case 'city':
-        setForm((f: any) => ({ ...f, city: text })); addBot('Indirizzo completo?'); setStep('address'); break;
-
-      case 'address': {
-        const c = form.geo;
-        setForm((f: any) => ({ ...f, address: text }));
-        addBot('Hai una fascia oraria preferita? (scrivi "no" se non ti interessa)');
-        setStep('timeslot');
-        if (c) {
-          const d = distanceMeters(LIVORNO, c);
-          if (d > COVER_RADIUS_M) addBot('Nota: fuori copertura standard (extra spostamento +€30) oppure indica un altro indirizzo.');
-        }
-        setAddrOpts([]);
-        break;
-      }
-
-      case 'timeslot': {
-        const v = text.toLowerCase() === 'no' ? '' : text;
-        const nf = { ...form, timeslot: v }; setForm(nf);
-        addBot(<RecapBlock
-          name={nf.name} phone={nf.phone} email={nf.email}
-          address={nf.address} city={nf.city} message={nf.message} ai={ai}
-        />);
-        setStep('confirm');
-        break;
-      }
-
-      case 'confirm': {
-        if (!/^(s|si|sì|ok|va bene)/i.test(text)) {
-          addBot('Ok, annullato. Se vuoi, descrivi di nuovo il problema per rifare il preventivo.');
-          setStep('problem'); setStage(0);
-          return;
-        }
-
-        setLoading(true); setStep('sending');
-        try {
-          const res = await fetch('/api/contact', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ...form,
-              category: ai?.category,
-              urgency: ai?.urgency,
-              price: ai?.price,
-              price_low: (ai as any)?.price_low,
-              price_high: (ai as any)?.price_high,
-              est_minutes: ai?.est_minutes,
-              // opzionale: prezzo “operativo” coerente per altri sistemi
-              ops_price: pickOpsPrice(ai)
-            })
-          });
-          const j = await res.json();
-          if (!j.ok) throw new Error(j.error || 'Invio fallito');
-
-          const id = j.ticketId || 'NTF-XXXX';
-          addBot(
-            <>
-              Richiesta inviata.<br />
-              Numero richiesta: <span className="font-medium">{id}</span><br />
-              Ti aggiorniamo col primo tecnico disponibile (12–20 min).
-            </>
-          );
-
-          // Proponi account se guest
-          try {
-            const s = await fetch('/api/auth/session', { cache: 'no-store' });
-            const sj = await s.json();
-            const logged = !!(sj?.user || sj?.userId || sj?.token);
-            if (!logged) {
-              addBot('Vuoi salvare questa richiesta e tenere lo storico? Crea un account oppure accedi:');
-              addBot(<AuthCTA />);
-            }
-          } catch { /* noop */ }
-
-          setStep('done');
-        } catch {
-          addBot('Ops, qualcosa non ha funzionato nell’invio. Riprova tra poco o chiama il +(39) 346 1027447.');
-          setStep('confirm');
-        } finally { setLoading(false); }
-        break;
-      }
-    }
-  }
-
-  function pickAddress(o: { label: string; value: { address: string; city: string; lat: number; lng: number } }) {
-    const c = { lat: o.value.lat, lng: o.value.lng };
-    setForm((f: any) => ({ ...f, address: o.value.address, city: o.value.city || f.city, geo: c }));
-    setAddrOpts([]); setInput('');
-    const d = distanceMeters(LIVORNO, c);
-    if (d > COVER_RADIUS_M) addBot('Zona fuori copertura standard. Possiamo intervenire con extra spostamento (+€30) o indica un altro indirizzo.');
-    else addBot('Indirizzo in copertura ✅');
-    addBot('Hai preferenze di orario?');
-    setStep('timeslot');
-  }
-
-  const disabling = loading || step === 'sending';
-  const isAddressStep = step === 'address';
-
-  return (
-    <div className="mx-auto w-full max-w-2xl mt-3">
-      <div className="card chat-shell">
-        {/* HEADER */}
-        <div><Progress3 stage={stage} /></div>
-
-        {/* SCROLL */}
-        <div className="chat-scroll">
-          {msgs.map((m, i) => (
-            <ChatBubble key={i} role={m.role as any}>{m.content}</ChatBubble>
-          ))}
-
-          {step === 'problem' && (
-            <QuickReplies
-              items={['Perdita lavandino', 'Scintille presa', 'Serratura bloccata', 'Montaggio mensola']}
-              onPick={(t) => {
-                setInput(t);
-                setTimeout(() => {
-                  (document.querySelector('form') as HTMLFormElement)
-                    ?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-                }, 0);
-              }}
-            />
-          )}
-
-          {step === 'timeslot' && (
-            <QuickReplies items={['Oggi', 'Domani mattina', 'Fascia 18–20']} onPick={setInput} />
-          )}
-
-          <div ref={endRef} />
+    return (
+        <div className="space-y-2">
+            <p className="font-medium text-gray-800 dark:text-gray-100">Ecco la stima iniziale:</p>
+            <div className="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                {ai.category && <div>🏷️ Servizio: <span className="font-semibold text-gray-800 dark:text-gray-100 capitalize">{ai.category}</span></div>}
+                {ai.urgency && <div>⚡ Urgenza: <span className="font-semibold text-gray-800 dark:text-gray-100 capitalize">{ai.urgency}</span></div>}
+                <div>💶 Stima: <span className="font-semibold text-gray-800 dark:text-gray-100">{price}</span></div>
+                {typeof ai.est_minutes === 'number' && <div>⏱️ Tempo: <span className="font-semibold text-gray-800 dark:text-gray-100">{ai.est_minutes} min</span></div>}
+                {isOutOfZone && <div className="text-amber-500 font-semibold">⚠️ Include {OUT_OF_ZONE_FEE}€ di trasferta.</div>}
+            </div>
+            <p className="text-xs text-gray-500 pt-1">Il prezzo finale viene confermato dal tecnico prima dell’intervento.</p>
         </div>
+    );
+};
 
-        {/* FOOTER */}
-        {step !== 'done' && (
-          <div className="mt-1">
-            <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="relative flex gap-2">
-              <div className="relative flex-1">
-                <input
-                  className="input w-full"
-                  placeholder={
-                    step === 'problem' ? 'Scrivi qui…'
-                      : step === 'phone' ? 'Es: +39 333 1234567'
-                        : step === 'address' ? 'Inizia a digitare via / civico / CAP'
-                          : 'Scrivi qui...'
-                  }
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  disabled={disabling}
-                />
+const RecapBlock = ({ form, ai }: { form: Partial<ChatFormState>; ai: AiResult | null; }) => {
+    if (!ai) return null;
+    const isOutOfZone = form.city?.toLowerCase() !== MAIN_CITY;
+    const final_price_low = (ai.price_low ?? 0) + (isOutOfZone ? OUT_OF_ZONE_FEE : 0);
+    const final_price_high = (ai.price_high ?? 0) + (isOutOfZone ? OUT_OF_ZONE_FEE : 0);
+    const price = `~${final_price_low}–${final_price_high}€`;
 
-                {/* Suggerimenti indirizzo (dark fisso) */}
-                {isAddressStep && addrOpts.length > 0 && (
-                  <div
-                    className="absolute left-0 right-0 z-20 mt-1 max-h-48 overflow-y-auto
-                               rounded-xl border shadow bg-premium-surface border-premium-line"
-                  >
-                    {addrOpts.map((o, idx) => (
-                      <div
-                        key={idx}
-                        className="px-3 py-2 text-sm hover:bg-premium-surface2 cursor-pointer"
-                        onClick={() => pickAddress(o)}
-                      >
-                        {o.label}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {isAddressStep && (
-                <button type="button" onClick={useMyLocation} className="btn">
-                  Usa la mia posizione
-                </button>
-              )}
-
-              <button className="btn-primary" disabled={disabling}>
-                {loading ? '...' : (step === 'confirm' ? 'Conferma e trova il tuo tecnico' : 'Invia')}
-              </button>
-            </form>
-
-            <div className="meta">Tempo medio di risposta: 12–20 min</div>
-          </div>
-        )}
+    return (
+      <div className="space-y-1">
+        <div className="font-medium text-gray-800 dark:text-gray-100">Riepilogo finale</div>
+        <div className="text-sm leading-6 text-gray-600 dark:text-gray-400">
+          <div>👤 {form.name || '—'}</div>
+          <div>📞 {form.phone || '—'}</div>
+          <div>📍 {form.address || '—'}, {form.city || ''}</div>
+          <div>📝 {form.message || '—'}</div>
+          <div>🏷️ Servizio: <span className="font-medium text-gray-800 dark:text-gray-100 capitalize">{ai.category}</span></div>
+          <div>💶 Stima: <span className="font-medium text-gray-800 dark:text-gray-100">{price}</span></div>
+          {isOutOfZone && <div className='text-amber-500 font-semibold'>⚠️ Include {OUT_OF_ZONE_FEE}€ di trasferta.</div>}
+        </div>
+        <div className="text-sm mt-1 pt-1 text-gray-800 dark:text-gray-100">Tutto corretto? Confermi l'invio?</div>
       </div>
+    );
+};
+
+const AuthCTA = () => (
+    <div className="flex flex-col sm:flex-row gap-2 mt-2">
+      <Link href="/register" className="w-full text-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Registrati</Link>
+      <Link href="/login" className="w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors">Accedi</Link>
     </div>
-  );
+);
+
+const ChatBubble = ({ role, children }: { role: 'user' | 'assistant', children: ReactNode }) => (
+    <div className={`flex ${role === 'user' ? 'justify-end' : 'justify-start'}`}>
+        <div className={`max-w-md md:max-w-lg rounded-2xl px-4 py-3 ${role === 'user' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-none shadow-sm'}`}>
+            {children}
+        </div>
+    </div>
+);
+
+const Typing = () => (
+    <div className="flex items-center gap-1.5">
+        <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+        <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+        <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+    </div>
+);
+
+/* ───────── Componente Interfaccia Chat ───────── */
+const ChatInterface = () => {
+    const { data: session } = useSession();
+    const [msgs, setMsgs] = useState<Msg[]>([]);
+    const [step, setStep] = useState<Step>('problem');
+    const [input, setInput] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [aiResult, setAiResult] = useState<AiResult | null>(null);
+    const [form, setForm] = useState<Partial<ChatFormState>>({});
+    const endRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        setMsgs([{ id: Date.now(), role: 'assistant', content: <Intro onQuickReply={handleQuickReply} /> }]);
+    }, []);
+
+    useEffect(() => {
+        endRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (!loading) inputRef.current?.focus();
+    }, [msgs, loading]);
+
+    const addMessage = (role: 'user' | 'assistant', content: ReactNode) => {
+        setMsgs(prev => [...prev, { id: Date.now(), role, content }]);
+    };
+    
+    const replaceLastBotMessage = (content: ReactNode) => {
+        setMsgs(prev => {
+            const last = prev[prev.length -1];
+            if (last && last.role === 'assistant') {
+                return [...prev.slice(0, -1), { ...last, content }];
+            }
+            return [...prev, {id: Date.now(), role: 'assistant', content}];
+        });
+    };
+
+    const handleQuickReply = (text: string) => {
+        setInput(text);
+        setTimeout(() => inputRef.current?.form?.requestSubmit(), 50);
+    };
+
+    const handleSend = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const text = input.trim();
+        if (!text || loading) return;
+
+        addMessage('user', text);
+        setInput('');
+        setLoading(true);
+
+        try {
+            switch (step) {
+                case 'problem':
+                    setForm({ message: text });
+                    addMessage('assistant', <Typing />);
+                    const res = await fetch('/api/assist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text }) });
+                    const { ok, data, error } = await res.json();
+                    if (!ok) throw new Error(error);
+
+                    if (data.category === 'none') {
+                        replaceLastBotMessage(data.summary);
+                    } else {
+                        setAiResult(data);
+                        replaceLastBotMessage(<EstimateBlock ai={data} />);
+                        addMessage('assistant', 'Se la stima ti sembra corretta, procedi scrivendo "sì".');
+                        setStep('post-quote');
+                    }
+                    break;
+
+                case 'post-quote':
+                    addMessage('assistant', <Typing />);
+                    if (isAffirmative(text)) {
+                        replaceLastBotMessage('Ottimo! Come ti chiami?');
+                        setStep('name');
+                    } else {
+                        setForm((f) => ({ ...f, message: `${f.message}\n- ${text}` }));
+                        replaceLastBotMessage('Dettagli aggiunti. Confermi di voler procedere?');
+                    }
+                    break;
+                
+                case 'name':
+                    addMessage('assistant', <Typing />);
+                    setForm((f) => ({ ...f, name: text }));
+                    replaceLastBotMessage('Qual è il tuo numero di telefono?');
+                    setStep('phone');
+                    break;
+
+                case 'phone':
+                    addMessage('assistant', <Typing />);
+                    if (!phoneOk(text)) {
+                        replaceLastBotMessage('Per favore, inserisci un numero di telefono valido.');
+                        return; 
+                    }
+                    setForm((f) => ({ ...f, phone: text }));
+                    replaceLastBotMessage('Grazie. La tua email? (opzionale, scrivi "no" per saltare)');
+                    setStep('email');
+                    break;
+
+                case 'email':
+                    addMessage('assistant', <Typing />);
+                    setForm((f) => ({...f, email: /^(no|niente|salta)$/i.test(text) ? '' : text }));
+                    replaceLastBotMessage('In che città ti trovi?');
+                    setStep('city');
+                    break;
+
+                case 'city':
+                    addMessage('assistant', <Typing />);
+                    const newCity = text.trim();
+                    setForm((f) => ({ ...f, city: newCity }));
+                    if (newCity.toLowerCase() !== MAIN_CITY && newCity.toLowerCase() !== '') {
+                        replaceLastBotMessage(`Ho notato che sei a ${newCity}. Per gli interventi fuori Livorno applichiamo un supplemento di ${OUT_OF_ZONE_FEE}€. Ti va bene?`);
+                        addMessage('assistant', "Ora inserisci l'indirizzo completo per l'intervento.");
+                    } else {
+                        replaceLastBotMessage("Indirizzo completo per l'intervento?");
+                    }
+                    setStep('address');
+                    break;
+
+                case 'address':
+                    addMessage('assistant', <Typing />);
+                    setForm((f) => ({...f, address: text}));
+                    replaceLastBotMessage('Hai preferenze di orario? (es. "domani mattina", "no")');
+                    setStep('timeslot');
+                    break;
+                
+                case 'timeslot':
+                    addMessage('assistant', <Typing />);
+                    const finalForm = {...form, timeslot: /^(no|niente|nessuna)$/i.test(text) ? 'Nessuna preferenza' : text};
+                    setForm(finalForm);
+                    replaceLastBotMessage(<RecapBlock form={finalForm} ai={aiResult} />);
+                    setStep('confirm');
+                    break;
+                
+                case 'confirm':
+                    addMessage('assistant', <Typing />);
+                    if (!isAffirmative(text)) {
+                        replaceLastBotMessage('Richiesta annullata. Se hai bisogno di altro, sono qui!');
+                        setStep('done');
+                        return;
+                    }
+                    
+                    const contactRes = await fetch('/api/contact', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ...form, ai: aiResult })
+                    });
+                    const contactData = await contactRes.json();
+                    if (!contactData.ok) throw new Error(contactData.error);
+                    
+                    replaceLastBotMessage(
+                        <>Richiesta inviata con successo! (ID: <b>{contactData.ticketId}</b>)<br/>Ti contatterà a breve il primo tecnico.</>
+                    );
+                    
+                    if (session) {
+                        addMessage('assistant', 
+                            <>La richiesta è stata salvata. Visualizzala nella tua <Link href="/dashboard" className="underline font-semibold text-blue-600 dark:text-blue-400">Dashboard</Link>.</>
+                        );
+                    } else {
+                        addMessage('assistant', 
+                            <><p>Per salvare le tue richieste future, puoi accedere o creare un account.</p><AuthCTA/></>
+                        );
+                    }
+                    setStep('done');
+                    break;
+                case 'done': break;
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Si è verificato un errore.';
+            replaceLastBotMessage(`Ops! Qualcosa è andato storto: ${message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="w-full max-w-3xl mx-auto flex flex-col bg-gray-100 dark:bg-gray-800 rounded-t-xl h-full shadow-lg">
+            <div className="flex-grow p-4 space-y-4 overflow-y-auto">
+                {msgs.map((m) => <ChatBubble key={m.id} role={m.role}>{m.content}</ChatBubble>)}
+                <div ref={endRef} />
+            </div>
+
+            {step !== 'done' && (
+                <div className="p-4 bg-white dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+                    <form onSubmit={handleSend} className="flex items-center gap-2">
+                        <input
+                            ref={inputRef}
+                            className="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-800 border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Scrivi il tuo messaggio..."
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            disabled={loading}
+                            autoFocus
+                        />
+                        <button type="submit" className="flex-shrink-0 w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors" disabled={loading || !input.trim()} aria-label="Invia messaggio">
+                            <SendHorizontal size={20} />
+                        </button>
+                    </form>
+                </div>
+            )}
+        </div>
+    );
+};
+
+/* ───────── Componente Principale della Pagina ───────── */
+export default function ChatPage() {
+    return (
+        <main className="flex-grow container mx-auto p-0 md:pt-4 flex">
+            <ChatInterface />
+        </main>
+    );
 }

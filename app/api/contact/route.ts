@@ -1,100 +1,134 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { buildUserId, normEmail, normPhoneIntl } from "@/lib/identity";
+// app/api/contact/route.ts
+import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { randomUUID, createHmac } from 'crypto';
+import { z } from 'zod';
 
-function makeTicket(): string {
-  const r = Math.random().toString(36).slice(2, 7).toUpperCase();
-  return `NTF-${r}`;
+// --- DICHIARAZIONE DEI TIPI GLOBALI PER RISOLVERE L'ERRORE ---
+// Diciamo a TypeScript che l'oggetto globalThis avrà una nostra proprietà
+// personalizzata chiamata __bucket, che è una Mappa.
+declare global {
+  var __bucket: Map<string, { count: number; reset: number }>;
+}
+// --- FINE DELLA DICHIARAZIONE ---
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const ContactSchema = z.object({
+  message: z.string().min(3, { message: "Il messaggio è troppo corto" }).max(2000),
+  name: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email({ message: "Formato email non valido" }).optional().or(z.literal('')),
+  city: z.string().optional(),
+  address: z.string().optional(),
+  timeslot: z.string().optional(),
+  ai: z.object({
+    category: z.string().optional(),
+    urgency: z.string().optional(),
+    price_low: z.number().optional(),
+    price_high: z.number().optional(),
+    est_minutes: z.number().optional(),
+    summary: z.string().optional(),
+  }).optional(),
+}).strict();
+
+function safeHost(url: string) {
+  const u = new URL(url);
+  const allowlist = (process.env.N8N_HOST_ALLOWLIST || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (allowlist.length && !allowlist.includes(u.host)) {
+    throw new Error(`Host non consentito: ${u.host}`);
+  }
+  return u.toString();
 }
 
-export async function POST(req: NextRequest) {
+function hmacSignature(secret: string, payload: string) {
+  return createHmac('sha256', secret).update(payload, 'utf8').digest('hex');
+}
+
+async function rateLimit(key: string) {
+  const WINDOW_MS = 60_000;
+  const MAX_REQ = 10;
+  
+  // Ora TypeScript conosce il tipo di __bucket e non darà più errore.
+  globalThis.__bucket ||= new Map<string, { count: number; reset: number }>();
+  const now = Date.now();
+  const b = globalThis.__bucket.get(key);
+
+  if (!b || now > b.reset) {
+    globalThis.__bucket.set(key, { count: 1, reset: now + WINDOW_MS });
+    return;
+  }
+  if (b.count >= MAX_REQ) throw new Error('rate_limited');
+  b.count++;
+}
+
+export async function POST(req: Request) {
+  const correlationId = `c_${randomUUID().slice(0, 8)}`;
   try {
-    const body = await req.json();
-    let session: any = undefined;
+    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0]?.trim() || 'unknown';
+    await rateLimit(ip);
+
+    const session = await auth().catch(() => null);
+    // @ts-ignore
+    const userId = session?.userId ?? `u_${randomUUID().slice(0, 8)}`;
+
+    let body: unknown;
     try {
-      if (process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET) {
-        session = await auth();
-      }
-    } catch {}
-    const sessionUserId = session?.userId as string | undefined;
-
-    const name = String(body.name || "").trim();
-    const email = normEmail(String(body.email || ""));
-    const phone = normPhoneIntl(String(body.phone || ""));
-    const city = String(body.city || "").trim();
-    const address = String(body.address || "").trim();
-    const timeslot = String(body.timeslot || "").trim();
-    const message = String(body.message || "").trim();
-    const category = String(body.category || "").trim();
-    const urgency = String(body.urgency || "").trim();
-    const price = typeof body.price === "number" ? body.price : undefined;
-    const price_low = typeof body.price_low === "number" ? body.price_low : undefined;
-    const price_high = typeof body.price_high === "number" ? body.price_high : undefined;
-    const est_minutes = typeof body.est_minutes === "number" ? body.est_minutes : undefined;
-    const photos = Array.isArray(body.photos) ? body.photos.slice(0,2) : []; // dataURL base64
-    const geo = body.geo && typeof body.geo === 'object' ? { lat: body.geo.lat, lng: body.geo.lng } : undefined;
-
-    const userId = sessionUserId || buildUserId({ email, phone, name, city });
-    const ticketId = makeTicket();
-
-    const payload = {
-      ticketId,
-      userId,
-      source: body.source || "chat",
-      createdAt: new Date().toISOString(),
-      name,
-      email,
-      phone,
-      city,
-      address,
-      timeslot,
-      message,
-      category: category || undefined,
-      urgency: urgency || undefined,
-      price,
-      price_low,
-      price_high,
-      est_minutes,
-      photos,    // fino a 2 immagini (base64) – gestiscile in n8n
-      geo        // {lat,lng} opzionale
-    };
-
-    const url = process.env.N8N_WEBHOOK_URL;
-    if (!url) {
-      return NextResponse.json({ ok: false, error: "Missing N8N_WEBHOOK_URL env" }, { status: 500 });
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ ok: false, error: 'JSON non valido', correlationId }, { status: 400 });
+    }
+    
+    const parsed = ContactSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { ok: false, error: 'Dati inviati non validi', details: parsed.error.flatten(), correlationId },
+        { status: 400 }
+      );
     }
 
-    // Timeout 12s
-    const ctl = new AbortController();
-    const t = setTimeout(() => ctl.abort(), 12000);
-
-    let res: Response;
-    try {
-      res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        signal: ctl.signal
-      });
-    } finally {
-      clearTimeout(t);
+    const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL;
+    if (!n8nWebhookUrl) {
+      return NextResponse.json({ ok: false, error: 'N8N_WEBHOOK_URL non configurato', correlationId }, { status: 500 });
     }
+    
+    const safeUrl = safeHost(n8nWebhookUrl);
+    const dataToForward = { ...parsed.data, userId, receivedAt: new Date().toISOString(), correlationId };
+    const payload = JSON.stringify(dataToForward);
+    
+    const secret = process.env.N8N_SHARED_SECRET || '';
+    const signature = secret ? hmacSignature(secret, payload) : undefined;
 
-    const text = await res.text();
-    let data: any;
-    try { data = JSON.parse(text); } catch { data = { raw: text }; }
+    const res = await fetch(safeUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(secret ? { 'x-signature-sha256': signature! } : {}),
+        'x-correlation-id': correlationId,
+      },
+      body: payload,
+    });
 
     if (!res.ok) {
-      return NextResponse.json({
-        ok: false,
-        status: res.status,
-        error: data?.message || data?.error || (typeof data === "string" ? data : text?.slice(0, 400) || "Webhook error"),
-        debug: { url, payload }
-      }, { status: 502 });
+      const errText = await res.text().catch(() => 'Errore sconosciuto da n8n');
+      console.error(`[contact] Errore da n8n ${res.status} cid=${correlationId} :: ${errText.slice(0, 300)}`);
+      return NextResponse.json({ ok: false, error: 'Impossibile inoltrare la richiesta', correlationId }, { status: 502 });
     }
 
-    return NextResponse.json({ ok: true, status: res.status, ticketId, data });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || String(e) }, { status: 500 });
+    const responseData = await res.json().catch(() => null);
+
+    return NextResponse.json({
+      ok: true,
+      ticketId: responseData?.ticketId ?? null,
+      correlationId,
+    });
+
+  } catch (error: any) {
+    if (error?.message === 'rate_limited') {
+      return NextResponse.json({ ok: false, error: 'Troppe richieste, riprova tra un minuto.' }, { status: 429 });
+    }
+    console.error(`[contact] Errore fatale cid=${correlationId}`, error);
+    return NextResponse.json({ ok: false, error: 'Errore interno del server', correlationId }, { status: 500 });
   }
 }

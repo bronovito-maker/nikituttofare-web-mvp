@@ -1,14 +1,20 @@
 // app/layout.tsx
+import React from 'react';
+import { Providers } from './providers';
 import './globals.css';
-import type { ReactNode } from 'react';
-import AppHeader from '@/components/AppHeader';
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export const metadata = {
+  title: 'NikiTuttoFare',
+  description: 'Assistente virtuale per preventivi',
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="it" data-theme="dark">
-      <body className="min-h-svh">
-        <AppHeader />
-        <main className="pt-2">{children}</main>
+    <html lang="it" suppressHydrationWarning>
+      <body className="antialiased">
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

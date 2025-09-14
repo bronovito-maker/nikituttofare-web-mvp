@@ -1,3 +1,4 @@
+// app/api/requests/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 
@@ -15,32 +16,19 @@ export async function GET(req: NextRequest) {
     if (!userId) {
       try {
         const session = await auth();
-        userId =
-          (session as any)?.userId ||
-          (session as any)?.user?.id ||
-          (session as any)?.user?.email || // fallback: email come id
-          "";
+        // @ts-ignore
+        userId = session?.userId || session?.user?.id || session?.user?.email || "";
       } catch {}
     }
 
     if (!userId) {
-      // Niente user -> restituisci lista vuota (meglio 200 che 401 per UX della dashboard)
       return NextResponse.json({ ok: true, data: [] });
     }
 
     // 2) ENV compatibili
-    const base =
-      process.env.NOCO_BASE_URL ||
-      process.env.NOCODB_BASE_URL ||
-      ""; // es. https://db.nikituttofare.com/api/v2
-    const token =
-      process.env.NOCO_API_TOKEN ||
-      process.env.NOCODB_TOKEN ||
-      "";
-    const table =
-      process.env.NOCO_LEADS_TABLE_ID ||
-      process.env.NOCODB_TABLE_ID_LEADS ||
-      ""; // es. mv0h0u7kkwag94t
+    const base = process.env.NOCO_BASE_URL || process.env.NOCODB_BASE_URL || "";
+    const token = process.env.NOCO_API_TOKEN || process.env.NOCODB_TOKEN || "";
+    const table = process.env.NOCO_LEADS_TABLE_ID || process.env.NOCODB_TABLE_ID_LEADS || "";
 
     if (!base || !token || !table) {
       return NextResponse.json(
@@ -50,11 +38,13 @@ export async function GET(req: NextRequest) {
     }
 
     // 3) Query NocoDB (API v2)
-    // /tables/{tableId}/records?where=(userId,eq,<id>)&limit=100&offset=0&orderby=-createdAt
     const url =
       `${base.replace(/\/$/, "")}/tables/${encodeURIComponent(table)}/records` +
       `?where=${encodeURIComponent(`(userId,eq,${userId})`)}` +
-      `&limit=100&offset=0&orderby=-createdAt`;
+      `&limit=100&offset=0&sort=-CreatedAt`; // Modificato orderby in sort e usato il nome colonna esatto
+
+    // --- [DEBUG 1] LOG dell'URL che stiamo per chiamare ---
+    console.log("\n[DEBUG] Chiamata a NocoDB URL:", url);
 
     const res = await fetch(url, {
       headers: { "xc-token": token, "accept": "application/json" },
@@ -70,19 +60,26 @@ export async function GET(req: NextRequest) {
         {
           ok: false,
           status: res.status,
-          error:
-            typeof data === "string"
-              ? data.slice(0, 400)
-              : (data?.message || data?.error || "NocoDB error"),
+          error: typeof data === "string" ? data.slice(0, 400) : (data?.message || data?.error || "NocoDB error"),
         },
         { status: 502 }
       );
     }
 
-    // NocoDB può rispondere con { list: [...] } oppure array diretto
     const rows = Array.isArray(data) ? data : (data?.list ?? data?.records ?? []);
+
+    // --- [DEBUG 2] LOG DEI DATI RICEVUTI DA NOCODB ---
+    // Questo è il log più importante. Ci mostrerà la vera struttura dei dati.
+    console.log("\n--- [DEBUG] API /api/requests ---");
+    console.log(`Richieste trovate per userId=${userId}: ${rows.length}`);
+    console.log("Contenuto delle prime 3 righe ricevute da NocoDB:");
+    console.log(JSON.stringify(rows.slice(0, 3), null, 2)); // Logghiamo solo le prime 3 per non intasare il terminale
+    console.log("----------------------------------\n");
+    // --- FINE BLOCCO DEBUG ---
+
     return NextResponse.json({ ok: true, data: Array.isArray(rows) ? rows : [] });
   } catch (e: any) {
+    console.error("Errore critico nell'API /api/requests:", e);
     return NextResponse.json(
       { ok: false, error: e?.message || String(e) },
       { status: 500 }
