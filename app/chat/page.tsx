@@ -5,10 +5,10 @@ import React, { useEffect, useRef, useState, ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
-import { SendHorizontal, LoaderCircle, Wrench, Lightbulb, KeyRound, Hammer } from 'lucide-react';
+import { SendHorizontal, LoaderCircle, Wrench, Lightbulb, KeyRound, Hammer, ArrowDown } from 'lucide-react';
 import { chatCopy } from '@/lib/chat-copy';
 
-// --- Tipi, Costanti e Funzioni Helper ---
+// --- Tipi e Costanti (invariati) ---
 interface ChatFormState {
     message: string; name: string; phone: string; email: string;
     city: string; address: string; timeslot: string;
@@ -134,32 +134,92 @@ const ChatInterface = (): JSX.Element => {
     const [loading, setLoading] = useState(false);
     const [aiResult, setAiResult] = useState<AiResult | null>(null);
     const [form, setForm] = useState<Partial<ChatFormState>>({});
+    
     const inputRef = useRef<HTMLInputElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-    const scrollToBottom = (behavior: 'smooth' | 'auto' = 'smooth') => {
-        if (scrollContainerRef.current) {
-            scrollContainerRef.current.scrollTo({
-                top: scrollContainerRef.current.scrollHeight,
-                behavior,
-            });
-        }
+    const [stickToBottom, setStickToBottom] = useState(true);
+    const [showNewBadge, setShowNewBadge] = useState(false);
+    const viewportPaddingRef = useRef<HTMLDivElement>(null);
+
+    const isNearBottom = () => {
+      const el = scrollContainerRef.current;
+      if (!el) return true;
+      const diff = el.scrollHeight - el.scrollTop - el.clientHeight;
+      return diff < 80;
+    };
+
+    const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+      const el = scrollContainerRef.current;
+      if (!el) return;
+      el.scrollTo({ top: el.scrollHeight, behavior });
     };
 
     useEffect(() => {
-        scrollToBottom(isInitialLoad ? 'auto' : 'smooth');
-        if (isInitialLoad && inputRef.current) {
-            inputRef.current.focus();
-            setIsInitialLoad(false);
+      if (isInitialLoad && inputRef.current) {
+        inputRef.current.focus();
+        setIsInitialLoad(false);
+      }
+    }, [isInitialLoad]);
+
+    useEffect(() => {
+      if (stickToBottom) {
+        scrollToBottom(msgs.length <= 2 ? 'auto' : 'smooth');
+        setShowNewBadge(false);
+      } else {
+        if (msgs.length > 0) {
+            setShowNewBadge(true);
         }
-    }, [msgs, isInitialLoad]);
+      }
+    }, [msgs, stickToBottom]);
+
+    useEffect(() => {
+      const el = scrollContainerRef.current;
+      if (!el) return;
+
+      const onScroll = () => {
+        const nearBottom = isNearBottom();
+        setStickToBottom(nearBottom);
+        if (document.activeElement === inputRef.current && !nearBottom) {
+          inputRef.current?.blur();
+        }
+      };
+
+      el.addEventListener('scroll', onScroll, { passive: true });
+      return () => el.removeEventListener('scroll', onScroll);
+    }, []);
+    
+    useEffect(() => {
+        const vv = (window as any).visualViewport as VisualViewport | undefined;
+        if (!vv || !viewportPaddingRef.current) return;
+      
+        const padEl = viewportPaddingRef.current;
+      
+        const handler = () => {
+          const bottomInset = Math.max(0, (vv.height + vv.offsetTop) - window.innerHeight);
+          padEl.style.height = bottomInset > 0 ? `${bottomInset}px` : '0px';
+      
+          if (document.activeElement === inputRef.current) {
+            scrollToBottom('auto');
+          }
+        };
+      
+        vv.addEventListener('resize', handler);
+        vv.addEventListener('scroll', handler);
+        handler();
+      
+        return () => {
+          vv.removeEventListener('resize', handler);
+          vv.removeEventListener('scroll', handler);
+        };
+      }, []);
 
     const handleInputFocus = () => {
         setTimeout(() => scrollToBottom('smooth'), 150);
     };
-
-    const handleScrollInteraction = () => {
+    
+    const handleUserScrollGesture = () => {
         if (document.activeElement === inputRef.current) {
             inputRef.current?.blur();
         }
@@ -334,11 +394,13 @@ const ChatInterface = (): JSX.Element => {
     };
 
     return (
-        <div className="w-full max-w-3xl mx-auto flex flex-col bg-background h-full shadow-lg border border-border rounded-t-xl">
+        <div className="w-full max-w-3xl mx-auto flex flex-col bg-background h-full shadow-lg border border-border rounded-t-xl relative">
             <div 
                 ref={scrollContainerRef} 
                 className="flex-1 overflow-y-auto"
-                onTouchStart={handleScrollInteraction}
+                onTouchStart={handleUserScrollGesture}
+                onTouchMove={handleUserScrollGesture}
+                onWheel={handleUserScrollGesture}
             >
                 {msgs.length === 0 ? (
                     <ChatIntroScreen onSuggestionClick={handleSuggestionClick} />
@@ -349,23 +411,51 @@ const ChatInterface = (): JSX.Element => {
                 )}
             </div>
 
+            {showNewBadge && !stickToBottom && (
+              <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-10">
+                <button
+                  onClick={() => {
+                    scrollToBottom('smooth');
+                    setShowNewBadge(false);
+                    setStickToBottom(true);
+                  }}
+                  className="p-2 bg-primary text-primary-foreground rounded-full shadow-lg hover:bg-primary/90 transition-transform active:scale-95"
+                  aria-label="Vai all'ultimo messaggio"
+                >
+                  <ArrowDown size={20} />
+                </button>
+              </div>
+            )}
+            
+            <div ref={viewportPaddingRef} aria-hidden />
+
             {step !== 'done' && (
-                <div className="p-4 bg-card/80 backdrop-blur-sm border-t border-border">
-                    <form onSubmit={handleSend} className="flex items-center gap-2">
-                        <input
-                            ref={inputRef}
-                            onFocus={handleInputFocus}
-                            className="w-full px-4 py-2.5 bg-secondary border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-ring"
-                            placeholder="Descrivi il tuo problema..."
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            disabled={loading}
-                        />
-                        <button type="submit" className="flex-shrink-0 w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center hover:bg-primary/90 disabled:bg-primary/70 disabled:cursor-not-allowed transition-colors" disabled={loading || !input.trim()} aria-label="Invia messaggio">
-                           {loading ? <LoaderCircle size={20} className="animate-spin"/> : <SendHorizontal size={20} />}
-                        </button>
-                    </form>
-                </div>
+              <div className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-card/80 backdrop-blur-sm border-t border-border">
+                <form onSubmit={handleSend} className="flex items-center gap-2">
+                  <input
+                    ref={inputRef}
+                    onFocus={handleInputFocus}
+                    className="w-full px-4 py-2.5 bg-secondary border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="Descrivi il tuo problema..."
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    disabled={loading}
+                    inputMode="text"
+                    autoCapitalize="sentences"
+                    autoCorrect="on"
+                    autoComplete="off"
+                    enterKeyHint="send"
+                  />
+                  <button
+                    type="submit"
+                    className="flex-shrink-0 w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center hover:bg-primary/90 disabled:bg-primary/70 disabled:cursor-not-allowed transition-colors"
+                    disabled={loading || !input.trim()}
+                    aria-label="Invia messaggio"
+                  >
+                    {loading ? <LoaderCircle size={20} className="animate-spin" /> : <SendHorizontal size={20} />}
+                  </button>
+                </form>
+              </div>
             )}
         </div>
     );
