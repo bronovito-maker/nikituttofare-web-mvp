@@ -134,11 +134,16 @@ const ChatInterface = (): JSX.Element => {
     const [loading, setLoading] = useState(false);
     const [aiResult, setAiResult] = useState<AiResult | null>(null);
     const [form, setForm] = useState<Partial<ChatFormState>>({});
-    const endRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    const scrollToBottom = () => {
-        endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const scrollToBottom = (behavior: 'smooth' | 'auto' = 'smooth') => {
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTo({
+                top: scrollContainerRef.current.scrollHeight,
+                behavior: behavior,
+            });
+        }
     };
 
     useEffect(() => {
@@ -147,9 +152,7 @@ const ChatInterface = (): JSX.Element => {
     }, [msgs, loading]);
 
     const handleInputFocus = () => {
-        setTimeout(() => {
-            scrollToBottom();
-        }, 150);
+        setTimeout(() => scrollToBottom('smooth'), 150);
     };
 
     const addMessage = (role: 'user' | 'assistant', content: ReactNode) => setMsgs(prev => [...prev, { id: Date.now() + Math.random(), role, content }]);
@@ -319,14 +322,15 @@ const ChatInterface = (): JSX.Element => {
 
     return (
         <div className="w-full max-w-3xl mx-auto flex flex-col bg-background h-full shadow-lg border border-border rounded-t-xl">
-            {msgs.length === 0 ? (
-                <ChatIntroScreen onSuggestionClick={handleSuggestionClick} />
-            ) : (
-                <div className="flex-grow p-4 space-y-4 overflow-y-auto">
-                    {msgs.map((m) => <ChatBubble key={m.id} role={m.role}>{m.content}</ChatBubble>)}
-                    <div ref={endRef} />
-                </div>
-            )}
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
+                {msgs.length === 0 ? (
+                    <ChatIntroScreen onSuggestionClick={handleSuggestionClick} />
+                ) : (
+                    <div className="p-4 space-y-4">
+                        {msgs.map((m) => <ChatBubble key={m.id} role={m.role}>{m.content}</ChatBubble>)}
+                    </div>
+                )}
+            </div>
 
             {step !== 'done' && (
                 <div className="p-4 bg-card/80 backdrop-blur-sm border-t border-border">
@@ -353,7 +357,7 @@ const ChatInterface = (): JSX.Element => {
 
 export default function ChatPage() {
     return (
-        <main className="flex-grow container mx-auto p-0 md:pt-4 flex flex-col">
+        <main className="flex-1 container mx-auto p-0 flex flex-col min-h-0">
             <ChatInterface />
         </main>
     );
