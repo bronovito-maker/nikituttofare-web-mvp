@@ -2,6 +2,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 
+// --- MODIFICA CHIAVE: Aggiungi questa riga ---
+// Dice a Next.js di non provare a rendere questa rotta staticamente
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/requests?userId=...
  * Ritorna le richieste (leads) dell'utente da NocoDB.
@@ -37,7 +41,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // --- MODIFICA CHIAVE: Utilizzo del percorso API corretto di NocoDB v2 ---
+    // Usiamo il percorso API corretto di NocoDB v2
     const url =
       `${base.replace(/\/$/, "")}/api/v2/tables/${encodeURIComponent(table)}/records` +
       `?where=${encodeURIComponent(`(userId,eq,${userId})`)}` +

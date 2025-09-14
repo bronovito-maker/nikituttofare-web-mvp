@@ -1,13 +1,14 @@
 // app/login/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { LoaderCircle, Eye, EyeOff } from 'lucide-react';
 
-export default function LoginPage() {
+// --- MODIFICA CHIAVE #1: Abbiamo spostato tutta la logica in un componente interno ---
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -50,7 +51,6 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-secondary/50 p-4">
       <div className="w-full max-w-sm rounded-xl border bg-card text-card-foreground shadow-lg">
         <form onSubmit={handleLogin} className="p-6 sm:p-8">
           <div className="mb-6 text-center">
@@ -122,6 +122,16 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+  );
+}
+
+// --- MODIFICA CHIAVE #2: La pagina ora "avvolge" il form in <Suspense> ---
+export default function LoginPage() {
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center bg-secondary/50 p-4">
+      <Suspense fallback={<div className="w-full max-w-sm h-96 rounded-xl border bg-card animate-pulse" />}>
+        <LoginForm />
+      </Suspense>
     </main>
   );
 }
