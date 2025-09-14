@@ -107,14 +107,16 @@ export async function POST(req: Request) {
 
     const responseData = await res.json().catch(() => ({}));
     
-    // Log per il debug futuro
     console.log(`[DEBUG] Dati ricevuti da n8n per cid=${correlationId}:`, responseData);
+
+    // --- MODIFICA CHIAVE: Lettura più robusta del ticketId ---
+    // Legge il ticketId da diverse possibili posizioni nella risposta di n8n,
+    // inclusa quella specifica del tuo workflow (data[0].json.ticketId).
+    const ticketId = responseData?.ticketId ?? responseData?.data?.[0]?.json?.ticketId ?? null;
 
     return NextResponse.json({
       ok: true,
-      // --- MODIFICA CHIAVE ---
-      // Cerca il ticketId nel primo oggetto dell'array `data` se esiste
-      ticketId: responseData?.data?.[0]?.ticketId ?? responseData?.ticketId ?? null,
+      ticketId: ticketId,
       correlationId,
     });
 
