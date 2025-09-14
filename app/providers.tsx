@@ -9,6 +9,24 @@ import { usePathname } from 'next/navigation';
 import { MessageSquare, LayoutDashboard, LogOut, Menu, X, LogIn, UserPlus } from 'lucide-react';
 import Image from "next/image";
 
+// (Il resto del file rimane invariato fino ad AppShell)
+// ...
+
+function AppShell({ children }: { children: React.ReactNode }) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  return (
+    // --- MODIFICA CHIAVE: Sostituisci h-screen con h-dvh ---
+    <div className="flex flex-col h-dvh bg-background font-sans">
+      <AppHeader onMenuToggle={() => setIsMenuOpen(p => !p)} />
+      <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      {children}
+    </div>
+  );
+}
+
+// (Il resto del file rimane invariato)
+// ...
+
 // --- Componenti di Navigazione con Stili Diretti (Utility Classes) ---
 
 const AppHeader = ({ onMenuToggle }: { onMenuToggle: () => void; }) => {
@@ -18,7 +36,6 @@ const AppHeader = ({ onMenuToggle }: { onMenuToggle: () => void; }) => {
   const isDash = pathname === '/dashboard';
 
   return (
-    // Ecco la correzione per la top bar: classi utility dirette che leggono le variabili CSS
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex items-center justify-between h-16 mx-auto px-4">
         <Link href="/" className="flex items-center gap-2 text-lg font-bold text-foreground">
@@ -65,7 +82,6 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void;
     return (
         <>
             <div className={`fixed inset-0 bg-black/40 z-40 transition-opacity md:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={onClose}></div>
-            {/* Correzione per il menu: usa bg-card che cambia con il tema */}
             <div className={`fixed top-0 right-0 h-full w-72 bg-card shadow-xl z-50 transform transition-transform md:hidden ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                 <div className="flex justify-end p-4"><button onClick={onClose} className="p-2 rounded-md hover:bg-secondary transition-colors"><X size={24} /></button></div>
                 <div className="flex flex-col p-6 pt-4 space-y-2">
@@ -83,17 +99,6 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void;
         </>
     );
 };
-
-function AppShell({ children }: { children: React.ReactNode }) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  return (
-    <div className="flex flex-col h-screen bg-background font-sans">
-      <AppHeader onMenuToggle={() => setIsMenuOpen(p => !p)} />
-      <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
-      {children}
-    </div>
-  );
-}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (

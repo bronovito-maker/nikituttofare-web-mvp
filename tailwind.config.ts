@@ -18,6 +18,11 @@ const config = {
       },
     },
     extend: {
+      // --- MODIFICA CHIAVE: Aggiungi questo blocco ---
+      height: {
+        'dvh': '100dvh',
+      },
+      // (Il resto della configurazione rimane invariato)
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
