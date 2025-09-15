@@ -5,7 +5,7 @@ import { getUserByEmail } from "@/lib/noco";
 import { verifyPassword } from "@/lib/crypto";
 
 const authConfig = NextAuth({
-  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET, // OBBLIGATORIO
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
 
   providers: [
@@ -24,14 +24,21 @@ const authConfig = NextAuth({
         const token = process.env.NOCO_API_TOKEN || process.env.NOCODB_TOKEN || "";
         const usersTable = process.env.NOCO_USERS_TABLE_ID || process.env.NOCODB_TABLE_ID_USERS || "";
         if (!base || !token || !usersTable) throw new Error("Missing NocoDB env for users");
+        
+        // --- MODIFICA CHIAVE: Aggiunto blocco try...catch ---
+        try {
+          const u = await getUserByEmail(base, token, usersTable, email);
+          if (!u || !u.password_hash) return null;
 
-        const u = await getUserByEmail(base, token, usersTable, email);
-        if (!u || !u.password_hash) return null;
+          const ok = await verifyPassword(password, String(u.password_hash));
+          if (!ok) return null;
 
-        const ok = await verifyPassword(password, String(u.password_hash));
-        if (!ok) return null;
-
-        return { id: String(u.id || email), email, name: u.name || email.split("@")[0] };
+          return { id: String(u.id || email), email, name: u.name || email.split("@")[0] };
+        } catch (error) {
+            console.error("[AUTH_ERROR] Impossibile contattare il database:", error);
+            // Lancia un errore specifico che può essere gestito nel frontend
+            throw new Error("Servizio di autenticazione temporaneamente non disponibile. Riprova più tardi.");
+        }
       },
     }),
   ],
@@ -50,5 +57,4 @@ const authConfig = NextAuth({
   pages: { signIn: "/login" },
 });
 
-// ⚠️ esporta direttamente GET e POST (niente `handlers` a parte)
 export const { handlers: { GET, POST }, auth, signIn, signOut } = authConfig;

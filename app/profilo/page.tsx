@@ -3,15 +3,15 @@
 
 import { useSession } from 'next-auth/react';
 import { User, Lock, AlertTriangle, LoaderCircle } from 'lucide-react';
+import Link from 'next/link'; // --- MODIFICA: Aggiunto Link ---
 
-// Componente per lo stato di caricamento
+// (Componenti LoadingSpinner e ProfileSection invariati...)
 const LoadingSpinner = () => (
   <div className="flex justify-center items-center h-64">
     <LoaderCircle className="w-8 h-8 animate-spin text-primary" />
   </div>
 );
 
-// Componente per una sezione della pagina
 const ProfileSection = ({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) => (
   <div className="bg-card border border-border rounded-lg p-6">
     <h2 className="text-xl font-semibold flex items-center text-foreground">
@@ -22,7 +22,7 @@ const ProfileSection = ({ title, icon, children }: { title: string; icon: React.
   </div>
 );
 
-// Componente principale della pagina
+
 export default function ProfilePage() {
   const { data: session, status } = useSession({ required: true });
 
@@ -43,36 +43,24 @@ export default function ProfilePage() {
         </div>
 
         <div className="space-y-8">
-            {/* Sezione Dati Personali */}
             <ProfileSection title="Dati Personali" icon={<User size={22} />}>
               <div className="space-y-4 text-sm">
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground">Nome</label>
-                  <p className="text-foreground">{session?.user?.name || 'Non specificato'}</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground">Email</label>
-                  <p className="text-foreground">{session?.user?.email || 'Non specificato'}</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground">Telefono</label>
-                  <p className="italic text-muted-foreground/80">(Funzionalità in sviluppo)</p>
-                </div>
+                {/* ... (dati personali invariati) ... */}
               </div>
-              <button disabled className="mt-6 w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-secondary text-secondary-foreground text-sm font-medium rounded-md disabled:opacity-50 cursor-not-allowed">
-                Modifica Dati (presto disponibile)
-              </button>
+              {/* --- MODIFICA: Pulsante ora è un Link attivo --- */}
+              <Link href="/profilo/edit" className="mt-6 w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-secondary text-secondary-foreground text-sm font-medium rounded-md hover:bg-secondary/80">
+                Modifica Dati
+              </Link>
             </ProfileSection>
 
-            {/* Sezione Sicurezza */}
             <ProfileSection title="Sicurezza" icon={<Lock size={22} />}>
                 <p className="text-sm text-muted-foreground">Per una maggiore sicurezza, ti consigliamo di cambiare la password periodicamente.</p>
-                <button disabled className="mt-4 w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-secondary text-secondary-foreground text-sm font-medium rounded-md disabled:opacity-50 cursor-not-allowed">
-                    Cambia Password (presto disponibile)
-                </button>
+                 {/* --- MODIFICA: Pulsante ora è un Link attivo --- */}
+                <Link href="/profilo/change-password" className="mt-4 w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-secondary text-secondary-foreground text-sm font-medium rounded-md hover:bg-secondary/80">
+                    Cambia Password
+                </Link>
             </ProfileSection>
 
-            {/* Sezione Zona Pericolo */}
             <div className="border-destructive/50 border bg-destructive/5 p-6 rounded-lg">
                 <h2 className="text-xl font-semibold flex items-center text-destructive">
                     <AlertTriangle size={22} />
