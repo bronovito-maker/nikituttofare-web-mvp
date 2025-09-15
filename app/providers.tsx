@@ -6,46 +6,10 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { SessionProvider, useSession, signOut } from "next-auth/react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { MessageSquare, LayoutDashboard, LogOut, Menu, X, LogIn, UserPlus } from 'lucide-react';
+import { MessageSquare, LayoutDashboard, LogOut, Menu, X, LogIn, UserPlus, User, HelpCircle } from 'lucide-react';
 import Image from "next/image";
 
-// (Il resto del file rimane invariato fino a MobileMenu)
-// ...
-
-const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void; }) => {
-    const { data: session } = useSession();
-    return (
-        <>
-            <div className={`fixed inset-0 bg-black/40 z-40 transition-opacity md:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={onClose}></div>
-            <div className={`fixed top-0 right-0 h-full w-72 bg-card shadow-xl z-50 transform transition-transform md:hidden ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                <div className="flex justify-end p-4"><button onClick={onClose} className="p-2 rounded-md hover:bg-secondary transition-colors"><X size={24} /></button></div>
-                <div className="flex flex-col p-6 pt-4 h-full">
-                    <div className="space-y-2 flex-grow">
-                        {session ? ( <>
-                            <Link href="/chat" onClick={onClose} className="flex items-center gap-3 p-3 rounded-lg font-semibold hover:bg-secondary"><MessageSquare size={20} /> Chat</Link>
-                            <Link href="/dashboard" onClick={onClose} className="flex items-center gap-3 p-3 rounded-lg font-semibold hover:bg-secondary"><LayoutDashboard size={20} /> Dashboard</Link>
-                        </> ) : ( <>
-                            <Link href="/login" onClick={onClose} className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary"><LogIn size={20} /> Accedi</Link>
-                            <Link href="/register" onClick={onClose} className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary"><UserPlus size={20} /> Registrati</Link>
-                        </> )}
-                    </div>
-                    {/* --- MODIFICA CHIAVE: Aggiunta la sezione per l'utente --- */}
-                    {session && (
-                        <div className="mt-auto pt-4 border-t border-border">
-                            <div className="px-3 py-2 text-sm text-muted-foreground truncate" title={session.user?.email ?? ''}>
-                                {session.user?.email}
-                            </div>
-                            <button onClick={() => { signOut(); onClose(); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary text-red-500 transition-colors text-left w-full font-semibold"><LogOut size={20} /> Esci</button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </>
-    );
-};
-
-// --- Gli altri componenti (AppHeader, AppShell, Providers) rimangono invariati ---
-
+// --- MODIFICA CHIAVE: Definizione completa di AppHeader ---
 const AppHeader = ({ onMenuToggle }: { onMenuToggle: () => void; }) => {
   const { data: session } = useSession();
   const pathname = usePathname();
@@ -59,7 +23,6 @@ const AppHeader = ({ onMenuToggle }: { onMenuToggle: () => void; }) => {
           <Image src="/logo_ntf.png" alt="NikiTuttoFare Logo" width={32} height={32} className="rounded-md" />
           <span>NikiTuttoFare</span>
         </Link>
-
         {session && (
           <nav className="hidden md:flex items-center gap-1 rounded-full bg-muted p-1 text-muted-foreground">
             <Link href="/chat" className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-all ${isChat ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}>
@@ -70,7 +33,6 @@ const AppHeader = ({ onMenuToggle }: { onMenuToggle: () => void; }) => {
             </Link>
           </nav>
         )}
-
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex items-center gap-3">
             {session ? (
@@ -93,6 +55,57 @@ const AppHeader = ({ onMenuToggle }: { onMenuToggle: () => void; }) => {
     </header>
   );
 };
+
+const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void; }) => {
+    const { data: session } = useSession();
+    const pathname = usePathname();
+
+    const linkClasses = "flex items-center gap-3 p-3 rounded-lg font-semibold hover:bg-secondary transition-colors";
+    const activeLinkClasses = "bg-secondary text-foreground";
+
+    return (
+        <>
+            <div className={`fixed inset-0 bg-black/40 z-40 transition-opacity md:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={onClose}></div>
+            <div className={`fixed top-0 right-0 h-full w-72 bg-card shadow-xl z-50 transform transition-transform md:hidden ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                <div className="flex flex-col h-full p-4">
+                    <div className="flex justify-end mb-4">
+                        <button onClick={onClose} className="p-2 rounded-md hover:bg-secondary transition-colors"><X size={24} /></button>
+                    </div>
+
+                    <div className="flex-grow overflow-y-auto">
+                        {session ? (
+                            <div className="flex flex-col h-full">
+                                <div className="px-3 pb-4 mb-4 border-b border-border">
+                                    <p className="text-sm text-muted-foreground">Accesso effettuato come:</p>
+                                    <p className="font-semibold text-foreground truncate" title={session.user?.email ?? ''}>
+                                        {session.user?.email}
+                                    </p>
+                                </div>
+                                
+                                <nav className="flex flex-col gap-2 flex-grow">
+                                    <Link href="/chat" onClick={onClose} className={`${linkClasses} ${pathname === '/chat' || pathname === '/' ? activeLinkClasses : ''}`}><MessageSquare size={20} /> Chat</Link>
+                                    <Link href="/dashboard" onClick={onClose} className={`${linkClasses} ${pathname === '/dashboard' ? activeLinkClasses : ''}`}><LayoutDashboard size={20} /> Dashboard</Link>
+                                    <Link href="/profilo" onClick={onClose} className={`${linkClasses} ${pathname === '/profilo' ? activeLinkClasses : ''}`}><User size={20} /> Profilo</Link>
+                                    <Link href="/faq" onClick={onClose} className={`${linkClasses} ${pathname === '/faq' ? activeLinkClasses : ''}`}><HelpCircle size={20} /> Serve Aiuto?</Link>
+                                </nav>
+
+                                <div className="mt-auto pt-4 border-t border-border">
+                                    <button onClick={() => { signOut(); onClose(); }} className={`${linkClasses} text-red-500 w-full`}><LogOut size={20} /> Esci</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <nav className="flex flex-col gap-2">
+                                <Link href="/login" onClick={onClose} className={linkClasses}><LogIn size={20} /> Accedi</Link>
+                                <Link href="/register" onClick={onClose} className={linkClasses}><UserPlus size={20} /> Registrati</Link>
+                            </nav>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </>
+    );
+};
+
 
 function AppShell({ children }: { children: React.ReactNode }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

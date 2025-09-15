@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 
 // --- MODIFICA CHIAVE: Aggiungi questa riga ---
-// Forza la route ad essere dinamica, disabilitando la cache.
-// Questo assicura che i dati siano sempre aggiornati da NocoDB.
+// Forza la route ad essere sempre dinamica, disabilitando la cache a livello di server.
+// Questo assicura che i dati siano sempre richiesti e aggiornati da NocoDB.
 export const dynamic = 'force-dynamic';
 
 /**
@@ -44,7 +44,8 @@ export async function GET(req: NextRequest) {
 
     const res = await fetch(url, {
       headers: { "xc-token": token, "accept": "application/json" },
-      cache: "no-store", // Già presente, ma dynamic è più efficace a livello di route
+      // Questa riga disabilita la cache a livello di fetch, ma `dynamic` è più potente.
+      cache: "no-store", 
     });
 
     if (!res.ok) {

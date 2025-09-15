@@ -3,17 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import type { AiResult } from '@/lib/types';
 import { getFallbackResponse } from "@/lib/chat-copy";
 
-/* ─────────────────────────────────────────────────────────
-   Costanti globali (evita TDZ e duplicazioni)
-────────────────────────────────────────────────────────── */
 const GREETINGS = [
   'ciao','salve','buongiorno','buonasera','ehi','yo','ue','ueilà','buondì',
   'buona sera','buona giornata','buona serata','saluti','salve a tutti'
 ];
 
-/* ─────────────────────────────────────────────────────────
-   Tipi categoria
-────────────────────────────────────────────────────────── */
 type StandardCategoryConfig = {
   type: 'standard';
   keywords: string[];
@@ -40,9 +34,6 @@ type SpecialistCategoryConfig = {
 };
 type CategoryConfig = StandardCategoryConfig | UnitBasedCategoryConfig | SpecialistCategoryConfig;
 
-/* ─────────────────────────────────────────────────────────
-   Dizionario categorie
-────────────────────────────────────────────────────────── */
 const CATEGORIES_CONFIG: Record<string, CategoryConfig> = {
   trasloco: {
     type: 'contact_specialist',
@@ -56,7 +47,6 @@ const CATEGORIES_CONFIG: Record<string, CategoryConfig> = {
     clarification_question: "Per lavori di muratura importanti facciamo sempre un preventivo su misura. Puoi descrivermi brevemente il lavoro che hai in mente?",
     weight: 15
   },
-
   "trattamento-muffa": {
     type: 'standard',
     keywords: ['muffa','macchia umidità','alone','condensa','angolo nero','antimuffa'],
@@ -121,17 +111,12 @@ const CATEGORIES_CONFIG: Record<string, CategoryConfig> = {
   }
 };
 
-/* ─────────────────────────────────────────────────────────
-   Utils
-────────────────────────────────────────────────────────── */
 function extractUnitCount(text: string): number {
   const s = text.toLowerCase();
-
   const numberWords: Record<string, number> = {
     'un': 1, 'uno': 1, 'una': 1, 'due': 2, 'tre': 3, 'quattro': 4, 'cinque': 5,
     'sei': 6, 'sette': 7, 'otto': 8, 'nove': 9, 'dieci': 10
   };
-
   const match = s.match(/\b(\d+|un|uno|una|due|tre|quattro|cinque|sei|sette|otto|nove|dieci)\b/);
   if (match) {
     const token = match[1];
@@ -139,14 +124,23 @@ function extractUnitCount(text: string): number {
     if (!isNaN(n)) return n;
     if (token in numberWords) return numberWords[token];
   }
-
   if (/\b(stanza|stanze|camera|camere|locale|locali)\b/.test(s)) return 1;
-
   return 0;
 }
 
 function classifyAndPrepare(text: string): AiResult {
   const s = text.toLowerCase().trim();
+
+  // --- MODIFICA #1: Aggiunta la logica per il controllo dello stato ---
+  const statusCheckMatch = s.match(/(?:stato|avanzamento|situazione)\s*(?:richiesta|ticket|ordine|lavoro)?\s*#?([a-z0-9_]+)/);
+  if (statusCheckMatch) {
+    const ticketId = statusCheckMatch[1];
+    return {
+      category: 'status_check',
+      summary: `Controllo lo stato della richiesta con ID: ${ticketId}`,
+      clarification_question: ticketId // Usiamo questo campo per passare l'ID
+    };
+  }
 
   if (GREETINGS.includes(s)) {
     return {
@@ -224,15 +218,12 @@ function classifyAndPrepare(text: string): AiResult {
   };
 }
 
-/* ─────────────────────────────────────────────────────────
-   Route: POST
-────────────────────────────────────────────────────────── */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const message = String(body.message || '').trim();
 
-    if (message.length < 4 && !GREETINGS.includes(message.toLowerCase())) {
+    if (message.length < 3 && !GREETINGS.includes(message.toLowerCase())) {
       return NextResponse.json({
         ok: true,
         data: { category: 'none', summary: 'Per poterti aiutare, per favore descrivi un po\' meglio il problema.' }
