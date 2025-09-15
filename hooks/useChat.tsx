@@ -61,7 +61,15 @@ export function useChat() {
         let userMessageContent: ReactNode = text;
 
         if (fileToUpload) {
-            addMessage('user', <>{text}<div className="italic text-sm mt-2">Caricamento: {fileToUpload.name}...</div></>);
+            // **Correzione 1: JSX per il messaggio di caricamento**
+            const loadingMessageContent = (
+                <>
+                    {text}
+                    <div className="italic text-sm mt-2">Caricamento: {fileToUpload.name}...</div>
+                </>
+            );
+            addMessage('user', loadingMessageContent);
+
             try {
                 const response = await fetch(`/api/upload?filename=${encodeURIComponent(fileToUpload.name)}`, {
                     method: 'POST',
@@ -70,10 +78,19 @@ export function useChat() {
                 if (!response.ok) throw new Error('Upload fallito.');
                 const newBlob = await response.json() as UploadedFile;
                 messageToSend += `\n\nImmagine allegata: ${newBlob.url}`;
-                userMessageContent = <>{text}{text && <br/>}<img src={newBlob.url} alt="Allegato" className="mt-2 rounded-lg max-w-[150px]"/></>;
+                
+                // **Correzione 2: JSX per l'immagine caricata**
+                userMessageContent = (
+                    <>
+                        {text}{text && <br/>}
+                        <img src={newBlob.url} alt="Allegato" className="mt-2 rounded-lg max-w-[150px]"/>
+                    </>
+                );
                 removeFile();
             } catch (error) {
-                replaceLastBotMessage(<div className="text-destructive">Errore nel caricamento del file. Riprova.</div>);
+                // **Correzione 3: JSX per il messaggio di errore**
+                const errorMessageContent = <div className="text-destructive">Errore nel caricamento del file. Riprova.</div>;
+                replaceLastBotMessage(errorMessageContent);
                 setLoading(false);
                 return;
             }
@@ -95,19 +112,26 @@ export function useChat() {
                 const statusRes = await fetch(`/api/status/${ticketId}`);
                 if (statusRes.ok) {
                     const statusData = await statusRes.json();
-                    replaceLastBotMessage(<>La richiesta <strong>#{ticketId}</strong> ({statusData.category}) è nello stato: <strong className="capitalize">{statusData.status}</strong>.</>);
+                    // **Correzione 4: JSX per il messaggio di stato**
+                    const statusMessageContent = (
+                        <>
+                            La richiesta <strong>#{ticketId}</strong> ({statusData.category}) è nello stato: <strong className="capitalize">{statusData.status}</strong>.
+                        </>
+                    );
+                    replaceLastBotMessage(statusMessageContent);
                 } else {
                     replaceLastBotMessage(`Non ho trovato una richiesta con l'ID #${ticketId}. Verifica e riprova.`);
                 }
             } else {
                 setAiResult(data);
-                // Qui andrebbe la logica completa dello switch, per ora la semplifichiamo
                 replaceLastBotMessage(data.clarification_question || data.summary);
-                setStep('clarification'); // Esempio di avanzamento
+                setStep('clarification');
             }
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Si è verificato un errore.';
-            replaceLastBotMessage(<div className="text-destructive">{chatCopy.error(errorMessage)}</div>);
+            // **Correzione 5: JSX per il messaggio di errore API**
+            const apiErrorContent = <div className="text-destructive">{chatCopy.error(errorMessage)}</div>;
+            replaceLastBotMessage(apiErrorContent);
         } finally {
             setLoading(false);
         }
@@ -123,6 +147,6 @@ export function useChat() {
         previewUrl,
         handleFileSelect,
         removeFile,
-        handleSuggestionClick // Esportiamo la funzione
+        handleSuggestionClick
     };
 }

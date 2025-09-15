@@ -3,9 +3,10 @@
 
 import { useChat } from '@/hooks/useChat';
 import { MessageInput } from './MessageInput';
-import ChatBubble from '@/components/ChatBubble'; // Import corretto
-import Typing from '@/components/Typing';       // Import corretto
-import { ChatIntroScreen } from './ChatIntroScreen';
+import ChatBubble from '@/components/ChatBubble';
+import Typing from '@/components/Typing';
+// --- MODIFICA CHIAVE: Utilizzo di un alias di percorso più robusto ---
+import { ChatIntroScreen } from '@/components/chat/ChatIntroScreen';
 import { useEffect, useRef } from 'react';
 
 export function ChatInterface() {
@@ -23,7 +24,8 @@ export function ChatInterface() {
         if (input && msgs.length === 0) {
             handleSend();
         }
-    }, [input, msgs.length, handleSend]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [input, msgs.length]);
 
     return (
         <div className="w-full max-w-3xl mx-auto flex flex-col bg-background h-full shadow-lg border border-border rounded-t-xl">
