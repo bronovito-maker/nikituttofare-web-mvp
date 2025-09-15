@@ -28,7 +28,7 @@ export type UploadedFile = {
 
 // Tipo per la risposta dell'API di assistenza
 export type AiResult = {
-  acknowledgement?: string; // <-- NUOVO: Per i messaggi di empatia
+  acknowledgement?: string; // Per i messaggi di empatia
   category?: string;
   clarification_question?: string;
   urgency?: string;

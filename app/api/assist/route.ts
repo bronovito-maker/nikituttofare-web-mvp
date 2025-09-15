@@ -34,17 +34,11 @@ function classifyAndPrepare(text: string): AiResult {
     const s = text.toLowerCase().trim();
     let bestCategory: string | null = null;
     let maxScore = 0;
-
     for (const cat in CATEGORIES_CONFIG) {
         const config = CATEGORIES_CONFIG[cat];
         let score = 0;
-        for (const keyword of config.keywords) {
-            if (s.includes(keyword)) score += (config.weight ?? 1);
-        }
-        if (score > maxScore) {
-            maxScore = score;
-            bestCategory = cat;
-        }
+        for (const keyword of config.keywords) { if (s.includes(keyword)) score += (config.weight ?? 1); }
+        if (score > maxScore) { maxScore = score; bestCategory = cat; }
     }
 
     if (!bestCategory || maxScore === 0) {
@@ -54,20 +48,25 @@ function classifyAndPrepare(text: string): AiResult {
     const config = CATEGORIES_CONFIG[bestCategory];
     const urgency = (s.includes('urgente') || s.includes('subito')) ? 'alta' : 'media';
 
+    // --- MODIFICA CHIAVE: Gestione esplicita di ogni tipo per risolvere gli errori ---
     if (config.type === 'contact_specialist') {
         return { category: bestCategory, urgency, summary: text, clarification_question: config.clarification_question, requires_specialist_contact: true };
     }
-
+    
     if (config.type === 'unit_based') {
         const units = extractUnitCount(s);
         if (units > 0) {
             const priceLow = Math.ceil((config.basePrice + (config.pricePerUnit * units * 0.9)) / 10) * 10;
             const priceHigh = Math.ceil((config.basePrice + (config.pricePerUnit * units * 1.1)) / 10) * 10;
             return { category: bestCategory, acknowledgement: config.acknowledgement, urgency, summary: text, clarification_question: `Mi confermi che si tratta di circa ${units} stanz${units > 1 ? 'e' : 'a'}?`, price_low: priceLow, price_high: priceHigh, est_minutes: config.timePerUnit * units };
+        } else {
+            // Se non trova unità, fa la domanda di chiarimento senza dare un prezzo.
+            return { category: bestCategory, urgency, summary: text, acknowledgement: config.acknowledgement, clarification_question: config.clarification_question };
         }
     }
 
-    const { priceRange, est_minutes, clarification_question, acknowledgement } = config as StandardCategoryConfig;
+    // Se arriviamo qui, il tipo è sicuramente 'standard'. TypeScript ora lo capisce.
+    const { priceRange, est_minutes, clarification_question, acknowledgement } = config;
     return { category: bestCategory, urgency, summary: text, acknowledgement, clarification_question, price_low: priceRange[0], price_high: priceRange[1], est_minutes };
 }
 
@@ -75,16 +74,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     try {
         const body = await req.json();
         const message = String(body.message || '').trim();
-        if (!message) {
-            return NextResponse.json({ ok: false, error: "Messaggio vuoto" }, { status: 400 });
-        }
+        if (!message) { return NextResponse.json({ ok: false, error: "Messaggio vuoto" }, { status: 400 }); }
         const result = classifyAndPrepare(message);
         return NextResponse.json({ ok: true, data: result });
     } catch (e) {
         console.error("[API Assist Error]:", e);
-        return NextResponse.json(
-            { ok: false, error: "Errore interno del server." },
-            { status: 500 }
-        );
+        return NextResponse.json({ ok: false, error: "Errore interno del server." }, { status: 500 });
     }
 }
