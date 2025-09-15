@@ -2,10 +2,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 
-// --- MODIFICA CHIAVE: Sostituzione di 'force-dynamic' con revalidate ---
-// Forza la route a essere dinamica, ma con una cache che si aggiorna ogni 60 secondi.
-// Questo offre un buon bilanciamento tra dati aggiornati e performance.
-export const revalidate = 60;
+// --- MODIFICA CHIAVE: Da 'revalidate' a 'force-dynamic' ---
+// Questo assicura che i dati vengano richiesti da NocoDB ogni singola volta,
+// garantendo che lo stato delle richieste sia sempre aggiornato in tempo reale.
+export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/requests?userId=...
@@ -42,9 +42,10 @@ export async function GET(req: NextRequest) {
       `?where=${encodeURIComponent(`(userId,eq,${userId})`)}` +
       `&limit=100&offset=0&sort=-CreatedAt`;
 
-    // --- MODIFICA CHIAVE: Rimosso cache: 'no-store' per permettere la revalidazione a tempo ---
     const res = await fetch(url, {
       headers: { "xc-token": token, "accept": "application/json" },
+      // Disabilitiamo esplicitamente la cache a livello di fetch
+      cache: "no-store", 
     });
 
     if (!res.ok) {

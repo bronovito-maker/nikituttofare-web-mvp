@@ -2,8 +2,14 @@
 import { ReactNode } from 'react';
 
 // Tipi per la logica della Chat
-export type Step = 'problem' | 'clarification' | 'post-quote' | 'name' | 'phone' | 'email' | 'city' | 'address' | 'timeslot' | 'confirm' | 'done';
-export type Msg = { id: number; role: 'user' | 'assistant'; content: ReactNode };
+export type Step = 'problem' | 'clarification' | 'post_quote' | 'specialist_contact' | 'name' | 'phone' | 'email' | 'city' | 'address' | 'timeslot' | 'confirm' | 'done';
+
+export type Msg = { 
+  id: number; 
+  role: 'user' | 'assistant'; 
+  content: ReactNode;
+  isThinking?: boolean; // Aggiunto per il placeholder di caricamento
+};
 
 export type ChatFormState = {
   message: string;

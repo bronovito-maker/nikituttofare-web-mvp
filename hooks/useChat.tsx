@@ -1,152 +1,170 @@
-// hooks/useChat.ts
+// hooks/useChat.tsx
 'use client';
 
-import { useState, useCallback, ReactNode } from 'react';
-import { chatCopy } from '@/lib/chat-copy';
+import { useState, useCallback, ReactNode, useEffect } from 'react';
+import { chatCopy, decorateEstimates } from '@/lib/chat-copy';
 import type { AiResult, Msg, Step, ChatFormState, UploadedFile } from '@/lib/types';
+import Typing from '@/components/Typing';
+
+const validators: Record<string, (value: string) => boolean> = {
+  name: (value) => value.length >= 2,
+  phone: (value) => /^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$/.test(value) && value.length > 8,
+  email: (value) => value.toLowerCase() === 'no' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+  address: (value) => value.length > 5,
+  city: (value) => value.length > 2,
+};
 
 export function useChat() {
-    const [msgs, setMsgs] = useState<Msg[]>([]);
-    const [step, setStep] = useState<Step>('problem');
-    const [input, setInput] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [aiResult, setAiResult] = useState<AiResult | null>(null);
-    const [form, setForm] = useState<Partial<ChatFormState>>({});
-    const [fileToUpload, setFileToUpload] = useState<File | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [step, setStep] = useState<Step>('problem');
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<AiResult | null>(null);
+  const [form, setForm] = useState<Partial<ChatFormState>>({});
+  const [fileToUpload, setFileToUpload] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-    const addMessage = useCallback((role: 'user' | 'assistant', content: ReactNode) => {
-        setMsgs(prev => [...prev, { id: Date.now() + Math.random(), role, content }]);
-    }, []);
+  const addMessage = useCallback((role: 'user' | 'assistant', content: ReactNode, isThinking: boolean = false) => {
+    const newMsg: Msg = { id: Date.now() + Math.random(), role, content, isThinking };
+    setMsgs(prev => {
+        const filtered = prev.filter(m => !m.isThinking);
+        return [...filtered, newMsg];
+    });
+  }, []);
 
-    const replaceLastBotMessage = useCallback((content: ReactNode) => {
-        setMsgs(prev => {
-            const last = prev[prev.length - 1];
-            if (last && last.role === 'assistant') {
-                return [...prev.slice(0, -1), { ...last, content }];
-            }
-            return [...prev, { id: Date.now() + Math.random(), role: 'assistant', content }];
-        });
-    }, []);
+  const advanceConversation = useCallback(async (currentStep: Step, value: string) => {
+    let nextStep: Step = currentStep;
+    let botResponse: ReactNode = '';
+
+    setLoading(true);
+    addMessage('assistant', <Typing />, true);
     
-    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            setFileToUpload(file);
-            setPreviewUrl(URL.createObjectURL(file));
-        }
-        if (event.target) event.target.value = '';
-    };
+    // Simula il tempo di risposta del bot
+    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
 
-    const removeFile = () => {
-        setFileToUpload(null);
-        if (previewUrl) {
-            URL.revokeObjectURL(previewUrl);
-            setPreviewUrl(null);
-        }
-    };
-    
-    const handleSuggestionClick = (text: string) => {
-        setInput(text);
-        // La logica per l'invio automatico sarà gestita dal componente di input
-        // che chiamerà handleSend
-    };
-
-    const handleSend = async () => {
-        const text = input.trim();
-        if ((!text && !fileToUpload) || loading) return;
-
-        setLoading(true);
-        let messageToSend = text;
-        let userMessageContent: ReactNode = text;
-
-        if (fileToUpload) {
-            const loadingMessageContent = (
-                <>
-                    {text}
-                    <div className="italic text-sm mt-2">Caricamento: {fileToUpload.name}...</div>
-                </>
-            );
-            addMessage('user', loadingMessageContent);
-
+    switch (currentStep) {
+        case 'problem': {
             try {
-                const response = await fetch(`/api/upload?filename=${encodeURIComponent(fileToUpload.name)}`, {
-                    method: 'POST',
-                    body: fileToUpload,
-                });
-                if (!response.ok) throw new Error('Upload fallito.');
-                const newBlob = await response.json() as UploadedFile;
-                messageToSend += `\n\nImmagine allegata: ${newBlob.url}`;
+                const res = await fetch('/api/assist', { method: 'POST', body: JSON.stringify({ message: value }), headers: { 'Content-Type': 'application/json' } });
+                const { ok, data, error } = await res.json();
+                if (!ok || !data) throw new Error(error || 'Risposta API non valida');
                 
-                userMessageContent = (
-                    <>
-                        {text}{text && <br/>}
-                        <img src={newBlob.url} alt="Allegato" className="mt-2 rounded-lg max-w-[150px]"/>
-                    </>
-                );
-                removeFile();
-                // Sostituisci il messaggio di caricamento con quello finale
-                setMsgs(prev => [...prev.slice(0, -1), { id: Date.now(), role: 'user', content: userMessageContent }]);
-            } catch (error) {
-                const errorMessageContent = <div className="text-destructive">Errore nel caricamento del file. Riprova.</div>;
-                // --- MODIFICA CHIAVE: L'input non viene cancellato se l'upload fallisce ---
-                // Sostituisce il messaggio di caricamento con un errore ma lascia il testo nell'input
-                setMsgs(prev => [...prev.slice(0, -1)]);
-                addMessage('assistant', errorMessageContent);
-                setLoading(false);
-                return;
-            }
-        } else {
-            addMessage('user', text);
-        }
-        
-        // --- MODIFICA CHIAVE: L'input viene pulito solo dopo che il messaggio è stato aggiunto ---
-        setInput('');
-        
-        try {
-            addMessage('assistant', '...'); // Placeholder for Typing
-            const res = await fetch('/api/assist', { method: 'POST', body: JSON.stringify({ message: messageToSend }), headers: {'Content-Type': 'application/json'} });
-            const { ok, data, error } = await res.json();
-            if (!ok) throw new Error(error);
+                setAiResult(data);
+                setForm(prev => ({ ...prev, message: value }));
 
-            if (data.category === 'status_check') {
-                const ticketId = data.clarification_question;
-                const statusRes = await fetch(`/api/status/${ticketId}`);
-                if (statusRes.ok) {
-                    const statusData = await statusRes.json();
-                    const statusMessageContent = (
+                if (data.requires_specialist_contact) {
+                    botResponse = chatCopy.specialistIntro(data.category);
+                    nextStep = 'specialist_contact';
+                } else if (data.price_low && data.price_high) {
+                    const estimateText = decorateEstimates(data);
+                    botResponse = (
                         <>
-                            La richiesta <strong>#{ticketId}</strong> ({statusData.category}) è nello stato: <strong className="capitalize">{statusData.status}</strong>.
+                            <p>{chatCopy.preQuoteTitle}</p>
+                            <div className="my-2 p-3 bg-secondary rounded-md text-sm whitespace-pre-wrap">{estimateText}</div>
+                            <p>{chatCopy.proceed}</p>
                         </>
                     );
-                    replaceLastBotMessage(statusMessageContent);
+                    nextStep = 'post_quote';
                 } else {
-                    replaceLastBotMessage(`Non ho trovato una richiesta con l'ID #${ticketId}. Verifica e riprova.`);
+                    botResponse = data.clarification_question || data.summary;
+                    nextStep = 'clarification';
                 }
-            } else {
-                setAiResult(data);
-                replaceLastBotMessage(data.clarification_question || data.summary);
-                setStep('clarification');
+            } catch (err) {
+                botResponse = chatCopy.error(err instanceof Error ? err.message : 'Unknown error');
+                nextStep = 'problem';
             }
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Si è verificato un errore.';
-            const apiErrorContent = <div className="text-destructive">{chatCopy.error(errorMessage)}</div>;
-            replaceLastBotMessage(apiErrorContent);
-        } finally {
-            setLoading(false);
+            break;
         }
-    };
+        case 'clarification': {
+            const combinedMessage = `${form.message}. Dettaglio aggiuntivo: ${value}`;
+            await advanceConversation('problem', combinedMessage);
+            return; // advanceConversation si occupa già di tutto
+        }
+        case 'specialist_contact':
+        case 'post_quote': {
+            if (value.toLowerCase().includes('sì') || value.toLowerCase().includes('si')) {
+                nextStep = 'name';
+                botResponse = chatCopy.askName;
+            } else {
+                botResponse = chatCopy.reprompt;
+                nextStep = 'problem'; // Torna allo stato iniziale per una nuova descrizione
+            }
+            break;
+        }
+        case 'name': {
+            setForm(prev => ({ ...prev, name: value }));
+            nextStep = 'phone';
+            botResponse = chatCopy.askPhone(value);
+            break;
+        }
+        case 'phone': {
+            setForm(prev => ({ ...prev, phone: value }));
+            nextStep = 'address';
+            botResponse = chatCopy.askAddress;
+            break;
+        }
+        case 'address': {
+            setForm(prev => ({ ...prev, address: value }));
+            nextStep = 'timeslot';
+            botResponse = chatCopy.askTimeslot;
+            break;
+        }
+        case 'timeslot': {
+            const finalForm = { ...form, timeslot: value, ai: aiResult };
+            setForm(prev => ({ ...prev, timeslot: value }));
+            nextStep = 'confirm';
+            
+            try {
+                const res = await fetch('/api/contact', { method: 'POST', body: JSON.stringify(finalForm), headers: { 'Content-Type': 'application/json' } });
+                const data = await res.json();
+                if (!res.ok || !data.ticketId) throw new Error(data.error || "ID richiesta non ricevuto.");
+                botResponse = chatCopy.sent(data.ticketId);
+                nextStep = 'done';
+            } catch (err) {
+                botResponse = chatCopy.errorSend;
+                nextStep = 'confirm';
+            }
+            break;
+        }
+        default:
+            botResponse = "Mi sono perso, potresti ricominciare a descrivere il problema?";
+            nextStep = 'problem';
+    }
     
-    return {
-        msgs,
-        input,
-        setInput,
-        loading,
-        handleSend,
-        fileToUpload,
-        previewUrl,
-        handleFileSelect,
-        removeFile,
-        handleSuggestionClick
-    };
+    addMessage('assistant', botResponse);
+    setStep(nextStep);
+    setLoading(false);
+  }, [form, aiResult, addMessage]);
+
+  const handleSend = async () => {
+    const text = input.trim();
+    if (!text || loading) return;
+
+    addMessage('user', text);
+    setInput('');
+    
+    const currentStep = step;
+    const isValid = validators[currentStep] ? validators[currentStep](text) : true;
+
+    if (!isValid) {
+        addMessage('assistant', chatCopy.validationError(currentStep));
+        return;
+    }
+    
+    await advanceConversation(currentStep, text);
+  };
+  
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) { setFileToUpload(file); setPreviewUrl(URL.createObjectURL(file)); }
+    if (event.target) event.target.value = '';
+  };
+  const removeFile = () => { setFileToUpload(null); if (previewUrl) { URL.revokeObjectURL(previewUrl); setPreviewUrl(null); } };
+  const handleSuggestionClick = (text: string) => { setInput(text); };
+
+  useEffect(() => {
+    if (input && msgs.length === 0) { handleSend(); }
+  }, [input, msgs.length, handleSend]);
+
+  return { msgs, input, setInput, loading, handleSend, handleSuggestionClick, step, fileToUpload, previewUrl, handleFileSelect, removeFile };
 }
