@@ -61,7 +61,6 @@ export function useChat() {
         let userMessageContent: ReactNode = text;
 
         if (fileToUpload) {
-            // **Correzione 1: JSX per il messaggio di caricamento**
             const loadingMessageContent = (
                 <>
                     {text}
@@ -79,7 +78,6 @@ export function useChat() {
                 const newBlob = await response.json() as UploadedFile;
                 messageToSend += `\n\nImmagine allegata: ${newBlob.url}`;
                 
-                // **Correzione 2: JSX per l'immagine caricata**
                 userMessageContent = (
                     <>
                         {text}{text && <br/>}
@@ -87,18 +85,22 @@ export function useChat() {
                     </>
                 );
                 removeFile();
+                // Sostituisci il messaggio di caricamento con quello finale
+                setMsgs(prev => [...prev.slice(0, -1), { id: Date.now(), role: 'user', content: userMessageContent }]);
             } catch (error) {
-                // **Correzione 3: JSX per il messaggio di errore**
                 const errorMessageContent = <div className="text-destructive">Errore nel caricamento del file. Riprova.</div>;
-                replaceLastBotMessage(errorMessageContent);
+                // --- MODIFICA CHIAVE: L'input non viene cancellato se l'upload fallisce ---
+                // Sostituisce il messaggio di caricamento con un errore ma lascia il testo nell'input
+                setMsgs(prev => [...prev.slice(0, -1)]);
+                addMessage('assistant', errorMessageContent);
                 setLoading(false);
                 return;
             }
-            setMsgs(prev => [...prev.slice(0, -1), { id: Date.now(), role: 'user', content: userMessageContent }]);
         } else {
             addMessage('user', text);
         }
         
+        // --- MODIFICA CHIAVE: L'input viene pulito solo dopo che il messaggio è stato aggiunto ---
         setInput('');
         
         try {
@@ -112,7 +114,6 @@ export function useChat() {
                 const statusRes = await fetch(`/api/status/${ticketId}`);
                 if (statusRes.ok) {
                     const statusData = await statusRes.json();
-                    // **Correzione 4: JSX per il messaggio di stato**
                     const statusMessageContent = (
                         <>
                             La richiesta <strong>#{ticketId}</strong> ({statusData.category}) è nello stato: <strong className="capitalize">{statusData.status}</strong>.
@@ -129,7 +130,6 @@ export function useChat() {
             }
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Si è verificato un errore.';
-            // **Correzione 5: JSX per il messaggio di errore API**
             const apiErrorContent = <div className="text-destructive">{chatCopy.error(errorMessage)}</div>;
             replaceLastBotMessage(apiErrorContent);
         } finally {

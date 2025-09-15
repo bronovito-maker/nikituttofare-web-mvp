@@ -7,7 +7,6 @@ import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { LoaderCircle, Eye, EyeOff } from 'lucide-react';
 
-// --- MODIFICA CHIAVE #1: Abbiamo spostato tutta la logica in un componente interno ---
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -93,6 +92,7 @@ function LoginForm() {
                 required
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
+              {/* --- MODIFICA CHIAVE: Aggiunto aria-label per accessibilità --- */}
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -125,7 +125,6 @@ function LoginForm() {
   );
 }
 
-// --- MODIFICA CHIAVE #2: La pagina ora "avvolge" il form in <Suspense> ---
 export default function LoginPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-secondary/50 p-4">

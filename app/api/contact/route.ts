@@ -1,3 +1,5 @@
+/// <reference path="../../../auth.d.ts" />
+
 // app/api/contact/route.ts
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
@@ -30,19 +32,6 @@ const ContactSchema = z.object({
   }).optional(),
 }).strict();
 
-function safeHost(url: string) {
-  const u = new URL(url);
-  const allowlist = (process.env.N8N_HOST_ALLOWLIST || '').split(',').map(s => s.trim()).filter(Boolean);
-  if (allowlist.length && !allowlist.includes(u.host)) {
-    throw new Error(`Host non consentito: ${u.host}`);
-  }
-  return u.toString();
-}
-
-function hmacSignature(secret: string, payload: string) {
-  return createHmac('sha256', secret).update(payload, 'utf8').digest('hex');
-}
-
 async function rateLimit(key: string) {
   const WINDOW_MS = 60_000;
   const MAX_REQ = 15;
@@ -58,15 +47,29 @@ async function rateLimit(key: string) {
   b.count++;
 }
 
+function safeHost(url: string) {
+  const u = new URL(url);
+  const allowlist = (process.env.N8N_HOST_ALLOWLIST || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (allowlist.length && !allowlist.includes(u.host)) {
+    throw new Error(`Host non consentito: ${u.host}`);
+  }
+  return u.toString();
+}
+
+function hmacSignature(secret: string, payload: string) {
+  return createHmac('sha256', secret).update(payload, 'utf8').digest('hex');
+}
+
 export async function POST(req: Request) {
   const correlationId = `c_${randomUUID().slice(0, 8)}`;
   try {
-    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0]?.trim() || 'unknown';
-    await rateLimit(ip);
-
     const session = await auth().catch(() => null);
-    // @ts-ignore
+    
     const userId = session?.userId ?? `u_${randomUUID().slice(0, 8)}`;
+    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0]?.trim() || 'unknown';
+
+    const rateLimitKey = session?.userId || ip;
+    await rateLimit(rateLimitKey);
 
     const body = await req.json();
     const parsed = ContactSchema.safeParse(body);
@@ -107,11 +110,6 @@ export async function POST(req: Request) {
 
     const responseData = await res.json().catch(() => ({}));
     
-    console.log(`[DEBUG] Dati ricevuti da n8n per cid=${correlationId}:`, responseData);
-
-    // --- MODIFICA CHIAVE: Lettura più robusta del ticketId ---
-    // Legge il ticketId da diverse possibili posizioni nella risposta di n8n,
-    // inclusa quella specifica del tuo workflow (data[0].json.ticketId).
     const ticketId = responseData?.ticketId ?? responseData?.data?.[0]?.json?.ticketId ?? null;
 
     return NextResponse.json({
