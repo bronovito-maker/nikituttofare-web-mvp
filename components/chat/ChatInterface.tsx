@@ -5,11 +5,11 @@ import { useChat } from '@/hooks/useChat';
 import { MessageInput } from './MessageInput';
 import ChatBubble from '@/components/ChatBubble';
 import Typing from '@/components/Typing';
-// --- MODIFICA CHIAVE: Utilizzo di un alias di percorso più robusto ---
 import { ChatIntroScreen } from '@/components/chat/ChatIntroScreen';
 import { useEffect, useRef } from 'react';
 
 export function ChatInterface() {
+    // Questa riga ora non darà più errore perché useChat restituisce tutte le proprietà
     const { msgs, input, setInput, loading, handleSend, fileToUpload, previewUrl, handleFileSelect, removeFile, handleSuggestionClick } = useChat();
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -19,13 +19,11 @@ export function ChatInterface() {
         }
     }, [msgs]);
     
-    // Effetto per inviare automaticamente il suggerimento
     useEffect(() => {
         if (input && msgs.length === 0) {
             handleSend();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [input, msgs.length]);
+    }, [input, msgs.length, handleSend]);
 
     return (
         <div className="w-full max-w-3xl mx-auto flex flex-col bg-background h-full shadow-lg border border-border rounded-t-xl">
