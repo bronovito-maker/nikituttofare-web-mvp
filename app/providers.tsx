@@ -9,25 +9,42 @@ import { usePathname } from 'next/navigation';
 import { MessageSquare, LayoutDashboard, LogOut, Menu, X, LogIn, UserPlus } from 'lucide-react';
 import Image from "next/image";
 
-// (Il resto del file rimane invariato fino ad AppShell)
+// (Il resto del file rimane invariato fino a MobileMenu)
 // ...
 
-function AppShell({ children }: { children: React.ReactNode }) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  return (
-    // --- MODIFICA CHIAVE: Sostituisci h-screen con h-dvh ---
-    <div className="flex flex-col h-dvh bg-background font-sans">
-      <AppHeader onMenuToggle={() => setIsMenuOpen(p => !p)} />
-      <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
-      {children}
-    </div>
-  );
-}
+const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void; }) => {
+    const { data: session } = useSession();
+    return (
+        <>
+            <div className={`fixed inset-0 bg-black/40 z-40 transition-opacity md:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={onClose}></div>
+            <div className={`fixed top-0 right-0 h-full w-72 bg-card shadow-xl z-50 transform transition-transform md:hidden ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                <div className="flex justify-end p-4"><button onClick={onClose} className="p-2 rounded-md hover:bg-secondary transition-colors"><X size={24} /></button></div>
+                <div className="flex flex-col p-6 pt-4 h-full">
+                    <div className="space-y-2 flex-grow">
+                        {session ? ( <>
+                            <Link href="/chat" onClick={onClose} className="flex items-center gap-3 p-3 rounded-lg font-semibold hover:bg-secondary"><MessageSquare size={20} /> Chat</Link>
+                            <Link href="/dashboard" onClick={onClose} className="flex items-center gap-3 p-3 rounded-lg font-semibold hover:bg-secondary"><LayoutDashboard size={20} /> Dashboard</Link>
+                        </> ) : ( <>
+                            <Link href="/login" onClick={onClose} className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary"><LogIn size={20} /> Accedi</Link>
+                            <Link href="/register" onClick={onClose} className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary"><UserPlus size={20} /> Registrati</Link>
+                        </> )}
+                    </div>
+                    {/* --- MODIFICA CHIAVE: Aggiunta la sezione per l'utente --- */}
+                    {session && (
+                        <div className="mt-auto pt-4 border-t border-border">
+                            <div className="px-3 py-2 text-sm text-muted-foreground truncate" title={session.user?.email ?? ''}>
+                                {session.user?.email}
+                            </div>
+                            <button onClick={() => { signOut(); onClose(); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary text-red-500 transition-colors text-left w-full font-semibold"><LogOut size={20} /> Esci</button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </>
+    );
+};
 
-// (Il resto del file rimane invariato)
-// ...
-
-// --- Componenti di Navigazione con Stili Diretti (Utility Classes) ---
+// --- Gli altri componenti (AppHeader, AppShell, Providers) rimangono invariati ---
 
 const AppHeader = ({ onMenuToggle }: { onMenuToggle: () => void; }) => {
   const { data: session } = useSession();
@@ -77,28 +94,16 @@ const AppHeader = ({ onMenuToggle }: { onMenuToggle: () => void; }) => {
   );
 };
 
-const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void; }) => {
-    const { data: session } = useSession();
-    return (
-        <>
-            <div className={`fixed inset-0 bg-black/40 z-40 transition-opacity md:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={onClose}></div>
-            <div className={`fixed top-0 right-0 h-full w-72 bg-card shadow-xl z-50 transform transition-transform md:hidden ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                <div className="flex justify-end p-4"><button onClick={onClose} className="p-2 rounded-md hover:bg-secondary transition-colors"><X size={24} /></button></div>
-                <div className="flex flex-col p-6 pt-4 space-y-2">
-                    {session ? ( <>
-                        <Link href="/chat" onClick={onClose} className="flex items-center gap-3 p-3 rounded-lg font-semibold hover:bg-secondary"><MessageSquare size={20} /> Chat</Link>
-                        <Link href="/dashboard" onClick={onClose} className="flex items-center gap-3 p-3 rounded-lg font-semibold hover:bg-secondary"><LayoutDashboard size={20} /> Dashboard</Link>
-                        <hr className="border-border !my-4" />
-                        <button onClick={() => { signOut(); onClose(); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary text-red-500 transition-colors text-left w-full"><LogOut size={20} /> Esci</button>
-                    </> ) : ( <>
-                        <Link href="/login" onClick={onClose} className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary"><LogIn size={20} /> Accedi</Link>
-                        <Link href="/register" onClick={onClose} className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary"><UserPlus size={20} /> Registrati</Link>
-                    </> )}
-                </div>
-            </div>
-        </>
-    );
-};
+function AppShell({ children }: { children: React.ReactNode }) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  return (
+    <div className="flex flex-col h-dvh bg-background font-sans">
+      <AppHeader onMenuToggle={() => setIsMenuOpen(p => !p)} />
+      <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      {children}
+    </div>
+  );
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
