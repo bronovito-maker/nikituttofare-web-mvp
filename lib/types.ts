@@ -8,7 +8,7 @@ export type Msg = {
   id: number; 
   role: 'user' | 'assistant'; 
   content: ReactNode;
-  isThinking?: boolean; // Aggiunto per il placeholder di caricamento
+  isThinking?: boolean;
 };
 
 export type ChatFormState = {
@@ -28,6 +28,7 @@ export type UploadedFile = {
 
 // Tipo per la risposta dell'API di assistenza
 export type AiResult = {
+  acknowledgement?: string; // <-- NUOVO: Per i messaggi di empatia
   category?: string;
   clarification_question?: string;
   urgency?: string;

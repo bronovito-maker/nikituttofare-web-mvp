@@ -1,5 +1,5 @@
 // lib/chat-copy.ts
-import type { AiResult } from './types'; // FIX: Importa il tipo AiResult
+import type { AiResult } from './types';
 
 export const chatCopy = {
   // Messaggi di stato
@@ -8,6 +8,7 @@ export const chatCopy = {
   
   // Flusso principale
   preQuoteTitle: "Ecco una stima iniziale basata su quello che mi hai detto:",
+  thankYouForDetails: "Perfetto, grazie per i dettagli. In base a queste informazioni:",
   proceed: 'Se la stima ti sembra corretta, procedi scrivendo "sì". Altrimenti, puoi aggiungere altri dettagli per affinarla.',
   askName: "Perfetto! Per procedere, avrei bisogno di qualche dato. Come ti chiami?",
   askPhone: (name: string) => `Ciao ${name}! Qual è il tuo numero di telefono? Mi serve per poterti contattare.`,
@@ -30,7 +31,6 @@ export const chatCopy = {
     const messages: Record<string, string> = {
         name: "Per favore, inserisci un nome valido.",
         phone: "Sembra che il numero di telefono non sia corretto. Potresti ricontrollare?",
-        email: "L'indirizzo email non sembra valido. Riprova, oppure scrivi 'no' per saltare.",
         address: "Per favore, inserisci un indirizzo più completo."
     };
     return messages[step] || "L'informazione non sembra corretta, potresti riprovare?";
@@ -44,9 +44,9 @@ export const chatCopy = {
   ],
 };
 
-// FIX: Ri-aggiunta la funzione getFallbackResponse
+// Funzione per ottenere una risposta di fallback a rotazione
 let fallbackIndex = 0;
-export const getFallbackResponse = () => {
+export const getFallbackResponse = (): string => {
     const response = chatCopy.fallbackResponses[fallbackIndex];
     fallbackIndex = (fallbackIndex + 1) % chatCopy.fallbackResponses.length;
     return response;
