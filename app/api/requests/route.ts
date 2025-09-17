@@ -2,16 +2,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 
-// --- MODIFICA CHIAVE: Da 'revalidate' a 'force-dynamic' ---
-// Questo assicura che i dati vengano richiesti da NocoDB ogni singola volta,
-// garantendo che lo stato delle richieste sia sempre aggiornato in tempo reale.
 export const dynamic = 'force-dynamic';
 
-/**
- * GET /api/requests?userId=...
- * Ritorna le richieste (leads) dell'utente da NocoDB.
- */
 export async function GET(req: NextRequest) {
+  // --- MODIFICA CHIAVE: Controllo più dettagliato delle variabili d'ambiente ---
+  const base = process.env.NOCO_BASE_URL;
+  const token = process.env.NOCO_API_TOKEN;
+  const table = process.env.NOCO_LEADS_TABLE_ID;
+
+  if (!base || !token || !table) {
+    console.error("Errore: una o più variabili d'ambiente NocoDB non sono configurate.");
+    return NextResponse.json(
+      { ok: false, error: "Errore di configurazione del server (NocoDB)." },
+      { status: 500 }
+    );
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     let userId = (searchParams.get("userId") || "").trim();
@@ -26,17 +32,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: true, data: [] });
     }
 
-    const base = process.env.NOCO_BASE_URL || "";
-    const token = process.env.NOCO_API_TOKEN || "";
-    const table = process.env.NOCO_LEADS_TABLE_ID || "";
-
-    if (!base || !token || !table) {
-      return NextResponse.json(
-        { ok: false, error: "Variabili d'ambiente NocoDB mancanti." },
-        { status: 500 }
-      );
-    }
-
     const url =
       `${base.replace(/\/$/, "")}/api/v2/tables/${encodeURIComponent(table)}/records` +
       `?where=${encodeURIComponent(`(userId,eq,${userId})`)}` +
@@ -44,15 +39,14 @@ export async function GET(req: NextRequest) {
 
     const res = await fetch(url, {
       headers: { "xc-token": token, "accept": "application/json" },
-      // Disabilitiamo esplicitamente la cache a livello di fetch
-      cache: "no-store", 
+      cache: "no-store",
     });
 
     if (!res.ok) {
         const errorText = await res.text();
         console.error(`[NocoDB Error /api/requests] Status: ${res.status}, Body: ${errorText}`);
         return NextResponse.json(
-            { ok: false, error: `Errore da NocoDB: ${res.status}` },
+            { ok: false, error: `Errore di comunicazione con NocoDB: ${res.status}` },
             { status: 502 }
         );
     }

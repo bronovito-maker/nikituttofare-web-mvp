@@ -1,16 +1,10 @@
 // hooks/useChat.tsx
-'use client';
-
-import { useState, useCallback, ReactNode, useEffect } from 'react';
+import { useState, useCallback, ReactNode } from 'react';
 import { chatCopy, decorateEstimates } from '@/lib/chat-copy';
-import type { AiResult, Msg, Step, ChatFormState, UploadedFile } from '@/lib/types';
+import type { AiResult, Msg, Step, ChatFormState } from '@/lib/types';
 import Typing from '@/components/Typing';
 
-const validators: Record<string, (value: string) => boolean> = {
-  name: (value) => value.length >= 2,
-  phone: (value) => /^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$/.test(value) && value.length > 8,
-  address: (value) => value.length > 5,
-};
+const INFO_GATHERING_QUESTIONS: (keyof ChatFormState)[] = ['address', 'phone'];
 
 export function useChat() {
   const [msgs, setMsgs] = useState<Msg[]>([]);
@@ -18,164 +12,124 @@ export function useChat() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [aiResult, setAiResult] = useState<AiResult | null>(null);
-  const [form, setForm] = useState<Partial<ChatFormState>>({});
+  const [form, setForm] = useState<Partial<ChatFormState>>({ details: {} });
+  const [questionQueue, setQuestionQueue] = useState<string[]>([]);
   const [fileToUpload, setFileToUpload] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const addMessage = useCallback((role: 'user' | 'assistant', content: ReactNode, isThinking: boolean = false) => {
-    const newMsg: Msg = { id: Date.now() + Math.random(), role, content, isThinking };
-    setMsgs(prev => {
-        const filtered = prev.filter(m => !m.isThinking);
-        return [...filtered, newMsg];
-    });
+    const newMsg: Msg = { id: Date.now(), role, content, isThinking };
+    setMsgs(prev => [...prev.filter(m => !m.isThinking), newMsg]);
   }, []);
 
-  const advanceConversation = useCallback(async (currentStep: Step, value: string) => {
-    let nextStep: Step = currentStep;
-    let botResponse: ReactNode = '';
-    
+  const askNextQuestion = useCallback(() => {
+    if (questionQueue.length > 0) {
+      const nextQuestionKey = questionQueue[0];
+      const botResponse = chatCopy[nextQuestionKey as keyof typeof chatCopy] as ReactNode;
+      addMessage('assistant', botResponse);
+      setStep('collecting_info');
+    } else {
+      const finalEstimate = decorateEstimates(aiResult!);
+      addMessage('assistant', `Perfetto, ho tutto! Riepilogo:\n\n${finalEstimate}`);
+      addMessage('assistant', "Invio la richiesta al tecnico? (sì/no)");
+      setStep('confirm');
+    }
+  }, [questionQueue, aiResult, addMessage]);
+
+  const handleSend = async (messageOverride?: string) => {
+    const text = typeof messageOverride === 'string' ? messageOverride : input.trim();
+    if (!text || loading) return;
+
+    addMessage('user', text);
+    setInput('');
     setLoading(true);
     addMessage('assistant', <Typing />, true);
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-    const pause = () => new Promise(resolve => setTimeout(resolve, 600 + Math.random() * 400));
-    
-    switch (currentStep) {
-        case 'problem': {
-            try {
-                const res = await fetch('/api/assist', { method: 'POST', body: JSON.stringify({ message: value }), headers: { 'Content-Type': 'application/json' } });
-                const { ok, data, error } = await res.json();
-                if (!ok || !data) throw new Error(error || 'Risposta API non valida');
-                setAiResult(data);
-                setForm(prev => ({ ...prev, message: value }));
-                if (data.acknowledgement) {
-                    addMessage('assistant', data.acknowledgement);
-                    await pause();
-                }
-                addMessage('assistant', data.clarification_question || data.summary);
-                nextStep = 'clarification';
-            } catch (err) {
-                addMessage('assistant', chatCopy.error(err instanceof Error ? err.message : 'Unknown error'));
-                nextStep = 'problem';
-            }
-            break;
-        }
-        case 'clarification': {
-            const updatedMessage = `${form.message}. Dettagli: ${value}`;
-            setForm(prev => ({ ...prev, message: updatedMessage }));
-            if (aiResult) {
-                addMessage('assistant', chatCopy.thankYouForDetails);
-                await pause();
-                const estimateText = decorateEstimates(aiResult);
-                const quoteResponse = (
-                    <>
-                        <div className="my-2 p-3 bg-secondary rounded-md text-sm whitespace-pre-wrap">{estimateText}</div>
-                        <p>{chatCopy.proceed}</p>
-                    </>
-                );
-                addMessage('assistant', quoteResponse);
-                nextStep = 'post_quote';
-            } else {
-                addMessage('assistant', chatCopy.error("Si è verificato un errore, non ho una stima da mostrarti."));
-                nextStep = 'problem';
-            }
-            break;
-        }
-        case 'post_quote': {
-            if (value.toLowerCase().includes('sì') || value.toLowerCase().includes('si')) {
-                nextStep = 'name';
-                botResponse = chatCopy.askName;
-            } else {
-                botResponse = chatCopy.reprompt;
-                nextStep = 'problem';
-            }
-            break;
-        }
-        case 'name': {
-            setForm(prev => ({ ...prev, name: value }));
-            nextStep = 'phone';
-            botResponse = chatCopy.askPhone(value);
-            break;
-        }
-        case 'phone': {
-            setForm(prev => ({ ...prev, phone: value }));
-            nextStep = 'address';
-            botResponse = chatCopy.askAddress;
-            break;
-        }
-        case 'address': {
-            setForm(prev => ({ ...prev, address: value }));
-            nextStep = 'timeslot';
-            botResponse = chatCopy.askTimeslot;
-            break;
-        }
-        case 'timeslot': {
-            const finalForm = { ...form, timeslot: value, ai: aiResult };
-            setForm(prev => ({ ...prev, timeslot: value }));
-            nextStep = 'confirm';
-            try {
-                await pause();
-                const res = await fetch('/api/contact', { method: 'POST', body: JSON.stringify(finalForm), headers: { 'Content-Type': 'application/json' } });
-                const data = await res.json();
-                if (!res.ok || !data.ticketId) throw new Error(data.error || "ID richiesta non ricevuto.");
-                botResponse = chatCopy.sent(data.ticketId);
-                nextStep = 'done';
-            } catch (err) {
-                botResponse = chatCopy.errorSend;
-                nextStep = 'confirm';
-            }
-            break;
-        }
+    if (step === 'problem') {
+      try {
+        const res = await fetch('/api/assist', { method: 'POST', body: JSON.stringify({ message: text }) });
+        const { ok, data } = await res.json();
+        if (!ok) throw new Error("Errore API");
+        
+        setAiResult(data);
+        setForm({ message: text, category: data.category, details: {} });
+        
+        addMessage('assistant', data.acknowledgement);
+        await new Promise(resolve => setTimeout(resolve, 600));
+        addMessage('assistant', data.clarification_question);
+        setStep('clarification');
+      } catch (e) {
+        addMessage('assistant', "Ops, si è verificato un errore. Riprova.");
+        setStep('problem');
+      }
+    } else if (step === 'clarification') {
+      setForm(prev => ({ ...prev, details: { ...prev.details, clarification: text } }));
+      const initialQueue = [...INFO_GATHERING_QUESTIONS];
+      setQuestionQueue(initialQueue);
+      const nextQuestionKey = initialQueue[0];
+      const botResponse = chatCopy[nextQuestionKey as keyof typeof chatCopy] as ReactNode;
+      addMessage('assistant', botResponse);
+      setStep('collecting_info');
+    } else if (step === 'collecting_info') {
+      const currentQuestion = questionQueue[0];
+      setForm(prev => ({ ...prev, [currentQuestion]: text }));
+      const remainingQuestions = questionQueue.slice(1);
+      setQuestionQueue(remainingQuestions);
+      if (remainingQuestions.length > 0) {
+        const nextQuestionKey = remainingQuestions[0];
+        const botResponse = chatCopy[nextQuestionKey as keyof typeof chatCopy] as ReactNode;
+        addMessage('assistant', botResponse);
+      } else {
+        const finalEstimate = decorateEstimates(aiResult!);
+        addMessage('assistant', `Perfetto, ho tutto! Riepilogo:\n\n${finalEstimate}`);
+        addMessage('assistant', "Invio la richiesta al tecnico? (sì/no)");
+        setStep('confirm');
+      }
+    } else if (step === 'confirm') {
+      if (text.toLowerCase().startsWith('sì') || text.toLowerCase().startsWith('si')) {
+        addMessage('assistant', chatCopy.sent("NTF-DEMO-123"));
+        setStep('done');
+      } else {
+        addMessage('assistant', "Ok, annullato. Se hai bisogno di altro, sono qui!");
+        setStep('problem');
+      }
     }
-    if (botResponse) { await pause(); addMessage('assistant', botResponse); }
-    setStep(nextStep);
     setLoading(false);
-  }, [form, aiResult, addMessage]);
-
-  const handleSend = async () => {
-    const text = input.trim();
-    if ((!text && !fileToUpload) || loading) return;
-
-    // Logica di upload file (se presente)
-    let messageToSend = text;
-    if (fileToUpload) {
-        addMessage('user', `(Immagine: ${fileToUpload.name}) ${text}`);
-        // Qui la logica di upload... per ora la simuliamo.
-        // In una versione reale, faresti l'upload e aggiungeresti l'URL a messageToSend
-        messageToSend += `\nImmagine allegata: ${fileToUpload.name}`;
-        removeFile();
-    } else {
-        addMessage('user', text);
-    }
-    setInput('');
-    
-    const currentStep = step;
-    const isValid = validators[currentStep] ? validators[currentStep](text) : true;
-    if (!isValid) {
-        addMessage('assistant', chatCopy.validationError(currentStep));
-        return;
-    }
-    await advanceConversation(currentStep, messageToSend);
   };
-  
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) { setFileToUpload(file); setPreviewUrl(URL.createObjectURL(file)); }
+    if (file) {
+      setFileToUpload(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
     if (event.target) event.target.value = '';
   };
 
   const removeFile = () => {
     setFileToUpload(null);
-    if (previewUrl) { URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
   };
 
-  const handleSuggestionClick = (text: string) => { setInput(text); };
+  const handleSuggestionClick = (text: string) => {
+    handleSend(text);
+  };
 
-  useEffect(() => { if (input && msgs.length === 0) { handleSend(); } }, [input, msgs.length, handleSend]);
-
-  // --- MODIFICA CHIAVE: Restituisce tutte le proprietà necessarie ---
-  return { 
-    msgs, input, setInput, loading, step,
-    handleSend, handleSuggestionClick, 
-    fileToUpload, previewUrl, handleFileSelect, removeFile 
+  // --- MODIFICA CHIAVE: Restituisce TUTTE le proprietà necessarie ---
+  return {
+    msgs,
+    input,
+    setInput,
+    loading,
+    handleSend: () => handleSend(), // La form chiama handleSend senza argomenti
+    fileToUpload,
+    previewUrl,
+    handleFileSelect,
+    removeFile,
+    handleSuggestionClick,
   };
 }
