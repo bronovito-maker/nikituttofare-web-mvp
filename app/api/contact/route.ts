@@ -46,7 +46,7 @@ const ContactSchema = z.object({
   city: z.string().optional(),
   address: z.string().optional(),
   timeslot: z.string().optional(),
-  // --- CORREZIONE: Sintassi di z.record() resa esplicita ---
+  imageUrl: z.string().url().optional(), // Aggiunto il campo per l'URL dell'immagine
   details: z.record(z.string(), z.string()).optional(),
   ai: z.object({
     category: z.string().optional(),

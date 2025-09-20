@@ -1,7 +1,6 @@
 // lib/types.ts
 import { ReactNode } from 'react';
 
-// ... (Msg, Step, UploadedFile, AiResult rimangono invariati) ...
 export type Msg = { 
   id: number; 
   role: 'user' | 'assistant'; 
@@ -9,7 +8,6 @@ export type Msg = {
   isThinking?: boolean;
 };
 
-// --- MODIFICA CHIAVE: 'details' ora è definito correttamente ---
 export type ChatFormState = {
   message: string; // Messaggio iniziale
   details: { // Dettagli aggiuntivi dalle domande
@@ -23,6 +21,7 @@ export type ChatFormState = {
   phone?: string;
   email?: string;
   timeslot?: string;
+  imageUrl?: string; // Campo per l'URL dell'immagine
 };
 
 export type AiResult = {

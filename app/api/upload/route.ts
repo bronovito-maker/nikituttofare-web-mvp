@@ -7,19 +7,14 @@ export async function POST(request: Request): Promise<NextResponse> {
   const filename = searchParams.get('filename');
 
   if (!filename || !request.body) {
-    return NextResponse.json({ error: "Nome del file non valido." }, { status: 400 });
+    return NextResponse.json({ error: 'Nessun nome file fornito' }, { status: 400 });
   }
 
-  // Pulisci il nome del file per sicurezza
-  const safeFilename = filename.replace(/[^a-zA-Z0-9_.-]/g, '_');
+  const blob = await put(filename, request.body, {
+    access: 'public',
+    // --- QUESTA È LA RIGA CHE RISOLVE IL PROBLEMA ---
+    addRandomSuffix: true, // Aggiunge un suffisso casuale per garantire l'unicità
+  });
 
-  try {
-    const blob = await put(safeFilename, request.body, {
-      access: 'public',
-    });
-    return NextResponse.json(blob);
-  } catch (error: any) {
-    console.error("[API Upload Error]:", error);
-    return NextResponse.json({ error: `Errore durante l'upload: ${error.message}` }, { status: 500 });
-  }
+  return NextResponse.json(blob);
 }

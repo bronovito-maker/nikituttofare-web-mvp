@@ -1,5 +1,5 @@
 // components/chat/ChatIntroScreen.tsx
-import { Wrench, Lightbulb, KeyRound, Hammer } from 'lucide-react';
+import { Wrench, Lightbulb, Droplets, MoveRight } from 'lucide-react';
 import Image from 'next/image';
 
 interface ChatIntroScreenProps {
@@ -8,10 +8,10 @@ interface ChatIntroScreenProps {
 
 export function ChatIntroScreen({ onSuggestionClick }: ChatIntroScreenProps) {
   const suggestions = [
-    { icon: <Wrench size={24} />, text: "Perdita dal lavandino in cucina" },
-    { icon: <Lightbulb size={24} />, text: "Una presa di corrente non funziona" },
-    { icon: <KeyRound size={24} />, text: "La serratura della porta è bloccata" },
-    { icon: <Hammer size={24} />, text: "Ho bisogno di montare delle mensole" },
+    { icon: <Droplets size={24} />, text: "Il rubinetto della cucina perde acqua" },
+    { icon: <Lightbulb size={24} />, text: "Ho bisogno di installare un lampadario" },
+    { icon: <Wrench size={24} />, text: "La tapparella si è bloccata" },
+    { icon: <MoveRight size={24} />, text: "Devo spostare un mobile pesante" },
   ];
 
   const handleClick = (text: string) => {

@@ -2,11 +2,11 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Euro, MapPin, Clock, MessageSquare, CheckCircle, AlertCircle, Loader, XCircle, Hash } from 'lucide-react'; // MODIFICA: Aggiunto Hash
+import { Euro, MapPin, Clock, MessageSquare, CheckCircle, AlertCircle, Loader, XCircle, Hash } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
-// Tipo Lead
+// Tipo Lead (invariato)
 type Lead = {
   id?: string;
   CreatedAt?: string;
@@ -22,6 +22,7 @@ type Lead = {
   Stato?: 'Inviata' | 'In carico' | 'Completata' | 'Annullata';
 };
 
+// Tutte le funzioni e i componenti (parseDate, SkeletonCard, EmptyState, StatusBadge, RequestCard) rimangono invariati...
 function parseDate(dateString?: string): string {
   if (!dateString) return 'Data non disponibile';
   try {
@@ -103,8 +104,6 @@ function RequestCard({ request: r }: { request: Lead }) {
           <StatusBadge status={r.Stato} />
           <span className="inline-block px-3 py-1 text-xs font-semibold uppercase rounded-full bg-secondary text-secondary-foreground">{r.category || 'TUTTOFARE'}</span>
         </div>
-        
-        {/* --- MODIFICA CHIAVE: Aggiunto ID Ticket qui --- */}
         <div className="text-xs text-muted-foreground flex-shrink-0 font-mono mt-2 sm:mt-0 text-left sm:text-right">
             <div>{date}</div>
             {r.ticketId && (
@@ -115,9 +114,7 @@ function RequestCard({ request: r }: { request: Lead }) {
             )}
         </div>
       </div>
-
       {r.message && <p className="mt-3 text-foreground whitespace-pre-wrap">{r.message.split('\n')[0]}</p>}
-      
       <div className="mt-4 pt-4 border-t border-border/60 text-sm text-muted-foreground space-y-2">
         {r.address && <div className="flex items-center gap-2"><MapPin size={14} /><span>{r.address}, {r.city}</span></div>}
         <div className="flex items-center gap-2"><Euro size={14} /><span>Stima: <strong>{price}</strong></span></div>
@@ -132,7 +129,7 @@ export default function DashboardPage() {
   const [items, setItems] = useState<Lead[]>([]);
   const [error, setError] = useState<string>('');
   
-  const isLoading = status === 'loading';
+  const isLoading = status === 'loading' && items.length === 0;
 
   const fetchRequests = useCallback(async (userId: string) => {
     try {
@@ -148,7 +145,16 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.email) {
-      fetchRequests(session.user.email);
+      const userId = session.user.email;
+      fetchRequests(userId); // Caricamento iniziale
+
+      // --- NUOVA PARTE: AGGIORNAMENTO AUTOMATICO ---
+      const intervalId = setInterval(() => {
+        console.log('Controllo aggiornamenti stato...');
+        fetchRequests(userId);
+      }, 30000); // Ogni 30 secondi
+
+      return () => clearInterval(intervalId); // Pulisce l'intervallo quando il componente viene smontato
     }
   }, [status, session, fetchRequests]);
 

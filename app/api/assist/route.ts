@@ -30,7 +30,11 @@ async function getAiResponse(message: string): Promise<AiResult> {
     2.  Se pertinente, determina la categoria del servizio tra: "idraulico", "elettricista", "fabbro", "muratore", "serramenti", "clima", "trasloco", "tuttofare", o "none" se non è chiaro.
     3.  Identifica il tipo di richiesta: "problem" (qualcosa di rotto) o "task" (un lavoro da fare).
     4.  Formula una "acknowledgement": una breve frase di conferma.
-    5.  Formula una "clarification_question": una singola domanda CHIARA e PERTINENTE.
+    5.  **ISTRUZIONE SPECIALE**: Controlla se la richiesta contiene parole chiave ad alta complessità come "pianoforte", "cassaforte", "opera d'arte", "oggetto antico".
+        - Se trovi una di queste parole, formula una "clarification_question" SPECIFICA per quel contesto. Esempi:
+          - Per "pianoforte": "Capisco, un lavoro delicato. Per preparare un preventivo corretto, mi serve sapere: si trova a un piano terra o ci sono scale da fare?"
+          - Per "cassaforte": "Certamente. Per assisterti al meglio, mi puoi dire se si tratta di un'apertura, uno spostamento o un'installazione?"
+        - Se NON trovi parole chiave speciali, formula una "clarification_question" generica ma PERTINENTE.
 
     La struttura JSON di output deve essere:
     {
