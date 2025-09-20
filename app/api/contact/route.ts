@@ -1,17 +1,42 @@
+// app/api/contact/route.ts
 /// <reference path="../../../auth.d.ts" />
 
-// app/api/contact/route.ts
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { randomUUID, createHmac } from 'crypto';
 import { z } from 'zod';
 
+// --- INIZIO FUNZIONI INVARIATE ---
 declare global {
   var __bucket: Map<string, { count: number; reset: number }>;
 }
-
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+async function rateLimit(key: string) {
+  const WINDOW_MS = 60_000;
+  const MAX_REQ = 15;
+  globalThis.__bucket ||= new Map<string, { count: number; reset: number }>();
+  const now = Date.now();
+  const b = globalThis.__bucket.get(key);
+  if (!b || now > b.reset) {
+    globalThis.__bucket.set(key, { count: 1, reset: now + WINDOW_MS });
+    return;
+  }
+  if (b.count >= MAX_REQ) throw new Error('rate_limited');
+  b.count++;
+}
+function safeHost(url: string) {
+  const u = new URL(url);
+  const allowlist = (process.env.N8N_HOST_ALLOWLIST || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (allowlist.length && !allowlist.includes(u.host)) {
+    throw new Error(`Host non consentito: ${u.host}`);
+  }
+  return u.toString();
+}
+function hmacSignature(secret: string, payload: string) {
+  return createHmac('sha256', secret).update(payload, 'utf8').digest('hex');
+}
+// --- FINE FUNZIONI INVARIATE ---
 
 const ContactSchema = z.object({
   message: z.string().min(3).max(2000),
@@ -21,8 +46,13 @@ const ContactSchema = z.object({
   city: z.string().optional(),
   address: z.string().optional(),
   timeslot: z.string().optional(),
+  // --- CORREZIONE: Sintassi di z.record() resa esplicita ---
+  details: z.record(z.string(), z.string()).optional(),
   ai: z.object({
     category: z.string().optional(),
+    request_type: z.enum(['problem', 'task']).optional(),
+    acknowledgement: z.string().optional(),
+    clarification_question: z.string().optional(),
     urgency: z.string().optional(),
     price_low: z.number().optional(),
     price_high: z.number().optional(),
@@ -32,34 +62,6 @@ const ContactSchema = z.object({
   }).optional(),
 }).strict();
 
-async function rateLimit(key: string) {
-  const WINDOW_MS = 60_000;
-  const MAX_REQ = 15;
-  globalThis.__bucket ||= new Map<string, { count: number; reset: number }>();
-  const now = Date.now();
-  const b = globalThis.__bucket.get(key);
-
-  if (!b || now > b.reset) {
-    globalThis.__bucket.set(key, { count: 1, reset: now + WINDOW_MS });
-    return;
-  }
-  if (b.count >= MAX_REQ) throw new Error('rate_limited');
-  b.count++;
-}
-
-function safeHost(url: string) {
-  const u = new URL(url);
-  const allowlist = (process.env.N8N_HOST_ALLOWLIST || '').split(',').map(s => s.trim()).filter(Boolean);
-  if (allowlist.length && !allowlist.includes(u.host)) {
-    throw new Error(`Host non consentito: ${u.host}`);
-  }
-  return u.toString();
-}
-
-function hmacSignature(secret: string, payload: string) {
-  return createHmac('sha256', secret).update(payload, 'utf8').digest('hex');
-}
-
 export async function POST(req: Request) {
   const correlationId = `c_${randomUUID().slice(0, 8)}`;
   try {
@@ -68,8 +70,7 @@ export async function POST(req: Request) {
     const userId = session?.userId ?? `u_${randomUUID().slice(0, 8)}`;
     const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0]?.trim() || 'unknown';
 
-    const rateLimitKey = session?.userId || ip;
-    await rateLimit(rateLimitKey);
+    await rateLimit(session?.userId || ip);
 
     const body = await req.json();
     const parsed = ContactSchema.safeParse(body);
@@ -94,11 +95,7 @@ export async function POST(req: Request) {
 
     const res = await fetch(safeUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(secret ? { 'x-signature-sha256': signature! } : {}),
-        'x-correlation-id': correlationId,
-      },
+      headers: { 'Content-Type': 'application/json', ...(secret ? { 'x-signature-sha256': signature! } : {}), 'x-correlation-id': correlationId },
       body: payload,
     });
 
@@ -109,14 +106,9 @@ export async function POST(req: Request) {
     }
 
     const responseData = await res.json().catch(() => ({}));
-    
     const ticketId = responseData?.ticketId ?? responseData?.data?.[0]?.json?.ticketId ?? null;
 
-    return NextResponse.json({
-      ok: true,
-      ticketId: ticketId,
-      correlationId,
-    });
+    return NextResponse.json({ ok: true, ticketId, correlationId });
 
   } catch (error: any) {
     if (error?.message === 'rate_limited') {

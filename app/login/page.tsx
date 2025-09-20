@@ -72,6 +72,8 @@ function LoginForm() {
                 id="email"
                 name="email"
                 type="email"
+                // --- MODIFICA #1: Aggiunto autoComplete per l'email ---
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="nome@esempio.com"
@@ -86,13 +88,14 @@ function LoginForm() {
                 id="password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
+                // --- MODIFICA #2: Aggiunto autoComplete per la password ---
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
-              {/* --- MODIFICA CHIAVE: Aggiunto aria-label per accessibilità --- */}
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}

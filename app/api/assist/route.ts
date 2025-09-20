@@ -1,10 +1,16 @@
+// app/api/assist/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import type { AiResult } from "@/lib/types";
 
 const priceMap: Record<string, { priceRange: [number, number]; est_minutes: number }> = {
   idraulico: { priceRange: [70, 120], est_minutes: 60 },
   elettricista: { priceRange: [70, 110], est_minutes: 60 },
-  "fabbro-emergenza": { priceRange: [120, 200], est_minutes: 60 },
+  fabbro: { priceRange: [90, 180], est_minutes: 60 },
+  muratore: { priceRange: [70, 130], est_minutes: 60 },
+  serramenti: { priceRange: [80, 150], est_minutes: 60 },
+  clima: { priceRange: [80, 140], est_minutes: 75 },
+  trasloco: { priceRange: [150, 400], est_minutes: 120 },
+  tuttofare: { priceRange: [60, 100], est_minutes: 60 },
 };
 
 async function getAiResponse(message: string): Promise<AiResult> {
@@ -14,13 +20,24 @@ async function getAiResponse(message: string): Promise<AiResult> {
   const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GOOGLE_AI_API_KEY}`;
   
   const prompt = `
-    Analizza la richiesta dell'utente per un servizio di assistenza domestica e rispondi SOLO con un oggetto JSON.
-    Richiesta: "${message}"
-    La struttura JSON deve essere:
+    Analizza la richiesta di un utente per un servizio di assistenza domestica a Livorno.
+    La tua risposta deve essere ESCLUSIVAMENTE un oggetto JSON. Non aggiungere mai testo prima o dopo il JSON.
+
+    Richiesta utente: "${message}"
+
+    ISTRUZIONI:
+    1.  Prima di tutto, valuta se il messaggio è un insulto, una volgarità o palesemente non pertinente. Se lo è, imposta la categoria su "off_topic" e salta gli altri passaggi.
+    2.  Se pertinente, determina la categoria del servizio tra: "idraulico", "elettricista", "fabbro", "muratore", "serramenti", "clima", "trasloco", "tuttofare", o "none" se non è chiaro.
+    3.  Identifica il tipo di richiesta: "problem" (qualcosa di rotto) o "task" (un lavoro da fare).
+    4.  Formula una "acknowledgement": una breve frase di conferma.
+    5.  Formula una "clarification_question": una singola domanda CHIARA e PERTINENTE.
+
+    La struttura JSON di output deve essere:
     {
-      "category": "una tra [idraulico, elettricista, fabbro-emergenza, none]",
-      "acknowledgement": "una breve frase empatica di conferma.",
-      "clarification_question": "una singola domanda per ottenere un dettaglio cruciale."
+      "category": "...",
+      "request_type": "problem | task",
+      "acknowledgement": "...",
+      "clarification_question": "..."
     }`;
 
   try {
@@ -46,8 +63,9 @@ async function getAiResponse(message: string): Promise<AiResult> {
     console.error("Errore chiamata AI:", error);
     return {
       category: "none",
-      acknowledgement: "Ops, non ho capito bene.",
-      clarification_question: "Puoi descrivere il problema in modo diverso?",
+      request_type: "problem",
+      acknowledgement: "Mi dispiace, non ho capito la tua richiesta.",
+      clarification_question: "Potresti per favore riformulare la tua richiesta specificando il tipo di assistenza di cui hai bisogno?",
     };
   }
 }

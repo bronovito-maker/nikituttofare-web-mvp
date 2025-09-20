@@ -7,10 +7,11 @@ import ChatBubble from '@/components/ChatBubble';
 import Typing from '@/components/Typing';
 import { ChatIntroScreen } from '@/components/chat/ChatIntroScreen';
 import { useEffect, useRef } from 'react';
+import { ProgressBar } from './ProgressBar'; // Importiamo il nuovo componente
 
 export function ChatInterface() {
-    // Questa riga ora non darà più errore perché useChat restituisce tutte le proprietà
-    const { msgs, input, setInput, loading, handleSend, fileToUpload, previewUrl, handleFileSelect, removeFile, handleSuggestionClick } = useChat();
+    // Aggiungiamo 'progressState' dalle proprietà restituite da useChat
+    const { msgs, input, setInput, loading, handleSend, fileToUpload, previewUrl, handleFileSelect, removeFile, handleSuggestionClick, progressState } = useChat();
     const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -18,15 +19,18 @@ export function ChatInterface() {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [msgs]);
-    
-    useEffect(() => {
-        if (input && msgs.length === 0) {
-            handleSend();
-        }
-    }, [input, msgs.length, handleSend]);
 
     return (
         <div className="w-full max-w-3xl mx-auto flex flex-col bg-background h-full shadow-lg border border-border rounded-t-xl">
+            {/* Aggiungiamo la barra di progresso qui */}
+            {msgs.length > 0 && (
+                <ProgressBar
+                    currentStep={progressState.current}
+                    totalSteps={progressState.total}
+                    stepLabels={progressState.labels}
+                />
+            )}
+            
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
                 {msgs.length === 0 ? (
                     <ChatIntroScreen onSuggestionClick={handleSuggestionClick} />
