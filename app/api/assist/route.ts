@@ -12,6 +12,7 @@ async function getAiResponse(message: string): Promise<AiResult> {
 
   const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GOOGLE_AI_API_KEY}`;
 
+  // --- PROMPT MIGLIORATO ---
   const prompt = `
     Analizza la richiesta di un utente per un servizio di assistenza domestica a Livorno.
     La tua risposta deve essere ESCLUSIVAMENTE un oggetto JSON valido.
@@ -23,15 +24,19 @@ async function getAiResponse(message: string): Promise<AiResult> {
     
     2.  **Categorizzazione**: Assegna la categoria più appropriata tra "idraulico", "elettricista", "fabbro", "serramenti", "tuttofare", ecc. Usa "serramenti" per tapparelle e finestre.
     
-    3.  **Urgenza**: Valuta l'urgenza come "bassa", "media" o "alta" basandoti su parole come "urgente", "subito", "peggiorando", "appena possibile" (alta), o richieste pianificabili (bassa).
+    3.  **Urgenza**: Valuta l'urgenza come "bassa", "media" o "alta". Una perdita d'acqua che peggiora è "alta".
     
     4.  **Tipo Richiesta**: Classifica come "problem" (qualcosa di rotto) o "task" (un lavoro da fare).
     
-    5.  **Conferma per l'Utente (\`acknowledgement\`)**: Scrivi una breve frase che confermi di aver capito il problema iniziale. Esempio: "Capisco, la tapparella si è bloccata."
+    5.  **Conferma per l'Utente (\`acknowledgement\`)**: Scrivi una breve frase che confermi di aver capito il problema. Esempio: "Capisco, c'è una perdita dal soffitto."
     
-    6.  **Domanda di Chiarimento (\`clarification_question\`)**: Formula una domanda pertinente per ottenere dettagli essenziali. Per una tapparella, chiedi se è manuale o motorizzata e che tipo di problema presenta.
+    6.  **Domanda di Chiarimento (\`clarification_question\`)**: Formula una domanda pertinente per ottenere dettagli essenziali. Per una perdita dal soffitto, chiedi se si trova vicino a un bagno o a un terrazzo al piano di sopra, per aiutare a identificare la fonte.
     
-    7.  **Riassunto per il Tecnico (\`summary_for_technician\`)**: Crea un riassunto conciso e professionale basato su TUTTE le informazioni raccolte (richiesta iniziale + dettagli). Questo riassunto deve essere chiaro e diretto per il tecnico. Esempio: "Cliente segnala una tapparella motorizzata bloccata. Non risponde più né al comando vocale Alexa né al pulsante a muro."
+    7.  **Riassunto per il Tecnico (\`summary_for_technician\`)**: Crea un riassunto conciso e professionale basato su TUTTE le informazioni raccolte. Esempio: "Cliente segnala gocciolamento dal soffitto, iniziato da poco ma in peggioramento. Causa probabile: infiltrazione idraulica."
+
+    8.  **Istruzioni per il Tecnico (\`technical_instructions\`)**: Crea una lista di 2-3 passaggi chiave che il tecnico dovrebbe seguire. Esempio: ["Verificare la fonte della perdita (es. bagno, tubo di scarico).", "Valutare l'entità del danno e preparare preventivo per riparazione.", "Procedere con l'intervento dopo approvazione del cliente."]
+
+    9.  **Attrezzi Suggeriti (\`tools\`)**: Elenca una breve lista di attrezzi pertinenti. Esempio: ["Scala", "Torcia", "Secchio", "Attrezzatura da idraulico per ispezione"]
 
     La struttura JSON di output deve essere:
     {
@@ -40,8 +45,11 @@ async function getAiResponse(message: string): Promise<AiResult> {
       "urgency": "bassa | media | alta",
       "acknowledgement": "...",
       "clarification_question": "...",
-      "summary_for_technician": "..." 
+      "summary_for_technician": "...",
+      "technical_instructions": ["...", "..."],
+      "tools": ["...", "..."]
     }`;
+  // --- FINE PROMPT MIGLIORATO ---
 
   try {
     const response = await fetch(API_URL, {
