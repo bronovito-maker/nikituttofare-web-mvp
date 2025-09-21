@@ -33,5 +33,5 @@ export type AiResult = {
   price_low?: number;
   price_high?: number;
   est_minutes?: number;
-  summary?: string;
+  summary_for_technician?: string; // <-- NUOVO CAMPO
 };

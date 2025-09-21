@@ -162,8 +162,6 @@ export function useChat() {
         nextStep = targetStep;
 
       } else {
-        // Logica di conversazione standard (come prima, ma con la nuova gestione dello stato)
-        // ... (omettiamo la ripetizione per brevità, il blocco switch rimane quasi identico)
         switch (step) {
             case 'problem': case 'cancelled':
                 const res = await fetch('/api/assist', { method: 'POST', body: JSON.stringify({ message: text }) });
@@ -180,12 +178,31 @@ export function useChat() {
             case 'clarification_2': dispatch({ type: 'UPDATE_FORM', payload: { details: { ...form.details, clarification2: text } } }); botResponse = chatCopy.clarification_3; nextStep = 'clarification_3'; break;
             case 'clarification_3': dispatch({ type: 'UPDATE_FORM', payload: { details: { ...form.details, clarification3: text } } }); botResponse = chatCopy.ask_name; nextStep = 'ask_name'; break;
             case 'ask_name': dispatch({ type: 'UPDATE_FORM', payload: { name: text } }); botResponse = chatCopy.ask_address_and_city; nextStep = 'ask_address'; break;
-            case 'ask_address': dispatch({ type: 'UPDATE_FORM', payload: { address: text } }); botResponse = "Perfetto, e in quale città?"; nextStep = 'ask_city'; break;
+            case 'ask_address': {
+              const addressInput = text.trim();
+              const cityInAddress = addressInput.toLowerCase().includes('livorno');
+              dispatch({ type: 'UPDATE_FORM', payload: { address: addressInput } });
+              if (cityInAddress) {
+                dispatch({ type: 'UPDATE_FORM', payload: { city: 'Livorno' } });
+                botResponse = chatCopy.ask_phone;
+                nextStep = 'ask_phone';
+              } else {
+                botResponse = "Perfetto, e in quale città?";
+                nextStep = 'ask_city';
+              }
+              break;
+            }
             case 'ask_city': const city = text.trim().toLowerCase(); dispatch({ type: 'UPDATE_FORM', payload: { city } }); if (city.includes('livorno')) { botResponse = chatCopy.ask_phone; nextStep = 'ask_phone'; } else { botResponse = chatCopy.out_of_area; nextStep = 'out_of_area_confirm'; } break;
             case 'out_of_area_confirm': if (text.toLowerCase().startsWith('sì') || text.toLowerCase().startsWith('si')) { botResponse = chatCopy.ask_phone; nextStep = 'ask_phone'; } else { botResponse = chatCopy.cancel; nextStep = 'cancelled'; } break;
             case 'ask_phone': dispatch({ type: 'UPDATE_FORM', payload: { phone: text } }); botResponse = chatCopy.ask_email; nextStep = 'ask_email'; break;
             case 'ask_email': dispatch({ type: 'UPDATE_FORM', payload: { email: text.toLowerCase() === 'no' ? '' : text } }); botResponse = chatCopy.ask_timeslot; nextStep = 'ask_timeslot'; break;
-            case 'ask_timeslot': const formAfterTimeslot = { ...currentForm, timeslot: text }; dispatch({ type: 'UPDATE_FORM', payload: { timeslot: text } }); addMessage('assistant', <SummaryBubble form={formAfterTimeslot} aiResult={aiResult} />, true); botResponse = chatCopy.confirm_action; nextStep = 'confirm'; break;
+            case 'ask_timeslot':
+                const formAfterTimeslot = { ...currentForm, timeslot: text };
+                dispatch({ type: 'UPDATE_FORM', payload: { timeslot: text } });
+                addMessage('assistant', <SummaryBubble form={formAfterTimeslot} aiResult={aiResult} />, true);
+                botResponse = chatCopy.confirm_action;
+                nextStep = 'confirm';
+                break;
             case 'confirm':
                 const userMessage = text.toLowerCase();
                 if (userMessage.startsWith('sì') || userMessage.startsWith('si')) {
@@ -193,12 +210,14 @@ export function useChat() {
                     const res = await fetch('/api/contact', { method: 'POST', body: JSON.stringify(payload) });
                     if (!res.ok) throw new Error((await res.json()).error || "Errore di invio");
                     const result = await res.json();
-                    botResponse = chatCopy.sent(result.ticketId || 'N/D'); nextStep = 'done';
+                    botResponse = chatCopy.sent(result.ticketId || 'N/D');
+                    nextStep = 'done';
                 } else if (userMessage.includes('modifica')) {
                     botResponse = chatCopy.ask_modification;
                     nextStep = 'awaiting_modification_field';
                 } else {
-                    botResponse = chatCopy.cancel; nextStep = 'cancelled';
+                    botResponse = chatCopy.cancel;
+                    nextStep = 'cancelled';
                 }
                 break;
         }

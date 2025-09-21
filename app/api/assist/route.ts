@@ -1,15 +1,8 @@
 // app/api/assist/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import type { AiResult } from "@/lib/types";
-import { priceMap } from "@/lib/config"; // <-- IMPORTAZIONE CHIAVE
+import { priceMap } from "@/lib/config";
 
-/**
- * Funzione per ottenere una risposta dall'API di Google AI (Gemini).
- * Analizza il messaggio dell'utente e restituisce una struttura JSON con la categoria,
- * una domanda di chiarimento e altri dettagli.
- * @param message Il messaggio dell'utente.
- * @returns Un oggetto AiResult con l'analisi della richiesta.
- */
 async function getAiResponse(message: string): Promise<AiResult> {
   const GOOGLE_AI_API_KEY = process.env.GOOGLE_AI_API_KEY;
   if (!GOOGLE_AI_API_KEY) {
@@ -21,27 +14,33 @@ async function getAiResponse(message: string): Promise<AiResult> {
 
   const prompt = `
     Analizza la richiesta di un utente per un servizio di assistenza domestica a Livorno.
-    La tua risposta deve essere ESCLUSIVAMENTE un oggetto JSON valido. Non aggiungere mai testo, commenti o markdown (come \`\`\`json) prima o dopo il JSON.
+    La tua risposta deve essere ESCLUSIVAMENTE un oggetto JSON valido.
 
     Richiesta utente: "${message}"
 
     ISTRUZIONI:
-    1.  Prima di tutto, valuta se il messaggio è un insulto, una volgarità o palesemente non pertinente. Se lo è, imposta la categoria su "off_topic" e salta gli altri passaggi.
-    2.  Se pertinente, determina la categoria del servizio tra: "idraulico", "elettricista", "fabbro", "muratore", "serramenti", "clima", "trasloco", "tuttofare", o "none" se non è chiaro.
-    3.  Identifica il tipo di richiesta: "problem" (qualcosa di rotto) o "task" (un lavoro da fare).
-    4.  Formula una "acknowledgement": una breve frase di conferma per l'utente.
-    5.  **ISTRUZIONE SPECIALE**: Controlla se la richiesta contiene parole chiave ad alta complessità come "pianoforte", "cassaforte", "opera d'arte", "oggetto antico".
-        - Se trovi una di queste parole, formula una "clarification_question" SPECIFICA per quel contesto. Esempi:
-          - Per "pianoforte": "Capisco, un lavoro delicato. Per preparare un preventivo corretto, mi serve sapere: si trova a un piano terra o ci sono scale da fare?"
-          - Per "cassaforte": "Certamente. Per assisterti al meglio, mi puoi dire se si tratta di un'apertura, uno spostamento o un'installazione?"
-        - Se NON trovi parole chiave speciali, formula una "clarification_question" generica ma PERTINENTE al servizio richiesto.
+    1.  **Analisi Iniziale**: Se la richiesta è un insulto o palesemente off-topic, imposta \`"category": "off_topic"\` e ignora il resto.
+    
+    2.  **Categorizzazione**: Assegna la categoria più appropriata tra "idraulico", "elettricista", "fabbro", "serramenti", "tuttofare", ecc. Usa "serramenti" per tapparelle e finestre.
+    
+    3.  **Urgenza**: Valuta l'urgenza come "bassa", "media" o "alta" basandoti su parole come "urgente", "subito", "peggiorando", "appena possibile" (alta), o richieste pianificabili (bassa).
+    
+    4.  **Tipo Richiesta**: Classifica come "problem" (qualcosa di rotto) o "task" (un lavoro da fare).
+    
+    5.  **Conferma per l'Utente (\`acknowledgement\`)**: Scrivi una breve frase che confermi di aver capito il problema iniziale. Esempio: "Capisco, la tapparella si è bloccata."
+    
+    6.  **Domanda di Chiarimento (\`clarification_question\`)**: Formula una domanda pertinente per ottenere dettagli essenziali. Per una tapparella, chiedi se è manuale o motorizzata e che tipo di problema presenta.
+    
+    7.  **Riassunto per il Tecnico (\`summary_for_technician\`)**: Crea un riassunto conciso e professionale basato su TUTTE le informazioni raccolte (richiesta iniziale + dettagli). Questo riassunto deve essere chiaro e diretto per il tecnico. Esempio: "Cliente segnala una tapparella motorizzata bloccata. Non risponde più né al comando vocale Alexa né al pulsante a muro."
 
     La struttura JSON di output deve essere:
     {
       "category": "...",
       "request_type": "problem | task",
+      "urgency": "bassa | media | alta",
       "acknowledgement": "...",
-      "clarification_question": "..."
+      "clarification_question": "...",
+      "summary_for_technician": "..." 
     }`;
 
   try {
@@ -61,7 +60,6 @@ async function getAiResponse(message: string): Promise<AiResult> {
     const jsonText = data.candidates[0].content.parts[0].text.replace(/```json|```/g, "").trim();
     const parsedJson = JSON.parse(jsonText) as AiResult;
 
-    // Aggiunge i dati di prezzo e tempo dalla configurazione centralizzata
     if (parsedJson.category && priceMap[parsedJson.category]) {
       parsedJson.price_low = priceMap[parsedJson.category].priceRange[0];
       parsedJson.price_high = priceMap[parsedJson.category].priceRange[1];
@@ -71,20 +69,17 @@ async function getAiResponse(message: string): Promise<AiResult> {
 
   } catch (error: any) {
     console.error("[AI_ERROR] Errore critico durante la chiamata AI:", error);
-    // Risposta di fallback in caso di fallimento
     return {
       category: "none",
       request_type: "problem",
+      urgency: 'bassa',
       acknowledgement: "Mi dispiace, al momento non riesco a elaborare la tua richiesta.",
-      clarification_question: "Potresti per favore riformulare il tuo problema? Sarò pronto ad aiutarti tra poco.",
+      clarification_question: "Potresti per favore riformulare il tuo problema?",
+      summary_for_technician: "Analisi AI fallita."
     };
   }
 }
 
-/**
- * API Route per l'analisi della richiesta dell'utente.
- * Riceve un messaggio, lo invia al servizio AI e restituisce l'analisi.
- */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const body = await req.json();
