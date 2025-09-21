@@ -2,94 +2,40 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Euro, MapPin, Clock, MessageSquare, CheckCircle, AlertCircle, Loader, XCircle, Hash } from 'lucide-react';
+import { Euro, MapPin, MessageSquare, CheckCircle, AlertCircle, Loader, XCircle, Hash, Wrench, Droplets, Lightbulb, Frown, Phone } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Lead } from '@/lib/types';
 
-// Definizione del tipo per una richiesta (Lead)
-type Lead = {
-  id?: string;
-  CreatedAt?: string;
-  ticketId?: string;
-  category?: string;
-  urgency?: string;
-  message?: string;
-  address?: string;
-  price_low?: number;
-  price_high?: number;
-  est_minutes?: number;
-  city?: string;
-  Stato?: 'Inviata' | 'In carico' | 'Completata' | 'Annullata';
-};
-
-// --- COMPONENTI DI SUPPORTO ---
-// Queste funzioni sono ora definite correttamente all'interno del file.
-
-/**
- * Formatta una stringa di data in un formato leggibile.
- */
 function parseDate(dateString?: string): string {
   if (!dateString) return 'Data non disponibile';
   try {
     return new Date(dateString).toLocaleString('it-IT', {
       day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
-  } catch {
-    return 'Data non valida';
-  }
+  } catch { return 'Data non valida'; }
 }
 
-/**
- * Componente "scheletro" da mostrare durante il caricamento.
- */
 function SkeletonCard() {
-  return (
-    <div className="bg-card rounded-lg p-5 border animate-pulse">
-      <div className="flex justify-between items-center">
-        <div className="h-5 bg-muted rounded w-1/4"></div>
-        <div className="h-4 bg-muted rounded w-1/3"></div>
-      </div>
-      <div className="mt-4 h-4 bg-muted rounded w-3/4"></div>
-      <div className="mt-6 space-y-3">
-        <div className="flex items-center">
-          <div className="h-5 w-5 bg-muted rounded-full mr-2"></div>
-          <div className="h-4 bg-muted rounded w-1/2"></div>
-        </div>
-        <div className="flex items-center">
-          <div className="h-5 w-5 bg-muted rounded-full mr-2"></div>
-          <div className="h-4 bg-muted rounded w-1/3"></div>
-        </div>
-      </div>
-    </div>
-  );
+  return <div className="bg-card rounded-lg p-5 border animate-pulse h-[220px]"></div>;
 }
 
-/**
- * Componente da mostrare quando non ci sono richieste.
- */
 function EmptyState() {
   return (
     <div className="text-center py-16 px-6 bg-card border rounded-lg">
       <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground" />
       <h3 className="mt-4 text-lg font-semibold text-foreground">Nessuna richiesta trovata</h3>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Non hai ancora inviato nessuna richiesta. Inizia una nuova conversazione per vedere i tuoi lavori qui.
-      </p>
+      <p className="mt-2 text-sm text-muted-foreground">Inizia una nuova conversazione per vedere i tuoi lavori qui.</p>
       <div className="mt-6">
-        <Link
-          href="/chat"
-          className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md shadow-sm hover:bg-primary/90"
-        >
-          Inizia una nuova richiesta
-        </Link>
+        <Button asChild>
+          <Link href="/chat">Inizia una nuova richiesta</Link>
+        </Button>
       </div>
     </div>
   );
 }
 
-/**
- * Componente badge per visualizzare lo stato di una richiesta.
- */
 const StatusBadge = ({ status }: { status: Lead['Stato'] }) => {
     const statusMap = {
         'Inviata': { text: 'Inviata', icon: <Loader size={12} className="mr-1 animate-spin" />, color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' },
@@ -107,18 +53,23 @@ const StatusBadge = ({ status }: { status: Lead['Stato'] }) => {
     );
 };
 
-/**
- * Card interattiva per ogni singola richiesta.
- */
+const categoryIcons: { [key: string]: React.ReactNode } = {
+  'serramenti': <Wrench size={16} className="mr-2 text-primary" />,
+  'idraulico': <Droplets size={16} className="mr-2 text-primary" />,
+  'elettricista': <Lightbulb size={16} className="mr-2 text-primary" />,
+  'default': <Frown size={16} className="mr-2 text-muted-foreground" />,
+};
+
 function RequestCard({ request: r }: { request: Lead }) {
   const date = parseDate(r.CreatedAt);
-  const price = r.price_low && r.price_high ? `~${r.price_low}–${r.price_high}€` : 'Da definire';
-  
+  const price = r.price_low && r.price_high ? `~${r.price_low}–${r.price_high}€` : (r.price_low ? `~${r.price_low}€` : 'In valutazione');
+  const categoryKey = r.category?.toLowerCase() || 'default';
+  const icon = categoryIcons[categoryKey] || categoryIcons['default'];
   const detailUrl = `/dashboard/${r.ticketId || r.id}`;
 
   return (
-    <Link href={detailUrl} className="block w-full">
-      <div className="bg-card text-card-foreground rounded-lg p-4 sm:p-5 border transition-all duration-200 hover:shadow-lg hover:border-primary/50 cursor-pointer">
+    <div className="bg-card text-card-foreground rounded-lg p-4 sm:p-5 border flex flex-col justify-between transition-all duration-200 hover:shadow-lg hover:border-primary/50">
+      <Link href={detailUrl} className="block w-full group">
         <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-2">
           <div className="flex items-center gap-2 flex-wrap">
             <StatusBadge status={r.Stato} />
@@ -134,17 +85,32 @@ function RequestCard({ request: r }: { request: Lead }) {
               )}
           </div>
         </div>
-        {r.message && <p className="mt-3 text-foreground whitespace-pre-wrap line-clamp-2">{r.message}</p>}
+        
+        <div className="mt-3 flex items-start">
+          {icon}
+          <p className="font-semibold text-foreground line-clamp-2 group-hover:text-primary">{r.message || "Dettagli non disponibili"}</p>
+        </div>
+
         <div className="mt-4 pt-4 border-t border-border/60 text-sm text-muted-foreground space-y-2">
           {r.address && <div className="flex items-center gap-2"><MapPin size={14} /><span>{r.address}, {r.city}</span></div>}
           <div className="flex items-center gap-2"><Euro size={14} /><span>Stima: <strong>{price}</strong></span></div>
         </div>
-      </div>
-    </Link>
+      </Link>
+      
+      {r.Stato === 'In carico' && r.technicianPhone && (
+        <div className="mt-4 pt-4 border-t border-dashed">
+          <Button asChild className="w-full">
+            <a href={`tel:${r.technicianPhone}`}>
+              <Phone size={16} className="mr-2" />
+              Chiama il tecnico
+            </a>
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
 
-// --- COMPONENTE PRINCIPALE DELLA PAGINA ---
 export default function DashboardPage() {
   const { data: session, status } = useSession({ required: true });
   const [items, setItems] = useState<Lead[]>([]);
@@ -155,7 +121,10 @@ export default function DashboardPage() {
   const fetchRequests = useCallback(async (userId: string) => {
     try {
       const res = await fetch(`/api/requests?userId=${encodeURIComponent(userId)}`);
-      if (!res.ok) throw new Error('Errore nel caricamento delle richieste');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Errore nel caricamento delle richieste' }));
+        throw new Error(errorData.error);
+      }
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'Errore API sconosciuto');
       setItems(json.data);
@@ -165,14 +134,14 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.email) {
-      const userId = session.user.email;
+    if (status === 'authenticated' && session?.userId) {
+      const userId = session.userId;
       fetchRequests(userId);
       const intervalId = setInterval(() => fetchRequests(userId), 30000);
       return () => clearInterval(intervalId);
     }
   }, [status, session, fetchRequests]);
-
+  
   if (error) {
     return <main className="flex-grow container mx-auto px-4 py-8"><p className='text-destructive'>Errore: {error}</p></main>;
   }

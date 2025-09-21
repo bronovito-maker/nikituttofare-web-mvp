@@ -66,7 +66,6 @@ const chatReducer: Reducer<ChatState, ChatAction> = (state, action): ChatState =
     }
     case 'FINISH_SEND': {
       let finalState = { ...state, loading: false, step: action.payload.step };
-      // Rimuove il "typing" e aggiunge la risposta del bot se presente
       const thinkingRemovedMsgs = state.msgs.filter(m => !m.isThinking);
       if (action.payload.botResponse) {
         const botMsg: Msg = { id: Date.now() + Math.random(), role: 'assistant', content: action.payload.botResponse };
@@ -196,13 +195,24 @@ export function useChat() {
             case 'out_of_area_confirm': if (text.toLowerCase().startsWith('sì') || text.toLowerCase().startsWith('si')) { botResponse = chatCopy.ask_phone; nextStep = 'ask_phone'; } else { botResponse = chatCopy.cancel; nextStep = 'cancelled'; } break;
             case 'ask_phone': dispatch({ type: 'UPDATE_FORM', payload: { phone: text } }); botResponse = chatCopy.ask_email; nextStep = 'ask_email'; break;
             case 'ask_email': dispatch({ type: 'UPDATE_FORM', payload: { email: text.toLowerCase() === 'no' ? '' : text } }); botResponse = chatCopy.ask_timeslot; nextStep = 'ask_timeslot'; break;
+            
+            // --- MODIFICA CHIAVE PER IL RIEPILOGO ---
             case 'ask_timeslot':
                 const formAfterTimeslot = { ...currentForm, timeslot: text };
                 dispatch({ type: 'UPDATE_FORM', payload: { timeslot: text } });
-                addMessage('assistant', <SummaryBubble form={formAfterTimeslot} aiResult={aiResult} />, true);
+                
+                // 1. Rimuovi il "typing" e invia il riepilogo come messaggio normale
+                addMessage('assistant', <SummaryBubble form={formAfterTimeslot} aiResult={aiResult} />);
+                
+                // 2. Aggiungi una piccola pausa
+                await new Promise(r => setTimeout(r, 800));
+                
+                // 3. Imposta la prossima risposta del bot per la conferma
                 botResponse = chatCopy.confirm_action;
                 nextStep = 'confirm';
                 break;
+            // --- FINE MODIFICA ---
+
             case 'confirm':
                 const userMessage = text.toLowerCase();
                 if (userMessage.startsWith('sì') || userMessage.startsWith('si')) {

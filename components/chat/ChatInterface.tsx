@@ -4,13 +4,12 @@
 import { useChat } from '@/hooks/useChat';
 import { MessageInput } from './MessageInput';
 import ChatBubble from '@/components/ChatBubble';
-import Typing from '@/components/Typing';
 import { ChatIntroScreen } from '@/components/chat/ChatIntroScreen';
 import { useEffect, useRef } from 'react';
-import { ProgressBar } from './ProgressBar'; // Importiamo il nuovo componente
+import { ProgressBar } from './ProgressBar';
+import Typing from '../Typing'; // Corretto import, Typing è fuori dalla cartella chat
 
 export function ChatInterface() {
-    // Aggiungiamo 'progressState' dalle proprietà restituite da useChat
     const { msgs, input, setInput, loading, handleSend, fileToUpload, previewUrl, handleFileSelect, removeFile, handleSuggestionClick, progressState } = useChat();
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -18,15 +17,14 @@ export function ChatInterface() {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
-    }, [msgs]);
+    }, [msgs, loading]);
 
     return (
-        <div className="w-full max-w-3xl mx-auto flex flex-col bg-background h-full shadow-lg border border-border rounded-t-xl">
-            {/* Aggiungiamo la barra di progresso qui */}
+        <div className="w-full max-w-3xl mx-auto flex flex-col bg-background h-full shadow-lg border-t sm:border-x border-border rounded-t-xl">
+            {/* La ProgressBar ora viene chiamata senza la proprietà 'totalSteps' */}
             {msgs.length > 0 && (
                 <ProgressBar
                     currentStep={progressState.current}
-                    totalSteps={progressState.total}
                     stepLabels={progressState.labels}
                 />
             )}
@@ -41,7 +39,8 @@ export function ChatInterface() {
                         ))}
                     </>
                 )}
-                 {loading && msgs.length > 0 && (
+                 {/* L'indicatore di "sta scrivendo" ora appare correttamente dopo l'ultimo messaggio */}
+                 {loading && msgs.length > 0 && msgs[msgs.length - 1].role === 'user' && (
                     <ChatBubble role="assistant"><Typing /></ChatBubble>
                 )}
             </div>

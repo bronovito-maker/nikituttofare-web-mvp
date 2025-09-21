@@ -1,9 +1,20 @@
+// components/Typing.tsx
 export default function Typing() {
-    return (
-      <div className="flex items-center gap-1.5 py-2">
-        <span className="h-1.5 w-1.5 rounded-full bg-light-secondary dark:bg-dark-secondary animate-bounce [animation-delay:-0.3s]"></span>
-        <span className="h-1.5 w-1.5 rounded-full bg-light-secondary dark:bg-dark-secondary animate-bounce [animation-delay:-0.15s]"></span>
-        <span className="h-1.5 w-1.5 rounded-full bg-light-secondary dark:bg-dark-secondary animate-bounce"></span>
-      </div>
-    );
-  }
+  return (
+    // Contenitore che allinea le linee in basso e definisce un'altezza fissa
+    <div className="flex items-end gap-1.5 py-2 h-8">
+      <span
+        className="w-1.5 rounded-full bg-muted-foreground animate-wave"
+        style={{ animationDelay: '-0.4s' }} // Ritardo per la prima linea
+      ></span>
+      <span
+        className="w-1.5 rounded-full bg-muted-foreground animate-wave"
+        style={{ animationDelay: '-0.2s' }} // Ritardo per la seconda linea
+      ></span>
+      <span
+        className="w-1.5 rounded-full bg-muted-foreground animate-wave"
+        // La terza linea parte senza ritardo
+      ></span>
+    </div>
+  );
+}

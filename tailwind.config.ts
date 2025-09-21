@@ -1,5 +1,5 @@
 // tailwind.config.ts
-import type { Config } from "tailwindcss";
+import type { Config } from "tailwindcss"
 
 const config = {
   darkMode: ["class"],
@@ -8,7 +8,8 @@ const config = {
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
-  ],
+	],
+  prefix: "",
   theme: {
     container: {
       center: true,
@@ -18,11 +19,6 @@ const config = {
       },
     },
     extend: {
-      // --- MODIFICA CHIAVE: Aggiungi questo blocco ---
-      height: {
-        'dvh': '100dvh',
-      },
-      // (Il resto della configurazione rimane invariato)
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -64,16 +60,30 @@ const config = {
         sm: "calc(var(--radius) - 4px)",
       },
       keyframes: {
-        "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" } },
-        "accordion-up": { from: { height: "var(--radix-accordion-content-height)" }, to: { height: "0" } },
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        // --- NUOVA ANIMAZIONE "WAVE" ---
+        "wave": {
+          '0%, 100%': { height: '4px' },
+          '50%': { height: '16px' },
+        },
+        // --- FINE NUOVA ANIMAZIONE ---
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        // --- AGGIUNTA CHIAVE PER USARE L'ANIMAZIONE ---
+        "wave": "wave 1.2s cubic-bezier(0.45, 0, 0.55, 1) infinite",
       },
     },
   },
   plugins: [require("tailwindcss-animate")],
-} satisfies Config;
+} satisfies Config
 
-export default config;
+export default config

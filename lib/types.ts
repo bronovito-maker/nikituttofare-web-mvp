@@ -9,8 +9,8 @@ export type Msg = {
 };
 
 export type ChatFormState = {
-  message: string; // Messaggio iniziale
-  details: { // Dettagli aggiuntivi dalle domande
+  message: string;
+  details: {
     clarification1?: string;
     clarification2?: string;
     clarification3?: string;
@@ -21,7 +21,7 @@ export type ChatFormState = {
   phone?: string;
   email?: string;
   timeslot?: string;
-  imageUrl?: string; // Campo per l'URL dell'immagine
+  imageUrl?: string;
 };
 
 export type AiResult = {
@@ -33,5 +33,26 @@ export type AiResult = {
   price_low?: number;
   price_high?: number;
   est_minutes?: number;
-  summary_for_technician?: string; // <-- NUOVO CAMPO
+  summary_for_technician?: string;
+};
+
+// --- TIPO CONDIVISO PER LE RICHIESTE ---
+export type Lead = {
+  id?: string;
+  CreatedAt?: string;
+  ticketId?: string;
+  category?: string;
+  urgency?: string;
+  message?: string;
+  address?: string;
+  price_low?: number;
+  price_high?: number;
+  est_minutes?: number;
+  city?: string;
+  Stato?: 'Inviata' | 'In carico' | 'Completata' | 'Annullata';
+  technicianPhone?: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+  timeslot?: string;
 };
