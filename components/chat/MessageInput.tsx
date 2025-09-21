@@ -1,49 +1,113 @@
-// components/chat/MessageInput.tsx
-import { useRef, useEffect } from 'react';
-import { Paperclip, SendHorizontal, LoaderCircle } from 'lucide-react';
-import { FileUploadPreview } from './FileUploadPreview';
+'use client';
+import { useRef, ChangeEvent } from 'react';
+import { Paperclip, SendHorizonal, Camera, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import FileUploadPreview from './FileUploadPreview';
 
 interface MessageInputProps {
-    input: string;
-    setInput: (value: string) => void;
-    loading: boolean;
-    handleSend: () => void;
-    fileToUpload: File | null;
-    previewUrl: string | null;
-    handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
-    removeFile: () => void;
-    suggestionText?: string;
+  input: string;
+  handleInputChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  handleSend: () => void;
+  fileToUpload: File | null;
+  setFileToUpload: (file: File | null) => void;
+  removeFile: () => void;
+  previewUrl: string | null;
+  step: string;
 }
 
-export function MessageInput({ input, setInput, loading, handleSend, fileToUpload, previewUrl, handleFileSelect, removeFile }: MessageInputProps) {
-    const formRef = useRef<HTMLFormElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        handleSend();
-    };
+export default function MessageInput({
+  input,
+  handleInputChange,
+  handleSend,
+  fileToUpload,
+  setFileToUpload,
+  removeFile,
+  previewUrl,
+  step
+}: MessageInputProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
-    return (
-        <div className="p-4 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-card/80 backdrop-blur-sm border-t border-border">
-            {previewUrl && <FileUploadPreview previewUrl={previewUrl} onRemove={removeFile} />}
-            <form ref={formRef} onSubmit={handleSubmit} className="flex items-center gap-2">
-                <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*" />
-                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={loading} className="flex-shrink-0 w-10 h-10 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center hover:bg-muted disabled:opacity-50" aria-label="Allega file">
-                    <Paperclip size={20} />
-                </button>
-                <input 
-                    className="w-full px-4 py-2.5 bg-secondary border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Descrivi il problema o allega una foto..."
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    disabled={loading}
-                    autoFocus
-                />
-                <button type="submit" disabled={loading || (!input.trim() && !fileToUpload)} className="flex-shrink-0 w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center hover:bg-primary/90 disabled:bg-primary/70">
-                    {loading ? <LoaderCircle size={20} className="animate-spin" /> : <SendHorizontal size={20} />}
-                </button>
-            </form>
-        </div>
-    );
+  const handleFileClick = () => {
+    fileInputRef.current?.click();
+  };
+  
+  const handleCameraClick = () => {
+    cameraInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    if (file) {
+      setFileToUpload(file);
+    }
+    // Reset the input value to allow selecting the same file again
+    event.target.value = '';
+  };
+
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSend();
+    }
+  };
+
+  const isDisabled = step === 'done';
+
+  return (
+    <div className="relative">
+      {previewUrl && (
+        <FileUploadPreview previewUrl={previewUrl} onRemove={removeFile} />
+      )}
+      <div className="flex items-center p-4 border-t bg-white">
+        {/* Hidden file input for gallery */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          className="hidden"
+          accept="image/*"
+          disabled={isDisabled}
+        />
+        {/* Hidden file input for camera */}
+        <input
+          type="file"
+          ref={cameraInputRef}
+          onChange={handleFileChange}
+          className="hidden"
+          accept="image/*"
+          capture="environment" // Prioritizes the back camera
+          disabled={isDisabled}
+        />
+
+        <Button variant="ghost" size="icon" onClick={handleFileClick} disabled={isDisabled}>
+          <Paperclip className="h-6 w-6 text-gray-500" />
+        </Button>
+        
+        <Button variant="ghost" size="icon" onClick={handleCameraClick} disabled={isDisabled}>
+          <Camera className="h-6 w-6 text-gray-500" />
+        </Button>
+
+        <textarea
+          value={input}
+          onChange={handleInputChange}
+          onKeyPress={handleKeyPress}
+          placeholder="Scrivi il tuo messaggio..."
+          className="flex-1 w-full rounded-full px-4 py-2 bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          rows={1}
+          style={{ maxHeight: '100px' }}
+          disabled={isDisabled}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="ml-2"
+          onClick={() => handleSend()}
+          disabled={!input.trim() && !fileToUpload || isDisabled}
+        >
+          <SendHorizonal className="h-6 w-6 text-blue-500" />
+        </Button>
+      </div>
+    </div>
+  );
 }
