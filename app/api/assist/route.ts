@@ -12,7 +12,7 @@ async function getAiResponse(message: string): Promise<AiResult> {
 
   const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GOOGLE_AI_API_KEY}`;
 
-  // --- PROMPT MIGLIORATO ---
+  // --- PROMPT AGGIORNATO ---
   const prompt = `
     Analizza la richiesta di un utente per un servizio di assistenza domestica a Livorno.
     La tua risposta deve essere ESCLUSIVAMENTE un oggetto JSON valido.
@@ -24,19 +24,19 @@ async function getAiResponse(message: string): Promise<AiResult> {
     
     2.  **Categorizzazione**: Assegna la categoria più appropriata tra "idraulico", "elettricista", "fabbro", "serramenti", "tuttofare", ecc. Usa "serramenti" per tapparelle e finestre.
     
-    3.  **Urgenza**: Valuta l'urgenza come "bassa", "media" o "alta". Una perdita d'acqua che peggiora è "alta".
+    3.  **Urgenza**: Valuta l'urgenza come "bassa", "media" o "alta".
     
     4.  **Tipo Richiesta**: Classifica come "problem" (qualcosa di rotto) o "task" (un lavoro da fare).
     
-    5.  **Conferma per l'Utente (\`acknowledgement\`)**: Scrivi una breve frase che confermi di aver capito il problema. Esempio: "Capisco, c'è una perdita dal soffitto."
+    5.  **Conferma per l'Utente (\`acknowledgement\`)**: Scrivi una breve frase che confermi di aver capito il problema. Esempio: "Capisco, la sua tapparella è bloccata."
     
-    6.  **Domanda di Chiarimento (\`clarification_question\`)**: Formula una domanda pertinente per ottenere dettagli essenziali. Per una perdita dal soffitto, chiedi se si trova vicino a un bagno o a un terrazzo al piano di sopra, per aiutare a identificare la fonte.
+    6.  **Domanda di Chiarimento (\`clarification_question\`)**: Formula una domanda pertinente per ottenere dettagli essenziali.
     
-    7.  **Riassunto per il Tecnico (\`summary_for_technician\`)**: Crea un riassunto conciso e professionale basato su TUTTE le informazioni raccolte. Esempio: "Cliente segnala gocciolamento dal soffitto, iniziato da poco ma in peggioramento. Causa probabile: infiltrazione idraulica."
+    7.  **Riassunto per il Tecnico (\`summary_for_technician\`)**: Crea un riassunto conciso e professionale basato su TUTTE le informazioni raccolte.
 
-    8.  **Istruzioni per il Tecnico (\`technical_instructions\`)**: Crea una lista di 2-3 passaggi chiave che il tecnico dovrebbe seguire. Esempio: ["Verificare la fonte della perdita (es. bagno, tubo di scarico).", "Valutare l'entità del danno e preparare preventivo per riparazione.", "Procedere con l'intervento dopo approvazione del cliente."]
+    8.  **--- NUOVO --- Istruzioni per il Tecnico (\`technical_instructions\`)**: Crea una lista di 2-3 passaggi chiave che il tecnico dovrebbe seguire. Esempio per una tapparella bloccata: ["Ispezionare il cassonetto per verificare lo stato del rullo e della cinghia.", "Controllare se ci sono lamelle danneggiate o fuori guida.", "Sbloccare o sostituire le parti danneggiate come necessario."]
 
-    9.  **Attrezzi Suggeriti (\`tools\`)**: Elenca una breve lista di attrezzi pertinenti. Esempio: ["Scala", "Torcia", "Secchio", "Attrezzatura da idraulico per ispezione"]
+    9.  **--- NUOVO --- Attrezzi Suggeriti (\`tools\`)**: Elenca una breve lista di attrezzi pertinenti. Esempio: ["Scala", "Avvitatore", "Pinze", "Cacciaviti"]
 
     La struttura JSON di output deve essere:
     {
@@ -49,7 +49,7 @@ async function getAiResponse(message: string): Promise<AiResult> {
       "technical_instructions": ["...", "..."],
       "tools": ["...", "..."]
     }`;
-  // --- FINE PROMPT MIGLIORATO ---
+  // --- FINE PROMPT ---
 
   try {
     const response = await fetch(API_URL, {
@@ -60,8 +60,7 @@ async function getAiResponse(message: string): Promise<AiResult> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[AI_ERROR] Errore dall'API di Google (${response.status}): ${errorText}`);
-      throw new Error(`Errore di comunicazione con il servizio AI: ${response.statusText}`);
+      throw new Error(`Errore API: ${errorText}`);
     }
 
     const data = await response.json();
@@ -76,13 +75,11 @@ async function getAiResponse(message: string): Promise<AiResult> {
     return parsedJson;
 
   } catch (error: any) {
-    console.error("[AI_ERROR] Errore critico durante la chiamata AI:", error);
+    console.error("[AI_ERROR]", error);
     return {
-      category: "none",
-      request_type: "problem",
-      urgency: 'bassa',
-      acknowledgement: "Mi dispiace, al momento non riesco a elaborare la tua richiesta.",
-      clarification_question: "Potresti per favore riformulare il tuo problema?",
+      category: "none", request_type: "problem", urgency: 'bassa',
+      acknowledgement: "Mi dispiace, non riesco a elaborare la richiesta.",
+      clarification_question: "Potresti riformulare il problema?",
       summary_for_technician: "Analisi AI fallita."
     };
   }
@@ -91,17 +88,9 @@ async function getAiResponse(message: string): Promise<AiResult> {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const body = await req.json();
-    const message = (body?.message ?? "").toString().trim();
-
-    if (!message) {
-      return NextResponse.json({ ok: false, error: "Il messaggio non può essere vuoto." }, { status: 400 });
-    }
-
-    const result = await getAiResponse(message);
+    const result = await getAiResponse(body?.message ?? "");
     return NextResponse.json({ ok: true, data: result });
-
   } catch (e: any) {
-    console.error("[API_ASSIST_ERROR] Errore:", e);
-    return NextResponse.json({ ok: false, error: "Errore interno del server durante l'analisi della richiesta." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Errore interno." }, { status: 500 });
   }
 }

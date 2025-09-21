@@ -4,6 +4,8 @@ import { chatCopy } from '@/lib/chat-copy';
 import type { AiResult, Msg, ChatFormState } from '@/lib/types';
 import Typing from '@/components/Typing';
 import { SummaryBubble } from '@/components/chat/SummaryBubble';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 type DetailedStep =
   | 'problem'
@@ -18,7 +20,8 @@ type DetailedStep =
   | 'ask_email'
   | 'ask_timeslot'
   | 'confirm'
-  | 'awaiting_modification_field' // Nuovo stato per la modifica
+  | 'awaiting_modification_field'
+  | 'modification_complete'
   | 'cancelled'
   | 'done';
 
@@ -89,12 +92,15 @@ const chatReducer: Reducer<ChatState, ChatAction> = (state, action): ChatState =
 export function useChat() {
   const [state, dispatch] = useReducer(chatReducer, initialState);
   const { msgs, step, input, loading, aiResult, form, fileToUpload, previewUrl } = state;
+  const { data: session } = useSession();
+  const router = useRouter();
 
   const progressState = useMemo(() => {
     const stepMap: Record<DetailedStep, number> = {
       problem: 1, clarification_1: 1, clarification_2: 1, clarification_3: 1,
       ask_name: 2, ask_address: 2, ask_city: 2, out_of_area_confirm: 2, ask_phone: 2, ask_email: 2, ask_timeslot: 2, confirm: 2,
       awaiting_modification_field: 2,
+      modification_complete: 2,
       cancelled: 1,
       done: 3,
     };
@@ -147,7 +153,16 @@ export function useChat() {
     let botResponse: ReactNode = chatCopy.off_topic;
     const currentForm = { ...form, imageUrl: uploadedImageUrl || form.imageUrl };
 
+    const returnToSummary = async (updatedForm: Partial<ChatFormState>) => {
+        addMessage('assistant', <SummaryBubble form={updatedForm} aiResult={aiResult} />);
+        await new Promise(r => setTimeout(r, 800));
+        botResponse = chatCopy.confirm_action;
+        nextStep = 'confirm';
+    };
+
     try {
+      const isModificationFlow = ['ask_name', 'ask_address', 'ask_city', 'ask_phone', 'ask_email', 'ask_timeslot'].includes(step) && msgs.some(m => m.content === chatCopy.ask_modification);
+
       if (step === 'awaiting_modification_field') {
         const field = text.toLowerCase();
         let targetStep: DetailedStep = 'confirm';
@@ -155,10 +170,22 @@ export function useChat() {
         else if (field.includes('indirizzo')) targetStep = 'ask_address';
         else if (field.includes('telefono')) targetStep = 'ask_phone';
         else if (field.includes('email')) targetStep = 'ask_email';
-        else if (field.includes('disponibilità')) targetStep = 'ask_timeslot';
+        else if (field.includes('disponibilità') || field.includes('orario')) targetStep = 'ask_timeslot';
         
-        botResponse = `Ok, inserisci di nuovo ${field}.`;
+        botResponse = `Ok, inserisci il nuovo valore per ${field}.`;
         nextStep = targetStep;
+      
+      } else if (isModificationFlow) {
+        let updatedForm = { ...currentForm };
+        if (step === 'ask_name') updatedForm.name = text;
+        if (step === 'ask_address') updatedForm.address = text;
+        if (step === 'ask_city') updatedForm.city = text;
+        if (step === 'ask_phone') updatedForm.phone = text;
+        if (step === 'ask_email') updatedForm.email = text.toLowerCase() === 'no' ? '' : text;
+        if (step === 'ask_timeslot') updatedForm.timeslot = text;
+
+        dispatch({ type: 'UPDATE_FORM', payload: updatedForm });
+        await returnToSummary(updatedForm);
 
       } else {
         switch (step) {
@@ -196,22 +223,11 @@ export function useChat() {
             case 'ask_phone': dispatch({ type: 'UPDATE_FORM', payload: { phone: text } }); botResponse = chatCopy.ask_email; nextStep = 'ask_email'; break;
             case 'ask_email': dispatch({ type: 'UPDATE_FORM', payload: { email: text.toLowerCase() === 'no' ? '' : text } }); botResponse = chatCopy.ask_timeslot; nextStep = 'ask_timeslot'; break;
             
-            // --- MODIFICA CHIAVE PER IL RIEPILOGO ---
             case 'ask_timeslot':
                 const formAfterTimeslot = { ...currentForm, timeslot: text };
                 dispatch({ type: 'UPDATE_FORM', payload: { timeslot: text } });
-                
-                // 1. Rimuovi il "typing" e invia il riepilogo come messaggio normale
-                addMessage('assistant', <SummaryBubble form={formAfterTimeslot} aiResult={aiResult} />);
-                
-                // 2. Aggiungi una piccola pausa
-                await new Promise(r => setTimeout(r, 800));
-                
-                // 3. Imposta la prossima risposta del bot per la conferma
-                botResponse = chatCopy.confirm_action;
-                nextStep = 'confirm';
+                await returnToSummary(formAfterTimeslot);
                 break;
-            // --- FINE MODIFICA ---
 
             case 'confirm':
                 const userMessage = text.toLowerCase();
@@ -219,8 +235,13 @@ export function useChat() {
                     const payload = { ...currentForm, ai: aiResult };
                     const res = await fetch('/api/contact', { method: 'POST', body: JSON.stringify(payload) });
                     if (!res.ok) throw new Error((await res.json()).error || "Errore di invio");
+                    
                     const result = await res.json();
-                    botResponse = chatCopy.sent(result.ticketId || 'N/D');
+                    const ticketId = result.ticketId || 'N/D';
+                    
+                    const isRegistered = !!session;
+                    botResponse = chatCopy.sent(ticketId, isRegistered, () => router.push(`/dashboard/${ticketId}`));
+
                     nextStep = 'done';
                 } else if (userMessage.includes('modifica')) {
                     botResponse = chatCopy.ask_modification;

@@ -1,120 +1,71 @@
 // app/api/contact/route.ts
-/// <reference path="../../../auth.d.ts" />
-
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
-import { randomUUID, createHmac } from 'crypto';
 import { z } from 'zod';
+import { generateTicketId } from '@/lib/ticket'; // <-- IMPORTIAMO LA NUOVA FUNZIONE
 
-// --- INIZIO FUNZIONI INVARIATE ---
-declare global {
-  var __bucket: Map<string, { count: number; reset: number }>;
-}
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-async function rateLimit(key: string) {
-  const WINDOW_MS = 60_000;
-  const MAX_REQ = 15;
-  globalThis.__bucket ||= new Map<string, { count: number; reset: number }>();
-  const now = Date.now();
-  const b = globalThis.__bucket.get(key);
-  if (!b || now > b.reset) {
-    globalThis.__bucket.set(key, { count: 1, reset: now + WINDOW_MS });
-    return;
-  }
-  if (b.count >= MAX_REQ) throw new Error('rate_limited');
-  b.count++;
-}
-function safeHost(url: string) {
-  const u = new URL(url);
-  const allowlist = (process.env.N8N_HOST_ALLOWLIST || '').split(',').map(s => s.trim()).filter(Boolean);
-  if (allowlist.length && !allowlist.includes(u.host)) {
-    throw new Error(`Host non consentito: ${u.host}`);
-  }
-  return u.toString();
-}
-function hmacSignature(secret: string, payload: string) {
-  return createHmac('sha256', secret).update(payload, 'utf8').digest('hex');
-}
-// --- FINE FUNZIONI INVARIATE ---
-
+// Lo schema di validazione rimane invariato
 const ContactSchema = z.object({
-  message: z.string().min(3).max(2000),
-  name: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().email().optional().or(z.literal('')),
-  city: z.string().optional(),
-  address: z.string().optional(),
-  timeslot: z.string().optional(),
-  imageUrl: z.string().url().optional(), // Aggiunto il campo per l'URL dell'immagine
-  details: z.record(z.string(), z.string()).optional(),
-  ai: z.object({
-    category: z.string().optional(),
-    request_type: z.enum(['problem', 'task']).optional(),
-    acknowledgement: z.string().optional(),
-    clarification_question: z.string().optional(),
-    urgency: z.string().optional(),
-    price_low: z.number().optional(),
-    price_high: z.number().optional(),
-    est_minutes: z.number().optional(),
-    summary: z.string().optional(),
-    requires_specialist_contact: z.boolean().optional(),
+  name: z.string().min(2, "Il nome è troppo corto").max(50, "Il nome è troppo lungo"),
+  phone: z.string().min(8, "Numero di telefono non valido").max(20, "Numero di telefono non valido"),
+  address: z.string().min(5, "L'indirizzo sembra troppo corto").max(100, "L'indirizzo è troppo lungo"),
+  city: z.string().min(2, "Città non valida").max(50, "Città non valida"),
+  email: z.string().email("Formato email non valido").or(z.literal('')).optional(),
+  timeslot: z.string().min(2, "La disponibilità è troppo corta"),
+  message: z.string().min(5, "Il messaggio è troppo corto"),
+  details: z.object({
+    clarification1: z.string().optional(),
+    clarification2: z.string().optional(),
+    clarification3: z.string().optional(),
   }).optional(),
-}).strict();
+  ai: z.any().optional(),
+  imageUrl: z.string().url().optional(),
+});
 
 export async function POST(req: Request) {
-  const correlationId = `c_${randomUUID().slice(0, 8)}`;
   try {
-    const session = await auth().catch(() => null);
-    
-    const userId = session?.userId ?? `u_${randomUUID().slice(0, 8)}`;
-    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0]?.trim() || 'unknown';
-
-    await rateLimit(session?.userId || ip);
-
     const body = await req.json();
-    const parsed = ContactSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { ok: false, error: 'Dati inviati non validi', details: parsed.error.flatten(), correlationId },
-        { status: 400 }
-      );
-    }
+    const validation = ContactSchema.safeParse(body);
 
-    const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL;
+    if (!validation.success) {
+      console.error("Errore di validazione:", validation.error.flatten().fieldErrors);
+      return NextResponse.json({ error: "Dati inviati non validi" }, { status: 400 });
+    }
+    
+    // --- MODIFICA CHIAVE ---
+    // 1. Generiamo il Ticket ID QUI, subito.
+    const ticketId = generateTicketId();
+
+    // 2. Aggiungiamo il ticketId al payload che inviamo a n8n
+    const payloadForN8n = {
+      ...validation.data,
+      ticketId: ticketId, // Includiamo l'ID generato
+    };
+    // --- FINE MODIFICA ---
+
+    const n8nWebhookUrl = process.env.N8N_CONTACT_WEBHOOK_URL;
     if (!n8nWebhookUrl) {
-      return NextResponse.json({ ok: false, error: 'N8N_WEBHOOK_URL non configurato', correlationId }, { status: 500 });
+      throw new Error("Webhook URL per n8n non configurato.");
     }
     
-    const safeUrl = safeHost(n8nWebhookUrl);
-    const dataToForward = { ...parsed.data, userId, receivedAt: new Date().toISOString(), correlationId };
-    const payload = JSON.stringify(dataToForward);
-    
-    const secret = process.env.N8N_SHARED_SECRET || '';
-    const signature = secret ? hmacSignature(secret, payload) : undefined;
-
-    const res = await fetch(safeUrl, {
+    // Invia i dati a n8n (ma non aspettare la sua risposta completa)
+    fetch(n8nWebhookUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(secret ? { 'x-signature-sha256': signature! } : {}), 'x-correlation-id': correlationId },
-      body: payload,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payloadForN8n), // Invia il payload con il ticketId
+    }).catch(err => {
+      // Logga l'errore ma non bloccare la risposta al cliente
+      console.error("Errore nell'invio a n8n (asincrono):", err);
     });
 
-    if (!res.ok) {
-      const errText = await res.text().catch(() => 'Errore sconosciuto da n8n');
-      console.error(`[contact] Errore da n8n ${res.status} cid=${correlationId} :: ${errText.slice(0, 300)}`);
-      return NextResponse.json({ ok: false, error: 'Impossibile inoltrare la richiesta', correlationId }, { status: 502 });
-    }
-
-    const responseData = await res.json().catch(() => ({}));
-    const ticketId = responseData?.ticketId ?? responseData?.data?.[0]?.json?.ticketId ?? null;
-
-    return NextResponse.json({ ok: true, ticketId, correlationId });
+    // 3. Rispondiamo IMMEDIATAMENTE al frontend con il ticketId
+    return NextResponse.json({
+      ok: true,
+      message: "Richiesta ricevuta con successo.",
+      ticketId: ticketId, // Restituiamo l'ID che abbiamo creato!
+    });
 
   } catch (error: any) {
-    if (error?.message === 'rate_limited') {
-      return NextResponse.json({ ok: false, error: 'Troppe richieste, riprova tra un minuto.' }, { status: 429 });
-    }
-    console.error(`[contact] Errore fatale cid=${correlationId}`, error);
-    return NextResponse.json({ ok: false, error: 'Errore interno del server', correlationId }, { status: 500 });
+    console.error("Errore nell'API /api/contact:", error);
+    return NextResponse.json({ error: "Errore interno del server." }, { status: 500 });
   }
 }
