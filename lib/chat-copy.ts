@@ -11,12 +11,15 @@ export const chatCopy = {
   ask_email: "Se preferisci, puoi lasciarmi anche un'email (è facoltativo, puoi scrivere 'no').",
   ask_timeslot: "Hai una disponibilità preferita per l'intervento? (es. 'domani mattina', 'oggi pomeriggio', 'sono flessibile')",
   confirm_summary: "Fantastico, abbiamo finito! Ecco il riepilogo completo della tua richiesta. Dai un'occhiata per assicurarti che sia tutto corretto:",
-  confirm_action: "È tutto giusto? Se mi dici 'sì', invio subito la richiesta ai nostri tecnici.",
+  confirm_action: "È tutto giusto? Se mi dici 'sì', invio subito la richiesta ai nostri tecnici. Se vuoi cambiare qualcosa, scrivi 'modifica'.",
+  // --- NUOVI TESTI PER LA MODIFICA ---
+  ask_modification: "Certo. Cosa vuoi modificare? Puoi scrivere 'nome', 'indirizzo', 'telefono', 'email' o 'disponibilità'.",
+  modification_acknowledged: "Ok, ho aggiornato. Controlla di nuovo il riepilogo qui sopra. È tutto corretto ora?",
+  // --- FINE NUOVI TESTI ---
   out_of_area: "Al momento la tua zona non è coperta direttamente dal nostro servizio standard. Possiamo comunque inoltrare la richiesta: se un tecnico accetta, potrebbe essere applicato un costo extra per la trasferta. Vuoi che proviamo lo stesso?",
   sent: (ticketId: string) => `✅ Fatto! Richiesta inviata. Il tuo codice di riferimento è **${ticketId}**. Ti aggiorneremo non appena un tecnico prenderà in carico il lavoro.`,
   error: (message: string) => `Ops! Qualcosa è andato storto nell'invio: ${message}`,
-  // --- MODIFICA: Messaggio di annullamento più chiaro ---
-  cancel: "Nessun problema, ho annullato la richiesta. Se vuoi modificare qualcosa o procedere comunque, scrivimelo pure. Altrimenti, se vuoi iniziare una nuova richiesta, descrivi il tuo nuovo problema.",
+  cancel: "Nessun problema, ho annullato la richiesta. Se vuoi iniziare una nuova richiesta, descrivi il tuo nuovo problema.",
   off_topic: "Sono un assistente virtuale per le richieste di intervento. Se hai bisogno di aiuto per un problema in casa, descrivimelo e sarò felice di aiutarti."
 };
 

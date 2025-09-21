@@ -6,7 +6,7 @@ import { Euro, MapPin, Clock, MessageSquare, CheckCircle, AlertCircle, Loader, X
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
-// Tipo Lead (invariato)
+// Definizione del tipo per una richiesta (Lead)
 type Lead = {
   id?: string;
   CreatedAt?: string;
@@ -22,7 +22,12 @@ type Lead = {
   Stato?: 'Inviata' | 'In carico' | 'Completata' | 'Annullata';
 };
 
-// Tutte le funzioni e i componenti (parseDate, SkeletonCard, EmptyState, StatusBadge, RequestCard) rimangono invariati...
+// --- COMPONENTI DI SUPPORTO ---
+// Queste funzioni sono ora definite correttamente all'interno del file.
+
+/**
+ * Formatta una stringa di data in un formato leggibile.
+ */
 function parseDate(dateString?: string): string {
   if (!dateString) return 'Data non disponibile';
   try {
@@ -34,6 +39,9 @@ function parseDate(dateString?: string): string {
   }
 }
 
+/**
+ * Componente "scheletro" da mostrare durante il caricamento.
+ */
 function SkeletonCard() {
   return (
     <div className="bg-card rounded-lg p-5 border animate-pulse">
@@ -56,6 +64,9 @@ function SkeletonCard() {
   );
 }
 
+/**
+ * Componente da mostrare quando non ci sono richieste.
+ */
 function EmptyState() {
   return (
     <div className="text-center py-16 px-6 bg-card border rounded-lg">
@@ -76,6 +87,9 @@ function EmptyState() {
   );
 }
 
+/**
+ * Componente badge per visualizzare lo stato di una richiesta.
+ */
 const StatusBadge = ({ status }: { status: Lead['Stato'] }) => {
     const statusMap = {
         'Inviata': { text: 'Inviata', icon: <Loader size={12} className="mr-1 animate-spin" />, color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' },
@@ -93,37 +107,44 @@ const StatusBadge = ({ status }: { status: Lead['Stato'] }) => {
     );
 };
 
+/**
+ * Card interattiva per ogni singola richiesta.
+ */
 function RequestCard({ request: r }: { request: Lead }) {
   const date = parseDate(r.CreatedAt);
   const price = r.price_low && r.price_high ? `~${r.price_low}–${r.price_high}€` : 'Da definire';
   
+  const detailUrl = `/dashboard/${r.ticketId || r.id}`;
+
   return (
-    <div className="bg-card text-card-foreground rounded-lg p-4 sm:p-5 border transition-shadow hover:shadow-md">
-      <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <StatusBadge status={r.Stato} />
-          <span className="inline-block px-3 py-1 text-xs font-semibold uppercase rounded-full bg-secondary text-secondary-foreground">{r.category || 'TUTTOFARE'}</span>
+    <Link href={detailUrl} className="block w-full">
+      <div className="bg-card text-card-foreground rounded-lg p-4 sm:p-5 border transition-all duration-200 hover:shadow-lg hover:border-primary/50 cursor-pointer">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <StatusBadge status={r.Stato} />
+            <span className="inline-block px-3 py-1 text-xs font-semibold uppercase rounded-full bg-secondary text-secondary-foreground">{r.category || 'TUTTOFARE'}</span>
+          </div>
+          <div className="text-xs text-muted-foreground flex-shrink-0 font-mono mt-2 sm:mt-0 text-left sm:text-right">
+              <div>{date}</div>
+              {r.ticketId && (
+                  <div className="flex items-center gap-1 justify-start sm:justify-end mt-1">
+                      <Hash size={12} />
+                      <span>ID: {r.ticketId}</span>
+                  </div>
+              )}
+          </div>
         </div>
-        <div className="text-xs text-muted-foreground flex-shrink-0 font-mono mt-2 sm:mt-0 text-left sm:text-right">
-            <div>{date}</div>
-            {r.ticketId && (
-                <div className="flex items-center gap-1 justify-start sm:justify-end mt-1">
-                    <Hash size={12} />
-                    <span>ID: {r.ticketId}</span>
-                </div>
-            )}
+        {r.message && <p className="mt-3 text-foreground whitespace-pre-wrap line-clamp-2">{r.message}</p>}
+        <div className="mt-4 pt-4 border-t border-border/60 text-sm text-muted-foreground space-y-2">
+          {r.address && <div className="flex items-center gap-2"><MapPin size={14} /><span>{r.address}, {r.city}</span></div>}
+          <div className="flex items-center gap-2"><Euro size={14} /><span>Stima: <strong>{price}</strong></span></div>
         </div>
       </div>
-      {r.message && <p className="mt-3 text-foreground whitespace-pre-wrap">{r.message.split('\n')[0]}</p>}
-      <div className="mt-4 pt-4 border-t border-border/60 text-sm text-muted-foreground space-y-2">
-        {r.address && <div className="flex items-center gap-2"><MapPin size={14} /><span>{r.address}, {r.city}</span></div>}
-        <div className="flex items-center gap-2"><Euro size={14} /><span>Stima: <strong>{price}</strong></span></div>
-        {r.est_minutes && <div className="flex items-center gap-2"><Clock size={14} /><span>Durata: ~{r.est_minutes} min</span></div>}
-      </div>
-    </div>
+    </Link>
   );
 }
 
+// --- COMPONENTE PRINCIPALE DELLA PAGINA ---
 export default function DashboardPage() {
   const { data: session, status } = useSession({ required: true });
   const [items, setItems] = useState<Lead[]>([]);
@@ -146,15 +167,9 @@ export default function DashboardPage() {
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.email) {
       const userId = session.user.email;
-      fetchRequests(userId); // Caricamento iniziale
-
-      // --- NUOVA PARTE: AGGIORNAMENTO AUTOMATICO ---
-      const intervalId = setInterval(() => {
-        console.log('Controllo aggiornamenti stato...');
-        fetchRequests(userId);
-      }, 30000); // Ogni 30 secondi
-
-      return () => clearInterval(intervalId); // Pulisce l'intervallo quando il componente viene smontato
+      fetchRequests(userId);
+      const intervalId = setInterval(() => fetchRequests(userId), 30000);
+      return () => clearInterval(intervalId);
     }
   }, [status, session, fetchRequests]);
 
