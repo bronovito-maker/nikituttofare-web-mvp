@@ -1,8 +1,9 @@
 'use client';
 import { useRef, ChangeEvent } from 'react';
-import { Paperclip, SendHorizonal, Camera, X } from 'lucide-react';
+import { Paperclip, SendHorizonal, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import FileUploadPreview from './FileUploadPreview';
+// Ecco la modifica: abbiamo aggiunto le parentesi graffe {}
+import { FileUploadPreview } from './FileUploadPreview';
 
 interface MessageInputProps {
   input: string;
