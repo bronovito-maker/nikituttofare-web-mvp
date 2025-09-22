@@ -1,29 +1,79 @@
-# NTF Web (Next.js on Railway)
+NTF Web MVP (Next.js, Next-Auth, NocoDB)
+Questa applicazione è un MVP (Minimum Viable Product) per un servizio di assistenza domestica. L'obiettivo è fornire un'interfaccia mobile-first e intuitiva, basata su una chat, per raccogliere le richieste degli utenti. Le richieste vengono poi elaborate e inviate a un workflow di n8n per l'assegnazione a un tecnico tramite Telegram.
 
-Sito minimale, mobile-first, con intake stile chat → invio a n8n → assegnazione su Telegram. Dashboard utente legge i **leads** da NocoDB.
+L'applicazione include anche un'area utente protetta da autenticazione, dove gli utenti registrati possono visualizzare lo storico e lo stato delle loro richieste.
 
-## Setup
+Stack Tecnologico
+Framework: Next.js (App Router)
 
-1. **Copia .env.example in .env** e compila le variabili.
-2. `npm i`
-3. `npm run dev`
+Stile: Tailwind CSS con Shadcn UI per componenti pronti all'uso.
 
-## Deploy su Railway
+Autenticazione: Next-Auth v5 con un provider di credenziali (email/password).
 
-- Crea un nuovo progetto → GitHub repo → seleziona questa cartella.
-- Aggiungi le **Environment Variables** come da `.env.example`.
-- Start command: `npm run start` (Railway build esegue `npm run build` automaticamente se rileva Next).
-- Porta 3000 (default).
+Database: NocoDB utilizzato come backend, con un adapter custom per Next-Auth.
 
-## Rotte
+Intelligenza Artificiale: Google AI (Gemini) per l'analisi e la categorizzazione delle richieste utente.
 
-- `/` Landing minimal
-- `/chat` Intake stile chat → POST `api/contact`
-- `/login` Login email-only (qualsiasi email accettata)
-- `/dashboard` Lista leads utente da NocoDB (richiede login)
+Deployment: Ottimizzato per Railway.
 
-## Note
+Funzionalità Principali
+Chatbot Intelligente (/chat): Un'interfaccia di chat guida l'utente attraverso la creazione di una richiesta di servizio. Il chatbot pone domande mirate per raccogliere tutti i dettagli necessari.
 
-- `api/contact` inoltra al webhook n8n (`N8N_WEBHOOK_URL`), producendo un `userId` **compatibile** con il normalizzatore di n8n.
-- `api/requests` interroga NocoDB filtrando per `userId`.
-- UI leggera con Tailwind, nessuna dipendenza UI extra.
+Registrazione e Login Utente (/register, /login): Un sistema di autenticazione completo che permette agli utenti di creare un account e accedere a un'area riservata.
+
+Dashboard Utente (/dashboard): Una volta autenticati, gli utenti possono visualizzare una lista di tutte le loro richieste, con lo stato di avanzamento in tempo reale.
+
+Dettaglio Richiesta (/dashboard/[ticketId]): Ogni richiesta ha una pagina di dettaglio dedicata per una visione completa.
+
+Profilo Utente (/profilo): Una sezione dove l'utente può gestire i propri dati (funzionalità in sviluppo).
+
+Architettura e Flusso Dati
+Intake via Chat: L'utente descrive il problema nella chat. La richiesta viene inviata all'endpoint /api/assist.
+
+Analisi AI: L'API /api/assist interroga il modello AI di Google per analizzare il testo, categorizzare il servizio (es. "idraulico", "elettricista"), stimare l'urgenza e preparare un riassunto per il tecnico.
+
+Raccolta Dati: La chat continua a raccogliere informazioni anagrafiche (nome, indirizzo, telefono, ecc.).
+
+Invio a n8n: Una volta confermata, la richiesta completa (inclusi i dati analizzati dall'AI) viene inviata all'endpoint /api/contact, che a sua volta la inoltra a un webhook di n8n.
+
+Creazione del Lead: Il workflow di n8n processa i dati e crea un nuovo record nella tabella dei "Leads" su NocoDB.
+
+Visualizzazione su Dashboard: L'utente, se registrato, può vedere la richiesta appena creata nella sua dashboard, che legge i dati direttamente da NocoDB tramite l'endpoint /api/requests.
+
+Setup del Progetto
+Clona il repository:
+
+Bash
+
+git clone https://github.com/nikituttofare-web-mvp.git
+cd nikituttofare-web-mvp
+Installa le dipendenze:
+
+Bash
+
+npm install
+Configura le variabili d'ambiente:
+Copia il file .env.example in un nuovo file chiamato .env e compila tutte le variabili richieste.
+
+Bash
+
+cp .env.example .env
+Le variabili includono le chiavi per NocoDB, Google AI, Next-Auth, e l'URL del webhook di n8n.
+
+Avvia il server di sviluppo:
+
+Bash
+
+npm run dev
+L'applicazione sarà disponibile su http://localhost:3000.
+
+Deploy su Railway
+Questo progetto è configurato per un deploy semplice e veloce su Railway.
+
+Crea un Nuovo Progetto: Collega il tuo account GitHub e seleziona questo repository.
+
+Aggiungi le Variabili d'Ambiente: Nel pannello di configurazione del progetto su Railway, aggiungi tutte le variabili definite nel tuo file .env.
+
+Comando di Avvio: Railway dovrebbe rilevare automaticamente che si tratta di un'app Next.js e usare npm run start (dopo aver eseguito npm run build in automatico).
+
+Porta: La porta di default è 3000.
