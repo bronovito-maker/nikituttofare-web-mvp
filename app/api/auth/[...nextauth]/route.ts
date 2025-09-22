@@ -1,107 +1,58 @@
-// File: app/api/auth/[...nextauth]/route.ts
+// File: lib/noco.ts
 
-import NextAuth from "next-auth";
-import type { NextAuthConfig } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { compare } from "bcryptjs";
-import { NocoAdapter } from "@/lib/noco-adapter";
-import { getNocoClient } from "@/lib/noco";
+// Usiamo require per compatibilità con il tipo di modulo di nocodb-sdk
+const NocoClient = require('nocodb-sdk').default;
 
-const noco = getNocoClient();
+// Creiamo una singola istanza del client per riutilizzarla
+let nocoClient: any = null;
 
-type NocoUser = {
-  Id: string | number;
-  name?: string | null;
-  email: string;
-  password?: string | null | { [key: string]: any };
+// Funzione per ottenere il client NocoDB
+export const getNocoClient = () => {
+  if (!nocoClient) {
+    // IMPORTANTE: Assicurati che le variabili d'ambiente siano impostate!
+    if (!process.env.NOCO_BASE_URL || !process.env.NOCO_AUTH_TOKEN) {
+      throw new Error("Le variabili d'ambiente di NocoDB non sono configurate.");
+    }
+    
+    nocoClient = new NocoClient({
+      baseURL: process.env.NOCO_BASE_URL,
+      auth: {
+        "auth-token": process.env.NOCO_AUTH_TOKEN,
+      },
+    });
+  }
+  return nocoClient;
 };
 
-const authOptions: NextAuthConfig = {
-  adapter: NocoAdapter(noco),
-  session: {
-    strategy: "jwt",
-  },
-  pages: {
-    signIn: "/login",
-  },
-  providers: [
-    CredentialsProvider({
-      name: "Credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials.password) {
-          return null;
-        }
-
-        try {
-          const users = await noco.db.dbViewRow.list('vw_users_details', 'Users', {
-            where: `(email,eq,${credentials.email})`,
-          });
-          
-          const user = users.list[0] as NocoUser | undefined;
-          
-          if (!user) {
-            console.log(`[AUTH] Utente non trovato per l'email: ${credentials.email}`);
-            return null;
-          }
-          
-          let passwordHash: string | null = null;
-          
-          if (typeof user.password === 'string') {
-            passwordHash = user.password;
-          } else if (typeof user.password === 'object' && user.password !== null) {
-            const potentialPassword = user.password.value || user.password.text || user.password.password;
-            if (typeof potentialPassword === 'string') {
-              passwordHash = potentialPassword;
-            }
-          }
-
-          if (!passwordHash) {
-            console.error(`[AUTH] ERRORE: Password hash non trovata o non è una stringa per l'utente ${user.email}`);
-            return null;
-          }
-          
-          const passwordToCheck = typeof credentials.password === "string" ? credentials.password : "";
-          const isPasswordCorrect = await compare(passwordToCheck, passwordHash);
-          
-          if (isPasswordCorrect) {
-            console.log(`[AUTH] Accesso riuscito per ${user.email}`);
-            return {
-              id: String(user.Id),
-              name: user.name || user.email,
-              email: user.email,
-            };
-          } else {
-            console.log(`[AUTH] Password errata per ${user.email}`);
-            return null;
-          }
-
-        } catch (error) {
-          console.error("[AUTH] Eccezione nell'handler authorize:", error);
-          return null;
-        }
-      },
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, user }: { token: any; user?: { id?: string | number } }) {
-      if (user) {
-        token.id = user.id;
-      }
-      return token;
-    },
-    async session({ session, token }: { session: any; token: any }) {
-      if (token && session.user) {
-        session.user.id = token.id as string;
-      }
-      return session;
-    },
-  },
+// --- FUNZIONE MANCANTE AGGIUNTA ---
+// Funzione per ottenere un utente tramite la sua email
+export const getUserByEmail = async (email: string) => {
+  const noco = getNocoClient();
+  try {
+    const response = await noco.db.dbViewRow.list('vw_users_details', 'Users', {
+      where: `(email,eq,${email})`,
+    });
+    // Restituisce il primo utente trovato o null se non ce ne sono
+    return response.list[0] || null;
+  } catch (error) {
+    console.error("Errore durante la ricerca dell'utente:", error);
+    return null;
+  }
 };
 
-const handler = NextAuth(authOptions);
-
-export { handler as GET, handler as POST };
+// --- FUNZIONE MANCANTE AGGIUNTA ---
+// Funzione per creare un nuovo utente nel database
+export const createUser = async (userData: { name: string; email: string; passwordHash: string }) => {
+  const noco = getNocoClient();
+  try {
+    const newUser = await noco.db.dbTableRow.create('Users', {
+      name: userData.name,
+      email: userData.email,
+      password: userData.passwordHash,
+    });
+    return newUser;
+  } catch (error) {
+    console.error("Errore durante la creazione dell'utente:", error);
+    return null;
+  }
+};
