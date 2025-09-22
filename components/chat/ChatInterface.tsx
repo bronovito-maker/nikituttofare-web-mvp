@@ -1,111 +1,76 @@
-'use client'; // <-- FONDAMENTALE: Aggiungi questa riga in cima al file
+// File: components/chat/ChatInterface.tsx
 
-import { useRef, ChangeEvent } from 'react';
-import { Paperclip, SendHorizonal, Camera } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { FileUploadPreview } from './FileUploadPreview';
+'use client';
 
-interface MessageInputProps {
+import { useEffect, useRef, ChangeEvent, ReactNode } from 'react';
+import { Message, Step, ChatFormState } from '@/lib/types';
+import ChatBubble from '../ChatBubble';
+import Typing from '../Typing';
+import MessageInput from './MessageInput';
+import { ChatIntroScreen } from './ChatIntroScreen';
+import { SummaryBubble } from './SummaryBubble';
+
+interface ChatInterfaceProps {
+  messages: Message[];
   input: string;
-  handleInputChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  handleInputChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   handleSend: () => void;
+  isLoading: boolean;
+  step: Step;
+  formSummary: any;
+  startChat: (service: string) => void;
+  finalTicketId: string | null;
+  resetChat: () => void;
   fileToUpload: File | null;
   setFileToUpload: (file: File | null) => void;
   removeFile: () => void;
   previewUrl: string | null;
-  step: string;
 }
 
-export default function MessageInput({
+export default function ChatInterface({
+  messages,
   input,
   handleInputChange,
   handleSend,
+  isLoading,
+  step,
+  formSummary,
+  startChat,
+  finalTicketId,
+  resetChat,
   fileToUpload,
   setFileToUpload,
   removeFile,
   previewUrl,
-  step
-}: MessageInputProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
+}: ChatInterfaceProps) {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleFileClick = () => {
-    fileInputRef.current?.click();
-  };
-  
-  const handleCameraClick = () => {
-    cameraInputRef.current?.click();
-  };
-
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] || null;
-    if (file) {
-      setFileToUpload(file);
-    }
-    event.target.value = '';
-  };
-
-  const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      handleSend();
-    }
-  };
-
-  const isDisabled = step === 'done';
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   return (
-    <div className="relative">
-      {previewUrl && (
-        <FileUploadPreview previewUrl={previewUrl} onRemove={removeFile} />
-      )}
-      <div className="flex items-center p-4 border-t bg-white">
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          className="hidden"
-          accept="image/*"
-          disabled={isDisabled}
-        />
-        <input
-          type="file"
-          ref={cameraInputRef}
-          onChange={handleFileChange}
-          className="hidden"
-          accept="image/*"
-          capture="environment"
-          disabled={isDisabled}
-        />
-
-        <Button variant="ghost" size="icon" onClick={handleFileClick} disabled={isDisabled}>
-          <Paperclip className="h-6 w-6 text-gray-500" />
-        </Button>
-        
-        <Button variant="ghost" size="icon" onClick={handleCameraClick} disabled={isDisabled}>
-          <Camera className="h-6 w-6 text-gray-500" />
-        </Button>
-
-        <textarea
-          value={input}
-          onChange={handleInputChange}
-          onKeyPress={handleKeyPress}
-          placeholder="Scrivi il tuo messaggio..."
-          className="flex-1 w-full rounded-full px-4 py-2 bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-          rows={1}
-          style={{ maxHeight: '100px' }}
-          disabled={isDisabled}
-        />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="ml-2"
-          onClick={() => handleSend()}
-          disabled={(!input.trim() && !fileToUpload) || isDisabled}
-        >
-          <SendHorizonal className="h-6 w-6 text-blue-500" />
-        </Button>
+    <div className="flex flex-col h-full">
+      <div className="flex-grow overflow-y-auto p-4 space-y-4">
+        {messages.length === 1 && <ChatIntroScreen onSuggestionClick={startChat} />}
+        {messages.map((msg, index) => (
+          <ChatBubble key={index} role={msg.role}>
+            {msg.isLoading ? <Typing /> : msg.content}
+          </ChatBubble>
+        ))}
+        {formSummary && step === 'confirm' && <SummaryBubble form={formSummary.formState} aiResult={formSummary.aiResult} />}
+        <div ref={messagesEndRef} />
       </div>
+      <MessageInput
+        input={input}
+        handleInputChange={handleInputChange}
+        handleSend={handleSend}
+        fileToUpload={fileToUpload}
+        setFileToUpload={setFileToUpload}
+        removeFile={removeFile}
+        previewUrl={previewUrl}
+        step={step}
+      />
     </div>
   );
 }

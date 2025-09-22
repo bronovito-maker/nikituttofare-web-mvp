@@ -1,59 +1,48 @@
-// lib/noco.ts
+// File: lib/noco.ts
 
-export async function getUserByEmail(base: string, token: string, tableId: string, email: string) {
-  // Aggiungiamo un controllo per dare un errore più chiaro se l'URL non è configurato.
-  if (!base || !token || !tableId) {
-    throw new Error("Variabili d'ambiente per NocoDB (URL, Token, o Table ID) non trovate. Controlla il file .env.local e riavvia il server.");
-  }
+// --- MODIFICA CHIAVE QUI ---
+// Importiamo l'intero modulo e poi accediamo alla proprietà 'default'.
+// Questa è la soluzione più robusta per i diversi tipi di moduli JavaScript.
+import * as NocoSDK from 'nocodb-sdk';
+const NocoClient = (NocoSDK as any).default;
 
+import { hash } from 'bcryptjs';
+
+// Funzione per ottenere un client NocoDB configurato
+export const getNocoClient = () => {
+  // Ora 'new NocoClient' funzionerà correttamente
+  const noco = new NocoClient({
+    baseURL: process.env.NOCO_BASE_URL,
+    apiToken: process.env.NOCO_API_TOKEN,
+  });
+  return noco;
+};
+
+// Funzione per ottenere un utente tramite email (invariata)
+export async function getUserByEmail(email: string) {
+  const noco = getNocoClient();
   try {
-    const urlBase = base.replace(/\/$/, "");
-    const where = encodeURIComponent(`(email,eq,${email})`);
-    // --- MODIFICA CHIAVE: Usiamo il percorso API corretto di NocoDB v2 ---
-    const url = `${urlBase}/api/v2/tables/${tableId}/records?where=${where}&limit=1`;
-    
-    console.log(`[NocoDB] Chiamata a: ${url}`); // Log utile per il debug
-
-    const res = await fetch(url, { headers: { "xc-token": token, accept: "application/json" }, cache: "no-store" });
-    
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`Errore da NocoDB: ${res.status} - ${errorText}`);
-    }
-
-    const data = await res.json();
-    const list = data?.list ?? [];
-    return Array.isArray(list) && list[0] ? list[0] : null;
-
+    const user = await noco.db.dbViewRow.list('vw_users_details', 'Users', { where: `(email,eq,${email})` });
+    return user.list[0];
   } catch (error) {
-    console.error("Errore di rete o API in getUserByEmail:", error);
-    throw new Error("Impossibile connettersi al database degli utenti.");
+    console.error('Errore nel recuperare l’utente tramite email:', error);
+    return null;
   }
 }
 
-export async function createUser(base: string, token: string, tableId: string, rec: any) {
-  if (!base || !token || !tableId) {
-    throw new Error("Variabili d'ambiente per NocoDB (URL, Token, o Table ID) non trovate. Controlla il file .env.local e riavvia il server.");
-  }
-
+// Funzione per creare un nuovo utente (invariata)
+export async function createUser(data: any) {
+  const noco = getNocoClient();
+  const hashedPassword = await hash(data.password, 10);
   try {
-    const urlBase = base.replace(/\/$/, "");
-     // --- MODIFICA CHIAVE: Usiamo il percorso API corretto di NocoDB v2 ---
-    const url = `${urlBase}/api/v2/tables/${tableId}/records`;
-
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "xc-token": token, "Content-Type": "application/json" },
-      body: JSON.stringify(rec),
+    const newUser = await noco.db.dbViewRow.create('vw_users_details', 'Users', {
+      name: data.name,
+      email: data.email,
+      password: hashedPassword,
     });
-    
-    if (!res.ok) {
-        throw new Error(`NocoDB (createUser) fallito: ${res.status} ${await res.text()}`);
-    }
-    return res.json();
-    
+    return newUser;
   } catch (error) {
-    console.error("Errore di rete o API in createUser:", error);
-    throw new Error("Impossibile creare l'utente nel database.");
+    console.error('Errore nella creazione dell’utente:', error);
+    return null;
   }
 }

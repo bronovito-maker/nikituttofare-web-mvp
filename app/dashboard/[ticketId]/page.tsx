@@ -1,8 +1,10 @@
+// File: app/dashboard/[ticketId]/page.tsx
+
 'use client';
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { Request } from '@/lib/types'; // <-- AGGIUNGI QUESTA RIGA
+import { Request } from '@/lib/types'; // Il tipo ora è esportato correttamente
 
 export default function TicketDetailPage({ params }: { params: { ticketId: string } }) {
   const { ticketId } = params;
@@ -20,7 +22,8 @@ export default function TicketDetailPage({ params }: { params: { ticketId: strin
             throw new Error('Errore nel recupero dei dettagli della richiesta');
           }
           const data = await response.json();
-          setRequest(data);
+          // Assicuriamoci che 'status' e 'category' siano sempre presenti
+          setRequest({ ...data, status: data.status || 'new', category: data.category || 'N/D' });
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Si è verificato un errore sconosciuto');
         } finally {
@@ -35,22 +38,14 @@ export default function TicketDetailPage({ params }: { params: { ticketId: strin
     fetchRequestDetails();
   }, [ticketId, status]);
 
-  if (isLoading) {
-    return <div className="text-center p-8">Caricamento dettagli...</div>;
-  }
-
-  if (error) {
-    return <div className="text-center p-8 text-red-500">{error}</div>;
-  }
-
-  if (!request) {
-    return <div className="text-center p-8">Richiesta non trovata.</div>;
-  }
+  if (isLoading) return <div className="text-center p-8">Caricamento dettagli...</div>;
+  if (error) return <div className="text-center p-8 text-red-500">{error}</div>;
+  if (!request) return <div className="text-center p-8">Richiesta non trovata.</div>;
 
   return (
     <div className="container mx-auto p-4 md:p-8">
-      <Link href="/dashboard" className="text-blue-500 hover:underline mb-6 block">&larr; Torna alla Dashboard</Link>
-      <div className="bg-white p-6 rounded-lg shadow-md">
+      <Link href="/dashboard" className="text-primary hover:underline mb-6 block">&larr; Torna alla Dashboard</Link>
+      <div className="bg-card border rounded-lg shadow-sm p-6">
         <div className="flex justify-between items-start mb-4">
           <h1 className="text-3xl font-bold">{request.category}</h1>
           <span
@@ -66,16 +61,16 @@ export default function TicketDetailPage({ params }: { params: { ticketId: strin
         </div>
         <div className="space-y-4">
           <div>
-            <h2 className="font-semibold text-gray-700">Ticket ID</h2>
-            <p className="text-gray-600">{request.ticketId}</p>
+            <h2 className="font-semibold text-foreground">Ticket ID</h2>
+            <p className="text-muted-foreground">{request.ticketId}</p>
           </div>
           <div>
-            <h2 className="font-semibold text-gray-700">Data Richiesta</h2>
-            <p className="text-gray-600">{new Date(request.createdAt).toLocaleString('it-IT')}</p>
+            <h2 className="font-semibold text-foreground">Data Richiesta</h2>
+            <p className="text-muted-foreground">{new Date(request.createdAt).toLocaleString('it-IT')}</p>
           </div>
           <div>
-            <h2 className="font-semibold text-gray-700">Descrizione</h2>
-            <p className="text-gray-600 whitespace-pre-wrap">{request.message}</p>
+            <h2 className="font-semibold text-foreground">Descrizione</h2>
+            <p className="text-muted-foreground whitespace-pre-wrap">{request.message}</p>
           </div>
         </div>
       </div>

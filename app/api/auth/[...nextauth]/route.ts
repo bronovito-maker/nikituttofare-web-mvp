@@ -1,13 +1,24 @@
+// File: app/api/auth/[...nextauth]/route.ts
+
 import NextAuth from "next-auth";
-import { NocoAdapter } from "@/lib/noco-adapter";
+import type { DefaultSession, NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import EmailProvider from "next-auth/providers/email"; // <-- CORREZIONE 1: Importa EmailProvider
+import { compare } from "bcryptjs";
+import { NocoAdapter } from "@/lib/noco-adapter";
 import { getNocoClient } from "@/lib/noco";
-import { compare } from 'bcryptjs';
 
 const noco = getNocoClient();
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+// Definiamo un tipo per l'utente che ci aspettiamo da NocoDB
+type NocoUser = {
+  Id: string | number;
+  name?: string | null;
+  email: string;
+  // La password può arrivare come stringa, null, o un oggetto sconosciuto
+  password?: string | null | { [key: string]: any }; 
+};
+
+export const authOptions: NextAuthConfig = {
   adapter: NocoAdapter(noco),
   session: {
     strategy: "jwt",
@@ -16,11 +27,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/login",
   },
   providers: [
-    // <-- CORREZIONE 2: Usa EmailProvider qui
-    EmailProvider({
-      server: process.env.EMAIL_SERVER,
-      from: process.env.EMAIL_FROM,
-    }),
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -33,35 +39,76 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         try {
-          const user = await noco.db.dbViewRow.read('vw_users_details', 'Users', {
-            where: `(email,eq,${credentials.email})`
+          const users = await noco.db.dbViewRow.list('vw_users_details', 'Users', {
+            where: `(email,eq,${credentials.email})`,
           });
-
-          if (user && await compare(credentials.password, user.password as string)) {
-            return {
-              id: user.Id as string,
-              name: user.name as string,
-              email: user.email as string,
-            };
-          } else {
+          
+          const user = users.list[0] as NocoUser | undefined;
+          
+          if (!user) {
+            console.log(`[AUTH] Utente non trovato per l'email: ${credentials.email}`);
             return null;
           }
+
+          // --- LOG DI DEBUG PER CAPIRE I DATI RICEVUTI ---
+          console.log('[AUTH] Oggetto utente ricevuto da NocoDB:', JSON.stringify(user, null, 2));
+          
+          let passwordHash: string | null = null;
+
+          // --- LOGICA ROBUSTA PER ESTRARRE LA PASSWORD ---
+          if (typeof user.password === 'string') {
+            passwordHash = user.password;
+          } else if (typeof user.password === 'object' && user.password !== null) {
+            // Se è un oggetto, proviamo a cercare un valore plausibile al suo interno
+            const potentialPassword = user.password.value || user.password.text || user.password.password;
+            if (typeof potentialPassword === 'string') {
+              passwordHash = potentialPassword;
+            }
+          }
+
+          if (!passwordHash) {
+            console.error(`[AUTH] ERRORE: Password hash non trovata o non è una stringa per l'utente ${user.email}`);
+            return null;
+          }
+          
+          const passwordToCheck = typeof credentials.password === "string" ? credentials.password : "";
+          const isPasswordCorrect = await compare(passwordToCheck, passwordHash);
+          
+          if (isPasswordCorrect) {
+            console.log(`[AUTH] Accesso riuscito per ${user.email}`);
+            return {
+              id: String(user.Id),
+              name: user.name || user.email,
+              email: user.email,
+            };
+          } else {
+            console.log(`[AUTH] Password errata per ${user.email}`);
+            return null;
+          }
+
         } catch (error) {
-          console.error("Errore durante l'autorizzazione:", error);
+          console.error("[AUTH] Eccezione nell'handler authorize:", error);
           return null;
         }
       },
     }),
   ],
   callbacks: {
-    async session({ session, token }) {
-      if (token.sub && session.user) {
-        session.user.id = token.sub;
+    async jwt({ token, user }: { token: any; user?: { id?: string | number } }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }: { session: any; token: any }) {
+      if (token && session.user) {
+        session.user.id = token.id as string;
       }
       return session;
     },
-    async jwt({ token }) {
-      return token;
-    },
   },
-});
+};
+
+const handler = NextAuth(authOptions);
+
+export { handler as GET, handler as POST };
