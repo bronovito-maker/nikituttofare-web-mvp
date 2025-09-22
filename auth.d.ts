@@ -1,21 +1,16 @@
-// auth.d.ts
-import { DefaultSession } from 'next-auth';
+import { DefaultSession } from "next-auth";
 
-declare module 'next-auth' {
+// Dichiariamo un'estensione del modulo 'next-auth'
+declare module "next-auth" {
   /**
-   * Estende l'interfaccia Session per aggiungere l'ID utente
-   * direttamente all'oggetto `user`. Questo è un approccio più standard.
+   * La sessione restituita da `auth`, `useSession`, ecc.
    */
   interface Session {
+    // Aggiungiamo l'ID dell'utente direttamente alla sessione se vuoi
+    userId?: string;
     user: {
-      id: string; // L'ID utente che arriva dal database
-    } & DefaultSession['user']; // Mantiene le proprietà originali (name, email, image)
-  }
-}
-
-// Estendiamo anche il JWT per coerenza
-declare module '@auth/core/jwt' {
-  interface JWT {
-    id?: string;
+      /** L'ID dell'utente nel database. */
+      id: string;
+    } & DefaultSession["user"];
   }
 }
