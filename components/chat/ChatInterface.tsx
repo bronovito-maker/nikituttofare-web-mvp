@@ -1,59 +1,111 @@
-// components/chat/ChatInterface.tsx
-'use client';
+'use client'; // <-- FONDAMENTALE: Aggiungi questa riga in cima al file
 
-import { useChat } from '@/hooks/useChat';
-import { MessageInput } from './MessageInput';
-import ChatBubble from '@/components/ChatBubble';
-import { ChatIntroScreen } from '@/components/chat/ChatIntroScreen';
-import { useEffect, useRef } from 'react';
-import { ProgressBar } from './ProgressBar';
-import Typing from '../Typing'; // Corretto import, Typing è fuori dalla cartella chat
+import { useRef, ChangeEvent } from 'react';
+import { Paperclip, SendHorizonal, Camera } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { FileUploadPreview } from './FileUploadPreview';
 
-export function ChatInterface() {
-    const { msgs, input, setInput, loading, handleSend, fileToUpload, previewUrl, handleFileSelect, removeFile, handleSuggestionClick, progressState } = useChat();
-    const scrollRef = useRef<HTMLDivElement>(null);
+interface MessageInputProps {
+  input: string;
+  handleInputChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  handleSend: () => void;
+  fileToUpload: File | null;
+  setFileToUpload: (file: File | null) => void;
+  removeFile: () => void;
+  previewUrl: string | null;
+  step: string;
+}
 
-    useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-    }, [msgs, loading]);
+export default function MessageInput({
+  input,
+  handleInputChange,
+  handleSend,
+  fileToUpload,
+  setFileToUpload,
+  removeFile,
+  previewUrl,
+  step
+}: MessageInputProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
-    return (
-        <div className="w-full max-w-3xl mx-auto flex flex-col bg-background h-full shadow-lg border-t sm:border-x border-border rounded-t-xl">
-            {/* La ProgressBar ora viene chiamata senza la proprietà 'totalSteps' */}
-            {msgs.length > 0 && (
-                <ProgressBar
-                    currentStep={progressState.current}
-                    stepLabels={progressState.labels}
-                />
-            )}
-            
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
-                {msgs.length === 0 ? (
-                    <ChatIntroScreen onSuggestionClick={handleSuggestionClick} />
-                ) : (
-                    <>
-                        {msgs.map(m => (
-                            <ChatBubble key={m.id} role={m.role}>{m.content}</ChatBubble>
-                        ))}
-                    </>
-                )}
-                 {/* L'indicatore di "sta scrivendo" ora appare correttamente dopo l'ultimo messaggio */}
-                 {loading && msgs.length > 0 && msgs[msgs.length - 1].role === 'user' && (
-                    <ChatBubble role="assistant"><Typing /></ChatBubble>
-                )}
-            </div>
-            <MessageInput
-                input={input}
-                setInput={setInput}
-                loading={loading}
-                handleSend={handleSend}
-                fileToUpload={fileToUpload}
-                previewUrl={previewUrl}
-                handleFileSelect={handleFileSelect}
-                removeFile={removeFile}
-            />
-        </div>
-    );
+  const handleFileClick = () => {
+    fileInputRef.current?.click();
+  };
+  
+  const handleCameraClick = () => {
+    cameraInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    if (file) {
+      setFileToUpload(file);
+    }
+    event.target.value = '';
+  };
+
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSend();
+    }
+  };
+
+  const isDisabled = step === 'done';
+
+  return (
+    <div className="relative">
+      {previewUrl && (
+        <FileUploadPreview previewUrl={previewUrl} onRemove={removeFile} />
+      )}
+      <div className="flex items-center p-4 border-t bg-white">
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          className="hidden"
+          accept="image/*"
+          disabled={isDisabled}
+        />
+        <input
+          type="file"
+          ref={cameraInputRef}
+          onChange={handleFileChange}
+          className="hidden"
+          accept="image/*"
+          capture="environment"
+          disabled={isDisabled}
+        />
+
+        <Button variant="ghost" size="icon" onClick={handleFileClick} disabled={isDisabled}>
+          <Paperclip className="h-6 w-6 text-gray-500" />
+        </Button>
+        
+        <Button variant="ghost" size="icon" onClick={handleCameraClick} disabled={isDisabled}>
+          <Camera className="h-6 w-6 text-gray-500" />
+        </Button>
+
+        <textarea
+          value={input}
+          onChange={handleInputChange}
+          onKeyPress={handleKeyPress}
+          placeholder="Scrivi il tuo messaggio..."
+          className="flex-1 w-full rounded-full px-4 py-2 bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          rows={1}
+          style={{ maxHeight: '100px' }}
+          disabled={isDisabled}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="ml-2"
+          onClick={() => handleSend()}
+          disabled={(!input.trim() && !fileToUpload) || isDisabled}
+        >
+          <SendHorizonal className="h-6 w-6 text-blue-500" />
+        </Button>
+      </div>
+    </div>
+  );
 }

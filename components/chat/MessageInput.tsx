@@ -1,8 +1,8 @@
-'use client';
+'use client'; // <-- FONDAMENTALE: Aggiungi questa riga in cima al file
+
 import { useRef, ChangeEvent } from 'react';
 import { Paperclip, SendHorizonal, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-// Ecco la modifica: abbiamo aggiunto le parentesi graffe {}
 import { FileUploadPreview } from './FileUploadPreview';
 
 interface MessageInputProps {
@@ -42,7 +42,6 @@ export default function MessageInput({
     if (file) {
       setFileToUpload(file);
     }
-    // Reset the input value to allow selecting the same file again
     event.target.value = '';
   };
 
@@ -61,7 +60,6 @@ export default function MessageInput({
         <FileUploadPreview previewUrl={previewUrl} onRemove={removeFile} />
       )}
       <div className="flex items-center p-4 border-t bg-white">
-        {/* Hidden file input for gallery */}
         <input
           type="file"
           ref={fileInputRef}
@@ -70,14 +68,13 @@ export default function MessageInput({
           accept="image/*"
           disabled={isDisabled}
         />
-        {/* Hidden file input for camera */}
         <input
           type="file"
           ref={cameraInputRef}
           onChange={handleFileChange}
           className="hidden"
           accept="image/*"
-          capture="environment" // Prioritizes the back camera
+          capture="environment"
           disabled={isDisabled}
         />
 
@@ -104,7 +101,7 @@ export default function MessageInput({
           size="icon"
           className="ml-2"
           onClick={() => handleSend()}
-          disabled={!input.trim() && !fileToUpload || isDisabled}
+          disabled={(!input.trim() && !fileToUpload) || isDisabled}
         >
           <SendHorizonal className="h-6 w-6 text-blue-500" />
         </Button>
