@@ -9,16 +9,13 @@ import { getNocoClient } from "@/lib/noco";
 
 const noco = getNocoClient();
 
-// Definiamo un tipo per l'utente che ci aspettiamo da NocoDB
 type NocoUser = {
   Id: string | number;
   name?: string | null;
   email: string;
-  // La password può arrivare come stringa, null, o un oggetto sconosciuto
   password?: string | null | { [key: string]: any };
 };
 
-// Rimuoviamo "export" da questa costante
 const authOptions: NextAuthConfig = {
   adapter: NocoAdapter(noco),
   session: {
