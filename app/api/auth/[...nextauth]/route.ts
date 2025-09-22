@@ -1,7 +1,7 @@
 // File: app/api/auth/[...nextauth]/route.ts
 
 import NextAuth from "next-auth";
-import type { DefaultSession, NextAuthConfig } from "next-auth";
+import type { NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { NocoAdapter } from "@/lib/noco-adapter";
@@ -15,10 +15,11 @@ type NocoUser = {
   name?: string | null;
   email: string;
   // La password può arrivare come stringa, null, o un oggetto sconosciuto
-  password?: string | null | { [key: string]: any }; 
+  password?: string | null | { [key: string]: any };
 };
 
-export const authOptions: NextAuthConfig = {
+// Rimuoviamo "export" da questa costante
+const authOptions: NextAuthConfig = {
   adapter: NocoAdapter(noco),
   session: {
     strategy: "jwt",
@@ -49,17 +50,12 @@ export const authOptions: NextAuthConfig = {
             console.log(`[AUTH] Utente non trovato per l'email: ${credentials.email}`);
             return null;
           }
-
-          // --- LOG DI DEBUG PER CAPIRE I DATI RICEVUTI ---
-          console.log('[AUTH] Oggetto utente ricevuto da NocoDB:', JSON.stringify(user, null, 2));
           
           let passwordHash: string | null = null;
-
-          // --- LOGICA ROBUSTA PER ESTRARRE LA PASSWORD ---
+          
           if (typeof user.password === 'string') {
             passwordHash = user.password;
           } else if (typeof user.password === 'object' && user.password !== null) {
-            // Se è un oggetto, proviamo a cercare un valore plausibile al suo interno
             const potentialPassword = user.password.value || user.password.text || user.password.password;
             if (typeof potentialPassword === 'string') {
               passwordHash = potentialPassword;
