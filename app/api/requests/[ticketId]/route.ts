@@ -1,23 +1,22 @@
 // app/api/requests/[ticketId]/route.ts
-import { NextRequest, NextResponse } from 'next/server'; // MODIFICA: Importa NextRequest
+import { NextRequest, NextResponse } from 'next/server';
 import { getNocoClient } from '@/lib/noco';
 
 const noco = getNocoClient();
 
+// NUOVA MODIFICA: Cambiamo la firma della funzione per essere più espliciti
 export async function GET(
-  request: NextRequest, // MODIFICA: Usa NextRequest invece di Request
-  { params }: { params: { ticketId: string } }
+  request: NextRequest,
+  context: { params: { ticketId: string } }
 ) {
-  const { ticketId } = params;
+  // Estraiamo ticketId dal contesto qui dentro
+  const { ticketId } = context.params;
 
   if (!ticketId) {
     return NextResponse.json({ error: 'Ticket ID mancante' }, { status: 400 });
   }
 
   try {
-    // La logica seguente per trovare il record sembra non corretta per NocoDB,
-    // potrebbe essere necessario un ID numerico.
-    // Per ora, ci concentriamo sulla correzione del tipo.
     const records = await noco.db.dbViewRow.list(
       'vw_requests_details',
       'Leads',
