@@ -2,10 +2,9 @@
 
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { hashPassword } from '@/lib/crypto'; // <-- CORREZIONE: Import da crypto
-import { getUserByEmail, createUser } from '@/lib/noco'; // <-- CORREZIONE: Import da noco
+import { hashPassword } from '@/lib/crypto';
+import { getUserByEmail, createUser, getNocoClient } from '@/lib/noco'; // Aggiungi getNocoClient
 
-// Schema di validazione per i dati di registrazione
 const RegisterSchema = z.object({
   name: z.string().min(2, "Il nome è troppo corto"),
   email: z.string().email("Formato email non valido"),
@@ -13,6 +12,9 @@ const RegisterSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  // Inizializza il client QUI
+  const noco = getNocoClient(); 
+
   try {
     const body = await request.json();
     const validation = RegisterSchema.safeParse(body);
@@ -24,17 +26,14 @@ export async function POST(request: Request) {
     
     const { name, email, password } = validation.data;
 
-    // Controlla se l'utente esiste già
-    const existingUser = await getUserByEmail(email); // <-- CORREZIONE: Chiamata con 1 argomento
+    const existingUser = await getUserByEmail(email);
     if (existingUser) {
       return NextResponse.json({ error: 'Un utente con questa email esiste già.' }, { status: 409 });
     }
 
-    // Hash della password
     const hashedPassword = await hashPassword(password);
 
-    // Crea il nuovo utente
-    const newUser = await createUser({ // <-- CORREZIONE: Chiamata con 1 oggetto
+    const newUser = await createUser({
       name,
       email: email.toLowerCase(),
       passwordHash: hashedPassword,
