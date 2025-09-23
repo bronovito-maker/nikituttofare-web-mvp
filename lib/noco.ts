@@ -1,8 +1,4 @@
-// File: lib/noco.ts
-
-// NOTA: Usiamo "import type" perché ci serve solo per i tipi in questa dichiarazione.
-// L'importazione vera e propria la faremo dentro la funzione.
-import type NocoSdk from "nocodb-sdk";
+import NocoSdk from "nocodb-sdk";
 
 let nocoClient: any = null;
 
@@ -15,10 +11,8 @@ export const getNocoClient = () => {
       throw new Error("Le variabili d'ambiente di NocoDB non sono configurate.");
     }
     
-    // MODIFICA CHIAVE: Importiamo il pacchetto qui dentro.
-    // Questo è più robusto e gestisce meglio le differenze tra moduli.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const Noco = require("nocodb-sdk");
+    // Questa riga gestisce la compatibilità tra i diversi tipi di moduli (ESM e CommonJS)
+    const Noco = (NocoSdk as any).default || NocoSdk;
     
     nocoClient = new Noco({
       apiToken,
