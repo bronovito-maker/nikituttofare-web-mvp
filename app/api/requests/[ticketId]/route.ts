@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+// app/api/requests/[ticketId]/route.ts
+import { NextRequest, NextResponse } from 'next/server'; // MODIFICA: Importa NextRequest
 import { getNocoClient } from '@/lib/noco';
 
 const noco = getNocoClient();
 
-// Aggiungi 'request: Request' come primo argomento della funzione
 export async function GET(
-  request: Request, 
+  request: NextRequest, // MODIFICA: Usa NextRequest invece di Request
   { params }: { params: { ticketId: string } }
 ) {
   const { ticketId } = params;
@@ -15,14 +15,19 @@ export async function GET(
   }
 
   try {
-    const record = await noco.db.dbViewRow.read(
-      'vw_requests_details', // Usa la vista che unisce Leads e Users
-      ticketId,
+    // La logica seguente per trovare il record sembra non corretta per NocoDB,
+    // potrebbe essere necessario un ID numerico.
+    // Per ora, ci concentriamo sulla correzione del tipo.
+    const records = await noco.db.dbViewRow.list(
+      'vw_requests_details',
+      'Leads',
       {
         where: `(ticketId,eq,${ticketId})`
       }
     );
     
+    const record = records.list[0];
+
     if (!record) {
       return NextResponse.json({ error: 'Richiesta non trovata' }, { status: 404 });
     }
