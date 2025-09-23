@@ -1,43 +1,45 @@
-// app/api/send-email/route.ts
-import { NextResponse } from 'next/server';
+// File: app/api/send-email/route.ts
+
+import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { z } from 'zod';
 
-// Inizializza Resend con la tua API Key (assicurati sia nel file .env.local)
-const resend = new Resend(process.env.RESEND_API_KEY);
+// MODIFICA: Rimuoviamo l'inizializzazione del client da qui
 
-export async function POST(req: Request) {
+const emailSchema = z.object({
+  from: z.string().email(),
+  to: z.string().email(),
+  subject: z.string(),
+  html: z.string(),
+});
+
+export async function POST(req: NextRequest) {
+  // MODIFICA: Inizializziamo il client Resend qui, al momento della richiesta
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
   try {
     const body = await req.json();
-    
-    // Estrae i dati necessari dal corpo della richiesta
-    const { to, subject, html } = body;
+    const validation = emailSchema.safeParse(body);
 
-    // Controlla che tutti i campi necessari siano presenti
-    if (!to || !subject || !html) {
-      return NextResponse.json({ error: "Dati mancanti per l'invio dell'email" }, { status: 400 });
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    // Invia l'email usando Resend
+    const { from, to, subject, html } = validation.data;
+
     const { data, error } = await resend.emails.send({
-      // IMPORTANTE: Sostituisci questa email con il tuo dominio verificato su Resend
-      from: 'NikiTuttoFare <noreply@tuo-dominio-verificato.com>', 
-      to: [to],
-      subject: subject,
-      html: html, // Il contenuto dell'email in formato HTML
+      from,
+      to,
+      subject,
+      html,
     });
 
-    // Se Resend restituisce un errore, lo inoltriamo
     if (error) {
-      console.error("Errore da Resend:", error);
-      return NextResponse.json({ error: "Errore durante l'invio dell'email" }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Se l'invio ha successo, restituiamo una risposta positiva
     return NextResponse.json(data);
-
   } catch (error) {
-    // Gestisce qualsiasi altro errore imprevisto
-    console.error("Errore nell'API send-email:", error);
-    return NextResponse.json({ error: "Errore interno del server" }, { status: 500 });
+    return NextResponse.json({ error: 'Errore interno del server' }, { status: 500 });
   }
 }
