@@ -1,53 +1,45 @@
 // app/api/status/[ticketId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { getNocoClient } from "@/lib/noco";
 
-export const dynamic = 'force-dynamic';
+const noco = getNocoClient();
 
 export async function GET(
-    req: NextRequest,
-    { params }: { params: { ticketId: string } }
+  req: NextRequest,
+  // MODIFICA: Tipizziamo 'params' come una Promise, come per l'altro file
+  context: { params: Promise<{ ticketId: string }> }
 ) {
-    const { ticketId } = params;
+  // Usiamo 'await' per risolvere la Promise e ottenere i parametri
+  const { ticketId } = await context.params;
 
-    if (!ticketId) {
-        return NextResponse.json({ ok: false, error: "Ticket ID mancante" }, { status: 400 });
+  if (!ticketId) {
+    return NextResponse.json({ error: "Ticket ID mancante" }, { status: 400 });
+  }
+
+  try {
+    const records = await noco.db.dbViewRow.list(
+      "vw_requests_details",
+      "Leads",
+      {
+        where: `(ticketId,eq,${ticketId})`,
+      }
+    );
+
+    const record = records.list[0];
+
+    if (!record) {
+      return NextResponse.json({ error: "Richiesta non trovata" }, { status: 404 });
     }
 
-    try {
-        const base = process.env.NOCO_BASE_URL || "";
-        const token = process.env.NOCO_API_TOKEN || "";
-        const table = process.env.NOCO_LEADS_TABLE_ID || "";
+    // Estrai solo lo stato dal record
+    const status = record.Status;
 
-        if (!base || !token || !table) {
-            return NextResponse.json({ ok: false, error: "Configurazione NocoDB mancante" }, { status: 500 });
-        }
-        
-        const url = `${base.replace(/\/$/, "")}/api/v2/tables/${table}/records?where=${encodeURIComponent(`(ticketId,eq,${ticketId})`)}`;
-
-        const nocoRes = await fetch(url, {
-            headers: { "xc-token": token, "accept": "application/json" },
-            cache: 'no-store'
-        });
-
-        if (!nocoRes.ok) {
-            throw new Error(`Errore da NocoDB: ${nocoRes.status}`);
-        }
-
-        const data = await nocoRes.json();
-        const record = data?.list?.[0];
-
-        if (!record) {
-            return NextResponse.json({ ok: false, error: "Richiesta non trovata" }, { status: 404 });
-        }
-
-        return NextResponse.json({
-            ok: true,
-            status: record.Stato || 'Inviata',
-            category: record.category || 'N/D'
-        });
-
-    } catch (error) {
-        console.error(`[API Status Error] per ticketId=${ticketId}:`, error);
-        return NextResponse.json({ ok: false, error: "Errore interno del server" }, { status: 500 });
-    }
+    return NextResponse.json({ status });
+  } catch (error) {
+    console.error(`Errore nel recupero dello stato per il ticket ${ticketId}:`, error);
+    return NextResponse.json(
+      { error: "Errore interno del server" },
+      { status: 500 }
+    );
+  }
 }
