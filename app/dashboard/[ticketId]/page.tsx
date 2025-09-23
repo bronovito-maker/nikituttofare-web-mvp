@@ -1,13 +1,21 @@
 // File: app/dashboard/[ticketId]/page.tsx
 
-'use client';
+// Importiamo prima le dipendenze per il Client Component
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { Request } from '@/lib/types'; // Il tipo ora è esportato correttamente
+import { Request } from '@/lib/types';
 
-export default function TicketDetailPage({ params }: { params: { ticketId: string } }) {
-  const { ticketId } = params;
+// ====================================================================
+// 1. IL NOSTRO CLIENT COMPONENT (con 'use client')
+//    Questo componente contiene tutta la logica interattiva.
+// ====================================================================
+
+// Mettiamo la direttiva 'use client' qui, all'inizio del componente
+'use client';
+
+function TicketDetailClient({ ticketId }: { ticketId: string }) {
+  // Nota: ora riceve 'ticketId' direttamente come prop
   const { data: session, status } = useSession();
   const [request, setRequest] = useState<Request | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,7 +30,6 @@ export default function TicketDetailPage({ params }: { params: { ticketId: strin
             throw new Error('Errore nel recupero dei dettagli della richiesta');
           }
           const data = await response.json();
-          // Assicuriamoci che 'status' e 'category' siano sempre presenti
           setRequest({ ...data, status: data.status || 'new', category: data.category || 'N/D' });
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Si è verificato un errore sconosciuto');
@@ -42,6 +49,7 @@ export default function TicketDetailPage({ params }: { params: { ticketId: strin
   if (error) return <div className="text-center p-8 text-red-500">{error}</div>;
   if (!request) return <div className="text-center p-8">Richiesta non trovata.</div>;
 
+  // Il resto del JSX rimane identico...
   return (
     <div className="container mx-auto p-4 md:p-8">
       <Link href="/dashboard" className="text-primary hover:underline mb-6 block">&larr; Torna alla Dashboard</Link>
@@ -76,4 +84,18 @@ export default function TicketDetailPage({ params }: { params: { ticketId: strin
       </div>
     </div>
   );
+}
+
+
+// ====================================================================
+// 2. IL NOSTRO SERVER COMPONENT (l'export di default)
+//    Questo componente gestisce la Promise e passa i dati al Client Component.
+// ====================================================================
+
+export default async function TicketDetailPage({ params }: { params: Promise<{ ticketId: string }> }) {
+  // Aspettiamo che la Promise dei parametri sia risolta
+  const { ticketId } = await params;
+
+  // Renderizziamo il nostro Client Component, passandogli il ticketId come una semplice stringa
+  return <TicketDetailClient ticketId={ticketId} />;
 }
