@@ -1,15 +1,16 @@
-// app/api/status/[ticketId]/route.ts
+// File: app/api/status/[ticketId]/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import { getNocoClient } from "@/lib/noco";
 
-const noco = getNocoClient();
+// MODIFICA: Rimuoviamo l'inizializzazione del client da qui
 
 export async function GET(
   req: NextRequest,
-  // MODIFICA: Tipizziamo 'params' come una Promise, come per l'altro file
   context: { params: Promise<{ ticketId: string }> }
 ) {
-  // Usiamo 'await' per risolvere la Promise e ottenere i parametri
+  // MODIFICA: Inizializziamo il client qui, al momento della richiesta
+  const noco = getNocoClient();
   const { ticketId } = await context.params;
 
   if (!ticketId) {
