@@ -1,58 +1,40 @@
 // File: lib/noco.ts
 
-// Usiamo require per compatibilità con il tipo di modulo di nocodb-sdk
-const NocoClient = require('nocodb-sdk').default;
+const Noco = require("nocodb-sdk"); // MODIFICA: Usa 'require' invece di 'import'
 
-// Creiamo una singola istanza del client per riutilizzarla
-let nocoClient: any = null;
+let nocoClient: any = null; // Usiamo 'any' per semplicità, dato che il tipo era problematico
 
-// Funzione per ottenere il client NocoDB
 export const getNocoClient = () => {
   if (!nocoClient) {
-    // IMPORTANTE: Assicurati che le variabili d'ambiente siano impostate!
-    if (!process.env.NOCO_BASE_URL || !process.env.NOCO_AUTH_TOKEN) {
+    const apiToken = process.env.NOCO_AUTH_TOKEN;
+    const baseUrl = process.env.NOCO_BASE_URL;
+
+    if (!apiToken || !baseUrl) {
       throw new Error("Le variabili d'ambiente di NocoDB non sono configurate.");
     }
     
-    nocoClient = new NocoClient({
-      baseURL: process.env.NOCO_BASE_URL,
-      auth: {
-        "auth-token": process.env.NOCO_AUTH_TOKEN,
-      },
+    // Questa riga ora dovrebbe funzionare correttamente
+    nocoClient = new Noco({
+      apiToken,
+      baseUrl,
     });
   }
   return nocoClient;
 };
 
-// --- FUNZIONE MANCANTE AGGIUNTA ---
-// Funzione per ottenere un utente tramite la sua email
+// Le altre funzioni non necessitano di modifiche
 export const getUserByEmail = async (email: string) => {
-  const noco = getNocoClient();
-  try {
-    const response = await noco.db.dbViewRow.list('vw_users_details', 'Users', {
-      where: `(email,eq,${email})`,
-    });
-    // Restituisce il primo utente trovato o null se non ce ne sono
-    return response.list[0] || null;
-  } catch (error) {
-    console.error("Errore durante la ricerca dell'utente:", error);
-    return null;
-  }
+    const client = getNocoClient();
+    const userList = await client.db.dbViewRow.list('v_users', 'Users', { where: `(email,eq,${email})` });
+    return userList.list[0] || null;
 };
 
-// --- FUNZIONE MANCANTE AGGIUNTA ---
-// Funzione per creare un nuovo utente nel database
 export const createUser = async (userData: { name: string; email: string; passwordHash: string }) => {
-  const noco = getNocoClient();
-  try {
-    const newUser = await noco.db.dbTableRow.create('Users', {
-      name: userData.name,
-      email: userData.email,
-      password: userData.passwordHash,
+    const client = getNocoClient();
+    const newUser = await client.db.dbViewRow.create('v_users', 'Users', {
+        Name: userData.name,
+        Email: userData.email,
+        Password: userData.passwordHash,
     });
     return newUser;
-  } catch (error) {
-    console.error("Errore durante la creazione dell'utente:", error);
-    return null;
-  }
 };
