@@ -1,8 +1,8 @@
 // File: lib/noco.ts
 
-const Noco = require("nocodb-sdk"); // MODIFICA: Usa 'require' invece di 'import'
+import NocoSdk from "nocodb-sdk";
 
-let nocoClient: any = null; // Usiamo 'any' per semplicità, dato che il tipo era problematico
+let nocoClient: any = null;
 
 export const getNocoClient = () => {
   if (!nocoClient) {
@@ -13,7 +13,11 @@ export const getNocoClient = () => {
       throw new Error("Le variabili d'ambiente di NocoDB non sono configurate.");
     }
     
-    // Questa riga ora dovrebbe funzionare correttamente
+    // MODIFICA DEFINITIVA:
+    // Controlliamo se la classe è nell'import principale o in .default
+    // Questo risolve i problemi di compatibilità tra moduli.
+    const Noco = (NocoSdk as any).default || NocoSdk;
+    
     nocoClient = new Noco({
       apiToken,
       baseUrl,
