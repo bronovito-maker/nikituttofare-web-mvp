@@ -1,60 +1,70 @@
 // File: lib/noco-adapter.ts
 
 import { Adapter, AdapterUser } from 'next-auth/adapters';
-import { NocoClient } from 'nocodb-sdk';
+// MODIFICA: Non importiamo più da 'nocodb-sdk', ma dalla nostra funzione client
+import { getNocoClient } from './noco'; 
 
-export function NocoAdapter(noco: NocoClient): Adapter {
+// MODIFICA: Usiamo ReturnType per derivare il tipo corretto
+export function NocoAdapter(noco: ReturnType<typeof getNocoClient>): Adapter {
   return {
     async createUser(user) {
-      const newUser = await noco.db.dbViewRow.create('vw_users_details', 'Users', {
+      const newUser = await noco.db.dbViewRow.create('v_users', 'Users', {
         name: user.name,
         email: user.email,
         emailVerified: user.emailVerified,
+        image: user.image,
       });
       return newUser as AdapterUser;
     },
     async getUser(id) {
-      const user = await noco.db.dbViewRow.read('vw_users_details', 'Users', id);
-      if (!user) return null;
-      return user as AdapterUser;
+      const user = await noco.db.dbViewRow.read('v_users', 'Users', id);
+      return user ? (user as AdapterUser) : null;
     },
     async getUserByEmail(email) {
-      const users = await noco.db.dbViewRow.list('vw_users_details', 'Users', { where: `(email,eq,${email})` });
-      if (!users.list || users.list.length === 0) return null;
-      return users.list[0] as AdapterUser;
+        const userList = await noco.db.dbViewRow.list('v_users', 'Users', { where: `(email,eq,${email})` });
+        const user = userList.list[0];
+        return user ? (user as AdapterUser) : null;
     },
-    async getUserByAccount(providerAccountId) {
-      return null;
+    async getUserByAccount({ providerAccountId, provider }) {
+      const accountList = await noco.db.dbViewRow.list('v_accounts', 'Accounts', {
+        where: `(providerAccountId,eq,${providerAccountId})and(provider,eq,${provider})`,
+      });
+      const account = accountList.list[0];
+      if (!account) return null;
+
+      const user = await noco.db.dbViewRow.read('v_users', 'Users', account.userId);
+      return user ? (user as AdapterUser) : null;
     },
     async updateUser(user) {
-      if (!user.id) throw new Error("User ID is missing for update");
-      const updatedUser = await noco.db.dbViewRow.update('vw_users_details', 'Users', user.id, {
+      const updatedUser = await noco.db.dbViewRow.update('v_users', 'Users', user.id, {
         name: user.name,
         email: user.email,
         emailVerified: user.emailVerified,
+        image: user.image,
       });
       return updatedUser as AdapterUser;
     },
-    async deleteUser(userId) {
-      await noco.db.dbViewRow.delete('vw_users_details', 'Users', userId);
-    },
     async linkAccount(account) {
-      // Non necessario
+      await noco.db.dbViewRow.create('v_accounts', 'Accounts', account);
+      return account;
     },
-    async unlinkAccount(providerAccountId) {
-        // Non necessario
+    async deleteUser(userId) {
+      return;
     },
-    async createSession(session) {
-      return null as any;
+    async unlinkAccount({ providerAccountId, provider }) {
+      return;
+    },
+    async createSession({ sessionToken, userId, expires }) {
+        return {} as any;
     },
     async getSessionAndUser(sessionToken) {
-      return null as any;
+        return null;
     },
-    async updateSession(session) {
-      return null as any;
+    async updateSession({ sessionToken }) {
+        return {} as any;
     },
     async deleteSession(sessionToken) {
-        // Non necessario
+        return;
     },
   };
 }
