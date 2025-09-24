@@ -1,74 +1,66 @@
 // File: auth.ts
 
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import { z } from "zod";
-import { verifyPassword } from "@/lib/crypto";
-import { getUserByEmail, getNocoClient } from "@/lib/noco";
-import { NocoAdapter } from "@/lib/noco-adapter";
-import { User } from "next-auth";
+import NextAuth from 'next-auth';
+import Credentials from 'next-auth/providers/credentials';
+import { NocoAdapter } from './lib/noco-adapter';
+import { getUserByEmail } from './lib/noco';
+import { verifyPassword } from './lib/crypto';
 
-export const { handlers, auth, signIn, signOut } = NextAuth((req) => {
-  // Invece di un oggetto, passiamo una funzione.
-  // Questo codice viene eseguito a ogni richiesta, non durante la build.
-
-  const nocoClient = getNocoClient(); // <-- Il client viene inizializzato qui!
-
-  return {
-    adapter: NocoAdapter(nocoClient),
-    providers: [
-      Credentials({
-        name: "Credentials",
-        credentials: {
-          email: { label: "Email", type: "email" },
-          password: { label: "Password", type: "password" },
-        },
-        async authorize(credentials): Promise<User | null> {
-          const parsedCredentials = z
-            .object({
-              email: z.string().email(),
-              password: z.string().min(6),
-            })
-            .safeParse(credentials);
-
-          if (parsedCredentials.success) {
-            const { email, password } = parsedCredentials.data;
-            const user = await getUserByEmail(email);
-            
-            if (!user || !user.passwordHash) return null;
-
-            const passwordsMatch = await verifyPassword(password, user.passwordHash);
-
-            if (passwordsMatch) {
-              // Rimuovi la password prima di restituire l'oggetto utente
-              const { passwordHash, ...userWithoutPassword } = user;
-              return userWithoutPassword as User;
-            }
-          }
-          return null;
-        },
-      }),
-    ],
-    session: {
-      strategy: "jwt",
-    },
-    callbacks: {
-        async jwt({ token, user }) {
-          if (user) {
-            token.id = user.id;
-            // Aggiungi altri campi se necessario, es. token.role = user.role;
-          }
-          return token;
-        },
-        async session({ session, token }) {
-          if (session.user) {
-            session.user.id = token.id as string;
-          }
-          return session;
-        },
+export const { handlers, signIn, signOut, auth } = NextAuth({
+  adapter: NocoAdapter(),
+  session: { strategy: 'jwt' },
+  providers: [
+    Credentials({
+      name: 'Credentials',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
-      pages: {
-        signIn: '/login',
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials.password) {
+          return null;
+        }
+
+        const email = credentials.email as string;
+        const password = credentials.password as string;
+        
+        // Usiamo la funzione getUserByEmail che gestisce internamente il client NocoDB
+        const user = await getUserByEmail(email);
+
+        if (!user) {
+          console.log('Nessun utente trovato con questa email:', email);
+          return null;
+        }
+
+        // user.Password viene dal tuo database NocoDB
+        const isPasswordValid = await verifyPassword(password, user.Password);
+
+        if (!isPasswordValid) {
+          console.log('Password non valida per l\'utente:', email);
+          return null;
+        }
+
+        // L'oggetto restituito qui viene usato per creare il token JWT
+        return { id: user.Id, name: user.Name, email: user.Email };
+      },
+    }),
+  ],
+  pages: {
+    signIn: '/login',
+  },
+  callbacks: {
+    // Aggiungiamo i callbacks per gestire il token e la sessione
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
       }
-  };
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id as string;
+      }
+      return session;
+    },
+  },
 });

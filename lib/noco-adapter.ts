@@ -1,67 +1,68 @@
 // File: lib/noco-adapter.ts
 
-import { Adapter, AdapterUser } from 'next-auth/adapters';
-// MODIFICA: Non importiamo più da 'nocodb-sdk', ma dalla nostra funzione client
-import { getNocoClient } from './noco'; 
+import { getNocoClient } from './noco';
+import type { Adapter, AdapterUser, AdapterSession } from '@auth/core/adapters';
 
-// MODIFICA: Usiamo ReturnType per derivare il tipo corretto
-export function NocoAdapter(noco: ReturnType<typeof getNocoClient>): Adapter {
+// Funzione per mappare i dati di NocoDB all'utente atteso da Auth.js (AdapterUser)
+const mapNocoToAuthUser = (nocoUser: any): AdapterUser | null => {
+    if (!nocoUser) return null;
+    return {
+        id: nocoUser.Id,
+        email: nocoUser.Email,
+        name: nocoUser.Name,
+        // Aggiungiamo la proprietà richiesta da AdapterUser
+        emailVerified: null, 
+    };
+};
+
+export function NocoAdapter(): Adapter {
   return {
     async createUser(user) {
-      const newUser = await noco.db.dbViewRow.create('v_users', 'Users', {
-        name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        image: user.image,
+      const nocoClient = getNocoClient();
+      const newUser = await nocoClient.db.dbViewRow.create('v_users', 'Users', {
+        Name: user.name,
+        Email: user.email,
       });
-      return newUser as AdapterUser;
+      return mapNocoToAuthUser(newUser) as AdapterUser;
     },
     async getUser(id) {
-      const user = await noco.db.dbViewRow.read('v_users', 'Users', id);
-      return user ? (user as AdapterUser) : null;
+      const nocoClient = getNocoClient();
+      const user = await nocoClient.db.dbViewRow.read('v_users', 'Users', id);
+      return mapNocoToAuthUser(user);
     },
     async getUserByEmail(email) {
-        const userList = await noco.db.dbViewRow.list('v_users', 'Users', { where: `(email,eq,${email})` });
-        const user = userList.list[0];
-        return user ? (user as AdapterUser) : null;
-    },
-    async getUserByAccount({ providerAccountId, provider }) {
-      const accountList = await noco.db.dbViewRow.list('v_accounts', 'Accounts', {
-        where: `(providerAccountId,eq,${providerAccountId})and(provider,eq,${provider})`,
+      const nocoClient = getNocoClient();
+      const userList = await nocoClient.db.dbViewRow.list('v_users', 'Users', {
+        where: `(Email,eq,${email})`,
       });
-      const account = accountList.list[0];
-      if (!account) return null;
-
-      const user = await noco.db.dbViewRow.read('v_users', 'Users', account.userId);
-      return user ? (user as AdapterUser) : null;
+      return mapNocoToAuthUser(userList.list[0]);
     },
     async updateUser(user) {
-      const updatedUser = await noco.db.dbViewRow.update('v_users', 'Users', user.id, {
-        name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        image: user.image,
+      const nocoClient = getNocoClient();
+      const updatedUser = await nocoClient.db.dbViewRow.update('v_users', 'Users', user.id, {
+        Name: user.name,
+        Email: user.email,
       });
-      return updatedUser as AdapterUser;
+      return mapNocoToAuthUser(updatedUser) as AdapterUser;
+    },
+    
+    // Le funzioni seguenti non sono usate con la strategia JWT ma sono richieste dall'interfaccia dell'Adapter.
+    async getUserByAccount({ providerAccountId, provider }) {
+      return null;
     },
     async linkAccount(account) {
-      await noco.db.dbViewRow.create('v_accounts', 'Accounts', account);
-      return account;
-    },
-    async deleteUser(userId) {
       return;
-    },
-    async unlinkAccount({ providerAccountId, provider }) {
-      return;
-    },
-    async createSession({ sessionToken, userId, expires }) {
-        return {} as any;
     },
     async getSessionAndUser(sessionToken) {
         return null;
     },
-    async updateSession({ sessionToken }) {
-        return {} as any;
+    async createSession(session) {
+        return session;
+    },
+    async updateSession(session) {
+        // La funzione precedente causava un errore di tipo.
+        // Restituendo null, soddisfiamo il contratto dell'Adapter senza problemi.
+        return null;
     },
     async deleteSession(sessionToken) {
         return;

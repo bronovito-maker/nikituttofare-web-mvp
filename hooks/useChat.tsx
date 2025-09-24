@@ -1,9 +1,12 @@
 // File: hooks/useChat.tsx
 
 'use client';
-import { useReducer, useRef, useEffect, ChangeEvent, ReactNode } from 'react';
+import { useReducer, ChangeEvent, ReactNode, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Message, Step, ChatFormState } from '@/lib/types';
 import Typing from '@/components/Typing';
+
+// --- STATO E AZIONI ---
 
 interface ChatState {
   messages: Message[];
@@ -11,22 +14,20 @@ interface ChatState {
   input: string;
   formState: ChatFormState;
   isLoading: boolean;
-  fileToUpload: File | null;
-  previewUrl: string | null;
-  formSummary: any;
-  finalTicketId: string | null;
+  isScriptedFlowActive: boolean;
+  scriptedQuestions: string[];
+  currentScriptedQuestionIndex: number;
 }
 
 const initialState: ChatState = {
-  messages: [{ role: 'assistant', content: 'Ciao! Come posso aiutarti oggi?' }],
+  messages: [{ role: 'assistant', content: 'Ciao! Sono Niki. Come posso aiutarti oggi?' }],
   step: 'intro',
   input: '',
   formState: { message: '', details: {} },
   isLoading: false,
-  fileToUpload: null,
-  previewUrl: null,
-  formSummary: null,
-  finalTicketId: null,
+  isScriptedFlowActive: false,
+  scriptedQuestions: [],
+  currentScriptedQuestionIndex: 0,
 };
 
 type Action =
@@ -34,41 +35,58 @@ type Action =
   | { type: 'SET_INPUT'; payload: string }
   | { type: 'START_SEND' }
   | { type: 'FINISH_SEND'; payload: { step: Step; botResponse: ReactNode; formSummary?: any } }
+  // --- CORREZIONE 1: Reinserita l'azione UPDATE_FORM mancante ---
   | { type: 'UPDATE_FORM'; payload: Partial<ChatFormState> }
-  | { type: 'SET_FILE'; payload: { file: File; url: string } }
-  | { type: 'REMOVE_FILE' }
+  | { type: 'START_SCRIPTED_FLOW'; payload: string[] }
+  | { type: 'ADVANCE_SCRIPTED_FLOW'; payload: { field: string; value: string } }
+  | { type: 'END_SCRIPTED_FLOW' }
   | { type: 'START_CHAT'; payload: string }
-  | { type: 'RESET_CHAT' }
-  | { type: 'SET_TICKET_ID'; payload: string };
+  | { type: 'RESET_CHAT' };
+
+// --- REDUCER (Logica di stato) ---
 
 export const chatReducer = (state: ChatState, action: Action): ChatState => {
   switch (action.type) {
     case 'ADD_MESSAGE':
-      return { ...state, messages: [...state.messages, action.payload] };
+      return { ...state, messages: [...state.messages.filter(m => !m.isLoading), action.payload] };
     case 'SET_INPUT':
       return { ...state, input: action.payload };
     case 'START_SEND':
       return { ...state, isLoading: true, input: '' };
-    case 'FINISH_SEND':
+    case 'FINISH_SEND': {
       const { step, botResponse, formSummary } = action.payload;
+      const newMessages = state.messages.filter(m => !m.isLoading);
+      newMessages.push({ role: 'assistant', content: botResponse, isLoading: false });
       return {
         ...state,
         step,
-        formSummary: formSummary || state.formSummary,
+        formState: formSummary || state.formState,
         isLoading: false,
-        messages: [...state.messages.slice(0, -1), { role: 'assistant', content: botResponse, isLoading: false }],
+        messages: newMessages,
       };
+    }
+    // --- CORREZIONE 2: Reinserita la logica per UPDATE_FORM ---
     case 'UPDATE_FORM':
       return { ...state, formState: { ...state.formState, ...action.payload } };
-    case 'SET_FILE':
-      return { ...state, fileToUpload: action.payload.file, previewUrl: action.payload.url };
-    case 'REMOVE_FILE':
-      if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
-      return { ...state, fileToUpload: null, previewUrl: null };
+    case 'START_SCRIPTED_FLOW':
+      return {
+        ...state,
+        isScriptedFlowActive: true,
+        scriptedQuestions: action.payload,
+        currentScriptedQuestionIndex: 0,
+      };
+    case 'ADVANCE_SCRIPTED_FLOW': {
+      const { field, value } = action.payload;
+      return {
+        ...state,
+        formState: { ...state.formState, [field]: value },
+        currentScriptedQuestionIndex: state.currentScriptedQuestionIndex + 1,
+      };
+    }
+    case 'END_SCRIPTED_FLOW':
+      return { ...state, isScriptedFlowActive: false };
     case 'START_CHAT':
       return { ...state, step: 'service', formState: { ...state.formState, message: action.payload } };
-    case 'SET_TICKET_ID':
-      return { ...state, finalTicketId: action.payload };
     case 'RESET_CHAT':
       return initialState;
     default:
@@ -76,9 +94,23 @@ export const chatReducer = (state: ChatState, action: Action): ChatState => {
   }
 };
 
+// --- HOOK PRINCIPALE ---
+
 export const useChat = () => {
   const [state, dispatch] = useReducer(chatReducer, initialState);
-  const { messages, step, input, formState, isLoading, fileToUpload, previewUrl, formSummary, finalTicketId } = state;
+  const { data: session } = useSession();
+
+  useEffect(() => {
+    if (state.isScriptedFlowActive && state.currentScriptedQuestionIndex < state.scriptedQuestions.length) {
+      const nextQuestion = state.scriptedQuestions[state.currentScriptedQuestionIndex];
+      dispatch({ type: 'ADD_MESSAGE', payload: { role: 'assistant', content: nextQuestion } });
+    }
+    if (state.isScriptedFlowActive && state.currentScriptedQuestionIndex >= state.scriptedQuestions.length) {
+      dispatch({ type: 'END_SCRIPTED_FLOW' });
+      dispatch({ type: 'ADD_MESSAGE', payload: { role: 'assistant', content: 'Grazie, ho raccolto tutte le informazioni. Sto inviando la sua richiesta...' } });
+      console.log('DATI FINALI PRONTI PER L\'INVIO:', state.formState);
+    }
+  }, [state.isScriptedFlowActive, state.currentScriptedQuestionIndex]);
 
   const addMessage = (role: 'user' | 'assistant', content: ReactNode, isLoading = false) => {
     dispatch({ type: 'ADD_MESSAGE', payload: { role, content, isLoading } });
@@ -88,46 +120,86 @@ export const useChat = () => {
     dispatch({ type: 'SET_INPUT', payload: event.target.value });
   };
 
-  const setFileToUpload = (file: File | null) => {
-    if (file) {
-      const url = URL.createObjectURL(file);
-      dispatch({ type: 'SET_FILE', payload: { file, url } });
-    }
-  };
-
-  const removeFile = () => {
-    dispatch({ type: 'REMOVE_FILE' });
-  };
-
   const handleSend = async (messageOverride?: string) => {
-    const text = messageOverride ?? input.trim();
-    if (!text && !fileToUpload) return;
+    const text = (messageOverride ?? state.input).trim();
+    if (!text) return;
 
     addMessage('user', text);
+
+    if (state.isScriptedFlowActive) {
+      const currentQuestion = state.scriptedQuestions[state.currentScriptedQuestionIndex]?.toLowerCase() || '';
+      let field = '';
+      if (currentQuestion.includes('nome')) field = 'name';
+      else if (currentQuestion.includes('indirizzo')) field = 'address';
+      else if (currentQuestion.includes('telefono')) field = 'phone';
+      else if (currentQuestion.includes('email')) field = 'email';
+      else if (currentQuestion.includes('disponibilità')) field = 'timeslot';
+      
+      if (field) {
+        dispatch({ type: 'ADVANCE_SCRIPTED_FLOW', payload: { field, value: text } });
+      }
+      dispatch({ type: 'SET_INPUT', payload: '' });
+      return;
+    }
+
     dispatch({ type: 'START_SEND' });
-    if (fileToUpload) removeFile();
     addMessage('assistant', <Typing />, true);
 
     try {
       const response = await fetch('/api/assist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, formState, step }),
+        body: JSON.stringify({ prompt: text, formState: state.formState, step: state.step }),
       });
+
       if (!response.ok) throw new Error('Server error');
       const data = await response.json();
-      dispatch({ type: 'FINISH_SEND', payload: { step: data.nextStep, botResponse: data.response, formSummary: data.summary } });
+      
+      dispatch({
+        type: 'FINISH_SEND',
+        payload: { step: data.nextStep, botResponse: data.response, formSummary: data.summary },
+      });
+
+      if (data.nextStep === 'done') {
+        let questions: string[] = [];
+        if (session?.user) {
+          dispatch({ 
+            type: 'UPDATE_FORM', 
+            payload: { 
+              name: session.user.name ?? undefined, 
+              email: session.user.email ?? undefined 
+            } 
+          });
+          questions = [
+            `L'intervento è da effettuare all'indirizzo che ha in memoria? Se sì, mi dia conferma. Altrimenti, scriva il nuovo indirizzo.`,
+            'Qual è la sua disponibilità oraria per l\'intervento?'
+          ];
+        } else {
+          questions = [
+            'Per procedere, avrei bisogno del suo nome e cognome.',
+            'Qual è l\'indirizzo completo per l\'intervento?',
+            'Ottimo. Potrebbe lasciarmi un suo recapito telefonico?',
+            'Perfetto. E un indirizzo email (opzionale, può scrivere "salta")?',
+            'Ultima domanda: ha delle preferenze per giorno e orario?'
+          ];
+        }
+        dispatch({ type: 'START_SCRIPTED_FLOW', payload: questions });
+      }
     } catch (error) {
-      dispatch({ type: 'FINISH_SEND', payload: { step, botResponse: 'Ops, qualcosa è andato storto.' } });
+      const errorMessage = 'Ops, si è verificato un errore. Potrebbe riprovare?';
+      dispatch({
+        type: 'FINISH_SEND',
+        payload: { step: state.step, botResponse: errorMessage, formSummary: state.formState },
+      });
     }
   };
 
   const startChat = (service: string) => {
     dispatch({ type: 'START_CHAT', payload: service });
-    handleSend(`Voglio iniziare una richiesta per ${service}`);
+    handleSend(service);
   };
 
   const resetChat = () => dispatch({ type: 'RESET_CHAT' });
 
-  return { ...state, handleInputChange, handleSend, startChat, resetChat, setFileToUpload, removeFile };
+  return { ...state, handleInputChange, handleSend, startChat, resetChat };
 };

@@ -1,49 +1,47 @@
-// components/chat/SummaryBubble.tsx
-import { AiResult, ChatFormState } from "@/lib/types";
-import { User, MapPin, Phone, Mail, Clock, Tag, CircleDollarSign, Timer } from 'lucide-react';
+// File: components/chat/SummaryBubble.tsx
 
-interface SummaryBubbleProps {
-    form: Partial<ChatFormState>;
-    aiResult: AiResult | null;
-}
+import { ChatFormState } from '@/lib/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+// --- MODIFICA QUI ---
+import { User, MapPin, Phone, MessageSquare, Wrench } from 'lucide-react';
+import { ReactNode } from 'react';
 
-const InfoRow = ({ icon, label, value }: { icon: React.ReactNode; label: string; value?: string | number | null }) => {
-    if (!value) return null;
-    return (
-        <div className="flex items-start">
-            <div className="w-6 h-6 flex-shrink-0 text-primary">{icon}</div>
-            <div className="ml-3">
-                <p className="text-sm font-semibold text-foreground">{label}</p>
-                <p className="text-sm text-muted-foreground">{value}</p>
-            </div>
-        </div>
-    );
+// Componente helper per non ripetere codice
+const InfoRow = ({ icon, label, value }: { icon: ReactNode; label: string; value?: string }) => {
+  if (!value) return null;
+
+  return (
+    <div className="flex items-center text-sm text-muted-foreground">
+      {icon}
+      <span className="font-semibold ml-2 mr-1">{label}:</span>
+      <span>{value}</span>
+    </div>
+  );
 };
 
-export function SummaryBubble({ form, aiResult }: SummaryBubbleProps) {
-    const stimaPrezzo = aiResult?.price_low && aiResult?.price_high
-        ? `~${aiResult.price_low} - ${aiResult.price_high}€`
-        : 'Da definire';
+export const SummaryBubble = ({ form }: { form: ChatFormState }) => {
+  if (!form) return null;
 
-    return (
-        <div className="p-4 bg-secondary/50 border border-border rounded-lg text-left w-full">
-            <h3 className="text-lg font-bold text-foreground mb-4">Riepilogo Richiesta</h3>
-            
-            <div className="space-y-4">
-                {/* Dettagli Intervento */}
-                <InfoRow icon={<Tag size={20} />} label="Tipo di Intervento" value={aiResult?.category} />
-                <InfoRow icon={<CircleDollarSign size={20} />} label="Stima Costo" value={stimaPrezzo} />
-                <InfoRow icon={<Timer size={20} />} label="Tempo Stimato" value={aiResult?.est_minutes ? `~${aiResult.est_minutes} min` : 'N/D'} />
-
-                {/* Dati Personali */}
-                <div className="border-t border-border my-4"></div>
-                <InfoRow icon={<User size={20} />} label="Nome" value={form.name} />
-                {/* --- CORREZIONE: Mostra solo form.address --- */}
-                <InfoRow icon={<MapPin size={20} />} label="Indirizzo" value={form.address} />
-                <InfoRow icon={<Phone size={20} />} label="Telefono" value={form.phone} />
-                {form.email && <InfoRow icon={<Mail size={20} />} label="Email" value={form.email} />}
-                <InfoRow icon={<Clock size={20} />} label="Disponibilità" value={form.timeslot} />
-            </div>
-        </div>
-    );
-}
+  return (
+    <Card className="bg-background/80 backdrop-blur-sm">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center">
+          {/* --- MODIFICA QUI --- */}
+          <Wrench size={24} className="mr-2" /> Riepilogo Richiesta
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <InfoRow icon={<MessageSquare size={20} />} label="Richiesta" value={form.message} />
+        
+        {(form.name || form.address || form.phone) && (
+          <>
+            <div className="border-t border-border my-4"></div>
+            <InfoRow icon={<User size={20} />} label="Nome" value={form.name} />
+            <InfoRow icon={<MapPin size={20} />} label="Indirizzo" value={form.address} />
+            <InfoRow icon={<Phone size={20} />} label="Telefono" value={form.phone} />
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
