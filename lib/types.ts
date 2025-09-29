@@ -26,6 +26,8 @@ export type ChatFormState = {
   timeslot?: string;
   imageUrl?: string;
   service?: string;
+  // Aggiunto per contenere i dati strutturati dall'AI
+  ai?: AiResult;
 };
 
 // Tipi per l'AI e le Richieste
@@ -59,5 +61,5 @@ export type Request = {
   phone?: string;
   email?: string;
   timeslot?: string;
-  createdAt: string; // Assicuriamoci che ci sia sempre
+  createdAt: string;
 };

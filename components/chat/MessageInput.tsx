@@ -1,109 +1,77 @@
-'use client'; // <-- FONDAMENTALE: Aggiungi questa riga in cima al file
+// File: components/chat/MessageInput.tsx
 
-import { useRef, ChangeEvent } from 'react';
-import { Paperclip, SendHorizonal, Camera } from 'lucide-react';
+'use client';
+
+import { ChangeEvent, useRef } from 'react';
+import { SendHorizonal, Paperclip, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { FileUploadPreview } from './FileUploadPreview';
 
 interface MessageInputProps {
   input: string;
   handleInputChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  handleSend: () => void;
-  fileToUpload: File | null;
-  setFileToUpload: (file: File | null) => void;
-  removeFile: () => void;
-  previewUrl: string | null;
+  handleSend: (messageOverride?: string) => void;
+  isLoading: boolean;
   step: string;
+  setFileToUpload: (file: File | null) => void;
 }
 
 export default function MessageInput({
   input,
   handleInputChange,
   handleSend,
-  fileToUpload,
-  setFileToUpload,
-  removeFile,
-  previewUrl,
-  step
+  isLoading,
+  step,
+  setFileToUpload
 }: MessageInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileClick = () => {
-    fileInputRef.current?.click();
-  };
-  
-  const handleCameraClick = () => {
-    cameraInputRef.current?.click();
-  };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] || null;
-    if (file) {
-      setFileToUpload(file);
+    if (event.target.files && event.target.files[0]) {
+      setFileToUpload(event.target.files[0]);
     }
-    event.target.value = '';
   };
 
   const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      handleSend();
+      if (!isLoading && (input.trim() || fileInputRef.current?.files?.length)) {
+        handleSend();
+      }
     }
   };
 
-  const isDisabled = step === 'done';
+  const isDisabled = step === 'done' || isLoading;
 
   return (
-    <div className="relative">
-      {previewUrl && (
-        <FileUploadPreview previewUrl={previewUrl} onRemove={removeFile} />
-      )}
-      <div className="flex items-center p-4 border-t bg-white">
+    <div className="p-4 border-t bg-card">
+      <div className="flex items-center gap-2">
         <input
           type="file"
           ref={fileInputRef}
           onChange={handleFileChange}
           className="hidden"
           accept="image/*"
-          disabled={isDisabled}
         />
-        <input
-          type="file"
-          ref={cameraInputRef}
-          onChange={handleFileChange}
-          className="hidden"
-          accept="image/*"
-          capture="environment"
-          disabled={isDisabled}
-        />
-
-        <Button variant="ghost" size="icon" onClick={handleFileClick} disabled={isDisabled}>
-          <Paperclip className="h-6 w-6 text-gray-500" />
+        <Button size="icon" variant="ghost" className="rounded-full" onClick={() => fileInputRef.current?.click()} disabled={isDisabled}>
+          <Paperclip className="h-5 w-5" />
         </Button>
-        
-        <Button variant="ghost" size="icon" onClick={handleCameraClick} disabled={isDisabled}>
-          <Camera className="h-6 w-6 text-gray-500" />
-        </Button>
-
         <textarea
           value={input}
           onChange={handleInputChange}
           onKeyPress={handleKeyPress}
-          placeholder="Scrivi il tuo messaggio..."
-          className="flex-1 w-full rounded-full px-4 py-2 bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          placeholder={isLoading ? "Attendi..." : "Scrivi il tuo messaggio..."}
+          className="flex-1 w-full rounded-full px-4 py-2 bg-secondary focus:outline-none focus:ring-2 focus:ring-primary resize-none transition-colors"
           rows={1}
           style={{ maxHeight: '100px' }}
           disabled={isDisabled}
         />
         <Button
-          variant="ghost"
           size="icon"
-          className="ml-2"
+          className="rounded-full flex-shrink-0"
           onClick={() => handleSend()}
-          disabled={(!input.trim() && !fileToUpload) || isDisabled}
+          disabled={!input.trim() && !fileInputRef.current?.files?.length || isDisabled}
         >
-          <SendHorizonal className="h-6 w-6 text-blue-500" />
+          <SendHorizonal className="h-5 w-5" />
         </Button>
       </div>
     </div>

@@ -9,23 +9,24 @@ export default function ChatPage() {
   const chat = useChat();
 
   return (
-    <div className="h-screen flex flex-col">
+    <main className="flex-grow flex flex-col h-[calc(100dvh-4rem)]">
       <ChatInterface
+        messages={chat.messages}
         input={chat.input}
         handleInputChange={chat.handleInputChange}
         handleSend={chat.handleSend}
+        isLoading={chat.isLoading}
+        step={chat.step}
+        formState={chat.formState}
+        startChat={chat.startChat}
+        resetChat={chat.resetChat}
+        isScriptedFlowActive={chat.isScriptedFlowActive}
+        // Proprietà per il caricamento file
         fileToUpload={chat.fileToUpload}
         setFileToUpload={chat.setFileToUpload}
         removeFile={chat.removeFile}
         previewUrl={chat.previewUrl}
-        step={chat.step}
-        messages={chat.messages}
-        isLoading={chat.isLoading}
-        formSummary={chat.formSummary}
-        startChat={chat.startChat}
-        finalTicketId={chat.finalTicketId}
-        resetChat={chat.resetChat}
       />
-    </div>
+    </main>
   );
 }
