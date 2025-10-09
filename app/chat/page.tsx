@@ -1,32 +1,17 @@
-// File: app/chat/page.tsx
-
-'use client';
-
-import ChatInterface from "@/components/chat/ChatInterface";
-import { useChat } from "@/hooks/useChat";
+import ChatInterface from '@/components/chat/ChatInterface';
 
 export default function ChatPage() {
-  const chat = useChat();
+  // --- PUNTO DI CONTROLLO CENTRALE ---
+  // Qui decidiamo quale assistente caricare.
+  // In futuro, questo ID potrebbe essere letto dall'URL o da una configurazione.
+  const idAssistenteDaCaricare = 'ristorante-la-perla';
 
   return (
-    <main className="flex-grow flex flex-col h-[calc(100dvh-4rem)]">
-      <ChatInterface
-        messages={chat.messages}
-        input={chat.input}
-        handleInputChange={chat.handleInputChange}
-        handleSend={chat.handleSend}
-        isLoading={chat.isLoading}
-        step={chat.step}
-        formState={chat.formState}
-        startChat={chat.startChat}
-        resetChat={chat.resetChat}
-        isScriptedFlowActive={chat.isScriptedFlowActive}
-        // Proprietà per il caricamento file
-        fileToUpload={chat.fileToUpload}
-        setFileToUpload={chat.setFileToUpload}
-        removeFile={chat.removeFile}
-        previewUrl={chat.previewUrl}
-      />
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24 bg-gray-100">
+      <div className="w-full max-w-2xl h-[70vh] bg-white rounded-2xl shadow-xl overflow-hidden">
+        {/* Passiamo l'ID scelto all'interfaccia della chat */}
+        <ChatInterface tenantId={idAssistenteDaCaricare} />
+      </div>
     </main>
   );
 }

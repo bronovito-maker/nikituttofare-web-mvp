@@ -1,18 +1,23 @@
 // components/chat/ChatIntroScreen.tsx
-import { Wrench, Lightbulb, Droplets, MoveRight, HelpCircle } from 'lucide-react';
-import Image from 'next/image';
+import { BookOpen, Clock, HelpCircle, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 
 interface ChatIntroScreenProps {
+  // NOTA: La prop si chiama `onSuggestionClick` nel tuo componente. La manteniamo.
   onSuggestionClick: (text: string) => void;
+  // Aggiungiamo il nome dell'attività per personalizzare il benvenuto
+  businessName?: string; 
 }
 
-export function ChatIntroScreen({ onSuggestionClick }: ChatIntroScreenProps) {
+// Abbiamo aggiornato il componente per accettare il nuovo businessName
+export function ChatIntroScreen({ onSuggestionClick, businessName = "Assistente Virtuale" }: ChatIntroScreenProps) {
+  
+  // Suggerimenti di conversazione più generici
   const suggestions = [
-    { icon: <Droplets size={24} />, text: "Il rubinetto della cucina perde acqua" },
-    { icon: <Lightbulb size={24} />, text: "Ho bisogno di installare un lampadario" },
-    { icon: <Wrench size={24} />, text: "La tapparella si è bloccata" },
-    { icon: <MoveRight size={24} />, text: "Devo spostare un mobile pesante" },
+    { icon: <BookOpen size={24} />, text: "Posso vedere il menu?" },
+    { icon: <Clock size={24} />, text: "Quali sono i vostri orari di apertura?" },
+    { icon: <MessageSquare size={24} />, text: "Vorrei prenotare un tavolo" },
+    { icon: <HelpCircle size={24} />, text: "Ho una richiesta particolare" },
   ];
 
   const handleClick = (text: string) => {
@@ -20,15 +25,21 @@ export function ChatIntroScreen({ onSuggestionClick }: ChatIntroScreenProps) {
   };
 
   return (
-    <div className="flex-grow flex flex-col justify-center items-center p-4 h-full">
-        <div className="text-center">
-            <Image src="/logo_ntf.png" alt="NikiTuttoFare Logo" width={64} height={64} className="rounded-xl mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-foreground">Come posso aiutarti?</h1>
-            {/* --- SOTTOTITOLO MIGLIORATO --- */}
-            <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-                Rispondi a poche domande per ricevere una stima gratuita e senza impegno in meno di un minuto.
-            </p>
+    <div className="flex-grow flex flex-col justify-center items-center p-4 h-full text-center">
+        {/* Usiamo un'icona generica al posto del logo */}
+        <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-4">
+            <MessageSquare size={32} />
         </div>
+        
+        {/* Titolo e sottotitolo aggiornati */}
+        <h1 className="text-3xl font-bold text-foreground">
+          {businessName}
+        </h1>
+        <p className="mt-2 text-muted-foreground max-w-md mx-auto">
+            Sono qui per aiutarti. Seleziona un'opzione o scrivi la tua richiesta.
+        </p>
+        
+        {/* Griglia con i nuovi suggerimenti */}
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
             {suggestions.map(({ icon, text }) => (
                 <button 
@@ -40,13 +51,6 @@ export function ChatIntroScreen({ onSuggestionClick }: ChatIntroScreenProps) {
                     <span className="text-card-foreground group-hover:text-foreground">{text}</span>
                 </button>
             ))}
-        </div>
-        {/* --- LINK ALLE FAQ IN EVIDENZA --- */}
-        <div className="mt-10 text-center">
-            <Link href="/faq" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                <HelpCircle size={16} />
-                <span>Domande Frequenti e Garanzie</span>
-            </Link>
         </div>
     </div>
   );

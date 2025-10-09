@@ -1,57 +1,58 @@
-// File: app/api/assist/route.ts
-
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextRequest, NextResponse } from 'next/server';
-import { Step, ChatFormState } from '@/lib/types';
-import { SERVICES, generateSystemPrompt } from '@/lib/config';
+import OpenAI from 'openai';
+import { getNocoClient } from '@/lib/noco'; // CORREZIONE: Usiamo getNocoClient
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export async function POST(req: NextRequest) {
+  const noco = getNocoClient(); // Otteniamo il client all'interno della funzione
   try {
-    const { prompt, formState, step }: { prompt: string; formState: ChatFormState; step: Step } = await req.json();
+    const { prompt, tenant_id } = await req.json();
 
     if (!prompt) {
       return NextResponse.json({ error: 'Il prompt è obbligatorio' }, { status: 400 });
     }
-
-    let summary = { ...formState };
-    if (step === 'service') {
-        summary = { message: prompt, details: {} }; // Resetta il riepilogo per una nuova richiesta
-    } else if (step === 'details') {
-        const detailCount = Object.keys(summary.details || {}).length;
-        summary.details = { ...summary.details, [`clarification${detailCount + 1}`]: prompt };
+    if (!tenant_id) {
+      return NextResponse.json({ error: 'Tenant ID mancante' }, { status: 400 });
     }
 
-    const { systemPrompt, nextStep } = generateSystemPrompt(step, summary, prompt);
-
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '');
-    const model = genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
-        systemInstruction: systemPrompt,
+    const viewName = 'Assistenti';
+    const assistente = await noco.db.dbViewRow.findOne(viewName, {
+      where: (f: any) => f.eq('tenant_id', tenant_id)
     });
 
-    const result = await model.generateContent(prompt);
-    const aiResponse = result.response.text();
-    
-    if (nextStep === 'confirm') {
-        // Estrae i dati solo se stiamo per fare il preventivo
-        const conversationHistory = `Richiesta iniziale: ${summary.message}, Dettagli: ${JSON.stringify(summary.details)}`;
-        const dataExtractionPrompt = `Basandoti sulla seguente conversazione, estrai un oggetto JSON con queste chiavi: "category" (una tra: ${SERVICES.join(', ')}), "urgency" (bassa, media, alta), "price_low" (numero), "price_high" (numero), "est_minutes" (numero), "summary_for_technician" (stringa), "tools" (array di stringhe). Conversazione: ${conversationHistory}`;
-        
-        const finalDataResponse = await model.generateContent(dataExtractionPrompt);
-        let finalData = {};
-        try {
-            const text = finalDataResponse.response.text().replace(/```json|```/g, '').trim();
-            finalData = JSON.parse(text);
-            summary = { ...summary, ai: finalData };
-        } catch (e) {
-            console.error("Errore nel parsing del JSON dall'AI:", e);
-        }
+    if (!assistente) {
+      return NextResponse.json({ error: `Assistente con ID '${tenant_id}' non trovato.` }, { status: 404 });
     }
 
-    return NextResponse.json({ response: aiResponse, nextStep, summary });
+    const systemPromptString = `
+      ${assistente.prompt_sistema}
 
-  } catch (error) {
-    console.error('Errore API Google AI:', error);
-    return NextResponse.json({ error: 'Errore durante la generazione della risposta.' }, { status: 500 });
+      Informazioni aggiuntive a tua disposizione per rispondere alle domande degli utenti:
+      ---
+      ${assistente.info_extra}
+      ---
+    `;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4-turbo",
+      messages: [
+        { role: "system", content: systemPromptString },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.7,
+      max_tokens: 500,
+    });
+
+    const responseText = completion.choices[0].message.content;
+
+    return NextResponse.json({ response: responseText });
+
+  } catch (error: any) {
+    console.error("Errore nell'API assist:", error);
+    const errorMessage = error.message || "Si è verificato un errore sconosciuto.";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

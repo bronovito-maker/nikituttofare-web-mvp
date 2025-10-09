@@ -1,40 +1,43 @@
+// lib/noco.ts
 import NocoSdk from "nocodb-sdk";
+
+// Questa riga gestisce la compatibilità dei moduli.
+// La modifica chiave è usare 'require' per forzare il caricamento
+// del modulo in un modo che Next.js 14+ comprende meglio lato server.
+const Noco = (NocoSdk as any).default || require("nocodb-sdk");
 
 let nocoClient: any = null;
 
-export const getNocoClient = () => {
+export function getNocoClient() {
   if (!nocoClient) {
-    const apiToken = process.env.NOCO_AUTH_TOKEN;
-    const baseUrl = process.env.NOCO_BASE_URL;
+    const apiToken = process.env.NOCO_API_TOKEN;
+    const apiUrl = process.env.NEXT_PUBLIC_NOCO_API_URL;
 
-    if (!apiToken || !baseUrl) {
+    if (!apiToken || !apiUrl) {
       throw new Error("Le variabili d'ambiente di NocoDB non sono configurate.");
     }
     
-    // Questa riga gestisce la compatibilità tra i diversi tipi di moduli (ESM e CommonJS)
-    const Noco = (NocoSdk as any).default || NocoSdk;
-    
     nocoClient = new Noco({
-      apiToken,
-      baseUrl,
+      url: apiUrl,
+      auth: {
+        token: apiToken
+      },
     });
   }
   return nocoClient;
-};
+}
 
-// Le altre funzioni non necessitano di modifiche
 export const getUserByEmail = async (email: string) => {
     const client = getNocoClient();
-    const userList = await client.db.dbViewRow.list('v_users', 'Users', { where: `(email,eq,${email})` });
-    return userList.list[0] || null;
-};
-
-export const createUser = async (userData: { name: string; email: string; passwordHash: string }) => {
-    const client = getNocoClient();
-    const newUser = await client.db.dbViewRow.create('v_users', 'Users', {
-        Name: userData.name,
-        Email: userData.email,
-        Password: userData.passwordHash,
-    });
-    return newUser;
+    try {
+        // Assicurati che il nome della vista sia 'users'.
+        // Controlla anche che le colonne si chiamino 'email', 'Id', 'Name', 'Password'
+        const user = await client.db.dbViewRow.findOne('users', { 
+            where: `(email,eq,${email})` 
+        });
+        return user || null;
+    } catch (error) {
+        console.error("Errore durante la ricerca dell'utente:", error);
+        return null;
+    }
 };

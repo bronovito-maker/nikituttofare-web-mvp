@@ -1,6 +1,11 @@
 // lib/crypto.ts
 import bcrypt from "bcryptjs";
-import { BCRYPT_SALT_ROUNDS } from "./config";
+
+// --- CORREZIONE QUI ---
+// Leggiamo il valore dalle variabili d'ambiente, con un valore di default sicuro.
+const BCRYPT_SALT_ROUNDS = process.env.BCRYPT_SALT_ROUNDS
+  ? parseInt(process.env.BCRYPT_SALT_ROUNDS, 10)
+  : 10;
 
 /**
  * Genera l'hash di una password in chiaro.

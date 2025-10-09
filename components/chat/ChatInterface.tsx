@@ -1,81 +1,53 @@
-// File: components/chat/ChatInterface.tsx
-
 'use client';
 
-import { useEffect, useRef, ChangeEvent } from 'react';
-import { Message, Step, ChatFormState } from '@/lib/types';
-import ChatBubble from '../ChatBubble';
-import MessageInput from './MessageInput';
+import { useChat } from '@/hooks/useChat';
 import { ChatIntroScreen } from './ChatIntroScreen';
-import { SummaryBubble } from './SummaryBubble';
-import { FileUploadPreview } from './FileUploadPreview';
+import MessageInput from './MessageInput';
 import Typing from '../Typing';
+import ChatBubble from '../ChatBubble';
+import { useRef, useEffect } from 'react';
 
-interface ChatInterfaceProps {
-  messages: Message[];
-  input: string;
-  handleInputChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  handleSend: (messageOverride?: string) => void;
-  isLoading: boolean;
-  step: Step;
-  formState: ChatFormState;
-  startChat: (service: string) => void;
-  resetChat: () => void;
-  isScriptedFlowActive: boolean;
-  // File props
-  fileToUpload?: File | null;
-  setFileToUpload?: (file: File | null) => void;
-  removeFile?: () => void;
-  previewUrl?: string | null;
-}
-
-export default function ChatInterface({
-  messages,
-  input,
-  handleInputChange,
-  handleSend,
-  isLoading,
-  step,
-  formState,
-  startChat,
-  resetChat,
-  isScriptedFlowActive,
-  fileToUpload,
-  setFileToUpload,
-  removeFile,
-  previewUrl,
-}: ChatInterfaceProps) {
+export default function ChatInterface({ tenantId }: { tenantId: string | null }) {
+  const { messages, isLoading, sendMessage } = useChat({ tenantId });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  };
 
-  // --- MODIFICA CHIAVE QUI ---
-  // Mostra il riepilogo quando il preventivo è presentato e durante la raccolta dati finale.
-  const showSummary = (step === 'confirm' || step === 'done') && formState && Object.values(formState).some(val => val !== null && val !== undefined && Object.keys(val).length > 0);
+  useEffect(scrollToBottom, [messages]);
+
+  const handleSendMessage = (message: string) => {
+    sendMessage(message);
+  };
+
+  if (messages.length <= 1) {
+    // La prop corretta per ChatIntroScreen è onSuggestionClick
+    return <ChatIntroScreen onSuggestionClick={handleSendMessage} />;
+  }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-grow overflow-y-auto p-4 space-y-4">
-        {messages.length === 1 && <ChatIntroScreen onSuggestionClick={startChat} />}
-        {messages.map((msg, index) => (
-          <ChatBubble key={index} role={msg.role}>
-            {msg.isLoading ? <Typing /> : msg.content}
+    <div className="flex flex-col h-full bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.slice(1).map((msg) => (
+          <ChatBubble key={msg.id} role={msg.role}>
+            {msg.content}
           </ChatBubble>
         ))}
-        {showSummary && <SummaryBubble form={formState} />}
+        {isLoading && <Typing />}
         <div ref={messagesEndRef} />
       </div>
-      {previewUrl && <FileUploadPreview previewUrl={previewUrl} onRemove={removeFile!} />}
-      <MessageInput
-        input={input}
-        handleInputChange={handleInputChange}
-        handleSend={handleSend}
-        isLoading={isLoading}
-        step={step}
-        setFileToUpload={setFileToUpload!}
-      />
+      <div className="p-4 border-t bg-white">
+          {/* La prop corretta per MessageInput è handleSend */}
+          <MessageInput
+            input=""
+            handleInputChange={() => {}}
+            handleSend={() => handleSendMessage("")}
+            isLoading={isLoading}
+            step={'intro'}
+            setFileToUpload={() => {}}
+        />
+      </div>
     </div>
   );
 }
