@@ -1,15 +1,13 @@
 // lib/noco.ts
-import NocoSdk from "nocodb-sdk";
-
-// Questa riga gestisce la compatibilità dei moduli.
-// La modifica chiave è usare 'require' per forzare il caricamento
-// del modulo in un modo che Next.js 14+ comprende meglio lato server.
-const Noco = (NocoSdk as any).default || require("nocodb-sdk");
-
 let nocoClient: any = null;
 
 export function getNocoClient() {
+  // Inizializziamo il client solo la prima volta che questa funzione viene chiamata
   if (!nocoClient) {
+    // Usiamo 'require' qui dentro per caricare il modulo al momento del bisogno
+    const NocoSdk = require("nocodb-sdk");
+    const Noco = NocoSdk.Api || NocoSdk.default || NocoSdk;
+
     const apiToken = process.env.NOCO_API_TOKEN;
     const apiUrl = process.env.NEXT_PUBLIC_NOCO_API_URL;
 
@@ -30,10 +28,9 @@ export function getNocoClient() {
 export const getUserByEmail = async (email: string) => {
     const client = getNocoClient();
     try {
-        // Assicurati che il nome della vista sia 'users'.
-        // Controlla anche che le colonne si chiamino 'email', 'Id', 'Name', 'Password'
+        // Assicurati che il nome della vista sia 'users'
         const user = await client.db.dbViewRow.findOne('users', { 
-            where: `(email,eq,${email})` 
+            where: `(Email,eq,${email})` 
         });
         return user || null;
     } catch (error) {

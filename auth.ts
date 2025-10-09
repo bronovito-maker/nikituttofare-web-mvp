@@ -24,7 +24,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const email = credentials.email as string;
         const password = credentials.password as string;
         
-        // Usiamo la funzione getUserByEmail che gestisce internamente il client NocoDB
         const user = await getUserByEmail(email);
 
         if (!user) {
@@ -32,7 +31,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
-        // user.Password viene dal tuo database NocoDB
         const isPasswordValid = await verifyPassword(password, user.Password);
 
         if (!isPasswordValid) {
@@ -40,8 +38,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
-        // L'oggetto restituito qui viene usato per creare il token JWT
-        return { id: user.Id, name: user.Name, email: user.Email };
+        // Restituiamo anche il tenant_id se esiste
+        return { 
+          id: user.Id, 
+          name: user.Name, 
+          email: user.Email,
+          tenantId: user.tenant_id, // <-- MODIFICA CHIAVE
+        };
       },
     }),
   ],
@@ -53,12 +56,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        // @ts-ignore // Aggiungiamo il tenantId al token
+        token.tenantId = user.tenantId; // <-- MODIFICA CHIAVE
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
+        // @ts-ignore
+        session.user.tenantId = token.tenantId as string; // <-- MODIFICA CHIAVE
       }
       return session;
     },
