@@ -6,7 +6,7 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { SessionProvider, useSession, signOut } from "next-auth/react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { MessageSquare, LayoutDashboard, LogOut, Menu, X, LogIn, UserPlus, User, HelpCircle } from 'lucide-react';
+import { MessageSquare, LayoutDashboard, LogOut, Menu, X, LogIn, User, HelpCircle } from 'lucide-react';
 import Image from "next/image";
 
 // --- MODIFICA CHIAVE: Definizione completa di AppHeader ---
@@ -41,10 +41,7 @@ const AppHeader = ({ onMenuToggle }: { onMenuToggle: () => void; }) => {
                 <button onClick={() => signOut()} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground">Esci</button>
               </>
             ) : (
-              <>
-                <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground">Accedi</Link>
-                <Link href="/register" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90">Registrati</Link>
-              </>
+              <Link href="/login" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90">Accedi</Link>
             )}
           </div>
           <button onClick={onMenuToggle} className="md:hidden p-2 rounded-md hover:bg-secondary transition-colors z-30">
@@ -96,7 +93,6 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void;
                         ) : (
                             <nav className="flex flex-col gap-2">
                                 <Link href="/login" onClick={onClose} className={linkClasses}><LogIn size={20} /> Accedi</Link>
-                                <Link href="/register" onClick={onClose} className={linkClasses}><UserPlus size={20} /> Registrati</Link>
                             </nav>
                         )}
                     </div>

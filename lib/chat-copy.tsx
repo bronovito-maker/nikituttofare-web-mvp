@@ -39,10 +39,9 @@ export const chatCopy = {
         <p>Il tuo codice di riferimento è <strong>{ticketId}</strong>. Ti aggiorneremo non appena un tecnico prenderà in carico il lavoro.</p>
         <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-center">
             <p className="text-sm font-semibold">Vuoi seguire la tua richiesta online?</p>
-            <p className="text-xs text-muted-foreground mt-1 mb-3">Registrati gratuitamente per vedere i dettagli, lo stato e comunicare con il tecnico.</p>
-            <Button asChild size="sm">
-                <Link href="/register">Registrati Ora</Link>
-            </Button>
+            <p className="text-xs text-muted-foreground mt-1">
+              Contattaci su <a href="mailto:info@nikituttofare.com" className="font-semibold text-primary underline-offset-4 hover:underline">info@nikituttofare.com</a> per attivare il tuo accesso personale.
+            </p>
         </div>
       </div>
     );

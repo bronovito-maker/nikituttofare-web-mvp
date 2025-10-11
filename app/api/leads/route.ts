@@ -5,8 +5,13 @@ import { z } from 'zod';
 import { createRecord, extractSingleRecord } from '@/lib/noco';
 
 const leadSchema = z.object({
-  nome: z.string().trim().min(2, { message: 'Il nome deve contenere almeno 2 caratteri.' }),
-  email: z.string().trim().email({ message: 'Inserisci un indirizzo email valido.' }),
+  nome: z
+    .string()
+    .trim()
+    .min(2, { message: 'Il nome deve contenere almeno 2 caratteri.' })
+    .max(120)
+    .optional(),
+  email: z.string().trim().email({ message: 'Inserisci un indirizzo email valido.' }).optional(),
   telefono: z
     .string()
     .trim()
@@ -16,8 +21,12 @@ const leadSchema = z.object({
   richiesta: z
     .string()
     .trim()
-    .min(10, { message: 'La richiesta è troppo breve.' })
-    .max(2000, { message: 'La richiesta è troppo lunga.' }),
+    .min(5, { message: 'La richiesta è troppo breve.' })
+    .max(4000, { message: 'La richiesta è troppo lunga.' }),
+  note_interne: z.string().trim().max(2000).optional(),
+  persone: z.number().int().positive().max(100).optional(),
+  orario: z.string().trim().min(3).max(40).optional(),
+  intent: z.string().trim().max(30).optional(),
   tenant_id: z
     .union([
       z.string().trim().min(1, { message: 'ID tenant obbligatorio.' }),
@@ -38,14 +47,19 @@ export async function POST(req: NextRequest) {
     const validatedData = leadSchema.parse(body);
 
     const payload: Record<string, unknown> = {
-      nome: validatedData.nome,
-      email: validatedData.email,
+      nome: validatedData.nome ?? 'Contatto chat',
       richiesta: validatedData.richiesta,
       tenant_id: validatedData.tenant_id,
-      stato: 'Nuovo',
+      stato: validatedData.intent === 'booking' ? 'Prenotazione' : 'Nuovo',
     };
     if (validatedData.telefono) {
       payload.telefono = validatedData.telefono;
+    }
+    if (validatedData.email) {
+      payload.email = validatedData.email;
+    }
+    if (validatedData.note_interne) {
+      payload.note_interne = validatedData.note_interne;
     }
 
     const created = await createRecord(

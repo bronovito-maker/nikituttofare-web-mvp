@@ -4,7 +4,6 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import Link from 'next/link';
 import { LoaderCircle, Eye, EyeOff } from 'lucide-react';
 
 function LoginForm() {
@@ -116,14 +115,6 @@ function LoginForm() {
           </button>
         </form>
 
-        <div className="border-t bg-secondary/50 p-4 text-center text-sm">
-          <p className="text-muted-foreground">
-            Non hai un account?{' '}
-            <Link href="/register" className="font-semibold text-primary underline-offset-4 hover:underline">
-              Registrati ora
-            </Link>
-          </p>
-        </div>
       </div>
   );
 }
