@@ -16,13 +16,22 @@ const REQUESTS_TABLE_KEY =
   process.env.NOCO_TABLE_REQUESTS ||
   'Leads';
 const REQUESTS_VIEW_ID = process.env.NOCO_VIEW_REQUESTS_ID;
-const REQUESTS_USER_FIELD = process.env.NOCO_REQUESTS_USER_FIELD || 'fk:user_id:user_id';
+const REQUESTS_TENANT_FIELD = process.env.NOCO_REQUESTS_TENANT_FIELD || 'tenant_id';
+const REQUESTS_USER_FIELD = process.env.NOCO_REQUESTS_USER_FIELD;
 
 export async function POST(request: NextRequest) {
   const session = await auth();
 
   if (!session || !session.user || !session.user.id) {
     return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 });
+  }
+
+  const tenantId = session.user.tenantId;
+  if (!tenantId && !REQUESTS_USER_FIELD) {
+    return NextResponse.json(
+      { error: 'Tenant non definito per l’utente e nessun campo utente configurato.' },
+      { status: 400 }
+    );
   }
 
   try {
@@ -43,7 +52,12 @@ export async function POST(request: NextRequest) {
       message,
       status: 'new',
     };
-    payload[REQUESTS_USER_FIELD] = userId;
+    if (tenantId) {
+      payload[REQUESTS_TENANT_FIELD] = tenantId;
+    }
+    if (REQUESTS_USER_FIELD) {
+      payload[REQUESTS_USER_FIELD] = userId;
+    }
 
     const newRecord = await createRecord(
       REQUESTS_TABLE_KEY,
@@ -70,8 +84,15 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const userId = session.user.id;
-        const whereClause = `(${REQUESTS_USER_FIELD},eq,${userId})`;
+        const tenantId = session.user.tenantId;
+        if (!tenantId && !REQUESTS_USER_FIELD) {
+            return NextResponse.json({ error: 'Tenant non definito per l’utente.' }, { status: 400 });
+        }
+
+        const whereClause = tenantId
+            ? `(${REQUESTS_TENANT_FIELD},eq,${tenantId})`
+            : `(${REQUESTS_USER_FIELD},eq,${session.user.id})`;
+
         const records = await listRecords(REQUESTS_TABLE_KEY, {
             where: whereClause,
             sort: '-CreatedAt',

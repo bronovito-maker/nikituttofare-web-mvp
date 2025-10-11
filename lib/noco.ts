@@ -71,10 +71,10 @@ export async function getTableId(projectIdOrSlug: string, tableName: string): Pr
   const key = `${projectIdOrSlug}:${tableName}`;
   if (tableIdCache.has(key)) return tableIdCache.get(key)!;
 
-  const data = await nocoApi<{ list?: any[]; data?: any[] }>(
-    `/api/v2/projects/${encodeURIComponent(projectIdOrSlug)}/tables?limit=1000`
+  const data = await nocoApi<{ list?: any[] }>(
+    `/api/v1/db/meta/projects/${encodeURIComponent(projectIdOrSlug)}/tables`
   );
-  const tables = data.list || data.data || [];
+  const tables = data.list || [];
 
   const match = tables.find((t: any) =>
     t?.id === tableName || t?.title === tableName || t?.table_name === tableName

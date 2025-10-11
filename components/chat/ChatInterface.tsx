@@ -1,14 +1,20 @@
 'use client';
+'use client';
 
 import { useChat } from '@/hooks/useChat';
 import { ChatIntroScreen } from './ChatIntroScreen';
 import MessageInput from './MessageInput';
 import Typing from '../Typing';
 import ChatBubble from '../ChatBubble';
-import { useRef, useEffect } from 'react';
+import { ChangeEvent, useEffect, useRef, useState } from 'react';
 
-export default function ChatInterface({ tenantId }: { tenantId: string | null }) {
+type ChatInterfaceProps = {
+  tenantId: string | null;
+};
+
+export default function ChatInterface({ tenantId }: ChatInterfaceProps) {
   const { messages, isLoading, sendMessage } = useChat({ tenantId });
+  const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -17,12 +23,20 @@ export default function ChatInterface({ tenantId }: { tenantId: string | null })
 
   useEffect(scrollToBottom, [messages]);
 
-  const handleSendMessage = (message: string) => {
-    sendMessage(message);
+  const handleSendMessage = (override?: string) => {
+    const messageToSend = override ?? input;
+    if (!messageToSend.trim()) {
+      return;
+    }
+    sendMessage(messageToSend.trim());
+    setInput('');
+  };
+
+  const handleInputChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setInput(event.target.value);
   };
 
   if (messages.length <= 1) {
-    // La prop corretta per ChatIntroScreen è onSuggestionClick
     return <ChatIntroScreen onSuggestionClick={handleSendMessage} />;
   }
 
@@ -37,17 +51,14 @@ export default function ChatInterface({ tenantId }: { tenantId: string | null })
         {isLoading && <Typing />}
         <div ref={messagesEndRef} />
       </div>
-      <div className="p-4 border-t bg-white">
-          {/* La prop corretta per MessageInput è handleSend */}
-          <MessageInput
-            input=""
-            handleInputChange={() => {}}
-            handleSend={() => handleSendMessage("")}
-            isLoading={isLoading}
-            step={'intro'}
-            setFileToUpload={() => {}}
-        />
-      </div>
+      <MessageInput
+        input={input}
+        handleInputChange={handleInputChange}
+        handleSend={handleSendMessage}
+        isLoading={isLoading}
+        step="chat"
+        setFileToUpload={() => {}}
+      />
     </div>
   );
 }

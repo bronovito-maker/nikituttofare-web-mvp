@@ -1,6 +1,6 @@
 // app/api/assist/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { findOneByWhereREST } from '@/lib/noco'; // Usiamo la funzione REST
+import { findOneByWhereREST } from '@/lib/noco';
 import { OpenAI } from 'openai';
 
 const openai = new OpenAI({
@@ -9,11 +9,14 @@ const openai = new OpenAI({
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, tenant_id } = await req.json();
+    const { prompt, tenant_id } = await req.json();
     const { NOCO_PROJECT_SLUG, NOCO_TABLE_ASSISTANTS } = process.env;
 
     if (!tenant_id) {
       return NextResponse.json({ error: 'Tenant ID mancante.' }, { status: 400 });
+    }
+    if (!prompt || typeof prompt !== 'string') {
+      return NextResponse.json({ error: 'Messaggio utente mancante.' }, { status: 400 });
     }
     if (!NOCO_PROJECT_SLUG || !NOCO_TABLE_ASSISTANTS) {
       console.error('Mancano variabili d\'ambiente per NocoDB (progetto/tabella assistenti)');
@@ -41,15 +44,41 @@ export async function POST(req: NextRequest) {
     `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
       messages: [
         { role: "system", content: systemPromptString },
-        { role: "user", content: message },
+        { role: "user", content: prompt },
       ],
+      stream: true,
     });
 
-    const aiResponse = completion.choices[0].message.content;
-    return NextResponse.json({ response: aiResponse });
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        (async () => {
+          try {
+            for await (const part of completion) {
+              const token = part.choices[0]?.delta?.content;
+              if (token) {
+                controller.enqueue(encoder.encode(token));
+              }
+            }
+          } catch (streamError) {
+            console.error('Errore durante lo streaming OpenAI:', streamError);
+            controller.error(streamError);
+          } finally {
+            controller.close();
+          }
+        })();
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+      },
+    });
 
   } catch (err: any) {
     console.error("Errore nell'API assist:", err.message || err);

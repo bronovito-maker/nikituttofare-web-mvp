@@ -1,14 +1,39 @@
 // app/api/assistente/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { findOneByWhereREST, getTableId } from '@/lib/noco';
+import { extractSingleRecord, findOneByWhereREST, updateRecord } from '@/lib/noco';
 import { z } from 'zod';
 
+const sanitizeOptional = (schema: z.ZodString) =>
+    z
+        .string()
+        .transform((value) => value.trim())
+        .pipe(schema)
+        .optional()
+        .transform((value) => (value === '' ? undefined : value));
+
 const AssistenteUpdateSchema = z.object({
-    prompt_sistema: z.string().optional(),
-    info_extra: z.string().optional(),
-    nome_attivita: z.string().optional(),
+    prompt_sistema: sanitizeOptional(
+        z
+            .string()
+            .min(10, 'Il prompt deve contenere almeno 10 caratteri.')
+            .max(4000, 'Il prompt non può superare i 4000 caratteri.')
+    ),
+    info_extra: sanitizeOptional(
+        z
+            .string()
+            .max(6000, 'Le informazioni extra non possono superare i 6000 caratteri.')
+    ),
+    nome_attivita: sanitizeOptional(
+        z
+            .string()
+            .min(2, 'Il nome attività deve contenere almeno 2 caratteri.')
+            .max(120, 'Il nome attività non può superare i 120 caratteri.')
+    ),
 });
+
+const CACHE_TTL_MS = Number(process.env.ASSISTANT_CACHE_TTL_MS ?? 30_000);
+const assistantCache = new Map<string, { data: unknown; expires: number }>();
 
 // GET: Recupera i dati dell'assistente
 export async function GET(req: NextRequest) {
@@ -19,24 +44,36 @@ export async function GET(req: NextRequest) {
     }
 
     const { tenantId } = session.user;
-    const { NOCO_PROJECT_SLUG, NOCO_TABLE_ASSISTANTS } = process.env;
+    const { NOCO_PROJECT_SLUG, NOCO_TABLE_ASSISTANTS, NOCO_ASSISTANTS_VIEW_ID } = process.env;
 
     if (!NOCO_PROJECT_SLUG || !NOCO_TABLE_ASSISTANTS) {
         return NextResponse.json({ error: "Configurazione del server incompleta." }, { status: 500 });
     }
 
     try {
+        const cacheKey = tenantId;
+        const cached = assistantCache.get(cacheKey);
+        if (cached && cached.expires > Date.now()) {
+            return NextResponse.json(cached.data);
+        }
+
         // --- CORREZIONE CHIAVE ---
         const whereClause = `(tenant_id,eq,${tenantId})`;
         const assistente = await findOneByWhereREST(
             NOCO_PROJECT_SLUG,
             NOCO_TABLE_ASSISTANTS,
-            whereClause
+            whereClause,
+            { viewId: NOCO_ASSISTANTS_VIEW_ID }
         );
 
         if (!assistente) {
             return NextResponse.json({ error: `Assistente con ID '${tenantId}' non trovato.` }, { status: 404 });
         }
+
+        assistantCache.set(cacheKey, {
+            data: assistente,
+            expires: Date.now() + CACHE_TTL_MS,
+        });
 
         return NextResponse.json(assistente);
     } catch (error: any) {
@@ -54,7 +91,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const { tenantId } = session.user;
-    const { NOCO_PROJECT_SLUG, NOCO_TABLE_ASSISTANTS } = process.env;
+    const { NOCO_PROJECT_SLUG, NOCO_TABLE_ASSISTANTS, NOCO_ASSISTANTS_VIEW_ID } = process.env;
 
      if (!NOCO_PROJECT_SLUG || !NOCO_TABLE_ASSISTANTS) {
         return NextResponse.json({ error: "Configurazione del server incompleta." }, { status: 500 });
@@ -73,43 +110,54 @@ export async function PUT(req: NextRequest) {
         const assistente = await findOneByWhereREST(
             NOCO_PROJECT_SLUG,
             NOCO_TABLE_ASSISTANTS,
-            whereClause
+            whereClause,
+            { viewId: NOCO_ASSISTANTS_VIEW_ID }
         );
 
         if (!assistente) {
             return NextResponse.json({ error: `Assistente con ID '${tenantId}' non trovato.` }, { status: 404 });
         }
 
-        // Per aggiornare, usiamo l'API REST v2 direttamente
-        const tableId = await getTableId(NOCO_PROJECT_SLUG, NOCO_TABLE_ASSISTANTS);
-        const rowId = (assistente as any).Id; // Assumendo che il campo ID si chiami 'Id'
-
-        const BASE_URL = (process.env.NOCO_API_URL || process.env.NEXT_PUBLIC_NOCO_API_URL || '').replace(/\/+$/, '');
-        const TOKEN = process.env.NOCO_API_TOKEN || '';
-        if (!BASE_URL || !TOKEN) {
-            throw new Error('Variabili NOCO_API_URL/NOCO_API_TOKEN mancanti per aggiornare la tabella.');
+        const rowId = (assistente as any).Id ?? (assistente as any).id;
+        if (!rowId) {
+            return NextResponse.json({ error: 'Impossibile determinare la riga da aggiornare.' }, { status: 500 });
         }
 
-        const response = await fetch(`${BASE_URL}/api/v2/tables/${tableId}/rows/${rowId}`, {
-            method: 'PATCH',
-            headers: {
-                'xc-token': TOKEN,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(validation.data),
-            cache: 'no-store',
+        const sanitizedData = Object.entries(validation.data).reduce<Record<string, unknown>>((acc, [key, value]) => {
+            if (value !== undefined) acc[key] = value;
+            return acc;
+        }, {});
+
+        if (Object.keys(sanitizedData).length === 0) {
+            return NextResponse.json({ message: 'Nessuna modifica da applicare.' });
+        }
+
+        const updatedRecord = await updateRecord(
+            NOCO_TABLE_ASSISTANTS,
+            rowId,
+            sanitizedData,
+            NOCO_ASSISTANTS_VIEW_ID ? { viewId: NOCO_ASSISTANTS_VIEW_ID } : {}
+        );
+
+        const responsePayload = {
+            message: 'Assistente aggiornato con successo!',
+            data: extractSingleRecord(updatedRecord) ?? assistente,
+        };
+
+        assistantCache.set(tenantId, {
+            data: responsePayload.data,
+            expires: Date.now() + CACHE_TTL_MS,
         });
 
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`Errore NocoDB ${response.status}: ${errorBody}`);
-        }
-        
-        const updatedRecord = await response.json();
-
-        return NextResponse.json({ message: 'Assistente aggiornato con successo!', data: updatedRecord });
+        return NextResponse.json(responsePayload);
     } catch (error: any) {
         console.error("Errore nell'aggiornamento dell'assistente:", error);
-        return NextResponse.json({ error: "Errore interno del server." }, { status: 500 });
+        return NextResponse.json(
+            {
+                error: "Errore interno del server.",
+                detail: error?.message ?? 'Impossibile completare la richiesta.',
+            },
+            { status: 500 }
+        );
     }
 }
