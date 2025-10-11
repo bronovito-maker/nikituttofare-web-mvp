@@ -1,7 +1,7 @@
 // app/api/assistente/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getNocoClient } from '@/lib/noco';
-import { auth } from '@/auth';
+import { auth } from '@/auth'; // Assumendo che auth() restituisca una sessione con il tipo esteso
 import { z } from 'zod';
 
 const AssistenteUpdateSchema = z.object({
@@ -14,10 +14,13 @@ const AssistenteUpdateSchema = z.object({
 export async function GET(req: NextRequest) {
   const session = await auth();
   
+  // Questo è l'unico controllo che ti serve se `next-auth.d.ts` è corretto.
+  // È pulito, leggibile e sicuro.
   if (!session?.user?.tenantId) {
     return NextResponse.json({ error: 'Utente non autorizzato o assistente non associato.' }, { status: 401 });
   }
 
+  // Grazie a `next-auth.d.ts`, TypeScript sa già cos'è tenantId.
   const { tenantId } = session.user;
 
   try {

@@ -1,40 +1,62 @@
 // lib/noco.ts
-let nocoClient: any = null;
+import 'server-only';
+import { Api } from 'nocodb-sdk';
 
-export function getNocoClient() {
-  // Inizializziamo il client solo la prima volta che questa funzione viene chiamata
+// Definiamo un tipo per il nostro client basato sull'istanza della classe Api
+type NocoClient = InstanceType<typeof Api>;
+
+let nocoClient: NocoClient | null = null;
+
+export function getNocoClient(): NocoClient {
+  const { NOCO_API_URL, NOCO_API_TOKEN } = process.env;
+  if (!NOCO_API_URL || !NOCO_API_TOKEN) {
+    throw new Error("Definisci NOCO_API_URL e NOCO_API_TOKEN in .env.local");
+  }
+
   if (!nocoClient) {
-    // Usiamo 'require' qui dentro per caricare il modulo al momento del bisogno
-    const NocoSdk = require("nocodb-sdk");
-    const Noco = NocoSdk.Api || NocoSdk.default || NocoSdk;
-
-    const apiToken = process.env.NOCO_API_TOKEN;
-    const apiUrl = process.env.NEXT_PUBLIC_NOCO_API_URL;
-
-    if (!apiToken || !apiUrl) {
-      throw new Error("Le variabili d'ambiente di NocoDB non sono configurate.");
-    }
-    
-    nocoClient = new Noco({
-      url: apiUrl,
-      auth: {
-        token: apiToken
-      },
+    nocoClient = new Api({
+      baseURL: NOCO_API_URL,
+      headers: { 'xc-token': NOCO_API_TOKEN },
     });
+    console.log('Client NocoDB inizializzato con successo.');
   }
   return nocoClient;
 }
 
-export const getUserByEmail = async (email: string) => {
-    const client = getNocoClient();
-    try {
-        // Assicurati che il nome della vista sia 'users'
-        const user = await client.db.dbViewRow.findOne('users', { 
-            where: `(Email,eq,${email})` 
-        });
-        return user || null;
-    } catch (error) {
-        console.error("Errore durante la ricerca dell'utente:", error);
-        return null;
+/**
+ * Funzione helper robusta per trovare una singola riga usando dbTableRow.
+ */
+export async function findOneByWhere(
+  project: string,
+  table: string,
+  where: (f: any) => any
+) {
+  const noco = getNocoClient();
+  const tableApi = (noco as any).dbTableRow;
+
+  // Tentativo con findOne (se supportato)
+  if (tableApi?.findOne) {
+    return await tableApi.findOne(project, table, { where });
+  }
+
+  // Fallback universale con list + limit 1
+  const res = await tableApi.list(project, table, { where, limit: 1 });
+  const rows = res?.list || res?.data || res || [];
+  return Array.isArray(rows) ? rows[0] ?? null : null;
+}
+
+export async function getUserByEmail(email: string) {
+  try {
+    const { NOCO_PROJECT_ID, NOCO_TABLE_USERS } = process.env;
+    if (!NOCO_PROJECT_ID || !NOCO_TABLE_USERS) {
+      throw new Error('Mancano NOCO_PROJECT_ID o NOCO_TABLE_USERS in .env.local');
     }
-};
+    
+    return await findOneByWhere(NOCO_PROJECT_ID, NOCO_TABLE_USERS, (f: any) =>
+      f.eq('Email', email)
+    );
+  } catch (error) {
+    console.error(`Errore in getUserByEmail con email ${email}:`, error);
+    return null;
+  }
+}

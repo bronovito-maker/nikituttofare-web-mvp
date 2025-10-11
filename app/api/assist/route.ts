@@ -1,58 +1,55 @@
+// app/api/assist/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
-import { getNocoClient } from '@/lib/noco'; // CORREZIONE: Usiamo getNocoClient
+import { findOneByWhere } from '@/lib/noco'; // Importiamo la nostra nuova funzione!
+import { OpenAI } from 'openai';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 export async function POST(req: NextRequest) {
-  const noco = getNocoClient(); // Otteniamo il client all'interno della funzione
   try {
-    const { prompt, tenant_id } = await req.json();
+    const { message, tenant_id } = await req.json();
+    const { NOCO_PROJECT_ID, NOCO_TABLE_ASSISTANTS } = process.env;
 
-    if (!prompt) {
-      return NextResponse.json({ error: 'Il prompt è obbligatorio' }, { status: 400 });
-    }
     if (!tenant_id) {
-      return NextResponse.json({ error: 'Tenant ID mancante' }, { status: 400 });
+      return NextResponse.json({ error: 'Tenant ID mancante.' }, { status: 400 });
+    }
+    if (!NOCO_PROJECT_ID || !NOCO_TABLE_ASSISTANTS) {
+        throw new Error("Mancano le variabili d'ambiente per NocoDB (progetto/tabella assistenti)");
     }
 
-    const viewName = 'Assistenti';
-    const assistente = await noco.db.dbViewRow.findOne(viewName, {
-      where: (f: any) => f.eq('tenant_id', tenant_id)
-    });
+    // Usiamo la nostra nuova funzione robusta!
+    const assistente = await findOneByWhere(
+      NOCO_PROJECT_ID,
+      NOCO_TABLE_ASSISTANTS,
+      (f: any) => f.eq('tenant_id', tenant_id)
+    );
 
     if (!assistente) {
+      // Come suggerito, gestiamo il 404 in modo pulito
       return NextResponse.json({ error: `Assistente con ID '${tenant_id}' non trovato.` }, { status: 404 });
     }
 
     const systemPromptString = `
-      ${assistente.prompt_sistema}
-
-      Informazioni aggiuntive a tua disposizione per rispondere alle domande degli utenti:
+      ${(assistente as any).prompt_sistema}
       ---
-      ${assistente.info_extra}
-      ---
+      ${(assistente as any).info_extra}
     `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4-turbo",
+      model: "gpt-3.5-turbo",
       messages: [
         { role: "system", content: systemPromptString },
-        { role: "user", content: prompt },
+        { role: "user", content: message },
       ],
-      temperature: 0.7,
-      max_tokens: 500,
     });
 
-    const responseText = completion.choices[0].message.content;
-
-    return NextResponse.json({ response: responseText });
+    const aiResponse = completion.choices[0].message.content;
+    return NextResponse.json({ response: aiResponse });
 
   } catch (error: any) {
     console.error("Errore nell'API assist:", error);
-    const errorMessage = error.message || "Si è verificato un errore sconosciuto.";
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json({ error: "Errore interno del server." }, { status: 500 });
   }
 }
