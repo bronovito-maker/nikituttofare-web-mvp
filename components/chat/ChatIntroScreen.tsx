@@ -36,7 +36,7 @@ export function ChatIntroScreen({ onSuggestionClick, businessName = "Assistente 
           {businessName}
         </h1>
         <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-            Sono qui per aiutarti. Seleziona un'opzione o scrivi la tua richiesta.
+            Sono qui per aiutarti. Seleziona un&apos;opzione o scrivi la tua richiesta.
         </p>
         
         {/* Griglia con i nuovi suggerimenti */}

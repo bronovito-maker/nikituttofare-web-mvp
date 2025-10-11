@@ -94,7 +94,7 @@ export default function ConfigurazionePage() {
         <form onSubmit={handleSave} className="space-y-8">
           <div className="p-6 border rounded-lg bg-card">
             <h2 className="text-xl font-semibold">Nome Attività</h2>
-            <p className="text-sm text-muted-foreground mt-1 mb-4">Il nome che l'assistente userà per presentarsi.</p>
+            <p className="text-sm text-muted-foreground mt-1 mb-4">Il nome che l&apos;assistente userà per presentarsi.</p>
             <input
               type="text"
               value={nomeAttivita}
@@ -118,7 +118,7 @@ export default function ConfigurazionePage() {
 
           <div className="p-6 border rounded-lg bg-card">
             <h2 className="text-xl font-semibold">Base di Conoscenza (Informazioni Extra)</h2>
-            <p className="text-sm text-muted-foreground mt-1 mb-4">Inserisci qui tutte le informazioni specifiche che l'AI deve conoscere: menu, orari, indirizzo, promozioni, regole particolari.</p>
+            <p className="text-sm text-muted-foreground mt-1 mb-4">Inserisci qui tutte le informazioni specifiche che l&apos;AI deve conoscere: menu, orari, indirizzo, promozioni, regole particolari.</p>
             <textarea
               value={infoExtra}
               onChange={(e) => setInfoExtra(e.target.value)}

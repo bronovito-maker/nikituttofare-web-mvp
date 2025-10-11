@@ -67,7 +67,7 @@ export default function ProfilePage() {
                     <span className="ml-2">Zona Pericolo</span>
                 </h2>
                 <div className="mt-4">
-                    <p className="text-sm text-destructive/80">L'eliminazione del tuo account è un'azione permanente e non può essere annullata. Tutti i tuoi dati e le tue richieste verranno cancellati per sempre.</p>
+                    <p className="text-sm text-destructive/80">L&apos;eliminazione del tuo account è un&apos;azione permanente e non può essere annullata. Tutti i tuoi dati e le tue richieste verranno cancellati per sempre.</p>
                     <button disabled className="mt-4 w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-destructive text-destructive-foreground text-sm font-medium rounded-md disabled:opacity-50 cursor-not-allowed">
                         Elimina il mio account (presto disponibile)
                     </button>

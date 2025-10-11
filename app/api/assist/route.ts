@@ -1,6 +1,6 @@
 // app/api/assist/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { findOneByWhere } from '@/lib/noco'; // Importiamo la nostra nuova funzione!
+import { findOneByWhereREST } from '@/lib/noco'; // Usiamo la funzione REST
 import { OpenAI } from 'openai';
 
 const openai = new OpenAI({
@@ -10,24 +10,27 @@ const openai = new OpenAI({
 export async function POST(req: NextRequest) {
   try {
     const { message, tenant_id } = await req.json();
-    const { NOCO_PROJECT_ID, NOCO_TABLE_ASSISTANTS } = process.env;
+    const { NOCO_PROJECT_SLUG, NOCO_TABLE_ASSISTANTS } = process.env;
 
     if (!tenant_id) {
       return NextResponse.json({ error: 'Tenant ID mancante.' }, { status: 400 });
     }
-    if (!NOCO_PROJECT_ID || !NOCO_TABLE_ASSISTANTS) {
-        throw new Error("Mancano le variabili d'ambiente per NocoDB (progetto/tabella assistenti)");
+    if (!NOCO_PROJECT_SLUG || !NOCO_TABLE_ASSISTANTS) {
+      console.error('Mancano variabili d\'ambiente per NocoDB (progetto/tabella assistenti)');
+      return NextResponse.json({ error: 'Configurazione del server incompleta.' }, { status: 500 });
     }
 
-    // Usiamo la nostra nuova funzione robusta!
-    const assistente = await findOneByWhere(
-      NOCO_PROJECT_ID,
+    // --- CORREZIONE CHIAVE ---
+    // Costruiamo la clausola 'where' come stringa
+    const whereClause = `(tenant_id,eq,${tenant_id})`;
+
+    const assistente = await findOneByWhereREST(
+      NOCO_PROJECT_SLUG,
       NOCO_TABLE_ASSISTANTS,
-      (f: any) => f.eq('tenant_id', tenant_id)
+      whereClause // Passiamo la stringa corretta
     );
 
     if (!assistente) {
-      // Come suggerito, gestiamo il 404 in modo pulito
       return NextResponse.json({ error: `Assistente con ID '${tenant_id}' non trovato.` }, { status: 404 });
     }
 
@@ -48,8 +51,11 @@ export async function POST(req: NextRequest) {
     const aiResponse = completion.choices[0].message.content;
     return NextResponse.json({ response: aiResponse });
 
-  } catch (error: any) {
-    console.error("Errore nell'API assist:", error);
-    return NextResponse.json({ error: "Errore interno del server." }, { status: 500 });
+  } catch (err: any) {
+    console.error("Errore nell'API assist:", err.message || err);
+    return NextResponse.json(
+      { error: 'Errore interno del server.', detail: err.message || String(err) },
+      { status: 500 }
+    );
   }
 }

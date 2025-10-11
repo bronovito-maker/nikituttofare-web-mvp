@@ -1,16 +1,17 @@
 // File: app/api/status/[ticketId]/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { getNocoClient } from "@/lib/noco";
-
-// MODIFICA: Rimuoviamo l'inizializzazione del client da qui
+import { listRecords } from "@/lib/noco";
 
 export async function GET(
   req: NextRequest,
   context: { params: Promise<{ ticketId: string }> }
 ) {
-  // MODIFICA: Inizializziamo il client qui, al momento della richiesta
-  const noco = getNocoClient();
+  const tableKey =
+    process.env.NOCO_TABLE_REQUESTS_ID ||
+    process.env.NOCO_TABLE_REQUESTS ||
+    "Leads";
+  const viewId = process.env.NOCO_VIEW_REQUESTS_ID;
   const { ticketId } = await context.params;
 
   if (!ticketId) {
@@ -18,22 +19,19 @@ export async function GET(
   }
 
   try {
-    const records = await noco.db.dbViewRow.list(
-      "vw_requests_details",
-      "Leads",
-      {
-        where: `(ticketId,eq,${ticketId})`,
-      }
-    );
+    const records = await listRecords(tableKey, {
+      where: `(ticketId,eq,${ticketId})`,
+      limit: 1,
+      viewId,
+    });
 
-    const record = records.list[0];
+    const record = records[0];
 
     if (!record) {
       return NextResponse.json({ error: "Richiesta non trovata" }, { status: 404 });
     }
 
-    // Estrai solo lo stato dal record
-    const status = record.Status;
+    const status = record.Status ?? record.status ?? null;
 
     return NextResponse.json({ status });
   } catch (error) {

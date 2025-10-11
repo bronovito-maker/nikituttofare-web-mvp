@@ -1,73 +1,74 @@
-// File: auth.ts
-
-import NextAuth from 'next-auth';
+// auth.ts
+import NextAuth, { type NextAuthConfig } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
+import { getUserByEmail } from '@/lib/noco';
+import { verifyPassword } from '@/lib/crypto';
 import { NocoAdapter } from './lib/noco-adapter';
-import { getUserByEmail } from './lib/noco';
-import { verifyPassword } from './lib/crypto';
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+const authConfig: NextAuthConfig = {
   adapter: NocoAdapter(),
   session: { strategy: 'jwt' },
   providers: [
     Credentials({
       name: 'Credentials',
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
-      },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials.password) {
-          return null;
-        }
+        const email = credentials?.email as string | undefined;
+        const password = credentials?.password as string | undefined;
+        if (!email || !password) return null;
 
-        const email = credentials.email as string;
-        const password = credentials.password as string;
-        
+        console.log(`Tentativo di login per: ${email}`);
         const user = await getUserByEmail(email);
-
+        
         if (!user) {
-          console.log('Nessun utente trovato con questa email:', email);
+          console.error(`Login fallito: utente non trovato (${email})`);
           return null;
         }
 
-        const isPasswordValid = await verifyPassword(password, user.Password);
+        const hashedPassword =
+          (user.Password ??
+            user.password ??
+            user.password_hash ??
+            user.PasswordHash ??
+            user.passhash) as string | undefined;
 
+        if (!hashedPassword) {
+          console.error(`Login fallito: hash password mancante per ${email}`);
+          return null;
+        }
+
+        const isPasswordValid = await verifyPassword(password, hashedPassword);
         if (!isPasswordValid) {
-          console.log('Password non valida per l\'utente:', email);
+          console.error(`Login fallito: password non valida per ${email}`);
           return null;
         }
 
-        // Restituiamo anche il tenant_id se esiste
-        return { 
-          id: user.Id, 
-          name: user.Name, 
-          email: user.Email,
-          tenantId: user.tenant_id, // <-- MODIFICA CHIAVE
+        console.log(`Login riuscito per: ${email}`);
+        return {
+          id: String(user.Id),
+          name: String(user.Name ?? user.name ?? ''),
+          email: String(user.Email ?? user.email ?? email),
+          tenantId: user.tenant_id ? String(user.tenant_id) : undefined,
         };
       },
     }),
   ],
-  pages: {
-    signIn: '/login',
-  },
   callbacks: {
-    // Aggiungiamo i callbacks per gestire il token e la sessione
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        // @ts-ignore // Aggiungiamo il tenantId al token
-        token.tenantId = user.tenantId; // <-- MODIFICA CHIAVE
+        token.tenantId = user.tenantId;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        // @ts-ignore
-        session.user.tenantId = token.tenantId as string; // <-- MODIFICA CHIAVE
+        session.user.tenantId = token.tenantId;
       }
       return session;
     },
   },
-});
+  pages: { signIn: '/login' },
+};
+
+export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);

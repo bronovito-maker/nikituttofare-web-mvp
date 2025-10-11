@@ -57,7 +57,7 @@ export default function ConfigForm() {
           <label className="block text-sm font-medium mb-2">
             Personalità del Receptionist
             <span className="text-gray-500 text-xs ml-2">
-              (Es: "Sei cordiale e professionale...")
+              {`(Es: "Sei cordiale e professionale...")`}
             </span>
           </label>
           <textarea

@@ -8,3 +8,12 @@ export type Message = {
 export type FormState = {
   [key: string]: any;
 };
+
+export interface Request {
+  ticketId: string;
+  category: string;
+  status: string;
+  message: string;
+  createdAt: string;
+  [key: string]: unknown;
+}
