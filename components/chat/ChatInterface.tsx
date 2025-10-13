@@ -13,7 +13,7 @@ type ChatInterfaceProps = {
 };
 
 export default function ChatInterface({ tenantId }: ChatInterfaceProps) {
-  const { messages, isLoading, sendMessage } = useChat({ tenantId });
+  const { messages, isLoading, sendMessage, assistantConfig } = useChat({ tenantId });
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -44,9 +44,12 @@ export default function ChatInterface({ tenantId }: ChatInterfaceProps) {
     <div className="flex flex-col h-full bg-gray-50">
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.slice(1).map((msg) => (
-          <ChatBubble key={msg.id} role={msg.role}>
-            {msg.content}
-          </ChatBubble>
+          <ChatBubble
+            key={msg.id}
+            role={msg.role}
+            content={msg.content}
+            menuUrl={assistantConfig?.menu_url ? String(assistantConfig.menu_url) : undefined}
+          />
         ))}
         {isLoading && <Typing />}
         <div ref={messagesEndRef} />

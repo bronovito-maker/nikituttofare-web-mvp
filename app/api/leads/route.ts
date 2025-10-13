@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createRecord, extractSingleRecord } from '@/lib/noco';
+import { notifyLeadChannels } from '@/lib/notifications';
 
 const leadSchema = z.object({
   nome: z
@@ -58,6 +59,9 @@ export async function POST(req: NextRequest) {
     if (validatedData.email) {
       payload.email = validatedData.email;
     }
+    if (validatedData.intent) {
+      payload.intent = validatedData.intent;
+    }
     if (validatedData.note_interne) {
       payload.note_interne = validatedData.note_interne;
     }
@@ -68,10 +72,16 @@ export async function POST(req: NextRequest) {
       LEADS_VIEW_ID ? { viewId: LEADS_VIEW_ID } : {}
     );
 
+    const leadRecord = extractSingleRecord(created) ?? { ...payload };
+    leadRecord.tenant_id = validatedData.tenant_id;
+    leadRecord.intent = validatedData.intent || payload.intent || 'unknown';
+
+    await notifyLeadChannels(validatedData.tenant_id, leadRecord);
+
     return NextResponse.json(
       {
         message: 'Lead creato con successo.',
-        data: extractSingleRecord(created) ?? payload,
+        data: leadRecord,
       },
       { status: 201 }
     );

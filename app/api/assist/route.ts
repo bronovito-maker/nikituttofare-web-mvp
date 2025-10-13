@@ -1,6 +1,8 @@
 // app/api/assist/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { findOneByWhereREST } from '@/lib/noco';
+import { buildSystemPrompt } from '@/lib/prompt-builder';
+import { LeadSnapshot } from '@/lib/chat-parser';
 import { OpenAI } from 'openai';
 
 const openai = new OpenAI({
@@ -9,7 +11,7 @@ const openai = new OpenAI({
 
 export async function POST(req: NextRequest) {
   try {
-    const { prompt, tenant_id } = await req.json();
+    const { prompt, tenant_id, lead_snapshot } = await req.json();
     const { NOCO_PROJECT_SLUG, NOCO_TABLE_ASSISTANTS } = process.env;
 
     if (!tenant_id) {
@@ -37,11 +39,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Assistente con ID '${tenant_id}' non trovato.` }, { status: 404 });
     }
 
-    const systemPromptString = `
-      ${(assistente as any).prompt_sistema}
-      ---
-      ${(assistente as any).info_extra}
-    `;
+    const systemPromptString = buildSystemPrompt({
+      assistant: assistente as Record<string, any>,
+      leadSnapshot: lead_snapshot as LeadSnapshot | undefined,
+    });
 
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
