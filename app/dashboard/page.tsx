@@ -125,7 +125,7 @@ export default async function DashboardPage() {
           <CardHeader>
             <CardTitle>Prenotazioni da Approvare</CardTitle>
             <CardDescription>
-              Prenotazioni con stato "richiesta" che attendono conferma.
+              Prenotazioni con stato &ldquo;richiesta&rdquo; che attendono conferma.
             </CardDescription>
           </CardHeader>
           <CardContent>

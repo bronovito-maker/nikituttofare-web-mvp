@@ -6,27 +6,40 @@ import type { lib as nocoLib } from 'nocodb-sdk';
 // @ts-ignore
 type Filter = nocoLib.Filterv1;
 
-// Non servono più NC_PROJECT_ID e NC_DB_ALIAS per le chiamate
-// const PROJECT_ID = ...
-// const DB_ALIAS = ...
+type NocoParams = {
+  where?: string;
+  limit?: number;
+  sort?: string;
+  offset?: number;
+};
 
 export async function listViewRowsById(
   tableId: string,
   viewId: string,
-  params?: Filter
+  params: NocoParams = {}
 ) {
-  if (process.env.NODE_ENV !== 'production') {
-    // Log aggiornato per la v2
-    console.debug('[NocoDBG_v2] listView →', { tableId, viewId, params });
-  }
+  console.log('[NocoDBG_v2] listView →', { tableId, viewId, params });
 
   if (!tableId || !viewId) {
     throw new Error(`ID tabella (${tableId}) o ID vista (${viewId}) mancanti.`);
   }
 
+  const payload: NocoParams = {
+    ...params,
+  };
+
   try {
-    // MAPPATO: Usa il nostro nuovo client per interrogare la VISTA
-    return await noco.listView(tableId, viewId, params as Record<string, any>);
+    const result = await noco.listView(tableId, viewId, payload);
+
+    if (result && typeof result === 'object' && 'list' in result) {
+      return {
+        list: (result as any).list ?? [],
+        pageInfo: (result as any).pageInfo ?? { totalRows: 0, page: 1, pageSize: 0 },
+      };
+    }
+
+    console.warn('[NocoHelper] listViewRowsById ha ricevuto una risposta inattesa:', result);
+    return { list: [], pageInfo: { totalRows: 0, page: 1, pageSize: 0 } };
   } catch (error) {
     console.error(
       `Errore NocoDB [listViewRowsById] sulla vista ${viewId} (Tabella: ${tableId}):`,
@@ -48,8 +61,17 @@ export async function readTableRowById(
     throw new Error(`ID tabella (${tableId}), ID vista (${viewId}) o ID riga (${rowId}) mancanti.`);
   }
   try {
-    // MAPPATO: Usa il nostro nuovo client per leggere dalla VISTA
-    return await noco.readViewRow(tableId, viewId, rowId);
+    const result = await noco.readViewRow(tableId, viewId, rowId);
+
+    if (Array.isArray(result) && result.length > 0) {
+      return result[0];
+    }
+
+    console.warn(
+      `[NocoHelper] readTableRowById (riga ${rowId}) ha ricevuto una risposta inattesa:`,
+      result
+    );
+    return null;
   } catch (error) {
     console.error(`Errore NocoDB [readTableRowById] sulla riga ${rowId} (Vista: ${viewId}):`, error);
     throw error;

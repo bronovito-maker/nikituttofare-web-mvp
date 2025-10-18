@@ -1,4 +1,7 @@
 // app/api/assist/route.ts
+
+export const runtime = 'nodejs';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { OpenAIStream, StreamingTextResponse } from 'ai';
 import { OpenAI } from 'openai';
@@ -9,9 +12,6 @@ import { buildSystemPrompt } from '@/lib/prompt-builder'; // Importa il nostro n
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
-export const runtime = 'edge'; // Specifica il runtime (opzionale ma consigliato per 'ai')
-
 export async function POST(req: NextRequest) {
   try {
     // 1. Autenticazione e recupero TenantID

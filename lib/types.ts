@@ -13,6 +13,10 @@ export interface Tenant {
   // Aggiungi altri campi della tabella 'tenants' se necessario
 }
 
+export type AssistantConfig = Tenant & {
+  menu_url?: string | null;
+};
+
 // Rappresenta un utente che accede alla dashboard (es. ristoratore, staff)
 export interface User {
   Id: number;

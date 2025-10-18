@@ -1,5 +1,4 @@
 'use client';
-'use client';
 
 import { useChat } from '@/hooks/useChat';
 import { ChatIntroScreen } from './ChatIntroScreen';
@@ -7,13 +6,14 @@ import MessageInput from './MessageInput';
 import Typing from '../Typing';
 import ChatBubble from '../ChatBubble';
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
+import type { AssistantConfig } from '@/lib/types';
 
 type ChatInterfaceProps = {
-  tenantId: string | null;
+  assistantConfig?: AssistantConfig | null;
 };
 
-export default function ChatInterface({ tenantId }: ChatInterfaceProps) {
-  const { messages, isLoading, sendMessage, assistantConfig } = useChat({ tenantId });
+export default function ChatInterface({ assistantConfig = null }: ChatInterfaceProps) {
+  const { messages = [], isLoading, sendMessage } = useChat();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -36,8 +36,13 @@ export default function ChatInterface({ tenantId }: ChatInterfaceProps) {
     setInput(event.target.value);
   };
 
-  if (messages.length <= 1) {
-    return <ChatIntroScreen onSuggestionClick={handleSendMessage} />;
+  if (!Array.isArray(messages) || messages.length <= 1) {
+    return (
+      <ChatIntroScreen
+        onSuggestionClick={handleSendMessage}
+        businessName={assistantConfig?.name}
+      />
+    );
   }
 
   return (
@@ -59,8 +64,6 @@ export default function ChatInterface({ tenantId }: ChatInterfaceProps) {
         handleInputChange={handleInputChange}
         handleSend={handleSendMessage}
         isLoading={isLoading}
-        step="chat"
-        setFileToUpload={() => {}}
       />
     </div>
   );

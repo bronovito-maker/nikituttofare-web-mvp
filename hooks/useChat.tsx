@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useCompletion } from 'ai/react';
-import { Message, UseChatOptions } from 'ai';
+import { useState, useEffect, useRef } from 'react';
+import { useChat as useAiChat, type Message, type UseChatOptions as VercelUseChatOptions } from 'ai/react';
 import { parseChatData, ChatData } from '@/lib/chat-parser'; // Assicurati che ChatData sia esportato
 
 // Definisci un tipo per gli ID salvati
@@ -25,7 +24,7 @@ type BookingsApiResponse = {
 };
 
 export const useChat = (
-  options?: Omit<UseChatOptions, 'body' | 'onFinish' | 'onError'>
+  options?: Omit<VercelUseChatOptions, 'api' | 'onFinish' | 'onError'>
 ) => {
   const [error, setError] = useState<string | null>(null);
   const [parsedData, setParsedData] = useState<ChatData | null>(null);
@@ -36,7 +35,6 @@ export const useChat = (
   // Stato per tracciare il salvataggio della Prenotazione
   const [bookingSaved, setBookingSaved] = useState<boolean>(false);
 
-  const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
 
   // 1. Carica la configurazione iniziale (prompt di sistema)
@@ -70,32 +68,38 @@ export const useChat = (
     isLoading,
     input,
     setInput,
-    setMessages,
-  } = useCompletion({
-    api: '/api/assist', // L'endpoint che parla con l'AI
-    ...options,
-    // onFinish gestisce l'orchestrazione DOPO che l'AI ha risposto
-    onFinish: async (prompt, completion) => {
-      setError(null); // Resetta errori precedenti
+  } = useAiChat({
+    api: '/api/assist',
+    ...(options ?? {}),
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
 
-      // Ricostruisci tutti i messaggi (inclusa la risposta AI appena ricevuta)
-      const currentMessages = [...messages];
-      const assistantMessages: Message[] = [
-        ...completion
-          .split(/({[\s\S]*?})/) // Gestisce JSON misto a testo
-          .filter(Boolean)
-          .map((content) => ({
-            id: String(Date.now()),
-            role: 'assistant' as const,
-            content: content.trim(),
-          })),
-      ];
+  const processedAssistantIds = useRef<Set<string>>(new Set());
 
-      const allMessages = [...currentMessages, ...assistantMessages];
+  useEffect(() => {
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return;
+    }
 
-      // 1. Parsa la conversazione
-      const parsed = parseChatData(allMessages);
-      setParsedData(parsed);
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage || lastMessage.role !== 'assistant') {
+      return;
+    }
+
+    if (processedAssistantIds.current.has(lastMessage.id)) {
+      return;
+    }
+
+    processedAssistantIds.current.add(lastMessage.id);
+
+    const allMessages = [...messages];
+    const parsed = parseChatData(allMessages);
+    setParsedData(parsed);
+
+    (async () => {
+      setError(null);
 
       try {
         // --- MODIFICA 2: Logica di Orchestrazione "Intelligente" ---
@@ -142,7 +146,8 @@ export const useChat = (
         // 3. Abbiamo i dati minimi (party_size, booking_date)
         // 4. NON abbiamo ancora salvato la prenotazione (bookingSaved è false)
 
-        const hasBookingData = parsed.party_size && parsed.booking_date; // Aggiungi altri campi necessari
+        const bookingDate = (parsed as any).booking_date ?? parsed.booking_date_time;
+        const hasBookingData = Boolean(parsed.party_size && bookingDate);
 
         if (
           currentLeadInfo &&
@@ -177,15 +182,11 @@ export const useChat = (
           }
         }
       } catch (err) {
-        // Gestisci l'errore (che ora è corretto)
-        console.error('Errore in onFinish:', err);
+        console.error('Errore durante la gestione dei messaggi:', err);
         setError(err instanceof Error ? err.message : String(err));
       }
-    },
-    onError: (err) => {
-      setError(err.message);
-    },
-  });
+    })();
+  }, [messages, savedLeadInfo, bookingSaved]);
 
   // Funzione wrapper per inviare messaggi (usata dall'UI)
   const sendMessage = async (messageContent: string) => {
@@ -212,11 +213,10 @@ export const useChat = (
     sendMessage,
     reload,
     stop,
-    isLoading: isLoading || isLoadingConfig, // L'UI è "loading" anche durante il config
+    isLoading: isLoading || isLoadingConfig,
     error,
     parsedData,
-    setMessages, // Esponi setMessages se serve resettare la chat
-    savedLeadInfo, // Esponi per debug o UI
-    bookingSaved, // Esponi per debug o UI
+    savedLeadInfo,
+    bookingSaved,
   };
 };

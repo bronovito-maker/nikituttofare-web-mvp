@@ -11,8 +11,8 @@ interface MessageInputProps {
   handleInputChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   handleSend: (messageOverride?: string) => void;
   isLoading: boolean;
-  step: string;
-  setFileToUpload: (file: File | null) => void;
+  step?: string;
+  setFileToUpload?: (file: File | null) => void;
 }
 
 export default function MessageInput({
@@ -20,8 +20,8 @@ export default function MessageInput({
   handleInputChange,
   handleSend,
   isLoading,
-  step,
-  setFileToUpload
+  step = 'chat',
+  setFileToUpload = () => {}
 }: MessageInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 

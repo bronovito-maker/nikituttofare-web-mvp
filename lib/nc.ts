@@ -14,18 +14,30 @@ export class Noco {
   }
 
   /**
-   * Esecutore di richieste generico
+   * Esegue una richiesta fetch all'API NocoDB v2
+   * Gestisce l'autenticazione, i body JSON e il parsing degli errori.
    */
-  private async req(path: string, init: RequestInit = {}) {
-    const res = await fetch(this.baseUrl + path, {
-      ...init,
-      headers: {
-        'xc-token': this.token,
-        'content-type': 'application/json',
-        ...(init.headers || {}),
-      },
-      cache: 'no-store', // Non vogliamo cache per le chiamate API
-    });
+  private async req(path: string, options: RequestInit = {}) {
+    const url = `${this.baseUrl}${path}`;
+    const headers = new Headers(options.headers || {});
+    headers.set('xc-token', this.token);
+
+    if (options.body && typeof options.body !== 'string') {
+      try {
+        options.body = JSON.stringify(options.body);
+        headers.set('Content-Type', 'application/json');
+      } catch (error) {
+        console.error('[NocoClient Error] Errore nel serializzare il body JSON:', error);
+        throw new Error('Impossibile serializzare il body della richiesta');
+      }
+    }
+
+    const fetchOptions: RequestInit = {
+      ...options,
+      headers,
+    };
+
+    const res = await fetch(url, fetchOptions);
 
     if (!res.ok) {
       const body = await res.text().catch(() => '');
@@ -34,29 +46,52 @@ export class Noco {
     }
 
     const ct = res.headers.get('content-type') || '';
-    return ct.includes('application/json') ? res.json() : res.text();
+    if (ct.includes('application/json')) {
+      return res.json();
+    }
+    return res.text();
   }
 
-  // --- METODI PER LE VISTE (READ) ---
-  // Logica usata da noco-helpers.ts
-
   /**
-   * GET /api/v2/tables/{tableId}/views/{viewId}/records
+   * Legge UNA singola riga da una TABELLA usando il suo ID.
+   * L'API V2 usa POST e {tableId} e {rowId}.
+   * Ignoriamo viewId perché l'API V2 /read/ non lo usa.
    */
-  listView(tableId: string, viewId: string, query: Record<string, any> = {}) {
-    const qs = new URLSearchParams();
-    Object.entries(query).forEach(([k, v]) => {
-      if (v !== undefined && v !== null) qs.append(k, String(v));
+  readViewRow(tableId: string, viewId: string, rowId: number | string) {
+    const path = `/tables/${tableId}/records/read`;
+    const body = {
+      recordIds: [String(rowId)],
+    };
+
+    console.log('[NocoDBG_v2] readViewRow (PATH CORRETTO) →', { path, body });
+
+    return this.req(path, {
+      method: 'POST',
+      body,
     });
-    const suffix = qs.toString() ? `?${qs.toString()}` : '';
-    return this.req(`/api/v2/tables/${tableId}/views/${viewId}/records${suffix}`);
   }
 
   /**
-   * GET /api/v2/tables/{tableId}/views/{viewId}/records/{recordId}
+   * Lista i record da una VISTA.
+   * L'API V2 usa POST e {viewId}.
+   * I parametri (where, limit, sort) vanno nel BODY JSON.
    */
-  readViewRow(tableId: string, viewId: string, recordId: string | number) {
-    return this.req(`/api/v2/tables/${tableId}/views/${viewId}/records/${recordId}`);
+  listView(tableId: string, viewId: string, params: Record<string, any> = {}) {
+    const path = `/tables/${tableId}/records`;
+    const body: Record<string, any> = {
+      viewId,
+      ...params,
+    };
+
+    if (body.limit !== undefined) body.limit = Number(body.limit);
+    if (body.offset !== undefined) body.offset = Number(body.offset);
+
+    console.log('[NocoDBG_v2] listView (PATH CORRETTO) →', { path, body });
+
+    return this.req(path, {
+      method: 'POST',
+      body,
+    });
   }
 
   // --- METODI PER LE TABELLE (CREATE, UPDATE, DELETE) ---
@@ -67,9 +102,11 @@ export class Noco {
    */
   create(tableId: string, data: any) {
     // La v2 API accetta un oggetto singolo (non un array) per la creazione singola
-    return this.req(`/api/v2/tables/${tableId}/records`, {
+    const path = `/tables/${tableId}/records`;
+    console.log('[NocoDBG_v2] createRecord →', { path, data });
+    return this.req(path, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: data,
     });
   }
 
@@ -77,9 +114,17 @@ export class Noco {
    * PATCH /api/v2/tables/{tableId}/records/{recordId}
    */
   update(tableId: string, recordId: string | number, patch: any) {
-    return this.req(`/api/v2/tables/${tableId}/records/${recordId}`, {
+    const path = `/tables/${tableId}/records`;
+    const body = {
+      Id: recordId,
+      ...patch,
+    };
+
+    console.log('[NocoDBG_v2] updateRecord →', { path, body });
+
+    return this.req(path, {
       method: 'PATCH',
-      body: JSON.stringify(patch),
+      body,
     });
   }
 
@@ -95,7 +140,6 @@ export class Noco {
       if (v !== undefined && v !== null) qs.append(k, String(v));
     });
     const suffix = qs.toString() ? `?${qs.toString()}` : '';
-    // N.B. L'autenticazione interroga la Tabella, non la Vista, per sicurezza
-    return this.req(`/api/v2/tables/${tableId}/records${suffix}`);
+    return this.req(`/tables/${tableId}/records${suffix}`);
   }
 }
