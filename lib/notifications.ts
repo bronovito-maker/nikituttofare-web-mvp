@@ -1,5 +1,8 @@
 import { Resend } from 'resend';
-import { findOneByWhereREST } from './noco';
+import { listViewRowsById } from './noco-helpers';
+
+const ASSISTANTS_TABLE_ID = process.env.NOCO_TABLE_ASSISTANTS_ID;
+const ASSISTANTS_VIEW_ID = process.env.NOCO_VIEW_ASSISTANTS_ID;
 
 const emailClient = () => {
   const apiKey = process.env.RESEND_API_KEY;
@@ -51,15 +54,18 @@ const formatSlackPayload = (lead: Record<string, any>) => ({
 
 export async function notifyLeadChannels(tenantId: string, lead: Record<string, any>) {
   try {
-    const { NOCO_PROJECT_SLUG, NOCO_TABLE_ASSISTANTS } = process.env;
-    if (!NOCO_PROJECT_SLUG || !NOCO_TABLE_ASSISTANTS) return;
+    if (!ASSISTANTS_TABLE_ID || !ASSISTANTS_VIEW_ID) {
+      console.warn('ID tabella/vista assistenti mancanti. Nessuna notifica inviata.');
+      return;
+    }
 
     const whereClause = `(tenant_id,eq,${tenantId})`;
-    const assistant = await findOneByWhereREST(
-      NOCO_PROJECT_SLUG,
-      NOCO_TABLE_ASSISTANTS,
-      whereClause
-    );
+    const assistants = await listViewRowsById(ASSISTANTS_TABLE_ID, ASSISTANTS_VIEW_ID, {
+      where: whereClause,
+      limit: 1,
+    });
+
+    const assistant = Array.isArray(assistants.list) ? assistants.list[0] : null;
 
     if (!assistant) return;
 

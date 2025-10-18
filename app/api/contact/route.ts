@@ -1,7 +1,7 @@
 // app/api/contact/route.ts
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { generateTicketId } from '@/lib/ticket'; // <-- IMPORTIAMO LA NUOVA FUNZIONE
+import { generateTicketId } from '@/lib/utils';
 
 // Lo schema di validazione rimane invariato
 const ContactSchema = z.object({

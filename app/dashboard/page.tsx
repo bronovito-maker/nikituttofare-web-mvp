@@ -1,226 +1,184 @@
+// app/dashboard/page.tsx
 import { auth } from '@/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { listRecords } from '@/lib/noco';
-import Link from 'next/link';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { listViewRowsById } from '@/lib/noco-helpers';
+import type { lib as nocoLib } from 'nocodb-sdk';
 import { redirect } from 'next/navigation';
-import { MessageSquare, Settings, Users } from 'lucide-react';
+import type { Conversation } from '@/lib/types';
 
-type LeadRecord = {
-  Id: string;
-  CreatedAt?: string;
-  nome?: string;
-  telefono?: string;
-  richiesta?: string;
-  note_interne?: string;
-  stato?: string;
-  intent?: string;
-  persone?: number;
-  orario?: string;
-};
+const TBL_BOOKINGS_ID = process.env.NOCO_TABLE_BOOKINGS_ID!;
+const VW_BOOKINGS_ID = process.env.NOCO_VIEW_BOOKINGS_ID!;
+const TBL_CONV_ID = process.env.NOCO_TABLE_CONVERSATIONS_ID!;
+const VW_CONV_ID = process.env.NOCO_VIEW_CONVERSATIONS_ID!;
 
-const LEADS_TABLE_KEY =
-  process.env.NOCO_TABLE_LEADS_ID ||
-  process.env.NOCO_TABLE_LEADS ||
-  'Leads';
+async function getDashboardStats(tenantId: string | number) {
+  if (!TBL_BOOKINGS_ID || !VW_BOOKINGS_ID || !TBL_CONV_ID || !VW_CONV_ID) {
+    throw new Error("Variabili d'ambiente ID NocoDB mancanti. Controlla .env.local");
+  }
 
-const LEADS_VIEW_ID = process.env.NOCO_VIEW_LEADS_ID;
+  const tenantIdNum = Number(tenantId);
+  const whereTenant = `(tenant_id,eq,${tenantIdNum})`;
 
-const formatDate = (value?: string) => {
-  if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat('it-IT', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
-};
+  // @ts-ignore: il pacchetto nocodb-sdk non esporta esplicitamente Filterv1
+  const bookingsParams: nocoLib.Filterv1 = {
+    where: whereTenant,
+    limit: 1,
+  };
 
-const startOfToday = () => {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  return now.getTime();
-};
+  const allBookingsResult = await listViewRowsById(
+    TBL_BOOKINGS_ID,
+    VW_BOOKINGS_ID,
+    bookingsParams
+  );
+  const totalBookings = allBookingsResult.pageInfo.totalRows;
 
-const startOfMonth = () => {
-  const now = new Date();
-  now.setDate(1);
-  now.setHours(0, 0, 0, 0);
-  return now.getTime();
-};
+  // @ts-ignore: il pacchetto nocodb-sdk non esporta esplicitamente Filterv1
+  const pendingBookingsParams: nocoLib.Filterv1 = {
+    where: `${whereTenant}~and(status,eq,richiesta)`,
+    limit: 1,
+  };
+
+  const pendingBookingsResult = await listViewRowsById(
+    TBL_BOOKINGS_ID,
+    VW_BOOKINGS_ID,
+    pendingBookingsParams
+  );
+  const pendingBookings = pendingBookingsResult.pageInfo.totalRows;
+
+  // @ts-ignore: il pacchetto nocodb-sdk non esporta esplicitamente Filterv1
+  const convParams: nocoLib.Filterv1 = {
+    where: whereTenant,
+    limit: 5,
+    sort: '-CreatedAt',
+  };
+
+  const recentConversationsResult = await listViewRowsById(
+    TBL_CONV_ID,
+    VW_CONV_ID,
+    convParams
+  );
+
+  return {
+    totalBookings,
+    pendingBookings,
+    recentConversations: recentConversationsResult.list as Conversation[],
+  };
+}
+
+function formatChatDate(dateString?: string): string {
+  if (!dateString) return 'N/D';
+  try {
+    return new Date(dateString).toLocaleString('it-IT', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return dateString;
+  }
+}
 
 export default async function DashboardPage() {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user?.tenantId) {
     redirect('/login');
   }
 
   const tenantId = session.user.tenantId;
-  const leadsRaw = tenantId
-    ? await listRecords(LEADS_TABLE_KEY, {
-        where: `(tenant_id,eq,${tenantId})`,
-        sort: '-CreatedAt',
-        limit: 20,
-        viewId: LEADS_VIEW_ID,
-      })
-    : [];
-  const leads = (leadsRaw as LeadRecord[]) ?? [];
+  let stats;
+  try {
+    stats = await getDashboardStats(tenantId);
+  } catch (error) {
+    console.error('Errore caricamento statistiche dashboard:', error);
+    return (
+      <div className="p-4 text-red-500">
+        Errore nel caricamento della dashboard. Controlla gli ID NocoDB e i permessi del token API.
+        <pre className="mt-2 text-xs">{(error as Error).message}</pre>
+      </div>
+    );
+  }
 
-  const now = Date.now();
-  const todayStart = startOfToday();
-  const monthStart = startOfMonth();
-
-  const leadsToday = leads.filter((lead) => {
-    if (!lead.CreatedAt) return false;
-    const ts = new Date(lead.CreatedAt).getTime();
-    return !Number.isNaN(ts) && ts >= todayStart && ts <= now;
-  }).length;
-
-  const leadsMonth = leads.filter((lead) => {
-    if (!lead.CreatedAt) return false;
-    const ts = new Date(lead.CreatedAt).getTime();
-    return !Number.isNaN(ts) && ts >= monthStart && ts <= now;
-  }).length;
-
-  const bookingsPending = leads.filter((lead) => lead.intent === 'booking').length;
+  const { totalBookings, pendingBookings, recentConversations } = stats;
 
   return (
-    <div className="container mx-auto space-y-10 p-4 md:p-8">
-      <header className="space-y-2">
-        <p className="text-sm text-blue-600">Dashboard</p>
-        <h1 className="text-3xl font-bold tracking-tight">Bentornato, {session.user.email ?? 'utente'}!</h1>
-        <p className="text-gray-500">
-          Panoramica dei lead raccolti dal tuo receptionist AI e azioni rapide per gestirli.
-        </p>
-      </header>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">Dashboard</h1>
 
-      <section>
-        <h2 className="text-xl font-semibold">Panoramica</h2>
-        <div className="mt-4 grid gap-4 md:grid-cols-3">
-          <Card className="shadow-sm">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-base font-semibold text-gray-700">Lead raccolti (oggi)</CardTitle>
-              <CardDescription>Nuovi contatti generati nelle ultime 24 ore.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-4xl font-semibold text-gray-900">{leadsToday}</p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-sm">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-base font-semibold text-gray-700">Lead raccolti (mese)</CardTitle>
-              <CardDescription>Contatti generati dall’inizio del mese corrente.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-4xl font-semibold text-gray-900">{leadsMonth}</p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-sm">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-base font-semibold text-gray-700">Prenotazioni in evidenza</CardTitle>
-              <CardDescription>Lead riconosciuti come richieste di prenotazione.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-4xl font-semibold text-gray-900">{bookingsPending}</p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Prenotazioni Totali</CardTitle>
+            <CardDescription>
+              Numero totale di prenotazioni registrate dal sistema.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-bold">{totalBookings}</div>
+          </CardContent>
+        </Card>
 
-      <section className="grid gap-8 lg:grid-cols-3">
-        <div className="space-y-4 lg:col-span-1">
-          <h2 className="text-xl font-semibold">Azioni rapide</h2>
-          <Card className="shadow-sm transition hover:shadow-md">
-            <Link href="/dashboard/configurazione" className="flex items-center gap-4 p-5">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
-                <Settings className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-gray-800">Configura l’assistente</p>
-                <p className="text-sm text-gray-500">Aggiorna tono, settore, notifiche e prompt dinamici.</p>
-              </div>
-            </Link>
-          </Card>
-          <Card className="shadow-sm transition hover:shadow-md">
-            <Link href="/chat" className="flex items-center gap-4 p-5" target="_blank">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
-                <MessageSquare className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-gray-800">Prova la chat</p>
-                <p className="text-sm text-gray-500">Interagisci con il receptionist come farebbe un cliente.</p>
-              </div>
-            </Link>
-          </Card>
-          <Card className="shadow-sm transition hover:shadow-md">
-            <Link href="/dashboard/leads" className="flex items-center gap-4 p-5">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
-                <Users className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-gray-800">Gestisci i lead</p>
-                <p className="text-sm text-gray-500">Consulta, etichetta e contatta i potenziali clienti.</p>
-              </div>
-            </Link>
-          </Card>
-        </div>
+        <Card className={pendingBookings > 0 ? 'border-yellow-500' : ''}>
+          <CardHeader>
+            <CardTitle>Prenotazioni da Approvare</CardTitle>
+            <CardDescription>
+              Prenotazioni con stato "richiesta" che attendono conferma.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-bold text-yellow-600">{pendingBookings}</div>
+          </CardContent>
+        </Card>
+      </div>
 
-        <div className="lg:col-span-2">
-          <h2 className="text-xl font-semibold">Lead recenti</h2>
-          <Card className="mt-4 overflow-hidden shadow-sm">
-            <CardContent className="p-0">
-              {leads.length === 0 ? (
-                <div className="p-6 text-center text-sm text-gray-500">Ancora nessun lead registrato.</div>
-              ) : (
-                <div className="divide-y divide-gray-100">
-                  {leads.map((lead) => (
-                    <div key={lead.Id} className="flex flex-col gap-2 p-5 text-left">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="font-semibold text-gray-800">{lead.nome || 'Contatto chat'}</p>
-                        <span className="text-sm text-gray-500">{formatDate(lead.CreatedAt)}</span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                        <span className="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700">
-                          Intento: {lead.intent || '—'}
-                        </span>
-                        <span className="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700">
-                          Persone: {lead.persone ?? '—'}
-                        </span>
-                        <span className="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700">
-                          Orario: {lead.orario ?? '—'}
-                        </span>
-                        <span className="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700">
-                          Stato: {lead.stato || 'Nuovo'}
-                        </span>
-                      </div>
-                      {lead.telefono && (
-                        <p className="text-sm text-gray-700">
-                          📞 <strong>Telefono:</strong> {lead.telefono}
-                        </p>
-                      )}
-                      {lead.note_interne && (
-                        <p className="text-sm text-gray-700">
-                          📝 <strong>Note interne:</strong> {lead.note_interne}
-                        </p>
-                      )}
-                      {lead.richiesta && (
-                        <p className="text-sm text-gray-600 line-clamp-3">{lead.richiesta}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Ultime Conversazioni</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Data</TableHead>
+                <TableHead>Intento</TableHead>
+                <TableHead>Stato</TableHead>
+                <TableHead>Riepilogo</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {recentConversations.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center">
+                    Nessuna conversazione trovata.
+                  </TableCell>
+                </TableRow>
               )}
-              <div className="border-t border-gray-100 bg-gray-50 p-4 text-center">
-                <Link href="/dashboard/leads" className="text-sm font-semibold text-blue-600 hover:text-blue-700">
-                  Vedi tutti i lead
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
+              {recentConversations.map((convo) => (
+                <TableRow key={convo.Id}>
+                  <TableCell className="text-xs">
+                    {formatChatDate((convo as any).CreatedAt ?? (convo as any).createdAt)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={convo.intent === 'prenotazione' ? 'default' : 'secondary'}>
+                      {convo.intent || 'N/D'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={convo.status === 'chiusa' ? 'outline' : 'default'}>
+                      {convo.status || 'N/D'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm truncate max-w-sm">
+                    {convo.summary}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
