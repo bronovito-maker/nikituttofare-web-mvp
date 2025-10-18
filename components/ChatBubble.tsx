@@ -4,7 +4,7 @@ import { Fragment, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 
 type ChatBubbleProps = {
-  role?: "user" | "assistant";
+  role?: "user" | "assistant" | "system";
   content: string;
   menuUrl?: string;
 };

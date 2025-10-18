@@ -215,3 +215,5 @@ export async function getUserByEmail(email: string) {
   const where = `(${EMAIL_FIELD},eq,${email})`;
   return await findOneByWhereREST(PROJECT, tableKey, where, { viewId: VIEW_ID || undefined });
 }
+
+export const noco = getNocoClient();

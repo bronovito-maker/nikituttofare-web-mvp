@@ -1,221 +1,232 @@
-export type LeadIntent = 'booking' | 'info' | 'unknown';
+// lib/chat-parser.ts
+import { Message } from './types';
+
+export interface ParsedChatData {
+  nome?: string;
+  telefono?: string;
+  email?: string;
+  booking_date_time?: string;
+  party_size?: number;
+  notes?: string;
+  intent?: 'prenotazione' | 'info' | 'ordine' | 'altro';
+  persone?: string;
+  orario?: string;
+}
 
 export type LeadDraft = {
   nome?: string;
   telefono?: string;
-  persone?: number;
+  email?: string;
+  persone?: string;
   orario?: string;
-  intent: LeadIntent;
+  intent?: 'prenotazione' | 'info' | 'ordine' | 'altro';
   specialNotes: string[];
+  party_size?: number;
+  booking_date_time?: string;
+  notes?: string;
 };
 
-export type LeadSnapshot = {
-  nome?: string;
-  telefono?: string;
-  persone?: number;
-  orario?: string;
-  intent?: LeadIntent;
-  specialNotes?: string[];
-};
+export type LeadSnapshot = LeadDraft;
 
 export const INITIAL_LEAD_DRAFT: LeadDraft = {
-  intent: 'unknown',
+  nome: undefined,
+  telefono: undefined,
+  email: undefined,
+  persone: undefined,
+  orario: undefined,
+  intent: 'altro',
   specialNotes: [],
+  party_size: undefined,
+  booking_date_time: undefined,
+  notes: undefined,
 };
 
-const STOP_WORDS = new Set([
-  'ciao',
-  'salve',
-  'buongiorno',
-  'buonasera',
-  'grazie',
-  'si',
-  'sì',
-  'ok',
-  'qual',
-  'qualcosa',
-  'help',
-  'grazie!',
-]);
+const PERSONE_REGEX = /(?:siamo|per|per\s+in|per\s+circa|saremmo|per\s+circa)\s*(\d{1,2})\s*(?:persone|pers|pax)?/i;
+const ORARIO_REGEX = /(?:alle|per le|verso le|alle ore|alle h)\s*(\d{1,2})(?::(\d{2}))?/i;
+const DATE_NUMERIC_REGEX = /(?:il\s*)?(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/i;
+const DATE_TEXT_REGEX = /(?:il\s*)?(\d{1,2})\s+(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)/i;
+const RELATIVE_DATE_REGEX = /\b(oggi|domani|dopodomani)\b/i;
 
-const WORD_TO_NUMBER: Record<string, number> = {
-  uno: 1,
-  un: 1,
-  una: 1,
-  due: 2,
-  tre: 3,
-  quattro: 4,
-  cinque: 5,
-  sei: 6,
-  sette: 7,
-  otto: 8,
-  nove: 9,
-  dieci: 10,
-  undici: 11,
-  dodici: 12,
+const MONTH_MAP: Record<string, number> = {
+  gennaio: 0,
+  febbraio: 1,
+  marzo: 2,
+  aprile: 3,
+  maggio: 4,
+  giugno: 5,
+  luglio: 6,
+  agosto: 7,
+  settembre: 8,
+  ottobre: 9,
+  novembre: 10,
+  dicembre: 11,
 };
 
-const formatName = (input: string) =>
-  input
-    .trim()
-    .split(/\s+/)
-    .map(
-      (part) =>
-        part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
-    )
-    .join(' ');
+export function parseChatData(messages: Message[]): ParsedChatData {
+  const fullText = messages.map((m) => `${m.role}: ${m.content}`).join('\n');
+  const data: ParsedChatData = {};
+  const now = new Date();
+  const accumulatedNotes: string[] = [];
 
-const extractName = (text: string): string | undefined => {
-  const directMatch = text.match(/(?:mi chiamo|sono|il mio nome(?: è| e')|questa è|qui è)\s+([A-Za-zÀ-ÿ' ]{2,})/i);
-  if (directMatch) {
-    const candidate = directMatch[1].split(/[,\.!\d]/)[0]?.trim();
-    if (candidate && candidate.length >= 2 && !STOP_WORDS.has(candidate.toLowerCase())) {
-      return formatName(candidate);
+  const nomeMatch = fullText.match(/(?:chiamo|chiamarmi|mio nome è|sono)\s+([A-Za-zÀ-ÖØ-öø-ÿ\s]+?)(?:\.|\n|,|$)/i);
+  if (nomeMatch?.[1]) {
+    data.nome = nomeMatch[1].replace(/(il|la)\s+mio\s+numero/i, '').trim();
+  }
+
+  const telMatch = fullText.match(/(\+39[\s-]?)?([0-9]{3}[\s-]?[0-9]{6,7}|[0-9]{9,10})/);
+  if (telMatch) {
+    const prefix = telMatch[1] ? telMatch[1].replace(/[\s-]/g, '') : '';
+    const number = telMatch[2].replace(/[\s-]/g, '');
+    data.telefono = `${prefix}${number}`;
+  }
+
+  const emailMatch = fullText.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/);
+  if (emailMatch) {
+    data.email = emailMatch[0].toLowerCase();
+  }
+
+  if (/prenotare|riservare|tavolo|booking/i.test(fullText)) {
+    data.intent = 'prenotazione';
+  } else if (/ordina|asporto|delivery|consegn/i.test(fullText)) {
+    data.intent = 'ordine';
+  } else if (/orari|menu|dove siete|parcheggio|info/i.test(fullText)) {
+    data.intent = 'info';
+  } else {
+    data.intent = 'altro';
+  }
+
+  const personeMatch = fullText.match(PERSONE_REGEX);
+  if (personeMatch?.[1]) {
+    data.persone = personeMatch[1];
+    const parsedNumber = Number(personeMatch[1]);
+    if (!Number.isNaN(parsedNumber) && parsedNumber > 0) {
+      data.party_size = parsedNumber;
     }
   }
 
-  const inlineMatch = text.match(/^(?:ciao[,!\s]*)?([A-Za-zÀ-ÿ']{2,})\s+\d/i);
-  if (inlineMatch) {
-    const candidate = inlineMatch[1];
-    if (!STOP_WORDS.has(candidate.toLowerCase())) {
-      return formatName(candidate);
+  let bookingDate: Date | null = null;
+
+  const numericDateMatch = fullText.match(DATE_NUMERIC_REGEX);
+  if (numericDateMatch) {
+    const day = Number(numericDateMatch[1]);
+    const month = Number(numericDateMatch[2]) - 1;
+    if (!Number.isNaN(day) && !Number.isNaN(month) && day >= 1 && day <= 31 && month >= 0 && month <= 11) {
+      let year = numericDateMatch[3] ? Number(numericDateMatch[3]) : now.getFullYear();
+      if (year < 100) {
+        year += 2000;
+      }
+      const candidate = new Date(year, month, day);
+      if (!Number.isNaN(candidate.getTime())) {
+        bookingDate = candidate;
+      }
     }
   }
 
-  const labelMatch = text.match(/nome[:\-]\s*([A-Za-zÀ-ÿ' ]{2,})/i);
-  if (labelMatch) {
-    const candidate = labelMatch[1].split(/[,\.!]/)[0]?.trim();
-    if (candidate && candidate.length >= 2) {
-      return formatName(candidate);
+  if (!bookingDate) {
+    const textDateMatch = fullText.match(DATE_TEXT_REGEX);
+    if (textDateMatch) {
+      const day = Number(textDateMatch[1]);
+      const monthName = textDateMatch[2].toLowerCase();
+      const monthIndex = MONTH_MAP[monthName];
+      if (!Number.isNaN(day) && monthIndex !== undefined) {
+        let year = now.getFullYear();
+        const candidate = new Date(year, monthIndex, day);
+        if (!Number.isNaN(candidate.getTime())) {
+          if (candidate < now) {
+            candidate.setFullYear(year + 1);
+          }
+          bookingDate = candidate;
+        }
+      }
     }
   }
 
-  return undefined;
-};
-
-const extractPhone = (text: string): string | undefined => {
-  const match = text.match(/(\+?\d[\d\s\-\/]{6,})/);
-  if (!match) return undefined;
-  const normalized = match[0].replace(/[^\d\+]/g, '');
-  if (normalized.replace(/\D/g, '').length < 7) return undefined;
-  return normalized;
-};
-
-const extractPeople = (text: string): number | undefined => {
-  const numberMatch = text.match(/(?:\b(?:per|siamo|saremmo|prenotazione|tavolo)\s*(?:in)?)\s*(\d{1,2})\b/i);
-  if (numberMatch) {
-    const value = parseInt(numberMatch[1], 10);
-    if (!Number.isNaN(value) && value > 0 && value <= 50) return value;
+  if (!bookingDate) {
+    const relativeMatch = fullText.match(RELATIVE_DATE_REGEX);
+    if (relativeMatch) {
+      const base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (relativeMatch[1].toLowerCase() === 'domani') {
+        base.setDate(base.getDate() + 1);
+      } else if (relativeMatch[1].toLowerCase() === 'dopodomani') {
+        base.setDate(base.getDate() + 2);
+      }
+      bookingDate = base;
+    }
   }
 
-  const wordMatch = text.match(/(?:\b(?:per|siamo|saremmo|prenotazione|tavolo)\s*(?:in)?)\s*(una?|un|due|tre|quattro|cinque|sei|sette|otto|nove|dieci|undici|dodici)\b/i);
-  if (wordMatch) {
-    const word = wordMatch[1].toLowerCase();
-    const mapped = WORD_TO_NUMBER[word];
-    if (mapped) return mapped;
+  const orarioMatch = fullText.match(ORARIO_REGEX);
+  if (orarioMatch?.[1]) {
+    const hours = orarioMatch[1].padStart(2, '0');
+    const minutes = orarioMatch[2] ?? '00';
+    data.orario = `${hours}:${minutes}`;
+    if (bookingDate) {
+      const dateTime = new Date(bookingDate);
+      dateTime.setHours(Number(hours), Number(minutes), 0, 0);
+      data.booking_date_time = dateTime.toISOString();
+    }
   }
 
-  return undefined;
-};
-
-const normalizeTime = (hour: string, minute?: string) => {
-  const h = Math.min(parseInt(hour, 10), 23);
-  const m = minute ? parseInt(minute, 10) : 0;
-  const hh = h.toString().padStart(2, '0');
-  const mm = m.toString().padStart(2, '0');
-  return `${hh}:${mm}`;
-};
-
-const extractTime = (text: string): string | undefined => {
-  const keywordMatch = text.match(/(?:alle?|all'|per le|per|dalle|ore)\s*(\d{1,2})(?:[:\.](\d{2}))?/i);
-  if (keywordMatch) {
-    return normalizeTime(keywordMatch[1], keywordMatch[2]);
+  if (/allerg/i.test(fullText) || /intolleranz/i.test(fullText)) {
+    accumulatedNotes.push('Possibili allergie o intolleranze menzionate.');
   }
 
-  const standaloneMatch = text.match(/\b(\d{1,2})[:\.](\d{2})\b/);
-  if (standaloneMatch) {
-    return normalizeTime(standaloneMatch[1], standaloneMatch[2]);
+  const notesMatch = fullText.match(/(?:note:|con la nota|nota:)\s*(.+)/i);
+  if (notesMatch?.[1]) {
+    accumulatedNotes.push(notesMatch[1].trim());
   }
 
-  if (/\bmezzogiorno\b/i.test(text)) {
-    return '12:00';
-  }
-  if (/\bmezzanotte\b/i.test(text)) {
-    return '00:00';
+  if (accumulatedNotes.length) {
+    data.notes = accumulatedNotes.join(' | ');
   }
 
-  return undefined;
-};
-
-const detectIntentFromMessage = (text: string, current: LeadIntent): LeadIntent => {
-  if (/prenot|tavol|appunt|riserv|booking/i.test(text)) {
-    return 'booking';
-  }
-  if (current === 'unknown' && /preventiv|informaz|info|orari|tariff|disponibil/i.test(text)) {
-    return 'info';
-  }
-  return current;
-};
-
-const collectSpecialNotes = (text: string): string[] => {
-  const notes: string[] = [];
-  if (/cane|animali|gatto|pet/i.test(text)) {
-    notes.push(`Animali: ${text}`);
-  }
-  if (/allerg|intoller|celiac|veg|gluten/i.test(text)) {
-    notes.push(`Alimentazione/allergie: ${text}`);
-  }
-  if (/compleann|anniversari|festa|event|cerimoni/i.test(text)) {
-    notes.push(`Occasione speciale: ${text}`);
-  }
-  if (/aggressivo|problematico|senza museruola/i.test(text)) {
-    notes.push(`Avvertenze sicurezza: ${text}`);
-  }
-  return notes;
-};
-
-export const parseLeadDraft = (previous: LeadDraft, message: string): LeadDraft => {
-  const text = message.trim();
-  if (!text) return previous;
-
-  const next: LeadDraft = { ...previous };
-
-  next.intent = detectIntentFromMessage(text, previous.intent);
-
-  const name = extractName(text);
-  if (name) {
-    next.nome = name;
+  if (data.party_size && data.booking_date_time) {
+    data.intent = 'prenotazione';
+  } else if (!data.intent) {
+    data.intent = 'altro';
   }
 
-  const phone = extractPhone(text);
-  if (phone) {
-    next.telefono = phone;
-  }
+  console.log('Dati Parsati (Fase 5):', data);
+  return data;
+}
 
-  const people = extractPeople(text);
-  if (people) {
-    next.persone = people;
-  }
+export function parseLeadDraft(current: LeadDraft, message: string): LeadDraft {
+  const parsed = parseChatData([{ id: `msg-${Date.now()}`, role: 'user', content: message }]);
+  const next: LeadDraft = {
+    ...current,
+    specialNotes: [...current.specialNotes],
+  };
 
-  const time = extractTime(text);
-  if (time) {
-    next.orario = time;
-  }
-
-  const notes = collectSpecialNotes(text);
-  if (notes.length) {
-    const merged = new Set([...(previous.specialNotes || []), ...notes]);
-    next.specialNotes = Array.from(merged);
+  if (parsed.nome) next.nome = parsed.nome;
+  if (parsed.telefono) next.telefono = parsed.telefono;
+  if (parsed.email) next.email = parsed.email;
+  if (parsed.persone) next.persone = parsed.persone;
+  if (parsed.orario) next.orario = parsed.orario;
+  if (parsed.intent) next.intent = parsed.intent;
+  if (parsed.party_size) next.party_size = parsed.party_size;
+  if (parsed.booking_date_time) next.booking_date_time = parsed.booking_date_time;
+  if (parsed.notes) {
+    next.notes = parsed.notes;
+    parsed.notes
+      .split('|')
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+      .forEach((note) => {
+        if (!next.specialNotes.includes(note)) {
+          next.specialNotes.push(note);
+        }
+      });
   }
 
   return next;
-};
+}
 
-export const draftToSnapshot = (draft: LeadDraft): LeadSnapshot => ({
-  nome: draft.nome,
-  telefono: draft.telefono,
-  persone: draft.persone,
-  orario: draft.orario,
-  intent: draft.intent,
-  specialNotes: draft.specialNotes.length ? draft.specialNotes : undefined,
-});
+export function draftToSnapshot(draft: LeadDraft): LeadSnapshot {
+  return {
+    ...draft,
+    intent: draft.intent ?? 'altro',
+    specialNotes: [...draft.specialNotes],
+    party_size: draft.party_size,
+    booking_date_time: draft.booking_date_time,
+    notes: draft.notes,
+  };
+}

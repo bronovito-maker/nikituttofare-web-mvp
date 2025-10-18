@@ -1,91 +1,66 @@
 // app/api/assist/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { findOneByWhereREST } from '@/lib/noco';
-import { buildSystemPrompt } from '@/lib/prompt-builder';
-import { LeadSnapshot } from '@/lib/chat-parser';
+import { OpenAIStream, StreamingTextResponse } from 'ai';
 import { OpenAI } from 'openai';
+import { auth } from '@/auth'; // Importa la funzione auth
+import { buildSystemPrompt } from '@/lib/prompt-builder'; // Importa il nostro nuovo builder
 
+// Inizializza il client OpenAI (o un altro LLM)
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+export const runtime = 'edge'; // Specifica il runtime (opzionale ma consigliato per 'ai')
+
 export async function POST(req: NextRequest) {
   try {
-    const { prompt, tenant_id, lead_snapshot } = await req.json();
-    const { NOCO_PROJECT_SLUG, NOCO_TABLE_ASSISTANTS } = process.env;
-
-    if (!tenant_id) {
-      return NextResponse.json({ error: 'Tenant ID mancante.' }, { status: 400 });
+    // 1. Autenticazione e recupero TenantID
+    const session = await auth(); // Recupera la sessione
+    
+    // Controlla se l'utente è loggato e ha un tenantId
+    // Nota: Per un widget pubblico, potresti dover passare un 'tenant-api-key'
+    // Ma per ora, assumiamo che sia usato da un utente loggato (es. /chat)
+    if (!session?.user?.tenantId) {
+      console.warn('API Assist: Tentativo di accesso non autorizzato o tenantId mancante.');
+      return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 });
     }
-    if (!prompt || typeof prompt !== 'string') {
-      return NextResponse.json({ error: 'Messaggio utente mancante.' }, { status: 400 });
-    }
-    if (!NOCO_PROJECT_SLUG || !NOCO_TABLE_ASSISTANTS) {
-      console.error('Mancano variabili d\'ambiente per NocoDB (progetto/tabella assistenti)');
-      return NextResponse.json({ error: 'Configurazione del server incompleta.' }, { status: 500 });
-    }
+    const tenantId = session.user.tenantId;
 
-    // --- CORREZIONE CHIAVE ---
-    // Costruiamo la clausola 'where' come stringa
-    const whereClause = `(tenant_id,eq,${tenant_id})`;
-
-    const assistente = await findOneByWhereREST(
-      NOCO_PROJECT_SLUG,
-      NOCO_TABLE_ASSISTANTS,
-      whereClause // Passiamo la stringa corretta
-    );
-
-    if (!assistente) {
-      return NextResponse.json({ error: `Assistente con ID '${tenant_id}' non trovato.` }, { status: 404 });
+    // 2. Estrazione dei messaggi dal corpo della richiesta
+    const { messages } = await req.json();
+    if (!messages) {
+      return NextResponse.json({ error: 'Messaggi mancanti' }, { status: 400 });
     }
 
-    const systemPromptString = buildSystemPrompt({
-      assistant: assistente as Record<string, any>,
-      leadSnapshot: lead_snapshot as LeadSnapshot | undefined,
-    });
+    // 3. Costruzione del System Prompt dinamico
+    const systemPrompt = await buildSystemPrompt(tenantId);
+    
+    // 4. Creazione del payload per OpenAI
+    const payload = [
+      {
+        role: 'system',
+        content: systemPrompt,
+      },
+      ...messages, // Aggiungi la cronologia della chat
+    ];
 
-    const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
-      messages: [
-        { role: "system", content: systemPromptString },
-        { role: "user", content: prompt },
-      ],
+    // 5. Chiamata a OpenAI
+    const response = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || 'gpt-4-turbo',
       stream: true,
+      messages: payload,
     });
 
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      start(controller) {
-        (async () => {
-          try {
-            for await (const part of completion) {
-              const token = part.choices[0]?.delta?.content;
-              if (token) {
-                controller.enqueue(encoder.encode(token));
-              }
-            }
-          } catch (streamError) {
-            console.error('Errore durante lo streaming OpenAI:', streamError);
-            controller.error(streamError);
-          } finally {
-            controller.close();
-          }
-        })();
-      },
-    });
+    // 6. Restituzione della risposta in streaming
+    const stream = OpenAIStream(response);
+    return new StreamingTextResponse(stream);
 
-    return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Cache-Control': 'no-cache, no-transform',
-      },
-    });
-
-  } catch (err: any) {
-    console.error("Errore nell'API assist:", err.message || err);
-    return NextResponse.json(
-      { error: 'Errore interno del server.', detail: err.message || String(err) },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error('Errore API Assist:', error);
+    // Gestisci diversi tipi di errore se necessario
+    if (error instanceof OpenAI.APIError) {
+      return NextResponse.json({ error: `Errore OpenAI: ${error.message}` }, { status: error.status });
+    }
+    return NextResponse.json({ error: 'Errore interno del server' }, { status: 500 });
   }
 }

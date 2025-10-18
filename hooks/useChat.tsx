@@ -2,15 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Message } from '@/lib/types';
-import {
-  INITIAL_LEAD_DRAFT,
-  parseLeadDraft,
-  draftToSnapshot,
-  LeadDraft,
-  LeadSnapshot,
-} from '@/lib/chat-parser';
-
-const MIN_TRANSCRIPT_LENGTH = 5;
+import { parseChatData, type ParsedChatData } from '@/lib/chat-parser';
 
 type AssistantConfig = {
   menu_url?: string | null;
@@ -22,11 +14,15 @@ export const useChat = ({ tenantId }: { tenantId: string | null }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const isHydratedRef = useRef(false);
-  const [conversationLog, setConversationLog] = useState<string[]>([]);
-  const [leadSubmitted, setLeadSubmitted] = useState(false);
-  const leadDraftRef = useRef<LeadDraft>({ ...INITIAL_LEAD_DRAFT });
-  const [leadDraft, setLeadDraft] = useState<LeadDraft>(leadDraftRef.current);
   const [assistantConfig, setAssistantConfig] = useState<AssistantConfig | null>(null);
+  const [parsedData, setParsedData] = useState<ParsedChatData | null>(null);
+  const [savedConversationInfo, setSavedConversationInfo] = useState<{
+    customerId?: number;
+    conversationId?: number;
+  } | null>(null);
+  const [bookingStatus, setBookingStatus] = useState<'idle' | 'in_progress' | 'success' | 'error'>('idle');
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const messagesRef = useRef<Message[]>([]);
 
   const storageKey = useMemo(
     () => (tenantId ? `chat-history-${tenantId}` : 'chat-history-default'),
@@ -40,11 +36,16 @@ export const useChat = ({ tenantId }: { tenantId: string | null }) => {
       content: 'Ciao! Sono il tuo assistente virtuale. Come posso aiutarti oggi?',
     };
     setMessages([welcomeMessage]);
-    setConversationLog([]);
-    setLeadSubmitted(false);
-    leadDraftRef.current = { ...INITIAL_LEAD_DRAFT };
-    setLeadDraft(leadDraftRef.current);
+    messagesRef.current = [welcomeMessage];
+    setParsedData(null);
+    setSavedConversationInfo(null);
+    setBookingStatus('idle');
+    setBookingError(null);
   };
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -103,62 +104,13 @@ export const useChat = ({ tenantId }: { tenantId: string | null }) => {
     };
   }, [tenantId]);
 
-  const applyLeadParsing = (message: string) => {
-    const nextDraft = parseLeadDraft(leadDraftRef.current, message);
-    leadDraftRef.current = nextDraft;
-    setLeadDraft(nextDraft);
-    return nextDraft;
-  };
-
-  const shouldPersistLead = () => {
-    const transcript = conversationLog.join('\n') + '\n' + (messages[messages.length - 1]?.content ?? '');
-    if (transcript.trim().length < MIN_TRANSCRIPT_LENGTH) return false;
-    if (leadDraftRef.current.telefono) return true;
-    return conversationLog.length >= 2;
-  };
-
-  const maybeCreateLead = async () => {
-    if (leadSubmitted) return;
-    if (!tenantId) return;
-    if (!shouldPersistLead()) return;
-
-    const latestAssistantMessage = messages[messages.length - 1]?.role === 'assistant'
-      ? messages[messages.length - 1]?.content ?? ''
-      : '';
-    const transcript = [...conversationLog, latestAssistantMessage].join('\n').trim();
-    if (!transcript || transcript.length < MIN_TRANSCRIPT_LENGTH) return;
-
-    const draft = leadDraftRef.current;
-    const payload: Record<string, unknown> = {
-      nome: draft.nome ?? 'Contatto chat',
-      richiesta: transcript,
-      tenant_id: tenantId,
-      intent: draft.intent,
-    };
-    if (draft.telefono) payload.telefono = draft.telefono;
-    if (draft.specialNotes.length) payload.note_interne = draft.specialNotes.join(' | ');
-    if (draft.persone) payload.persone = draft.persone;
-    if (draft.orario) payload.orario = draft.orario;
-
-    try {
-      const res = await fetch('/api/leads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        console.warn('Impossibile salvare il lead, risposta non OK:', res.status);
-        return;
-      }
-      setLeadSubmitted(true);
-    } catch (error) {
-      console.warn('Impossibile salvare il lead:', error);
-    }
-  };
-
   const sendMessage = async (prompt: string) => {
     const trimmed = prompt.trim();
     if (!trimmed || isLoading) return;
+    setSavedConversationInfo(null);
+    setParsedData(null);
+    setBookingStatus('idle');
+    setBookingError(null);
     if (!tenantId) {
       console.error('Tenant ID non fornito, impossibile inviare il messaggio.');
       setMessages((prev) => [
@@ -175,25 +127,28 @@ export const useChat = ({ tenantId }: { tenantId: string | null }) => {
     const messageId = Date.now().toString();
     const assistantMessageId = `${messageId}-assistant`;
 
+    const baseMessages = [...messagesRef.current];
     const newUserMessage: Message = { id: messageId, role: 'user', content: trimmed };
     const placeholderAssistant: Message = { id: assistantMessageId, role: 'assistant', content: '' };
-    setMessages((prevMessages) => [...prevMessages, newUserMessage, placeholderAssistant]);
-    setConversationLog((prev) => [...prev, trimmed]);
-    const draftAfterMessage = applyLeadParsing(trimmed);
-    const leadSnapshot: LeadSnapshot = draftToSnapshot(draftAfterMessage);
+    setMessages([...baseMessages, newUserMessage, placeholderAssistant]);
 
     setIsLoading(true);
 
+    let assistantContent = '';
+
     try {
+      const payloadMessages = [...baseMessages, newUserMessage].map(({ role, content }) => ({
+        role,
+        content,
+      }));
+
       const response = await fetch('/api/assist', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt: trimmed,
-          tenant_id: tenantId,
-          lead_snapshot: leadSnapshot,
+          messages: payloadMessages,
         }),
       });
 
@@ -212,14 +167,13 @@ export const useChat = ({ tenantId }: { tenantId: string | null }) => {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let accumulated = '';
 
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
         const chunk = decoder.decode(value, { stream: true });
         if (!chunk) continue;
-        accumulated += chunk;
+        assistantContent += chunk;
 
         setMessages((prev) =>
           prev.map((message) =>
@@ -232,7 +186,7 @@ export const useChat = ({ tenantId }: { tenantId: string | null }) => {
 
       const tail = decoder.decode();
       if (tail) {
-        accumulated += tail;
+        assistantContent += tail;
         setMessages((prev) =>
           prev.map((message) =>
             message.id === assistantMessageId
@@ -242,11 +196,95 @@ export const useChat = ({ tenantId }: { tenantId: string | null }) => {
         );
       }
 
-      if (!accumulated.trim()) {
+      if (!assistantContent.trim()) {
         throw new Error('Risposta vuota dal modello');
       }
 
-      await maybeCreateLead();
+      const finalMessages: Message[] = [
+        ...baseMessages,
+        newUserMessage,
+        { id: assistantMessageId, role: 'assistant', content: assistantContent },
+      ];
+
+      const parsed = parseChatData(finalMessages);
+      setParsedData(parsed);
+
+      let customerId: number | undefined;
+      let conversationId: number | undefined;
+
+      if (parsed.nome) {
+        const leadsResponse = await fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: finalMessages,
+            nome: parsed.nome,
+            telefono: parsed.telefono,
+            email: parsed.email,
+            intent: parsed.intent,
+          }),
+        });
+
+        if (!leadsResponse.ok) {
+          const errBody = await leadsResponse.json().catch(() => ({}));
+          throw new Error(errBody.error || leadsResponse.statusText || 'Errore salvataggio conversazione');
+        }
+
+        const result = await leadsResponse.json();
+        customerId = result?.customerId !== undefined ? Number(result.customerId) : undefined;
+        conversationId = result?.conversationId !== undefined ? Number(result.conversationId) : undefined;
+
+        setSavedConversationInfo({
+          customerId,
+          conversationId,
+        });
+        console.log('Conversazione salvata con successo:', result);
+      } else {
+        console.warn('Conversazione non salvata: nome del cliente non parsato.');
+      }
+
+      const shouldCreateBooking =
+        parsed.intent === 'prenotazione' &&
+        !!parsed.booking_date_time &&
+        !!parsed.party_size &&
+        typeof customerId === 'number' &&
+        !Number.isNaN(customerId);
+
+      if (shouldCreateBooking) {
+        setBookingStatus('in_progress');
+        setBookingError(null);
+
+        try {
+          const bookingResponse = await fetch('/api/bookings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              customerId,
+              conversationId,
+              bookingDateTime: parsed.booking_date_time,
+              partySize: parsed.party_size,
+              notes: parsed.notes ?? '',
+            }),
+          });
+
+          if (!bookingResponse.ok) {
+            const errData = await bookingResponse.json().catch(() => ({}));
+            throw new Error(errData.error || bookingResponse.statusText || 'Errore API Bookings');
+          }
+
+          const bookingResult = await bookingResponse.json();
+          console.log('Prenotazione creata:', bookingResult);
+          setBookingStatus('success');
+        } catch (error) {
+          console.error('Errore durante la creazione della prenotazione:', error);
+          setBookingStatus('error');
+          setBookingError(error instanceof Error ? error.message : 'Errore sconosciuto');
+        }
+      } else {
+        setBookingStatus('idle');
+      }
+
+      setMessages(finalMessages);
     } catch (error) {
       console.error('Errore durante la chiamata API:', error);
       const errorMessage: Message = {
@@ -267,7 +305,10 @@ export const useChat = ({ tenantId }: { tenantId: string | null }) => {
     messages,
     isLoading,
     sendMessage,
-    leadDraft,
     assistantConfig,
+    parsedData,
+    savedConversationInfo,
+    bookingStatus,
+    bookingError,
   };
 };
