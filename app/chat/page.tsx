@@ -1,24 +1,28 @@
+// app/chat/page.tsx
+import { auth } from '@/auth'; // Adjust the import path as necessary
 import ChatInterface from '@/components/chat/ChatInterface';
-import { auth } from '@/auth';
+import { redirect } from 'next/navigation';
+import Balancer from 'react-wrap-balancer';
 
-type ChatPageProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
-
-export default async function ChatPage({ searchParams }: ChatPageProps) {
-  const params = await searchParams;
+// --- MODIFICATO: Rendi la funzione async ---
+export default async function ChatPage() {
+  // --- MODIFICATO: Usa await ---
   const session = await auth();
-  const queryTenant = params?.t;
-  const tenantId =
-    (typeof queryTenant === 'string' && queryTenant.trim()) ||
-    session?.user?.tenantId ||
-    null;
 
+  // Se non c'è sessione, reindirizza al login
+  if (!session) {
+    redirect('/login');
+  }
+
+  // Se c'è la sessione, mostra l'interfaccia chat
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24 bg-gray-100">
-      <div className="w-full max-w-2xl h-[70vh] bg-white rounded-2xl shadow-xl overflow-hidden">
-        <ChatInterface tenantId={tenantId} />
-      </div>
-    </main>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-indigo-100 via-white to-cyan-100 p-4">
+       <div className="w-full max-w-2xl h-[70vh] min-h-[500px]">
+         <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
+           <Balancer>Assistente Virtuale</Balancer>
+         </h1>
+         <ChatInterface />
+       </div>
+     </div>
   );
 }

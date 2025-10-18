@@ -7,15 +7,16 @@ import { listViewRowsById } from '@/lib/noco-helpers';
 import type { lib as nocoLib } from 'nocodb-sdk';
 import { redirect } from 'next/navigation';
 import type { Conversation } from '@/lib/types';
-
-const TBL_BOOKINGS_ID = process.env.NOCO_TABLE_BOOKINGS_ID!;
-const VW_BOOKINGS_ID = process.env.NOCO_VIEW_BOOKINGS_ID!;
-const TBL_CONV_ID = process.env.NOCO_TABLE_CONVERSATIONS_ID!;
-const VW_CONV_ID = process.env.NOCO_VIEW_CONVERSATIONS_ID!;
+import {
+  NC_TABLE_BOOKINGS_ID,
+  NC_VIEW_BOOKINGS_ID,
+  NC_TABLE_CONVERSATIONS_ID,
+  NC_VIEW_CONVERSATIONS_ID,
+} from '@/lib/noco-ids';
 
 async function getDashboardStats(tenantId: string | number) {
-  if (!TBL_BOOKINGS_ID || !VW_BOOKINGS_ID || !TBL_CONV_ID || !VW_CONV_ID) {
-    throw new Error("Variabili d'ambiente ID NocoDB mancanti. Controlla .env.local");
+  if (!NC_TABLE_BOOKINGS_ID || !NC_VIEW_BOOKINGS_ID || !NC_TABLE_CONVERSATIONS_ID || !NC_VIEW_CONVERSATIONS_ID) {
+    throw new Error('ID NocoDB mancanti nella configurazione di lib/noco-ids.ts');
   }
 
   const tenantIdNum = Number(tenantId);
@@ -28,8 +29,8 @@ async function getDashboardStats(tenantId: string | number) {
   };
 
   const allBookingsResult = await listViewRowsById(
-    TBL_BOOKINGS_ID,
-    VW_BOOKINGS_ID,
+    NC_TABLE_BOOKINGS_ID,
+    NC_VIEW_BOOKINGS_ID,
     bookingsParams
   );
   const totalBookings = allBookingsResult.pageInfo.totalRows;
@@ -41,8 +42,8 @@ async function getDashboardStats(tenantId: string | number) {
   };
 
   const pendingBookingsResult = await listViewRowsById(
-    TBL_BOOKINGS_ID,
-    VW_BOOKINGS_ID,
+    NC_TABLE_BOOKINGS_ID,
+    NC_VIEW_BOOKINGS_ID,
     pendingBookingsParams
   );
   const pendingBookings = pendingBookingsResult.pageInfo.totalRows;
@@ -55,8 +56,8 @@ async function getDashboardStats(tenantId: string | number) {
   };
 
   const recentConversationsResult = await listViewRowsById(
-    TBL_CONV_ID,
-    VW_CONV_ID,
+    NC_TABLE_CONVERSATIONS_ID,
+    NC_VIEW_CONVERSATIONS_ID,
     convParams
   );
 

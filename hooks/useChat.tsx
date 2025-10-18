@@ -1,314 +1,222 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { Message } from '@/lib/types';
-import { parseChatData, type ParsedChatData } from '@/lib/chat-parser';
+import { useState, useEffect } from 'react';
+import { useCompletion } from 'ai/react';
+import { Message, UseChatOptions } from 'ai';
+import { parseChatData, ChatData } from '@/lib/chat-parser'; // Assicurati che ChatData sia esportato
 
-type AssistantConfig = {
-  menu_url?: string | null;
-  menu_text?: string | null;
-  [key: string]: unknown;
+// Definisci un tipo per gli ID salvati
+type SavedLeadInfo = {
+  customerId: string;
+  conversationId: string;
 };
 
-export const useChat = ({ tenantId }: { tenantId: string | null }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const isHydratedRef = useRef(false);
-  const [assistantConfig, setAssistantConfig] = useState<AssistantConfig | null>(null);
-  const [parsedData, setParsedData] = useState<ParsedChatData | null>(null);
-  const [savedConversationInfo, setSavedConversationInfo] = useState<{
-    customerId?: number;
-    conversationId?: number;
-  } | null>(null);
-  const [bookingStatus, setBookingStatus] = useState<'idle' | 'in_progress' | 'success' | 'error'>('idle');
-  const [bookingError, setBookingError] = useState<string | null>(null);
-  const messagesRef = useRef<Message[]>([]);
+// Definisci un tipo per la risposta dell'API leads
+type LeadsApiResponse = {
+  message: string;
+  customerId: string;
+  conversationId: string;
+};
 
-  const storageKey = useMemo(
-    () => (tenantId ? `chat-history-${tenantId}` : 'chat-history-default'),
-    [tenantId]
-  );
+// Definisci un tipo per la risposta dell'API bookings
+type BookingsApiResponse = {
+  message: string;
+  bookingId: string;
+};
 
-  const resetState = () => {
-    const welcomeMessage: Message = {
-      id: 'welcome',
-      role: 'assistant',
-      content: 'Ciao! Sono il tuo assistente virtuale. Come posso aiutarti oggi?',
-    };
-    setMessages([welcomeMessage]);
-    messagesRef.current = [welcomeMessage];
-    setParsedData(null);
-    setSavedConversationInfo(null);
-    setBookingStatus('idle');
-    setBookingError(null);
-  };
+export const useChat = (
+  options?: Omit<UseChatOptions, 'body' | 'onFinish' | 'onError'>
+) => {
+  const [error, setError] = useState<string | null>(null);
+  const [parsedData, setParsedData] = useState<ChatData | null>(null);
 
+  // --- MODIFICA 1: Stato per tracciare il salvataggio del Lead ---
+  // Questo stato memorizza gli ID dopo che il lead è stato creato con successo
+  const [savedLeadInfo, setSavedLeadInfo] = useState<SavedLeadInfo | null>(null);
+  // Stato per tracciare il salvataggio della Prenotazione
+  const [bookingSaved, setBookingSaved] = useState<boolean>(false);
+
+  const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+
+  // 1. Carica la configurazione iniziale (prompt di sistema)
   useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const stored = window.localStorage.getItem(storageKey);
-      if (stored) {
-        const parsed = JSON.parse(stored) as Message[];
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setMessages(parsed);
-          isHydratedRef.current = true;
-          return;
-        }
-      }
-    } catch (error) {
-      console.warn('Impossibile ripristinare la cronologia chat:', error);
-    }
-
-    resetState();
-    isHydratedRef.current = true;
-  }, [storageKey]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!isHydratedRef.current) return;
-    try {
-      window.localStorage.setItem(storageKey, JSON.stringify(messages));
-    } catch (error) {
-      console.warn('Impossibile salvare la cronologia chat:', error);
-    }
-  }, [messages, storageKey]);
-
-  useEffect(() => {
-    if (!tenantId) return;
-    let isCancelled = false;
-
-    const loadAssistant = async () => {
+    const fetchConfig = async () => {
       try {
-        const response = await fetch('/api/assistente', {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        if (!response.ok) return;
-        const data = await response.json();
-        if (!isCancelled) {
-          setAssistantConfig(data ?? null);
+        setIsLoadingConfig(true);
+        const response = await fetch('/api/assistente'); // Endpoint che ottiene la config
+        if (!response.ok) {
+          throw new Error('Errore nel caricamento della configurazione assistente');
         }
-      } catch (error) {
-        console.warn('Impossibile caricare la configurazione assistente:', error);
+        const config = await response.json();
+        // Costruiamo un prompt iniziale se la configurazione lo prevede
+        // (In alternativa, questo può essere gestito in /api/assist)
+        // Per ora, ci assicuriamo solo che il backend sia pronto.
+        // Se /api/assist carica il prompt dinamicamente, non serve setInitialPrompt
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setIsLoadingConfig(false);
       }
     };
+    fetchConfig();
+  }, []);
 
-    loadAssistant();
+  const {
+    messages,
+    append,
+    reload,
+    stop,
+    isLoading,
+    input,
+    setInput,
+    setMessages,
+  } = useCompletion({
+    api: '/api/assist', // L'endpoint che parla con l'AI
+    ...options,
+    // onFinish gestisce l'orchestrazione DOPO che l'AI ha risposto
+    onFinish: async (prompt, completion) => {
+      setError(null); // Resetta errori precedenti
 
-    return () => {
-      isCancelled = true;
-    };
-  }, [tenantId]);
-
-  const sendMessage = async (prompt: string) => {
-    const trimmed = prompt.trim();
-    if (!trimmed || isLoading) return;
-    setSavedConversationInfo(null);
-    setParsedData(null);
-    setBookingStatus('idle');
-    setBookingError(null);
-    if (!tenantId) {
-      console.error('Tenant ID non fornito, impossibile inviare il messaggio.');
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: 'Errore di configurazione: ID assistente non trovato.',
-        },
-      ]);
-      return;
-    }
-
-    const messageId = Date.now().toString();
-    const assistantMessageId = `${messageId}-assistant`;
-
-    const baseMessages = [...messagesRef.current];
-    const newUserMessage: Message = { id: messageId, role: 'user', content: trimmed };
-    const placeholderAssistant: Message = { id: assistantMessageId, role: 'assistant', content: '' };
-    setMessages([...baseMessages, newUserMessage, placeholderAssistant]);
-
-    setIsLoading(true);
-
-    let assistantContent = '';
-
-    try {
-      const payloadMessages = [...baseMessages, newUserMessage].map(({ role, content }) => ({
-        role,
-        content,
-      }));
-
-      const response = await fetch('/api/assist', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: payloadMessages,
-        }),
-      });
-
-      const contentType = response.headers.get('content-type') || '';
-      if (!response.ok) {
-        if (contentType.includes('application/json')) {
-          const errorBody = await response.json();
-          throw new Error(errorBody.error || 'Errore sconosciuto');
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      if (!response.body) {
-        throw new Error('Risposta vuota dal server');
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        if (!chunk) continue;
-        assistantContent += chunk;
-
-        setMessages((prev) =>
-          prev.map((message) =>
-            message.id === assistantMessageId
-              ? { ...message, content: (message.content || '') + chunk }
-              : message
-          )
-        );
-      }
-
-      const tail = decoder.decode();
-      if (tail) {
-        assistantContent += tail;
-        setMessages((prev) =>
-          prev.map((message) =>
-            message.id === assistantMessageId
-              ? { ...message, content: (message.content || '') + tail }
-              : message
-          )
-        );
-      }
-
-      if (!assistantContent.trim()) {
-        throw new Error('Risposta vuota dal modello');
-      }
-
-      const finalMessages: Message[] = [
-        ...baseMessages,
-        newUserMessage,
-        { id: assistantMessageId, role: 'assistant', content: assistantContent },
+      // Ricostruisci tutti i messaggi (inclusa la risposta AI appena ricevuta)
+      const currentMessages = [...messages];
+      const assistantMessages: Message[] = [
+        ...completion
+          .split(/({[\s\S]*?})/) // Gestisce JSON misto a testo
+          .filter(Boolean)
+          .map((content) => ({
+            id: String(Date.now()),
+            role: 'assistant' as const,
+            content: content.trim(),
+          })),
       ];
 
-      const parsed = parseChatData(finalMessages);
+      const allMessages = [...currentMessages, ...assistantMessages];
+
+      // 1. Parsa la conversazione
+      const parsed = parseChatData(allMessages);
       setParsedData(parsed);
 
-      let customerId: number | undefined;
-      let conversationId: number | undefined;
+      try {
+        // --- MODIFICA 2: Logica di Orchestrazione "Intelligente" ---
 
-      if (parsed.nome) {
-        const leadsResponse = await fetch('/api/leads', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: finalMessages,
-            nome: parsed.nome,
-            telefono: parsed.telefono,
-            email: parsed.email,
-            intent: parsed.intent,
-          }),
-        });
+        // FASE A: Salvare il Lead (Cliente + Conversazione)
+        // Esegui solo se:
+        // 1. NON abbiamo ancora salvato un lead (savedLeadInfo è nullo)
+        // 2. ABBIAMO un nome parsato (parsed.nome esiste)
 
-        if (!leadsResponse.ok) {
-          const errBody = await leadsResponse.json().catch(() => ({}));
-          throw new Error(errBody.error || leadsResponse.statusText || 'Errore salvataggio conversazione');
+        let currentLeadInfo = savedLeadInfo;
+
+        if (!currentLeadInfo && parsed.nome) {
+          if (process.env.NODE_ENV !== 'production') {
+            console.debug('[useChat] Rilevato nome, tento salvataggio lead...');
+          }
+
+          const leadsResponse = await fetch('/api/leads', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              messages: allMessages,
+              ...parsed,
+            }),
+          });
+
+          if (!leadsResponse.ok) {
+            const errBody = await leadsResponse.json().catch(() => ({}));
+            throw new Error(errBody.error || 'Errore salvataggio conversazione');
+          }
+
+          const result: LeadsApiResponse = await leadsResponse.json();
+          setSavedLeadInfo(result); // <-- SALVA GLI ID NELLO STATO
+          currentLeadInfo = result; // Aggiorna la variabile locale per la Fase B
+
+          if (process.env.NODE_ENV !== 'production') {
+            console.debug('[useChat] Lead salvato con successo:', result);
+          }
         }
 
-        const result = await leadsResponse.json();
-        customerId = result?.customerId !== undefined ? Number(result.customerId) : undefined;
-        conversationId = result?.conversationId !== undefined ? Number(result.conversationId) : undefined;
+        // FASE B: Salvare la Prenotazione
+        // Esegui solo se:
+        // 1. ABBIAMO un lead salvato (currentLeadInfo esiste)
+        // 2. L'intento è 'prenotazione'
+        // 3. Abbiamo i dati minimi (party_size, booking_date)
+        // 4. NON abbiamo ancora salvato la prenotazione (bookingSaved è false)
 
-        setSavedConversationInfo({
-          customerId,
-          conversationId,
-        });
-        console.log('Conversazione salvata con successo:', result);
-      } else {
-        console.warn('Conversazione non salvata: nome del cliente non parsato.');
-      }
+        const hasBookingData = parsed.party_size && parsed.booking_date; // Aggiungi altri campi necessari
 
-      const shouldCreateBooking =
-        parsed.intent === 'prenotazione' &&
-        !!parsed.booking_date_time &&
-        !!parsed.party_size &&
-        typeof customerId === 'number' &&
-        !Number.isNaN(customerId);
+        if (
+          currentLeadInfo &&
+          parsed.intent === 'prenotazione' &&
+          hasBookingData &&
+          !bookingSaved
+        ) {
+          if (process.env.NODE_ENV !== 'production') {
+            console.debug('[useChat] Dati prenotazione rilevati, tento salvataggio...');
+          }
 
-      if (shouldCreateBooking) {
-        setBookingStatus('in_progress');
-        setBookingError(null);
-
-        try {
           const bookingResponse = await fetch('/api/bookings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              customerId,
-              conversationId,
-              bookingDateTime: parsed.booking_date_time,
-              partySize: parsed.party_size,
-              notes: parsed.notes ?? '',
+              ...parsed, // Invia tutti i dati parsati
+              customer_id: currentLeadInfo.customerId,
+              conversation_id: currentLeadInfo.conversationId,
             }),
           });
 
           if (!bookingResponse.ok) {
-            const errData = await bookingResponse.json().catch(() => ({}));
-            throw new Error(errData.error || bookingResponse.statusText || 'Errore API Bookings');
+            const errBody = await bookingResponse.json().catch(() => ({}));
+            throw new Error(errBody.error || 'Errore salvataggio prenotazione');
           }
 
-          const bookingResult = await bookingResponse.json();
-          console.log('Prenotazione creata:', bookingResult);
-          setBookingStatus('success');
-        } catch (error) {
-          console.error('Errore durante la creazione della prenotazione:', error);
-          setBookingStatus('error');
-          setBookingError(error instanceof Error ? error.message : 'Errore sconosciuto');
-        }
-      } else {
-        setBookingStatus('idle');
-      }
+          const bookingResult: BookingsApiResponse = await bookingResponse.json();
+          setBookingSaved(true); // <-- IMPOSTA IL FLAG
 
-      setMessages(finalMessages);
-    } catch (error) {
-      console.error('Errore durante la chiamata API:', error);
-      const errorMessage: Message = {
-        id: `${Date.now()}-error`,
-        role: 'assistant',
-        content: 'Spiacente, si è verificato un errore. Riprova più tardi.',
-      };
-      setMessages((prevMessages) => {
-        const filtered = prevMessages.filter((message) => message.id !== assistantMessageId);
-        return [...filtered, errorMessage];
-      });
-    } finally {
-      setIsLoading(false);
+          if (process.env.NODE_ENV !== 'production') {
+            console.debug('[useChat] Prenotazione salvata con successo:', bookingResult);
+          }
+        }
+      } catch (err) {
+        // Gestisci l'errore (che ora è corretto)
+        console.error('Errore in onFinish:', err);
+        setError(err instanceof Error ? err.message : String(err));
+      }
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
+
+  // Funzione wrapper per inviare messaggi (usata dall'UI)
+  const sendMessage = async (messageContent: string) => {
+    if (isLoadingConfig) {
+      setError('Configurazione assistente ancora in caricamento.');
+      return;
     }
+    setError(null);
+
+    const userMessage: Message = {
+      id: String(Date.now()),
+      role: 'user',
+      content: messageContent,
+    };
+
+    // Aggiungi il messaggio dell'utente all'UI e invia all'AI
+    await append(userMessage);
   };
 
   return {
     messages,
-    isLoading,
+    input,
+    setInput,
     sendMessage,
-    assistantConfig,
+    reload,
+    stop,
+    isLoading: isLoading || isLoadingConfig, // L'UI è "loading" anche durante il config
+    error,
     parsedData,
-    savedConversationInfo,
-    bookingStatus,
-    bookingError,
+    setMessages, // Esponi setMessages se serve resettare la chat
+    savedLeadInfo, // Esponi per debug o UI
+    bookingSaved, // Esponi per debug o UI
   };
 };

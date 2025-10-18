@@ -1,10 +1,17 @@
 // app/dashboard/prenotazioni/page.tsx
 import { auth } from '@/auth';
-import { noco } from '@/lib/noco';
+import { listViewRowsById } from '@/lib/noco-helpers';
 import { Booking, Customer } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import type { lib as nocoLib } from 'nocodb-sdk';
+import {
+  NC_TABLE_BOOKINGS_ID,
+  NC_VIEW_BOOKINGS_ID,
+  NC_TABLE_CUSTOMERS_ID,
+  NC_VIEW_CUSTOMERS_ID,
+} from '@/lib/noco-ids';
 
 type BookingWithCustomer = Booking & {
   customer?: Partial<Customer>;
@@ -17,10 +24,10 @@ async function getBookings(tenantId: number): Promise<BookingWithCustomer[]> {
     limit: 50,
   };
 
-  const bookingsResult = await noco.dbViewRow.list(
-    process.env.NOCO_TABLE_BOOKINGS!,
-    process.env.NOCO_VIEW_BOOKINGS!,
-    bookingParams
+  const bookingsResult = await listViewRowsById(
+    NC_TABLE_BOOKINGS_ID,
+    NC_VIEW_BOOKINGS_ID,
+    bookingParams as unknown as nocoLib.Filterv1
   );
 
   const bookings: Booking[] = (bookingsResult as { list?: Booking[] })?.list ?? [];
@@ -35,10 +42,10 @@ async function getBookings(tenantId: number): Promise<BookingWithCustomer[]> {
     where: `(Id,in,${customerIds.join(',')})`,
   };
 
-  const customersResult = await noco.dbViewRow.list(
-    process.env.NOCO_TABLE_CUSTOMERS!,
-    process.env.NOCO_VIEW_CUSTOMERS!,
-    customerParams
+  const customersResult = await listViewRowsById(
+    NC_TABLE_CUSTOMERS_ID,
+    NC_VIEW_CUSTOMERS_ID,
+    customerParams as unknown as nocoLib.Filterv1
   );
   const customers: Customer[] = (customersResult as { list?: Customer[] })?.list ?? [];
   const customerMap = new Map(customers.map((customer) => [customer.Id, customer]));

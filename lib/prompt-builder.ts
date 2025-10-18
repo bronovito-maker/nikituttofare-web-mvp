@@ -1,11 +1,8 @@
 // lib/prompt-builder.ts
-import { noco } from './noco';
-import { Tenant } from './types'; // Importa il nostro nuovo tipo 'Tenant'
-import { lib as nocoLib } from 'nocodb-sdk';
-
-// Recupera le variabili d'ambiente per la tabella TENANTS
-const NC_TABLE_TENANTS = process.env.NOCO_TABLE_TENANTS!;
-const NC_VIEW_TENANTS = process.env.NOCO_VIEW_TENANTS!;
+import { Tenant } from './types';
+// Importa i nostri NUOVI helper e ID
+import { readTableRowById } from './noco-helpers';
+import { NC_TABLE_TENANTS_ID, NC_VIEW_TENANTS_ID } from './noco-ids';
 
 /**
  * Recupera la configurazione del tenant (ristorante) specifica.
@@ -20,29 +17,26 @@ export async function getAssistantConfig(
     console.error('getAssistantConfig: tenantId nullo o non definito.');
     return null;
   }
-  if (!NC_TABLE_TENANTS || !NC_VIEW_TENANTS) {
-    console.error('getAssistantConfig: Variabili d\'ambiente tabelle Tenants non definite.');
+
+  // VALIDAZIONE ID STELLA POLARE
+  if (!NC_TABLE_TENANTS_ID || !NC_VIEW_TENANTS_ID) {
+    console.error('getAssistantConfig: ID Tabella o Vista Tenants non definiti in noco-ids.ts');
     return null;
   }
 
   try {
-    // NocoDB usa l'ID della riga per 'read'. Il tenantId della sessione
-    // corrisponde esattamente all'ID della riga nella tabella 'tenants'.
-    const config = await noco.dbViewRow.read(
-      NC_TABLE_TENANTS,
-      NC_VIEW_TENANTS,
+    // Usa il NUOVO helper con gli ID centralizzati
+    const config = await readTableRowById(
+      NC_TABLE_TENANTS_ID,
+      NC_VIEW_TENANTS_ID,
       Number(tenantId) // Assicura che sia un numero
     );
     
-    // Controlla se abbiamo ricevuto una risposta valida
-    if (!config || !config.Id) {
+    if (!config || !(config as Tenant).Id) {
         console.warn(`getAssistantConfig: Nessuna configurazione trovata per tenantId ${tenantId}`);
         return null;
     }
 
-    // Esegui il cast al nostro tipo Tenant per sicurezza e autocompletamento
-    // I nomi dei campi (es. 'system_prompt') dovrebbero già corrispondere
-    // a quelli definiti nel tipo Tenant e nella tabella NocoDB.
     return config as Tenant;
 
   } catch (error) {
@@ -61,16 +55,35 @@ export async function buildSystemPrompt(
 ): Promise<string> {
   const config = await getAssistantConfig(tenantId);
 
+  // --- GESTIONE FUSO ORARIO ROMA ---
+  const now = new Date().toLocaleString('it-IT', {
+    timeZone: 'Europe/Rome',
+    dateStyle: 'full',
+    timeStyle: 'short',
+  });
+
   // Fallback di sicurezza: se la configurazione non esiste, usa un prompt generico
   if (!config) {
     console.warn(`Configurazione non trovata per il tenant ${tenantId}, uso prompt di default.`);
-    return 'Sei un assistente virtuale. Sii gentile e disponibile.';
+    let fallbackPrompt = 'Sei un assistente virtuale. Sii gentile e disponibile.';
+    fallbackPrompt += `\n\n### Contesto Attuale ###`;
+    fallbackPrompt += `\n- Data e ora correnti (Fuso Orario Roma): ${now}.`;
+    fallbackPrompt += `\n- Non accettare MAI prenotazioni per date o orari già passati.`;
+    return fallbackPrompt;
   }
 
   // Costruisci il prompt usando i campi della tabella 'tenants'
   
   // 1. Inizia con il prompt di sistema base (le istruzioni principali)
   let prompt = config.system_prompt || 'Sei un assistente per un ristorante. Il tuo obiettivo è aiutare i clienti a prenotare un tavolo e rispondere alle loro domande.';
+  
+  // --- Aggiungi Contesto Chiave ---
+  prompt += `\n\n### Contesto Attuale e Regole Obbligatorie ###`;
+  prompt += `\n- Data e ora correnti (Fuso Orario Roma): ${now}.`;
+  prompt += `\n- Non accettare MAI prenotazioni per date o orari già passati rispetto a questo momento.`;
+  prompt += `\n- Rispondi sempre e solo in Italiano.`;
+  prompt += `\n- Sii sempre cortese e professionale.`;
+  prompt += `\n- Non inventare informazioni non presenti in questo prompt. Se non sai qualcosa, dillo.`;
   
   // 2. Aggiungi sezioni strutturate per le informazioni chiave
   prompt += `\n\n### Informazioni Chiave sul Ristorante ###`;
@@ -111,10 +124,6 @@ export async function buildSystemPrompt(
   // 5. (Fase Futura) Aggiungi il menu
   // Qui potremmo caricare le tabelle 'menus' e 'menu_items' e aggiungerle al prompt
   // prompt += `\n\n### Menu ###\n...`;
-
-  prompt += `\n\n### Regole Finali ###\n- Rispondi sempre e solo in Italiano.`;
-  prompt += `\n- Sii sempre cortese e professionale.`;
-  prompt += `\n- Non inventare informazioni non presenti in questo prompt. Se non sai qualcosa, dillo.`;
 
   // console.log(`Prompt costruito per tenant ${tenantId}:`, prompt); // Utile per debug
   return prompt;

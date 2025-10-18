@@ -1,12 +1,12 @@
 // app/api/assistente/route.ts
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth'; // Importa la funzione auth
-import { noco } from '@/lib/noco';
+import { readTableRowById, updateTableRowById } from '@/lib/noco-helpers';
 import { Tenant } from '@/lib/types'; // Importa il nostro tipo Tenant
-
-// Recupera le variabili d'ambiente per la tabella TENANTS
-const NC_TABLE_TENANTS = process.env.NOCO_TABLE_TENANTS!;
-const NC_VIEW_TENANTS = process.env.NOCO_VIEW_TENANTS!;
+import {
+  NC_TABLE_TENANTS_ID,
+  NC_VIEW_TENANTS_ID,
+} from '@/lib/noco-ids';
 
 /**
  * GET: Recupera la configurazione corrente del tenant loggato
@@ -21,9 +21,9 @@ export async function GET() {
     const tenantId = session.user.tenantId;
     
     // Leggi la riga dalla tabella 'tenants' usando il tenantId
-    const config = await noco.dbViewRow.read(
-      NC_TABLE_TENANTS,
-      NC_VIEW_TENANTS,
+    const config = await readTableRowById(
+      NC_TABLE_TENANTS_ID,
+      NC_VIEW_TENANTS_ID,
       Number(tenantId)
     );
     
@@ -62,8 +62,8 @@ export async function PUT(request: Request) {
     } = body; 
 
     // Esegui l'aggiornamento sulla riga del tenant
-    const updatedConfig = await noco.dbViewRow.update(
-      NC_TABLE_TENANTS,
+    const updatedConfig = await updateTableRowById(
+      NC_TABLE_TENANTS_ID,
       Number(tenantId),
       updateData // Invia solo i dati da aggiornare
     );

@@ -1,12 +1,15 @@
 // app/api/bookings/route.ts
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth'; // Importa la funzione auth
-import { noco } from '@/lib/noco';
+import {
+  createTableRowById,
+  updateTableRowById,
+} from '@/lib/noco-helpers';
 import { Booking } from '@/lib/types'; // Importa il tipo Booking
-
-// Recupera le variabili d'ambiente
-const NC_TABLE_BOOKINGS = process.env.NOCO_TABLE_BOOKINGS!;
-const NC_TABLE_CONVERSATIONS = process.env.NOCO_TABLE_CONVERSATIONS!;
+import {
+  NC_TABLE_BOOKINGS_ID,
+  NC_TABLE_CONVERSATIONS_ID,
+} from '@/lib/noco-ids';
 
 /**
  * POST: Crea un nuovo record di prenotazione.
@@ -49,8 +52,8 @@ export async function POST(request: Request) {
     };
 
     // 2. Crea il record di prenotazione
-    const savedBooking = await noco.dbViewRow.create(
-      NC_TABLE_BOOKINGS,
+    const savedBooking = await createTableRowById(
+      NC_TABLE_BOOKINGS_ID,
       newBookingPayload
     );
 
@@ -59,14 +62,10 @@ export async function POST(request: Request) {
     // Questo aiuta a non processare la stessa chat due volte
     if (conversationId) {
       try {
-        await noco.dbViewRow.update(
-          NC_TABLE_CONVERSATIONS,
-          Number(conversationId),
-          {
-            status: 'chiusa',
-            intent: 'prenotazione',
-          }
-        );
+        await updateTableRowById(NC_TABLE_CONVERSATIONS_ID, Number(conversationId), {
+          status: 'chiusa',
+          intent: 'prenotazione',
+        });
       } catch (convError) {
         // Non bloccare il flusso se questo fallisce, ma loggalo
         console.warn(`API Bookings: Impossibile aggiornare lo stato della conversazione ${conversationId}`, convError);
