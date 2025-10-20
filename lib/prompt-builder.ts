@@ -3,6 +3,7 @@ import { Tenant } from './types';
 // Importa i nostri NUOVI helper e ID
 import { readTableRowById } from './noco-helpers';
 import { NC_TABLE_TENANTS_ID } from './noco-ids';
+import type { CustomerPersonalization } from './customer-personalization';
 
 /**
  * Recupera la configurazione del tenant (ristorante) specifica.
@@ -49,8 +50,13 @@ export async function getAssistantConfig(
  * @param tenantId L'ID del tenant (dalla sessione utente)
  * @returns Una stringa contenente il prompt di sistema completo.
  */
+export type BuildPromptOptions = {
+  customerProfile?: CustomerPersonalization | null;
+};
+
 export async function buildSystemPrompt(
-  tenantId: string | number
+  tenantId: string | number,
+  options: BuildPromptOptions = {}
 ): Promise<string> {
   const config = await getAssistantConfig(tenantId);
 
@@ -84,20 +90,75 @@ export async function buildSystemPrompt(
   prompt += `\n- Sii sempre cortese e professionale.`;
   prompt += `\n- Non inventare informazioni non presenti in questo prompt. Se non sai qualcosa, dillo.`;
 
-  // --- Flusso Prenotazione Guidato ---
-  prompt += `\n\n### Flusso Prenotazione — Segui SEMPRE questi 7 passaggi nell'ordine indicato ###`;
-  prompt += `\n1. Chiedi e conferma il NOME del cliente (richiedi anche eventuale cognome).`;
-  prompt += `\n2. Chiedi e conferma il NUMERO DI TELEFONO (formato italiano preferito, senza spazi).`;
-  prompt += `\n3. Chiedi e conferma la DATA della prenotazione (gg/mm/aaaa o riferimenti come oggi/domani).`;
-  prompt += `\n4. Chiedi e conferma l'ORARIO (24h, es. 20:30).`;
-  prompt += `\n5. Chiedi e conferma il NUMERO DI PERSONE (>=1).`;
-  prompt += `\n6. Chiedi ALLERGENI o RICHIESTE PARTICOLARI (animali, seggiolone, eventi speciali). Se non ci sono, fai indicare “Nessuna richiesta”.`;
-  prompt += `\n7. Fornisci un RIEPILOGO puntuale dei punti 1-6 e chiedi al cliente di premere il pulsante “Conferma prenotazione” nell'interfaccia.`;
-  prompt += `\n- NON saltare o accorciare passaggi: se il cliente dà più informazioni in un messaggio, conferma quelle disponibili e chiedi esplicitamente ciò che manca.`;
-  prompt += `\n- Se il cliente prova a confermare senza tutti i dati, ricorda gentilmente quali elementi mancano.`;
-  prompt += `\n- Dopo il riepilogo attendi SEMPRE la conferma esplicita del cliente. Non inviare la prenotazione a sistema finché la conferma non arriva.`;
+  // --- Gestione Prenotazioni con Slot Flessibili ---
+  prompt += `\n\n### Prenotazioni — Slot Flessibili ###`;
+  prompt += `\n- Slot obbligatori da raccogliere: (1) Nome e cognome, (2) Numero di telefono, (3) Data della prenotazione, (4) Orario richiesto, (5) Numero di persone, (6) Note su allergie o richieste particolari (includi “Nessuna richiesta” se dichiarato).`;
+  prompt += `\n- Analizza ogni messaggio dell'utente per estrarre nuovi dati e aggiorna gli slot già compilati quando ricevi correzioni.`;
+  prompt += `\n- Se il cliente fornisce più informazioni insieme, conferma quelle comprese e chiedi soltanto ciò che manca.`;
+  prompt += `\n- Quando le informazioni sono vaghe (es. “stasera”, “verso le 21”, “dopo cena”), chiedi subito di specificare con giorno e orario esatto prima di segnare lo slot come completo.`;
+  prompt += `\n- Quando mancano ancora dati, formula domande mirate solo sugli slot incompleti e ricorda sinteticamente quali elementi sono ancora necessari.`;
+  prompt += `\n- Se il cliente prova a confermare la prenotazione senza tutti i dati obbligatori, spiega con gentilezza quali slot sono ancora vuoti.`;
+  prompt += `\n- Una volta che tutti gli slot sono completi genera un riepilogo puntuale (nome, telefono, data, ora, persone, note) e invita l'utente a premere il pulsante “Conferma prenotazione” nell'interfaccia.`;
+  prompt += `\n- Dopo il riepilogo attendi SEMPRE la conferma esplicita del cliente prima di considerare la prenotazione inviata a sistema.`;
+  prompt += `\n- Se l'utente chiede di modificare un'informazione già raccolta, aggiorna lo slot corrispondente, comunica la variazione, conferma il dato aggiornato e ricapitola brevemente gli altri valori rilevanti.`;
   prompt += `\n- Mantieni tono professionale, caloroso e conciso; evita risposte prolisse o fuori tema.`;
-  prompt += `\n- Se l'utente chiede di modificare un dato già raccolto, torna al relativo punto, aggiorna il riepilogo e richiedi di nuovo conferma.`;
+
+  const profile = options.customerProfile;
+  if (profile) {
+    const customerName = profile.fullName?.trim();
+    const phone = profile.phoneNumber?.trim();
+
+    const lastBookingDate = profile.lastBooking?.bookingDateTime
+      ? new Date(profile.lastBooking.bookingDateTime)
+      : null;
+    const lastBookingDateDisplay =
+      lastBookingDate && !Number.isNaN(lastBookingDate.getTime())
+        ? lastBookingDate.toLocaleDateString('it-IT', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          })
+        : null;
+    const lastBookingTimeDisplay =
+      lastBookingDate && !Number.isNaN(lastBookingDate.getTime())
+        ? lastBookingDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+        : null;
+
+    const hints: string[] = [];
+    if (profile.favoritePartySize && profile.favoritePartySize > 0) {
+      hints.push(`Numero di persone più frequente: ${profile.favoritePartySize} ospiti.`);
+    }
+    if (profile.preferredTimes && profile.preferredTimes.length > 0) {
+      hints.push(`Orari preferiti rilevati: ${profile.preferredTimes.join(', ')}.`);
+    }
+    if (profile.lastBooking?.notes) {
+      hints.push(`Ultime note/allergie annotate: ${profile.lastBooking.notes}.`);
+    }
+
+    prompt += `\n\n### Dati Cliente Autenticato ###`;
+    if (customerName) {
+      prompt += `\n- Nome riconosciuto: ${customerName}.`;
+    }
+    if (phone) {
+      prompt += `\n- Telefono in archivio: ${phone}.`;
+    }
+    if (profile.lastBooking) {
+      prompt += `\n- Ultima prenotazione registrata: ${
+        lastBookingDateDisplay ?? 'data sconosciuta'
+      } alle ${lastBookingTimeDisplay ?? 'orario non indicato'} per ${
+        profile.lastBooking.partySize ?? 'numero persone non indicato'
+      } persone.`;
+    }
+    prompt += `\n- Prenotazioni totali registrate: ${profile.totalBookings}.`;
+    if (hints.length > 0) {
+      prompt += `\n- Insight storici: ${hints.join(' ')}`;
+    }
+    prompt += `\n- Usa questi dati per accogliere il cliente in modo proattivo (es. “Ciao ${
+      customerName ?? 'di nuovo'
+    }! Vuoi confermare per ${
+      profile.favoritePartySize ?? profile.lastBooking?.partySize ?? 'lo stesso numero di persone'
+    } alle ${profile.preferredTimes?.[0] ?? lastBookingTimeDisplay ?? 'un orario simile'}?”), ma chiedi SEMPRE conferma esplicita prima di procedere e aggiorna gli slot se il cliente desidera variazioni.`;
+  }
 
   // 2. Aggiungi sezioni strutturate per le informazioni chiave
   prompt += `\n\n### Informazioni Chiave sul Ristorante ###`;

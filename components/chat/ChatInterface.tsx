@@ -1,33 +1,13 @@
 'use client';
 
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useChat } from '@/hooks/useChat';
 import { ChatIntroScreen } from './ChatIntroScreen';
 import MessageInput from './MessageInput';
 import Typing from '../Typing';
 import ChatBubble from '../ChatBubble';
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import type { AssistantConfig } from '@/lib/types';
-
-const CHECKLIST_STEPS = [
-  { key: 'nome', label: 'Nome cliente' },
-  { key: 'telefono', label: 'Numero di telefono' },
-  { key: 'data', label: 'Data' },
-  { key: 'orario', label: 'Orario' },
-  { key: 'persone', label: 'Numero di persone' },
-  { key: 'allergeni', label: 'Allergie o richieste' },
-  { key: 'riepilogo', label: 'Riepilogo & conferma' },
-] as const;
-
-type ChecklistKey = typeof CHECKLIST_STEPS[number]['key'];
-const STEP_LABEL_MAP: Record<ChecklistKey, string> = {
-  nome: 'Nome',
-  telefono: 'Numero di telefono',
-  data: 'Data',
-  orario: 'Orario',
-  persone: 'Numero di persone',
-  allergeni: 'Allergie o richieste',
-  riepilogo: 'Riepilogo',
-};
+import type { BookingSlotKey } from '@/lib/chat-parser';
 
 type SummaryData = {
   nome: string;
@@ -43,6 +23,86 @@ type ChatInterfaceProps = {
   assistantConfig?: AssistantConfig | null;
 };
 
+type SlotStatus = 'missing' | 'clarify' | 'complete';
+
+type SlotConfig = {
+  key: BookingSlotKey;
+  label: string;
+  editTemplate: { missing: string; clarify: string; complete: string };
+};
+
+const SLOT_CONFIG: SlotConfig[] = [
+  {
+    key: 'nome',
+    label: 'Nome cliente',
+    editTemplate: {
+      missing: 'Il mio nome è ',
+      clarify: 'Confermo il nome: ',
+      complete: 'Aggiorno il nome: ',
+    },
+  },
+  {
+    key: 'telefono',
+    label: 'Numero di telefono',
+    editTemplate: {
+      missing: 'Il mio numero di telefono è ',
+      clarify: 'Confermo il numero di telefono: ',
+      complete: 'Aggiorno il numero di telefono: ',
+    },
+  },
+  {
+    key: 'data',
+    label: 'Data',
+    editTemplate: {
+      missing: 'Vorrei prenotare per il giorno ',
+      clarify: 'Confermo la data: ',
+      complete: 'Aggiorno la data della prenotazione a ',
+    },
+  },
+  {
+    key: 'orario',
+    label: 'Orario',
+    editTemplate: {
+      missing: "L'orario che preferisco è ",
+      clarify: "Confermo l'orario: ",
+      complete: "Aggiorno l'orario a ",
+    },
+  },
+  {
+    key: 'persone',
+    label: 'Numero di persone',
+    editTemplate: {
+      missing: 'Siamo in ',
+      clarify: 'Confermo il numero di persone: ',
+      complete: 'Aggiorno il numero di persone a ',
+    },
+  },
+  {
+    key: 'allergeni',
+    label: 'Allergie o richieste',
+    editTemplate: {
+      missing: 'Note o allergie: ',
+      clarify: 'Confermo le note/allergie: ',
+      complete: 'Aggiorno le note/allergie: ',
+    },
+  },
+];
+
+const SLOT_STATUS_LABEL: Record<SlotStatus, { text: string; className: string }> = {
+  complete: {
+    text: 'Completo',
+    className: 'bg-green-100 text-green-700',
+  },
+  clarify: {
+    text: 'Da confermare',
+    className: 'bg-amber-100 text-amber-700',
+  },
+  missing: {
+    text: 'Mancante',
+    className: 'bg-red-100 text-red-700',
+  },
+};
+
 export default function ChatInterface({ assistantConfig = null }: ChatInterfaceProps) {
   const {
     messages = [],
@@ -50,8 +110,6 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
     sendMessage,
     parsedData,
     bookingData,
-    currentStep,
-    missingSteps,
     summaryReady,
     summaryData,
     confirmBooking,
@@ -60,10 +118,14 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
     error,
     confirmationError,
     resetConfirmationError,
+    slotState,
+    clarifications,
+    recentlyUpdatedSlots,
   } = useChat();
 
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -88,21 +150,50 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
     setInput(event.target.value);
   };
 
-  const checklist = useMemo(() => {
-    return CHECKLIST_STEPS.map(({ key, label }, index) => {
-      if (currentStep === 'completato') {
-        return { key, label, completed: true, active: false, index };
+  const slotItems = useMemo(() => {
+    const formatValue = (key: BookingSlotKey, raw: string | number | null) => {
+      if (raw === null || raw === undefined || raw === '') return '';
+      if (key === 'data' && typeof raw === 'string') {
+        const date = new Date(raw);
+        if (!Number.isNaN(date.getTime())) {
+          return date.toLocaleDateString('it-IT', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          });
+        }
       }
-      const isCompleted =
-        key === 'riepilogo'
-          ? bookingSaved
-          : !missingSteps.includes(key as ChecklistKey);
-      const isActive =
-        key === currentStep ||
-        (key === 'riepilogo' && currentStep === 'riepilogo' && !bookingSaved);
-      return { key, label, completed: isCompleted, active: isActive, index };
+      if (key === 'persone') {
+        return String(raw);
+      }
+      return String(raw);
+    };
+
+    return SLOT_CONFIG.map(({ key, label, editTemplate }) => {
+      const slot = slotState[key];
+      const status: SlotStatus = slot.needsClarification
+        ? 'clarify'
+        : slot.isFilled
+        ? 'complete'
+        : 'missing';
+
+      return {
+        key,
+        label,
+        editTemplate,
+        status,
+        displayValue: formatValue(key, slot.value),
+        helper: slot.needsClarification ? slot.clarificationReason ?? undefined : undefined,
+        isRecent: recentlyUpdatedSlots.includes(key),
+        hasValue: slot.value !== null && slot.value !== undefined && slot.value !== '',
+      };
     });
-  }, [bookingSaved, currentStep, missingSteps]);
+  }, [slotState, recentlyUpdatedSlots]);
+
+  const pendingSlots = useMemo(
+    () => slotItems.filter((item) => item.status !== 'complete'),
+    [slotItems]
+  );
 
   const bookingFlowActive =
     bookingSaved ||
@@ -115,6 +206,24 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
         bookingData.partySize
     );
 
+  const handleSlotClick = (slotKey: BookingSlotKey) => {
+    const slot = slotItems.find((item) => item.key === slotKey);
+    if (!slot || bookingSaved) return;
+
+    resetConfirmationError();
+    const template =
+      slot.status === 'missing'
+        ? slot.editTemplate.missing
+        : slot.status === 'clarify'
+        ? slot.editTemplate.clarify
+        : slot.editTemplate.complete;
+
+    setInput(template);
+    requestAnimationFrame(() => {
+      messageInputRef.current?.focus();
+    });
+  };
+
   if (!Array.isArray(messages) || messages.length <= 1) {
     return (
       <ChatIntroScreen
@@ -126,9 +235,82 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      {bookingFlowActive && !bookingSaved && (
-        <div className="border-b border-gray-200 bg-white px-4 py-3">
-          <BookingChecklist steps={checklist} currentStep={currentStep} />
+      {bookingFlowActive && (
+        <div className="border-b border-gray-200 bg-white px-4 py-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-700">
+                Panoramica prenotazione
+              </h2>
+              {!bookingSaved && pendingSlots.length > 0 && (
+                <span className="text-xs text-gray-400">
+                  Clicca su un dato per aggiornarlo
+                </span>
+              )}
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {slotItems.map(({ key, label, status, displayValue, helper, isRecent, hasValue }) => {
+                const statusStyles =
+                  status === 'complete'
+                    ? 'border-green-200 bg-green-50/70 hover:bg-green-100'
+                    : status === 'clarify'
+                    ? 'border-amber-200 bg-amber-50/70 hover:bg-amber-100'
+                    : 'border-red-200 bg-red-50/70 hover:bg-red-100';
+
+                const badge = SLOT_STATUS_LABEL[status];
+
+                const className = [
+                  'text-left rounded-lg border px-3 py-2 transition focus:outline-none focus:ring-2 focus:ring-indigo-500',
+                  statusStyles,
+                  isRecent ? 'ring-2 ring-indigo-300' : '',
+                  bookingSaved ? 'cursor-default opacity-80 hover:bg-inherit focus:ring-0' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ');
+
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => handleSlotClick(key)}
+                    className={className}
+                    disabled={bookingSaved}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        {label}
+                      </p>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className}`}
+                      >
+                        {badge.text}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {displayValue ||
+                        (status === 'missing'
+                          ? 'Dato mancante'
+                          : hasValue
+                          ? 'Dato da confermare'
+                          : 'Dato mancante')}
+                    </p>
+                    {helper && (
+                      <p className="mt-1 text-xs text-amber-700">
+                        {helper}
+                      </p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {clarifications.length > 0 && (
+              <div className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                Alcuni dati sono generici o ambigui: conferma {clarifications
+                  .map(({ slot }) => SLOT_CONFIG.find((item) => item.key === slot)?.label ?? slot)
+                  .join(', ')}.
+              </div>
+            )}
+          </div>
         </div>
       )}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -152,9 +334,9 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
             {confirmationError || error}
           </p>
         )}
-        {bookingFlowActive && !summaryReady && missingSteps.length > 0 && (
+        {bookingFlowActive && pendingSlots.length > 0 && !bookingSaved && (
           <p className="text-xs text-gray-500">
-            Dati mancanti: {missingSteps.map((step) => STEP_LABEL_MAP[step as ChecklistKey]).join(', ')}
+            Dati da completare o confermare: {pendingSlots.map((slot) => slot.label).join(', ')}
           </p>
         )}
         {bookingSaved && (
@@ -182,36 +364,8 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
         handleInputChange={handleInputChange}
         handleSend={handleSendMessage}
         isLoading={isLoading || isConfirming}
+        inputRef={messageInputRef}
       />
-    </div>
-  );
-}
-
-type ChecklistItem = {
-  key: ChecklistKey;
-  label: string;
-  completed: boolean;
-  active: boolean;
-  index: number;
-};
-
-function BookingChecklist({ steps, currentStep }: { steps: ChecklistItem[]; currentStep: string }) {
-  const completedCount = steps.filter((step) => step.completed).length;
-  const progressPercent = Math.min(100, Math.round((completedCount / steps.length) * 100));
-
-  return (
-    <div className="space-y-2">
-      <div className="h-2 w-full rounded-full bg-gray-200">
-        <div
-          className="h-2 rounded-full bg-indigo-500 transition-all duration-300"
-          style={{ width: `${progressPercent}%` }}
-        />
-      </div>
-      {currentStep === 'completato' && (
-        <span className="text-xs font-semibold text-green-600">
-          Tutti i passaggi completati
-        </span>
-      )}
     </div>
   );
 }
@@ -230,7 +384,7 @@ function BookingSummaryCard({ data }: { data: SummaryData }) {
 
   return (
     <div className="rounded-lg border border-indigo-200 bg-white p-4 text-sm text-gray-900 shadow-sm">
-      <h3 className="text-sm font-semibold mb-3">Riepilogo prenotazione</h3>
+      <h3 className="mb-3 text-sm font-semibold">Riepilogo prenotazione</h3>
       <dl className="space-y-2">
         <SummaryRow label="Nome" value={data.nome} />
         <SummaryRow label="Telefono" value={data.telefono} />
@@ -239,19 +393,15 @@ function BookingSummaryCard({ data }: { data: SummaryData }) {
         <SummaryRow label="Persone" value={`${data.partySize}`} />
         <SummaryRow label="Allergie/Richieste" value={data.allergeni || 'Nessuna'} />
       </dl>
-      <p className="mt-3 text-xs text-indigo-700">
-        Controlla attentamente i dettagli. Premi «Conferma prenotazione» solo se tutte le informazioni
-        sono corrette.
-      </p>
     </div>
   );
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between">
-      <dt className="font-medium">{label}</dt>
-      <dd className="text-right text-sm text-gray-700 max-w-[60%]">{value}</dd>
+    <div className="flex justify-between gap-4">
+      <dt className="text-gray-500">{label}</dt>
+      <dd className="font-medium text-gray-900 text-right">{value || '—'}</dd>
     </div>
   );
 }

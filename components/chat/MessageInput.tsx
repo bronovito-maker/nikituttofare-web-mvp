@@ -2,8 +2,8 @@
 
 'use client';
 
-import { ChangeEvent, useRef } from 'react';
-import { SendHorizonal, Paperclip, Camera } from 'lucide-react';
+import { ChangeEvent, useMemo, useRef } from 'react';
+import { SendHorizonal, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface MessageInputProps {
@@ -13,6 +13,7 @@ interface MessageInputProps {
   isLoading: boolean;
   step?: string;
   setFileToUpload?: (file: File | null) => void;
+  inputRef?: React.RefObject<HTMLTextAreaElement>;
 }
 
 export default function MessageInput({
@@ -21,9 +22,15 @@ export default function MessageInput({
   handleSend,
   isLoading,
   step = 'chat',
-  setFileToUpload = () => {}
+  setFileToUpload = () => {},
+  inputRef,
 }: MessageInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const internalTextAreaRef = useRef<HTMLTextAreaElement>(null);
+  const textAreaRef = useMemo(
+    () => inputRef ?? internalTextAreaRef,
+    [inputRef]
+  );
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -60,6 +67,7 @@ export default function MessageInput({
           onChange={handleInputChange}
           onKeyPress={handleKeyPress}
           placeholder={isLoading ? "Attendi..." : "Scrivi il tuo messaggio..."}
+          ref={textAreaRef}
           className="flex-1 w-full rounded-full px-4 py-2 bg-secondary focus:outline-none focus:ring-2 focus:ring-primary resize-none transition-colors"
           rows={1}
           style={{ maxHeight: '100px' }}

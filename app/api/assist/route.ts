@@ -7,6 +7,7 @@ import { OpenAIStream, StreamingTextResponse } from 'ai';
 import { OpenAI } from 'openai';
 import { auth } from '@/auth'; // Importa la funzione auth
 import { buildSystemPrompt } from '@/lib/prompt-builder'; // Importa il nostro nuovo builder
+import { fetchCustomerPersonalization } from '@/lib/customer-personalization';
 
 // Inizializza il client OpenAI (o un altro LLM)
 const openai = new OpenAI({
@@ -32,10 +33,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Messaggi mancanti' }, { status: 400 });
     }
 
-    // 3. Costruzione del System Prompt dinamico
-    const systemPrompt = await buildSystemPrompt(tenantId);
+    // 3. Recupero dati cliente/personalizzazione se disponibili
+    let customerProfile = null;
+    try {
+      const email = session.user.email;
+      if (email) {
+        customerProfile = await fetchCustomerPersonalization(Number(tenantId), email);
+      }
+    } catch (profileError) {
+      console.warn('API Assist: impossibile caricare personalizzazione cliente:', profileError);
+    }
+
+    // 4. Costruzione del System Prompt dinamico
+    const systemPrompt = await buildSystemPrompt(tenantId, {
+      customerProfile,
+    });
     
-    // 4. Creazione del payload per OpenAI
+    // 5. Creazione del payload per OpenAI
     const payload = [
       {
         role: 'system',
@@ -44,7 +58,7 @@ export async function POST(req: NextRequest) {
       ...messages, // Aggiungi la cronologia della chat
     ];
 
-    // 5. Chiamata a OpenAI
+    // 6. Chiamata a OpenAI
     const response = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL || 'gpt-4-turbo',
       stream: true,

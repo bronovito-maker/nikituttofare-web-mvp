@@ -1,6 +1,14 @@
 // lib/chat-parser.ts
 import { Message } from './types';
 
+export type BookingSlotKey = 'nome' | 'telefono' | 'data' | 'orario' | 'persone' | 'allergeni';
+
+export type BookingClarification = {
+  slot: BookingSlotKey;
+  reason: string;
+  phrase?: string;
+};
+
 export interface ParsedChatData {
   nome?: string;
   telefono?: string;
@@ -11,6 +19,7 @@ export interface ParsedChatData {
   intent?: 'prenotazione' | 'info' | 'ordine' | 'altro';
   persone?: string;
   orario?: string;
+  clarifications?: BookingClarification[];
 }
 
 export type LeadDraft = {
@@ -64,11 +73,58 @@ const MONTH_MAP: Record<string, number> = {
   dicembre: 11,
 };
 
-export function parseChatData(messages: Message[]): ParsedChatData {
+const NLU_TIMEOUT_MS = 6000;
+
+const AMBIGUOUS_TIME_PATTERNS: { regex: RegExp; reason: string }[] = [
+  { regex: /\b(verso|intorno(?:\s+a)?|dopo|prima)(?:\s+le|\s+alle)?\s+\d{1,2}\b/i, reason: 'Orario espresso in modo approssimativo.' },
+  { regex: /\b(stasera|questa\s+sera|in\s+serata|più\s+tardi|tardi|tarda\s+serata|in\s+tarda\s+serata)\b/i, reason: 'Orario generico senza ora precisa.' },
+  { regex: /\b(a|per)\s+(pranzo|cena|aperitivo|apericena)\b/i, reason: 'Fascia oraria generica.' },
+  { regex: /\b(dopo\s+cena|prima\s+di\s+cena|dopo\s+pranzo|prima\s+di\s+pranzo)\b/i, reason: 'Fascia oraria approssimativa.' },
+  { regex: /\b(dopo|prima)\s+le\s+(otto|nove|dieci|undici|dodici)\b/i, reason: 'Orario espresso con riferimento relativo.' },
+];
+
+const AMBIGUOUS_DATE_PATTERNS: { regex: RegExp; reason: string }[] = [
+  { regex: /\b(questo\s+weekend|nel\s+weekend|fine\s+settimana|i\s+prossimi\s+giorni|nei\s+prossimi\s+giorni|in\s+settimana)\b/i, reason: 'Data indicata in modo generico.' },
+  { regex: /\b(prossima\s+settimana|la\s+settimana\s+prossima)\b/i, reason: 'Data generica senza giorno specifico.' },
+];
+
+const normalizePhone = (value: string | null | undefined) => {
+  if (!value) return undefined;
+  const cleaned = value.replace(/[^\d+]/g, '');
+  if (!cleaned) return undefined;
+  if (cleaned.startsWith('+')) {
+    const normalized = `+${cleaned.slice(1).replace(/[+]/g, '')}`;
+    return normalized === '+' ? undefined : normalized;
+  }
+  return cleaned;
+};
+
+const normalizeIsoDate = (value: string | null | undefined) => {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+};
+
+const normalizeTime = (value: string | null | undefined) => {
+  if (!value) return undefined;
+  const match = value.match(/(\d{1,2})(?::(\d{2}))?/);
+  if (!match) return undefined;
+  const hours = match[1].padStart(2, '0');
+  const minutes = match[2] ?? '00';
+  return `${hours}:${minutes}`;
+};
+
+const normalizeNotes = (value: string | null | undefined) => {
+  if (!value) return undefined;
+  return value.trim() || undefined;
+};
+
+function parseWithHeuristics(messages: Message[]): ParsedChatData {
   const fullText = messages.map((m) => `${m.role}: ${m.content}`).join('\n');
   const data: ParsedChatData = {};
   const now = new Date();
   const accumulatedNotes: string[] = [];
+  const clarifications: BookingClarification[] = [];
 
   const nomeMatch = fullText.match(
     /(?:mi\s+chiamo|chiamarmi|mio\s+nome\s+è|sono)\s+([A-Za-zÀ-ÖØ-öø-ÿ\s'-]+?)(?:\.|\n|,|$)/i
@@ -87,12 +143,11 @@ export function parseChatData(messages: Message[]): ParsedChatData {
     }
   }
 
-
   const telMatch = fullText.match(/(\+39[\s-]?)?([0-9]{3}[\s-]?[0-9]{6,7}|[0-9]{9,10})/);
   if (telMatch) {
     const prefix = telMatch[1] ? telMatch[1].replace(/[\s-]/g, '') : '';
     const number = telMatch[2].replace(/[\s-]/g, '');
-    data.telefono = `${prefix}${number}`;
+    data.telefono = normalizePhone(`${prefix}${number}`);
   }
 
   const emailMatch = fullText.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/);
@@ -206,18 +261,151 @@ export function parseChatData(messages: Message[]): ParsedChatData {
     data.notes = accumulatedNotes.join(' | ');
   }
 
+  const addClarification = (
+    slot: BookingSlotKey,
+    reason: string,
+    phrase?: string
+  ) => {
+    if (
+      !clarifications.some(
+        (entry) =>
+          entry.slot === slot &&
+          entry.reason === reason &&
+          (entry.phrase ?? '') === (phrase ?? '')
+      )
+    ) {
+      clarifications.push({ slot, reason, phrase });
+    }
+  };
+
+  AMBIGUOUS_TIME_PATTERNS.forEach(({ regex, reason }) => {
+    const match = fullText.match(regex);
+    if (match) {
+      addClarification('orario', reason, match[0]);
+    }
+  });
+
+  AMBIGUOUS_DATE_PATTERNS.forEach(({ regex, reason }) => {
+    const match = fullText.match(regex);
+    if (match) {
+      addClarification('data', reason, match[0]);
+    }
+  });
+
   if (data.party_size && data.booking_date_time) {
     data.intent = 'prenotazione';
   } else if (!data.intent) {
     data.intent = 'altro';
   }
 
-  console.log('Dati Parsati (Fase 5):', data);
+  if (clarifications.length) {
+    data.clarifications = clarifications;
+  }
+
   return data;
 }
 
+async function callNluService(messages: Message[]): Promise<Partial<ParsedChatData>> {
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  if (controller) {
+    timeoutId = setTimeout(() => controller.abort(), NLU_TIMEOUT_MS);
+  }
+
+  try {
+    const endpoint =
+      typeof window !== 'undefined'
+        ? '/api/nlu'
+        : (() => {
+            const envBase =
+              process.env.NEXT_PUBLIC_APP_URL ||
+              (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+            const baseUrl = envBase ?? 'http://localhost:3000';
+            return `${baseUrl.replace(/\/$/, '')}/api/nlu`;
+          })();
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages }),
+      signal: controller?.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Errore NLU ${response.status}`);
+    }
+
+    const json = await response.json();
+    const payload = json?.data ?? {};
+
+    return {
+      intent: payload.intent ?? undefined,
+      nome: payload.nome ?? undefined,
+      telefono: normalizePhone(payload.telefono ?? undefined),
+      email: payload.email ?? undefined,
+      booking_date_time: normalizeIsoDate(payload.booking_date_time ?? undefined),
+      orario: normalizeTime(payload.orario ?? undefined),
+      party_size: typeof payload.party_size === 'number' && payload.party_size > 0 ? payload.party_size : undefined,
+      notes: normalizeNotes(payload.notes ?? undefined),
+    };
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
+
+const mergeParsedData = (heuristic: ParsedChatData, nlu?: Partial<ParsedChatData>): ParsedChatData => {
+  if (!nlu) return heuristic;
+
+  const merged: ParsedChatData = { ...heuristic };
+
+  if (nlu.nome) merged.nome = nlu.nome;
+  if (nlu.telefono) merged.telefono = nlu.telefono;
+  if (nlu.email) merged.email = nlu.email;
+  if (nlu.party_size) {
+    merged.party_size = nlu.party_size;
+    merged.persone = String(nlu.party_size);
+  }
+  if (nlu.orario) merged.orario = nlu.orario;
+  if (nlu.booking_date_time) merged.booking_date_time = nlu.booking_date_time;
+  if (nlu.notes) merged.notes = nlu.notes;
+  if (nlu.intent) merged.intent = nlu.intent;
+
+  if (!merged.persone && nlu.party_size) {
+    merged.persone = String(nlu.party_size);
+  }
+
+  const clarifications = heuristic.clarifications ?? [];
+  const filteredClarifications = clarifications.filter((clar) => {
+    if (clar.slot === 'orario' && nlu.orario) return false;
+    if (clar.slot === 'data' && nlu.booking_date_time) return false;
+    return true;
+  });
+  if (filteredClarifications.length) {
+    merged.clarifications = filteredClarifications;
+  } else {
+    delete merged.clarifications;
+  }
+
+  return merged;
+};
+
+export async function parseChatData(messages: Message[]): Promise<ParsedChatData> {
+  const heuristic = parseWithHeuristics(messages);
+
+  try {
+    const nlu = await callNluService(messages);
+    return mergeParsedData(heuristic, nlu);
+  } catch (error) {
+    console.warn('Fallback al parser heuristico:', error);
+    return heuristic;
+  }
+}
+
 export function parseLeadDraft(current: LeadDraft, message: string): LeadDraft {
-  const parsed = parseChatData([{ id: `msg-${Date.now()}`, role: 'user', content: message }]);
+  const parsed = parseWithHeuristics([{ id: `msg-${Date.now()}`, role: 'user', content: message }]);
   const next: LeadDraft = {
     ...current,
     specialNotes: [...current.specialNotes],
