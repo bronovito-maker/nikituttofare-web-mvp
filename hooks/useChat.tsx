@@ -1,56 +1,71 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useChat as useAiChat, type Message, type UseChatOptions as VercelUseChatOptions } from 'ai/react';
-import { parseChatData, ChatData } from '@/lib/chat-parser'; // Assicurati che ChatData sia esportato
+import { parseChatData, type ParsedChatData } from '@/lib/chat-parser';
 
-// Definisci un tipo per gli ID salvati
 type SavedLeadInfo = {
   customerId: string;
   conversationId: string;
 };
 
-// Definisci un tipo per la risposta dell'API leads
 type LeadsApiResponse = {
   message: string;
   customerId: string;
   conversationId: string;
 };
 
-// Definisci un tipo per la risposta dell'API bookings
 type BookingsApiResponse = {
   message: string;
   bookingId: string;
 };
 
+type BookingStep = 'nome' | 'telefono' | 'data' | 'orario' | 'persone' | 'allergeni' | 'riepilogo' | 'completato';
+
+type BookingData = {
+  nome?: string;
+  telefono?: string;
+  email?: string;
+  bookingDateTime?: string;
+  orario?: string;
+  partySize?: number;
+  allergeni?: string;
+};
+
+const STEP_ORDER: BookingStep[] = ['nome', 'telefono', 'data', 'orario', 'persone', 'allergeni'];
+
+const formatTimeFromISO = (iso: string | undefined) => {
+  if (!iso) return undefined;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+};
+
+const sanitizeMessages = (messages: Message[]) =>
+  messages.map(({ id, role, content }) => ({ id, role, content }));
+
 export const useChat = (
   options?: Omit<VercelUseChatOptions, 'api' | 'onFinish' | 'onError'>
 ) => {
   const [error, setError] = useState<string | null>(null);
-  const [parsedData, setParsedData] = useState<ChatData | null>(null);
-
-  // --- MODIFICA 1: Stato per tracciare il salvataggio del Lead ---
-  // Questo stato memorizza gli ID dopo che il lead è stato creato con successo
+  const [parsedData, setParsedData] = useState<ParsedChatData | null>(null);
+  const [bookingData, setBookingData] = useState<BookingData>({});
+  const [currentStep, setCurrentStep] = useState<BookingStep>('nome');
   const [savedLeadInfo, setSavedLeadInfo] = useState<SavedLeadInfo | null>(null);
-  // Stato per tracciare il salvataggio della Prenotazione
-  const [bookingSaved, setBookingSaved] = useState<boolean>(false);
-
+  const [bookingSaved, setBookingSaved] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmationError, setConfirmationError] = useState<string | null>(null);
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
 
-  // 1. Carica la configurazione iniziale (prompt di sistema)
   useEffect(() => {
     const fetchConfig = async () => {
       try {
         setIsLoadingConfig(true);
-        const response = await fetch('/api/assistente'); // Endpoint che ottiene la config
+        const response = await fetch('/api/assistente');
         if (!response.ok) {
           throw new Error('Errore nel caricamento della configurazione assistente');
         }
-        const config = await response.json();
-        // Costruiamo un prompt iniziale se la configurazione lo prevede
-        // (In alternativa, questo può essere gestito in /api/assist)
-        // Per ora, ci assicuriamo solo che il backend sia pronto.
-        // Se /api/assist carica il prompt dinamicamente, non serve setInitialPrompt
+        await response.json();
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
       } finally {
@@ -60,15 +75,7 @@ export const useChat = (
     fetchConfig();
   }, []);
 
-  const {
-    messages,
-    append,
-    reload,
-    stop,
-    isLoading,
-    input,
-    setInput,
-  } = useAiChat({
+  const { messages, append, reload, stop, isLoading, input, setInput } = useAiChat({
     api: '/api/assist',
     ...(options ?? {}),
     onError: (err) => {
@@ -76,119 +83,190 @@ export const useChat = (
     },
   });
 
-  const processedAssistantIds = useRef<Set<string>>(new Set());
-
   useEffect(() => {
     if (!Array.isArray(messages) || messages.length === 0) {
+      setParsedData(null);
       return;
     }
 
-    const lastMessage = messages[messages.length - 1];
-    if (!lastMessage || lastMessage.role !== 'assistant') {
-      return;
-    }
-
-    if (processedAssistantIds.current.has(lastMessage.id)) {
-      return;
-    }
-
-    processedAssistantIds.current.add(lastMessage.id);
-
-    const allMessages = [...messages];
-    const parsed = parseChatData(allMessages);
+    const parsed = parseChatData(messages);
     setParsedData(parsed);
 
-    (async () => {
-      setError(null);
+    setBookingData((prev) => {
+      const next: BookingData = { ...prev };
+      let changed = false;
 
-      try {
-        // --- MODIFICA 2: Logica di Orchestrazione "Intelligente" ---
-
-        // FASE A: Salvare il Lead (Cliente + Conversazione)
-        // Esegui solo se:
-        // 1. NON abbiamo ancora salvato un lead (savedLeadInfo è nullo)
-        // 2. ABBIAMO un nome parsato (parsed.nome esiste)
-
-        let currentLeadInfo = savedLeadInfo;
-
-        if (!currentLeadInfo && parsed.nome) {
-          if (process.env.NODE_ENV !== 'production') {
-            console.debug('[useChat] Rilevato nome, tento salvataggio lead...');
-          }
-
-          const leadsResponse = await fetch('/api/leads', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              messages: allMessages,
-              ...parsed,
-            }),
-          });
-
-          if (!leadsResponse.ok) {
-            const errBody = await leadsResponse.json().catch(() => ({}));
-            throw new Error(errBody.error || 'Errore salvataggio conversazione');
-          }
-
-          const result: LeadsApiResponse = await leadsResponse.json();
-          setSavedLeadInfo(result); // <-- SALVA GLI ID NELLO STATO
-          currentLeadInfo = result; // Aggiorna la variabile locale per la Fase B
-
-          if (process.env.NODE_ENV !== 'production') {
-            console.debug('[useChat] Lead salvato con successo:', result);
-          }
-        }
-
-        // FASE B: Salvare la Prenotazione
-        // Esegui solo se:
-        // 1. ABBIAMO un lead salvato (currentLeadInfo esiste)
-        // 2. L'intento è 'prenotazione'
-        // 3. Abbiamo i dati minimi (party_size, booking_date)
-        // 4. NON abbiamo ancora salvato la prenotazione (bookingSaved è false)
-
-        const bookingDate = (parsed as any).booking_date ?? parsed.booking_date_time;
-        const hasBookingData = Boolean(parsed.party_size && bookingDate);
-
-        if (
-          currentLeadInfo &&
-          parsed.intent === 'prenotazione' &&
-          hasBookingData &&
-          !bookingSaved
-        ) {
-          if (process.env.NODE_ENV !== 'production') {
-            console.debug('[useChat] Dati prenotazione rilevati, tento salvataggio...');
-          }
-
-          const bookingResponse = await fetch('/api/bookings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ...parsed, // Invia tutti i dati parsati
-              customer_id: currentLeadInfo.customerId,
-              conversation_id: currentLeadInfo.conversationId,
-            }),
-          });
-
-          if (!bookingResponse.ok) {
-            const errBody = await bookingResponse.json().catch(() => ({}));
-            throw new Error(errBody.error || 'Errore salvataggio prenotazione');
-          }
-
-          const bookingResult: BookingsApiResponse = await bookingResponse.json();
-          setBookingSaved(true); // <-- IMPOSTA IL FLAG
-
-          if (process.env.NODE_ENV !== 'production') {
-            console.debug('[useChat] Prenotazione salvata con successo:', bookingResult);
-          }
-        }
-      } catch (err) {
-        console.error('Errore durante la gestione dei messaggi:', err);
-        setError(err instanceof Error ? err.message : String(err));
+      if (parsed.nome && parsed.nome.trim() && parsed.nome.trim() !== prev.nome) {
+        next.nome = parsed.nome.trim();
+        changed = true;
       }
-    })();
-  }, [messages, savedLeadInfo, bookingSaved]);
 
-  // Funzione wrapper per inviare messaggi (usata dall'UI)
+      if (parsed.telefono && parsed.telefono.trim() && parsed.telefono.trim() !== prev.telefono) {
+        next.telefono = parsed.telefono.trim();
+        changed = true;
+      }
+
+      if (parsed.email && parsed.email.trim() && parsed.email.trim() !== prev.email) {
+        next.email = parsed.email.trim();
+        changed = true;
+      }
+
+      if (parsed.party_size && parsed.party_size !== prev.partySize) {
+        next.partySize = parsed.party_size;
+        changed = true;
+      }
+
+      if (parsed.booking_date_time && parsed.booking_date_time !== prev.bookingDateTime) {
+        next.bookingDateTime = parsed.booking_date_time;
+        next.orario = formatTimeFromISO(parsed.booking_date_time);
+        changed = true;
+      } else if (parsed.orario && parsed.orario !== prev.orario) {
+        next.orario = parsed.orario;
+        changed = true;
+      }
+
+      if (parsed.notes && parsed.notes !== prev.allergeni) {
+        next.allergeni = parsed.notes;
+        changed = true;
+      }
+
+      return changed ? next : prev;
+    });
+  }, [messages]);
+
+  const missingSteps = useMemo(() => {
+    const pending: BookingStep[] = [];
+
+    if (!bookingData.nome) pending.push('nome');
+    if (!bookingData.telefono) pending.push('telefono');
+    if (!bookingData.bookingDateTime) pending.push('data');
+    if (!bookingData.orario) pending.push('orario');
+    if (!bookingData.partySize || bookingData.partySize <= 0) pending.push('persone');
+    if (!bookingData.allergeni || !bookingData.allergeni.trim()) pending.push('allergeni');
+
+    return pending;
+  }, [bookingData]);
+
+  const summaryReady = missingSteps.length === 0;
+
+  useEffect(() => {
+    if (bookingSaved) {
+      setCurrentStep('completato');
+      return;
+    }
+
+    if (!summaryReady) {
+      setCurrentStep(missingSteps[0] ?? STEP_ORDER[0]);
+    } else {
+      setCurrentStep('riepilogo');
+    }
+  }, [bookingSaved, missingSteps, summaryReady]);
+
+  const summaryData = useMemo(() => {
+    if (!summaryReady) return null;
+
+    const date = bookingData.bookingDateTime ? new Date(bookingData.bookingDateTime) : null;
+    const dateDisplay = date
+      ? date.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : undefined;
+    const timeDisplay =
+      bookingData.orario ??
+      (date ? date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : undefined);
+
+    return {
+      nome: bookingData.nome || '',
+      telefono: bookingData.telefono || '',
+      partySize: bookingData.partySize || 0,
+      allergeni: bookingData.allergeni || '',
+      bookingDateTime: bookingData.bookingDateTime || '',
+      dateDisplay,
+      timeDisplay,
+    };
+  }, [bookingData, summaryReady]);
+
+  const handleConfirmBooking = async () => {
+    setConfirmationError(null);
+
+    if (!summaryReady) {
+      setConfirmationError('Completa tutti i passaggi della checklist prima di confermare.');
+      return;
+    }
+
+    if (
+      !bookingData.nome ||
+      !bookingData.telefono ||
+      !bookingData.bookingDateTime ||
+      !bookingData.partySize
+    ) {
+      setConfirmationError('Dati prenotazione incompleti. Controlla nome, telefono, data/orario e numero persone.');
+      return;
+    }
+
+    setIsConfirming(true);
+    try {
+      let leadInfo = savedLeadInfo;
+
+      if (!leadInfo) {
+        const leadsResponse = await fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: sanitizeMessages(messages),
+            nome: bookingData.nome,
+            telefono: bookingData.telefono,
+            email: bookingData.email ?? parsedData?.email ?? null,
+            intent: 'prenotazione',
+            booking_date_time: bookingData.bookingDateTime,
+            party_size: bookingData.partySize,
+            notes: bookingData.allergeni ?? parsedData?.notes ?? '',
+          }),
+        });
+
+        if (!leadsResponse.ok) {
+          const errBody = await leadsResponse.json().catch(() => ({}));
+          throw new Error(errBody.error || 'Errore durante il salvataggio del cliente/conversazione.');
+        }
+
+        const leadResult: LeadsApiResponse = await leadsResponse.json();
+        setSavedLeadInfo(leadResult);
+        leadInfo = leadResult;
+      }
+
+      if (!leadInfo) {
+        throw new Error('Lead non disponibile dopo la creazione.');
+      }
+
+      const bookingResponse = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId: leadInfo.customerId,
+          conversationId: leadInfo.conversationId,
+          bookingDateTime: bookingData.bookingDateTime,
+          partySize: bookingData.partySize,
+          notes: bookingData.allergeni ?? parsedData?.notes ?? '',
+        }),
+      });
+
+      if (!bookingResponse.ok) {
+        const errBody = await bookingResponse.json().catch(() => ({}));
+        throw new Error(errBody.error || 'Errore durante il salvataggio della prenotazione.');
+      }
+
+      const bookingResult: BookingsApiResponse = await bookingResponse.json();
+      setBookingSaved(true);
+
+      if (process.env.NODE_ENV !== 'production') {
+        console.debug('[useChat] Prenotazione confermata:', bookingResult);
+      }
+    } catch (err) {
+      console.error('Errore durante la conferma prenotazione:', err);
+      setConfirmationError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
   const sendMessage = async (messageContent: string) => {
     if (isLoadingConfig) {
       setError('Configurazione assistente ancora in caricamento.');
@@ -202,7 +280,6 @@ export const useChat = (
       content: messageContent,
     };
 
-    // Aggiungi il messaggio dell'utente all'UI e invia all'AI
     await append(userMessage);
   };
 
@@ -216,7 +293,16 @@ export const useChat = (
     isLoading: isLoading || isLoadingConfig,
     error,
     parsedData,
-    savedLeadInfo,
+    bookingData,
+    currentStep,
+    missingSteps,
+    summaryReady,
+    summaryData,
     bookingSaved,
+    savedLeadInfo,
+    confirmBooking: handleConfirmBooking,
+    isConfirming,
+    confirmationError,
+    resetConfirmationError: () => setConfirmationError(null),
   };
 };

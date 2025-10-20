@@ -1,0 +1,53 @@
+Codex Implementation Notes
+==========================
+
+Context
+-------
+Periodo: ultima sessione di pairing con Codex (GPT-5).
+Obiettivo: rendere il flusso di prenotazione in chat più robusto, tracciabile e allineato alle API NocoDB.
+
+Interventi principali
+---------------------
+
+1. Prompt di sistema rinforzato
+   - Percorso: `lib/prompt-builder.ts`
+   - Aggiunta della sezione “Flusso Prenotazione” con i 7 step obbligatori.
+   - Indicazioni esplicite: nessun salto di step, richiesta di conferma tramite pulsante, gestione modifiche post-riepilogo.
+
+2. Parser messaggi chat
+   - Percorso: `lib/chat-parser.ts`
+   - Estensione regex per numero persone (supporto label “Numero di persone: 3”, “siamo in 4”).
+   - Miglior gestione nome cliente: rimozione frasi su allergie/intolleranze quando il modello risponde “Sono allergico...”.
+   - Note e allergie: riconoscimento di formule negative (“nessuna richiesta”, “nulla in particolare”).
+
+3. Hook `useChat`
+   - Percorso: `hooks/useChat.tsx`
+   - Riscritto come state machine deterministica:
+     * Tracciamento dei campi raccolti (nome, telefono, data/orario, persone, note).
+     * Calcolo dei passi mancanti (`missingSteps`) e blocco lead/booking finché non sono completi.
+     * Conferma manuale: chiamata a `/api/leads` e `/api/bookings` solo dopo click esplicito.
+     * Esposti nuovi stati (`summaryReady`, `bookingSaved`, `confirmationError`, ecc.) per l’UI.
+
+4. Interfaccia chat
+   - Percorso: `components/chat/ChatInterface.tsx`
+   - Checklist trasformata in progress bar orizzontale, visibile solo durante un flusso di prenotazione.
+   - Riepilogo generato sul client e mostrato nel feed con card dedicata.
+   - Pulsante “Conferma prenotazione” abilitato/disabilitato in base alle informazioni raccolte.
+   - Messaggio dinamico con elenco dei dati mancanti.
+
+5. Misc
+   - Prompt fallback, logging e validazioni aggiornate di conseguenza.
+   - Lint eseguito (npm run lint) per assicurare zero warning/errori dopo ogni macro modifica.
+
+Comportamento finale atteso
+---------------------------
+1. L’assistente segue rigidamente i 7 step; eventuali scorciatoie vengono bloccate dal prompt e dalla state machine.
+2. La progress bar si riempie al completamento degli step (nome → riepilogo); se l’intento è “info” la barra non compare.
+3. Il riepilogo mostra dati coerenti; il nome non viene più contaminato da frasi su allergie.
+4. Solo dopo il click sul pulsante vengono effettuate le chiamate a NocoDB (`/api/leads`, `/api/bookings`), garantendo registri consistenti.
+
+Suggerimenti futuri
+-------------------
+- Integrare test automatici (unit/integration) per il parser e la state machine.
+- Applicare lo stesso pattern di conferma alle altre integrazioni (es. richieste lead senza prenotazione).
+- Documentare gli step anche nel README e nel database (campo prompt) per chiarezza cross-team.

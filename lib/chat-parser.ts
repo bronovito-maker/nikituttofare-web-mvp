@@ -41,7 +41,9 @@ export const INITIAL_LEAD_DRAFT: LeadDraft = {
   notes: undefined,
 };
 
-const PERSONE_REGEX = /(?:siamo|per|per\s+in|per\s+circa|saremmo|per\s+circa)\s*(\d{1,2})\s*(?:persone|pers|pax)?/i;
+const PERSONE_REGEX =
+  /\b(?:siamo|saremmo|saranno|vorremmo|avremmo|per)\s*(?:circa\s*)?(?:in\s*)?(\d{1,2})\s*(?:persone|pers|pax|coperti)?\b/i;
+const PERSONE_LABEL_REGEX = /\b(?:numero|n°|num\.?)\s*(?:di)?\s*(?:persone|ospiti|coperti)[\s:]*([0-9]{1,2})\b/i;
 const ORARIO_REGEX = /(?:alle|per le|verso le|alle ore|alle h)\s*(\d{1,2})(?::(\d{2}))?/i;
 const DATE_NUMERIC_REGEX = /(?:il\s*)?(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/i;
 const DATE_TEXT_REGEX = /(?:il\s*)?(\d{1,2})\s+(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)/i;
@@ -68,10 +70,23 @@ export function parseChatData(messages: Message[]): ParsedChatData {
   const now = new Date();
   const accumulatedNotes: string[] = [];
 
-  const nomeMatch = fullText.match(/(?:chiamo|chiamarmi|mio nome è|sono)\s+([A-Za-zÀ-ÖØ-öø-ÿ\s]+?)(?:\.|\n|,|$)/i);
+  const nomeMatch = fullText.match(
+    /(?:mi\s+chiamo|chiamarmi|mio\s+nome\s+è|sono)\s+([A-Za-zÀ-ÖØ-öø-ÿ\s'-]+?)(?:\.|\n|,|$)/i
+  );
   if (nomeMatch?.[1]) {
-    data.nome = nomeMatch[1].replace(/(il|la)\s+mio\s+numero/i, '').trim();
+    const rawNome = nomeMatch[1]
+      .replace(/(?:il|la)\s+mio\s+numero.*/i, '')
+      .replace(/(?:allergico|allergica|intollerante).*/i, '');
+    const cleaned = rawNome
+      .replace(/\b(?:allergico|allergica|intollerante)\b/gi, '')
+      .replace(/\b(?:glutine|lattosio|nichel|frutta secca|noci|arachidi)\b/gi, '')
+      .replace(/[:.,]+$/g, '')
+      .trim();
+    if (cleaned) {
+      data.nome = cleaned;
+    }
   }
+
 
   const telMatch = fullText.match(/(\+39[\s-]?)?([0-9]{3}[\s-]?[0-9]{6,7}|[0-9]{9,10})/);
   if (telMatch) {
@@ -95,7 +110,7 @@ export function parseChatData(messages: Message[]): ParsedChatData {
     data.intent = 'altro';
   }
 
-  const personeMatch = fullText.match(PERSONE_REGEX);
+  const personeMatch = fullText.match(PERSONE_REGEX) || fullText.match(PERSONE_LABEL_REGEX);
   if (personeMatch?.[1]) {
     data.persone = personeMatch[1];
     const parsedNumber = Number(personeMatch[1]);
@@ -173,6 +188,18 @@ export function parseChatData(messages: Message[]): ParsedChatData {
   const notesMatch = fullText.match(/(?:note:|con la nota|nota:)\s*(.+)/i);
   if (notesMatch?.[1]) {
     accumulatedNotes.push(notesMatch[1].trim());
+  }
+
+  if (!accumulatedNotes.length) {
+    if (/\b(nessun[ao]?|no)\s+(?:allergia|allergie|intolleranza|intolleranze)\b/i.test(fullText)) {
+      accumulatedNotes.push('Nessuna allergia dichiarata.');
+    } else if (
+      /\b(?:nessun[ao]?|no|nulla)\b.*(?:richiest[ae]|preferenze?|problemi|vincoli|allergie|intolleranze?)/i.test(
+        fullText
+      )
+    ) {
+      accumulatedNotes.push('Nessuna richiesta particolare segnalata.');
+    }
   }
 
   if (accumulatedNotes.length) {

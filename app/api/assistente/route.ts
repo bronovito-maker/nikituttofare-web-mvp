@@ -3,10 +3,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth'; // Importa la funzione auth
 import { readTableRowById, updateTableRowById } from '@/lib/noco-helpers';
 import { Tenant } from '@/lib/types'; // Importa il nostro tipo Tenant
-import {
-  NC_TABLE_TENANTS_ID,
-  NC_VIEW_TENANTS_ID,
-} from '@/lib/noco-ids';
+import { NC_TABLE_TENANTS_ID } from '@/lib/noco-ids';
 
 /**
  * GET: Recupera la configurazione corrente del tenant loggato
@@ -21,11 +18,7 @@ export async function GET() {
     const tenantId = session.user.tenantId;
     
     // Leggi la riga dalla tabella 'tenants' usando il tenantId
-    const config = await readTableRowById(
-      NC_TABLE_TENANTS_ID,
-      NC_VIEW_TENANTS_ID,
-      Number(tenantId)
-    );
+    const config = await readTableRowById(NC_TABLE_TENANTS_ID, Number(tenantId));
     
     if (!config) {
          return NextResponse.json({ error: 'Configurazione non trovata' }, { status: 404 });

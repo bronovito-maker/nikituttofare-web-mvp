@@ -51,29 +51,28 @@ export async function listViewRowsById(
 
 export async function readTableRowById(
   tableId: string,
-  viewId: string,
   rowId: number | string
 ) {
   if (process.env.NODE_ENV !== 'production') {
-    console.debug('[NocoDBG_v2] readViewRow →', { tableId, viewId, rowId });
+    console.debug('[NocoDBG_v2] readTableRow →', { tableId, rowId });
   }
-  if (!tableId || !viewId || !rowId) {
-    throw new Error(`ID tabella (${tableId}), ID vista (${viewId}) o ID riga (${rowId}) mancanti.`);
+  if (!tableId || !rowId) {
+    throw new Error(`ID tabella (${tableId}) o ID riga (${rowId}) mancanti.`);
   }
   try {
-    const result = await noco.readViewRow(tableId, viewId, rowId);
+    const result = await noco.readTableRow(tableId, rowId);
 
-    if (Array.isArray(result) && result.length > 0) {
-      return result[0];
+    if (result && typeof result === 'object' && !Array.isArray(result)) {
+      return result;
     }
 
     console.warn(
-      `[NocoHelper] readTableRowById (riga ${rowId}) ha ricevuto una risposta inattesa:`,
+      `[NocoHelper] readTableRowById (riga ${rowId}) ha ricevuto una risposta inattesa o vuota:`,
       result
     );
     return null;
   } catch (error) {
-    console.error(`Errore NocoDB [readTableRowById] sulla riga ${rowId} (Vista: ${viewId}):`, error);
+    console.error(`Errore NocoDB [readTableRowById] sulla riga ${rowId} (Tabella: ${tableId}):`, error);
     throw error;
   }
 }

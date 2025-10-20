@@ -2,7 +2,7 @@
 import { Tenant } from './types';
 // Importa i nostri NUOVI helper e ID
 import { readTableRowById } from './noco-helpers';
-import { NC_TABLE_TENANTS_ID, NC_VIEW_TENANTS_ID } from './noco-ids';
+import { NC_TABLE_TENANTS_ID } from './noco-ids';
 
 /**
  * Recupera la configurazione del tenant (ristorante) specifica.
@@ -19,8 +19,8 @@ export async function getAssistantConfig(
   }
 
   // VALIDAZIONE ID STELLA POLARE
-  if (!NC_TABLE_TENANTS_ID || !NC_VIEW_TENANTS_ID) {
-    console.error('getAssistantConfig: ID Tabella o Vista Tenants non definiti in noco-ids.ts');
+  if (!NC_TABLE_TENANTS_ID) {
+    console.error('getAssistantConfig: ID Tabella Tenants non definito in noco-ids.ts');
     return null;
   }
 
@@ -28,7 +28,6 @@ export async function getAssistantConfig(
     // Usa il NUOVO helper con gli ID centralizzati
     const config = await readTableRowById(
       NC_TABLE_TENANTS_ID,
-      NC_VIEW_TENANTS_ID,
       Number(tenantId) // Assicura che sia un numero
     );
     
@@ -84,7 +83,22 @@ export async function buildSystemPrompt(
   prompt += `\n- Rispondi sempre e solo in Italiano.`;
   prompt += `\n- Sii sempre cortese e professionale.`;
   prompt += `\n- Non inventare informazioni non presenti in questo prompt. Se non sai qualcosa, dillo.`;
-  
+
+  // --- Flusso Prenotazione Guidato ---
+  prompt += `\n\n### Flusso Prenotazione — Segui SEMPRE questi 7 passaggi nell'ordine indicato ###`;
+  prompt += `\n1. Chiedi e conferma il NOME del cliente (richiedi anche eventuale cognome).`;
+  prompt += `\n2. Chiedi e conferma il NUMERO DI TELEFONO (formato italiano preferito, senza spazi).`;
+  prompt += `\n3. Chiedi e conferma la DATA della prenotazione (gg/mm/aaaa o riferimenti come oggi/domani).`;
+  prompt += `\n4. Chiedi e conferma l'ORARIO (24h, es. 20:30).`;
+  prompt += `\n5. Chiedi e conferma il NUMERO DI PERSONE (>=1).`;
+  prompt += `\n6. Chiedi ALLERGENI o RICHIESTE PARTICOLARI (animali, seggiolone, eventi speciali). Se non ci sono, fai indicare “Nessuna richiesta”.`;
+  prompt += `\n7. Fornisci un RIEPILOGO puntuale dei punti 1-6 e chiedi al cliente di premere il pulsante “Conferma prenotazione” nell'interfaccia.`;
+  prompt += `\n- NON saltare o accorciare passaggi: se il cliente dà più informazioni in un messaggio, conferma quelle disponibili e chiedi esplicitamente ciò che manca.`;
+  prompt += `\n- Se il cliente prova a confermare senza tutti i dati, ricorda gentilmente quali elementi mancano.`;
+  prompt += `\n- Dopo il riepilogo attendi SEMPRE la conferma esplicita del cliente. Non inviare la prenotazione a sistema finché la conferma non arriva.`;
+  prompt += `\n- Mantieni tono professionale, caloroso e conciso; evita risposte prolisse o fuori tema.`;
+  prompt += `\n- Se l'utente chiede di modificare un dato già raccolto, torna al relativo punto, aggiorna il riepilogo e richiedi di nuovo conferma.`;
+
   // 2. Aggiungi sezioni strutturate per le informazioni chiave
   prompt += `\n\n### Informazioni Chiave sul Ristorante ###`;
   prompt += `\n- Nome Attività: ${config.name}`;

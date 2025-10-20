@@ -8,7 +8,6 @@ export const NC_DB_ALIAS = process.env.NOCO_DB_ALIAS!;
 
 // Tabella: tenants
 export const NC_TABLE_TENANTS_ID = 'mxpqyjf4b5jrvwg';
-export const NC_VIEW_TENANTS_ID = 'vwhy96z9okwhj17t';
 
 // Tabella: users
 export const NC_TABLE_USERS_ID = 'mutj52aayxknhvt';

@@ -54,20 +54,16 @@ export class Noco {
 
   /**
    * Legge UNA singola riga da una TABELLA usando il suo ID.
-   * L'API V2 usa POST e {tableId} e {rowId}.
-   * Ignoriamo viewId perché l'API V2 /read/ non lo usa.
+   * L'API V2 standard usa GET /tables/{tableId}/records/{recordId}.
+   * Ignoriamo viewId perché l'endpoint diretto per i record non lo richiede.
    */
-  readViewRow(tableId: string, viewId: string, rowId: number | string) {
-    const path = `/tables/${tableId}/records/read`;
-    const body = {
-      recordIds: [String(rowId)],
-    };
+  async readTableRow(tableId: string, rowId: number | string) {
+    const path = `/tables/${tableId}/records/${rowId}`;
 
-    console.log('[NocoDBG_v2] readViewRow (PATH CORRETTO) →', { path, body });
+    console.log('[NocoDBG_v2] readTableRow (PATH GET) →', { path });
 
     return this.req(path, {
-      method: 'POST',
-      body,
+      method: 'GET',
     });
   }
 
@@ -115,10 +111,12 @@ export class Noco {
    */
   update(tableId: string, recordId: string | number, patch: any) {
     const path = `/tables/${tableId}/records`;
-    const body = {
-      Id: recordId,
-      ...patch,
-    };
+    const body = [
+      {
+        Id: recordId,
+        ...patch,
+      },
+    ];
 
     console.log('[NocoDBG_v2] updateRecord →', { path, body });
 
@@ -140,6 +138,8 @@ export class Noco {
       if (v !== undefined && v !== null) qs.append(k, String(v));
     });
     const suffix = qs.toString() ? `?${qs.toString()}` : '';
-    return this.req(`/tables/${tableId}/records${suffix}`);
+    const path = `/tables/${tableId}/records${suffix}`;
+    console.log('[NocoDBG_v2] findUserBy (PATH GET) →', { path });
+    return this.req(path, { method: 'GET' });
   }
 }
