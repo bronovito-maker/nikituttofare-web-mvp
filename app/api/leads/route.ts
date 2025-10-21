@@ -148,6 +148,7 @@ export async function POST(request: Request) {
 
       // --- MODIFICA 3: Fix per 400 Bad Request (Link NocoDB) ---
       // I campi Link (FK) in NocoDB richiedono un ARRAY di ID
+      // @ts-ignore - Il tipo SDK è errato, NocoDB si aspetta un array per i link
       customer_id: [customer.Id],
 
       channel: 'web_widget',
