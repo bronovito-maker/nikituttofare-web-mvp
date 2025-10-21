@@ -40,7 +40,7 @@ async function findOrCreateCustomer(
   if (searchClauses.length > 0) {
     whereParts.push(`~and(${searchClauses.join('~or')})`);
 
-    const queryParams: nocoLib.Filterv1 = {
+    const queryParams = {
       where: whereParts.join('~and'),
       limit: 1,
     };
