@@ -46,6 +46,7 @@ async function getBookings(tenantId: number): Promise<BookingWithCustomer[]> {
   const customersResult = await listViewRowsById(
     NC_TABLE_CUSTOMERS_ID,
     NC_VIEW_CUSTOMERS_ID,
+    // @ts-ignore - Filterv1 non esiste nei tipi SDK con legacy-peer-deps
     customerParams as unknown as nocoLib.Filterv1
   );
   const customers: Customer[] = (customersResult as { list?: Customer[] })?.list ?? [];
