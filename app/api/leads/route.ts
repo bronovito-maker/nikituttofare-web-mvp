@@ -124,6 +124,13 @@ export async function POST(request: Request) {
       console.warn('[API /api/leads] Validazione fallita: Nome non valido o mancante nel body.', { nome });
       return NextResponse.json({ error: 'Nome cliente non valido o mancante rilevato' }, { status: 400 });
     }
+    // Validazione robusta del nome
+    if (typeof nome !== 'string' || !nome.trim()) {
+      return NextResponse.json(
+        { success: false, message: 'Il nome è obbligatorio e deve essere una stringa valida.' },
+        { status: 400 }
+      );
+    }
     // Usiamo il nome validato e trimmato
     const validName = nome.trim();
 
