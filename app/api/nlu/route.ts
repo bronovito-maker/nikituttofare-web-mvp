@@ -135,6 +135,7 @@ export async function POST(req: NextRequest) {
 
     const completion = await callWithRetry();
 
+    // @ts-ignore - Sappiamo che non è uno stream, quindi 'choices' esisterà
     const content = completion.choices[0]?.message?.content;
     if (!content) {
       return NextResponse.json({ error: 'Risposta vuota dal modello NLU' }, { status: 502 });
