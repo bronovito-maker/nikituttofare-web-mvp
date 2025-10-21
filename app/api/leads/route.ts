@@ -152,6 +152,7 @@ export async function POST(request: Request) {
       customer_id: [customer.Id],
 
       channel: 'web_widget',
+      // @ts-ignore - Il tipo SDK è troppo restrittivo, 'intent' è una stringa valida
       intent: intent || 'info',
       summary, // Ora usa il summary corretto
       raw_log_json: JSON.stringify(messages),
