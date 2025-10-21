@@ -2,7 +2,7 @@
 
 'use client';
 
-import { ChangeEvent, useMemo, useRef } from 'react';
+import { ChangeEvent, useEffect, useMemo, useRef } from 'react';
 import { SendHorizonal, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -14,6 +14,8 @@ interface MessageInputProps {
   step?: string;
   setFileToUpload?: (file: File | null) => void;
   inputRef?: React.RefObject<HTMLTextAreaElement>;
+  selection?: { start: number; end: number } | null;
+  onSelectionHandled?: () => void;
 }
 
 export default function MessageInput({
@@ -24,6 +26,8 @@ export default function MessageInput({
   step = 'chat',
   setFileToUpload = () => {},
   inputRef,
+  selection = null,
+  onSelectionHandled,
 }: MessageInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const internalTextAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -31,6 +35,27 @@ export default function MessageInput({
     () => inputRef ?? internalTextAreaRef,
     [inputRef]
   );
+
+  useEffect(() => {
+    if (!selection) return;
+    const textarea = textAreaRef.current;
+    if (!textarea) return;
+
+    const applySelection = () => {
+      const valueLength = textarea.value.length;
+      const start = Math.max(0, Math.min(selection.start, valueLength));
+      const end = Math.max(start, Math.min(selection.end, valueLength));
+      textarea.setSelectionRange(start, end);
+      onSelectionHandled?.();
+    };
+
+    if (document.activeElement !== textarea) {
+      textarea.focus();
+      requestAnimationFrame(applySelection);
+    } else {
+      requestAnimationFrame(applySelection);
+    }
+  }, [selection, textAreaRef, onSelectionHandled, input]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {

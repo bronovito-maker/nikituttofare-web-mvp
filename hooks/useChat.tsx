@@ -212,6 +212,7 @@ export const useChat = (
     }
 
     const runParse = async () => {
+      const parseStartedAt = Date.now();
       try {
         const parsed = await parseChatData(messages);
         if (cancelled) return;
@@ -239,10 +240,32 @@ export const useChat = (
           let hasChange = false;
           const next: BookingSlots = { ...prev };
 
+          const shouldAllowParserUpdate = (
+            slot: SlotState,
+            source: SlotSource,
+            parseStart: number
+          ) => {
+            if (source !== 'parser') {
+              return true;
+            }
+            if (slot.source === 'manual') {
+              return false;
+            }
+            if (typeof slot.updatedAt === 'number' && slot.updatedAt > parseStart) {
+              return false;
+            }
+            return true;
+          };
+
           const applyClarificationMeta = (
             slot: SlotState,
-            meta: BookingClarification | undefined
+            meta: BookingClarification | undefined,
+            allowParserUpdate: boolean
           ) => {
+            if (!allowParserUpdate) {
+              return slot;
+            }
+
             const needsClarification = Boolean(meta);
             const clarificationReason = meta?.reason ?? null;
             const clarificationPhrase = meta?.phrase ?? null;
@@ -272,12 +295,20 @@ export const useChat = (
             const normalized = normalizeSlotValue(key, incoming);
             const currentSlot = prev[key];
             const slotClarification = clarificationsBySlot[key];
-            let updatedSlot = applyClarificationMeta(currentSlot, slotClarification);
+
+            const allowParserUpdate = shouldAllowParserUpdate(currentSlot, source, parseStartedAt);
 
             if (normalized === null) {
-              next[key] = updatedSlot;
+              next[key] = applyClarificationMeta(currentSlot, slotClarification, allowParserUpdate);
               return;
             }
+
+            if (source === 'parser' && !allowParserUpdate) {
+              next[key] = currentSlot;
+              return;
+            }
+
+            let updatedSlot = applyClarificationMeta(currentSlot, slotClarification, allowParserUpdate);
 
             const isSameValue =
               updatedSlot.isFilled && areSlotValuesEqual(key, updatedSlot.value, normalized);
@@ -300,7 +331,7 @@ export const useChat = (
               value: normalized,
               isFilled: true,
               source,
-              updatedAt: Date.now(),
+              updatedAt: source === 'parser' ? parseStartedAt : Date.now(),
             };
           };
 
@@ -314,7 +345,8 @@ export const useChat = (
           SLOT_KEYS.forEach((key) => {
             const slotClarification = clarificationsBySlot[key];
             const currentSlot = next[key];
-            const updatedSlot = applyClarificationMeta(currentSlot, slotClarification);
+            const allowParserUpdate = shouldAllowParserUpdate(currentSlot, 'parser', parseStartedAt);
+            const updatedSlot = applyClarificationMeta(currentSlot, slotClarification, allowParserUpdate);
             if (updatedSlot !== currentSlot) {
               next[key] = updatedSlot;
             }
@@ -392,44 +424,73 @@ export const useChat = (
     if (!normalized) return false;
     if (normalized.includes('?')) return false;
 
-    const negativeMarkers = ['non ', ' no', ' ma ', ' pero', ' perche', ' preferirei', ' cambi', ' cambiare', ' attende', ' aspetta', ' attesa'];
-    if (negativeMarkers.some((marker) => normalized.includes(marker))) {
+    const disqualifyingMarkers = [
+      ' non ',
+      ' no',
+      ' ma ',
+      ' però',
+      ' pero',
+      ' perche',
+      ' preferirei',
+      ' preferire',
+      ' cambia',
+      ' cambiare',
+      ' cambiamo',
+      ' modifica',
+      ' modificare',
+      ' modifichiamo',
+      ' invece ',
+      ' anzi',
+      ' meglio',
+      ' piu tardi',
+      ' piu presto',
+      ' forse',
+      ' oppure',
+      ' se possibile',
+      ' magari',
+      ' aspetta',
+      ' attesa',
+      ' interrompi',
+      ' fermati',
+      ' un attimo',
+    ];
+
+    if (disqualifyingMarkers.some((marker) => normalized.includes(marker))) {
       return false;
     }
 
-    if (CONFIRMATION_PHRASES.some((regex) => regex.test(rawContent))) {
-      return true;
-    }
+    const confirmationKeywords = [
+      'confermo',
+      'procedi',
+      'prosegui',
+      'vai pure',
+      'puoi procedere',
+      'puoi confermare',
+      'va bene cosi',
+      'ok perfetto',
+      'ok conferma',
+      'ok procedi',
+      'ok va bene',
+      'tutto ok',
+      'tutto perfetto',
+      'perfetto',
+      'benissimo',
+      'va benissimo',
+    ];
 
     const cleaned = normalized.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
     if (!cleaned) return false;
 
-    if (cleaned.startsWith('conferma')) return true;
-    if (cleaned.startsWith('procedi')) return true;
-    if (cleaned.includes('puoi procedere')) return true;
-    if (cleaned.includes('puoi confermare')) return true;
-
-    const simpleTokens = cleaned.split(' ');
-    if (simpleTokens.length <= 3 && SIMPLE_CONFIRMATION_WORDS.includes(simpleTokens[0])) {
+    if (confirmationKeywords.some((phrase) => cleaned.includes(phrase))) {
       return true;
     }
 
-    const affirmativeStarts = [
-      'si confermo',
-      'si va bene',
-      'si perfetto',
-      'si grazie',
-      'si procedi',
-      'si tutto ok',
-      'si tutto perfetto',
-      'ok procedi',
-      'ok perfetto',
-      'ok va bene',
-      'tutto ok',
-      'tutto perfetto',
-    ];
+    if (SIMPLE_CONFIRMATION_WORDS.includes(cleaned)) {
+      return true;
+    }
 
-    if (affirmativeStarts.some((phrase) => cleaned.startsWith(phrase))) {
+    const simpleTokens = cleaned.split(' ');
+    if (simpleTokens.length <= 2 && SIMPLE_CONFIRMATION_WORDS.includes(simpleTokens[0])) {
       return true;
     }
 

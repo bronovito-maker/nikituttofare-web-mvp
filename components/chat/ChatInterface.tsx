@@ -124,6 +124,7 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
   } = useChat();
 
   const [input, setInput] = useState('');
+  const [inputSelection, setInputSelection] = useState<{ start: number; end: number } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -141,11 +142,15 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
     resetConfirmationError();
     sendMessage(messageToSend.trim());
     setInput('');
+    setInputSelection(null);
   };
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (confirmationError) {
       resetConfirmationError();
+    }
+    if (inputSelection) {
+      setInputSelection(null);
     }
     setInput(event.target.value);
   };
@@ -211,14 +216,20 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
     if (!slot || bookingSaved) return;
 
     resetConfirmationError();
-    const template =
+    const baseTemplate =
       slot.status === 'missing'
         ? slot.editTemplate.missing
         : slot.status === 'clarify'
         ? slot.editTemplate.clarify
         : slot.editTemplate.complete;
+    const placeholder = '...';
+    const template = `${baseTemplate}${placeholder}`;
 
     setInput(template);
+    setInputSelection({
+      start: baseTemplate.length,
+      end: baseTemplate.length + placeholder.length,
+    });
     requestAnimationFrame(() => {
       messageInputRef.current?.focus();
     });
@@ -365,6 +376,8 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
         handleSend={handleSendMessage}
         isLoading={isLoading || isConfirming}
         inputRef={messageInputRef}
+        selection={inputSelection}
+        onSelectionHandled={() => setInputSelection(null)}
       />
     </div>
   );
