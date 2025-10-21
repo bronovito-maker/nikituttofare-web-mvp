@@ -381,6 +381,18 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
     return mapped;
   }, [messages]);
 
+  const metaByMessageId = useMemo(() => {
+    const map = new Map<string | number, { dividerLabel?: string; date?: Date }>();
+    chatMessagesWithMeta.forEach(({ message, dividerLabel, date }, idx) => {
+      if (message.id === undefined || message.id === null) {
+        map.set(idx, { dividerLabel, date });
+        return;
+      }
+      map.set(message.id, { dividerLabel, date });
+    });
+    return map;
+  }, [chatMessagesWithMeta]);
+
   if (!Array.isArray(messages) || messages.length <= 1) {
     return (
       <ChatIntroScreen
@@ -496,23 +508,37 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
           </div>
         )}
         <div className="flex-1 overflow-y-auto px-4 pb-28 pt-4 space-y-4">
-          {chatMessagesWithMeta.map(({ message: msg, dividerLabel, date }) => (
-            <div key={msg.id} className="space-y-2">
-              {dividerLabel && (
-                <div className="flex justify-center">
-                  <span className="rounded-full bg-gray-200 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-600">
-                    {dividerLabel}
-                  </span>
+          {messages
+            .slice(1)
+            .filter(
+              (msg) =>
+                msg.role === 'user' ||
+                msg.role === 'assistant' ||
+                msg.role === 'system'
+            )
+            .map((msg, index) => {
+              const metaKey =
+                msg.id === undefined || msg.id === null ? index : msg.id;
+              const meta = metaByMessageId.get(metaKey) ?? {};
+              const { dividerLabel, date } = meta;
+              return (
+                <div key={msg.id ?? index} className="space-y-2">
+                  {dividerLabel && (
+                    <div className="flex justify-center">
+                      <span className="rounded-full bg-gray-200 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-600">
+                        {dividerLabel}
+                      </span>
+                    </div>
+                  )}
+                  <ChatBubble
+                    role={msg.role}
+                    content={msg.content}
+                    menuUrl={assistantConfig?.menu_url ? String(assistantConfig.menu_url) : undefined}
+                    createdAt={date}
+                  />
                 </div>
-              )}
-              <ChatBubble
-                role={msg.role}
-                content={msg.content}
-                menuUrl={assistantConfig?.menu_url ? String(assistantConfig.menu_url) : undefined}
-                createdAt={date}
-              />
-            </div>
-          ))}
+              );
+            })}
           {bookingFlowActive && summaryReady && summaryData && (
             <BookingSummaryCard data={summaryData} />
           )}
