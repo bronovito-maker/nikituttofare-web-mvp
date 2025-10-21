@@ -32,6 +32,12 @@ const toTimeKey = (iso: string) => {
   return date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 };
 
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minuti
+const personalizationCache = new Map<
+  string,
+  { data: CustomerPersonalization | null; expiresAt: number }
+>();
+
 export async function fetchCustomerPersonalization(
   tenantId: number,
   email?: string
@@ -43,6 +49,13 @@ export async function fetchCustomerPersonalization(
   const emailValue = sanitizeWhereValue(email.trim().toLowerCase());
   if (!emailValue) return null;
 
+  const cacheKey = `${tenantId}|${emailValue}`;
+  const cached = personalizationCache.get(cacheKey);
+  const now = Date.now();
+  if (cached && cached.expiresAt > now) {
+    return cached.data;
+  }
+
   const customerResult = await listViewRowsById(NC_TABLE_CUSTOMERS_ID, NC_VIEW_CUSTOMERS_ID, {
     where: `(tenant_id,eq,${tenantId})~and((email,eq,${emailValue}))`,
     limit: 1,
@@ -50,6 +63,10 @@ export async function fetchCustomerPersonalization(
 
   const customerRecord = (customerResult.list as RawRecord[])[0];
   if (!customerRecord) {
+    personalizationCache.set(cacheKey, {
+      data: null,
+      expiresAt: now + CACHE_TTL_MS,
+    });
     return null;
   }
 
@@ -100,7 +117,7 @@ export async function fetchCustomerPersonalization(
           .map(([time]) => time)
       : undefined;
 
-  return {
+  const personalization: CustomerPersonalization = {
     customerId,
     fullName: customerRecord.full_name as string | undefined,
     phoneNumber: customerRecord.phone_number as string | undefined,
@@ -117,4 +134,11 @@ export async function fetchCustomerPersonalization(
     favoritePartySize,
     preferredTimes,
   };
+
+  personalizationCache.set(cacheKey, {
+    data: personalization,
+    expiresAt: now + CACHE_TTL_MS,
+  });
+
+  return personalization;
 }

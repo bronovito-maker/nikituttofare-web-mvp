@@ -91,26 +91,37 @@ export async function POST(request: Request) {
   }
   const tenantId = Number(session.user.tenantId);
 
+  let rawBody: unknown = null;
+
   try {
-    const body = await request.json();
+    rawBody = await request.json();
+    console.log('[API /api/leads] Raw Body Ricevuto:', JSON.stringify(rawBody, null, 2));
+
     const {
       messages,
       nome,
       telefono,
       email,
       intent,
-    } = body;
+    } = rawBody as {
+      messages: Array<{ role: string; content: string }>;
+      nome?: string;
+      telefono?: string;
+      email?: string;
+      intent?: string;
+    };
 
     if (!messages || messages.length === 0) {
       return NextResponse.json({ error: 'Messaggi mancanti' }, { status: 400 });
     }
 
     // --- MODIFICA 1: Validazione "Senior" del nome (Patch + Suggerimento) ---
-    const lowerCaseName = (nome || '').toLowerCase().trim();
+    const lowerCaseName = typeof nome === 'string' ? nome.toLowerCase().trim() : '';
     // Lista robusta di nomi non validi
     const invalidNames = ['assistente', 'virtuale', 'bot', 'demo', 'system', 'ciao'];
 
-    if (!nome || invalidNames.some((word) => lowerCaseName.includes(word)) || lowerCaseName.length < 2) {
+    if (!lowerCaseName || invalidNames.some((word) => lowerCaseName.includes(word)) || lowerCaseName.length < 2) {
+      console.warn('[API /api/leads] Validazione fallita: Nome non valido o mancante nel body.', { nome });
       return NextResponse.json({ error: 'Nome cliente non valido o mancante rilevato' }, { status: 400 });
     }
     // Usiamo il nome validato e trimmato
@@ -152,7 +163,7 @@ export async function POST(request: Request) {
       conversationId: (savedConversation as Conversation).Id,
     });
   } catch (error) {
-    console.error('Errore POST /api/leads:', error);
+    console.error('[API /api/leads] Errore:', error, 'Body ricevuto:', rawBody);
     // Gestione errori "senior" per log leggibili
     const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
     return NextResponse.json(

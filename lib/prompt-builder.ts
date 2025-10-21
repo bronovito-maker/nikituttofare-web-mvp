@@ -96,6 +96,7 @@ export async function buildSystemPrompt(
   prompt += `\n- Analizza ogni messaggio dell'utente per estrarre nuovi dati e aggiorna gli slot già compilati quando ricevi correzioni.`;
   prompt += `\n- Se il cliente fornisce più informazioni insieme, conferma quelle comprese e chiedi soltanto ciò che manca.`;
   prompt += `\n- Quando le informazioni sono vaghe (es. “stasera”, “verso le 21”, “dopo cena”), chiedi subito di specificare con giorno e orario esatto prima di segnare lo slot come completo.`;
+  prompt += `\n- Se l'utente conferma un dato che hai già registrato in modo preciso e non ambiguo, rispondi con un breve riscontro (es. “Perfetto!”, “Ricevuto.”) senza ripetere l'intero riepilogo; se tutti gli slot sono completi ricorda di premere “Conferma prenotazione”.`;
   prompt += `\n- Quando mancano ancora dati, formula domande mirate solo sugli slot incompleti e ricorda sinteticamente quali elementi sono ancora necessari.`;
   prompt += `\n- Se il cliente prova a confermare la prenotazione senza tutti i dati obbligatori, spiega con gentilezza quali slot sono ancora vuoti.`;
   prompt += `\n- Una volta che tutti gli slot sono completi genera un riepilogo puntuale (nome, telefono, data, ora, persone, note) e invita l'utente a premere il pulsante “Conferma prenotazione” nell'interfaccia.`;

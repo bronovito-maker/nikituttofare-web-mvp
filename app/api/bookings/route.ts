@@ -23,6 +23,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
+    console.log('[API /api/bookings] Payload Ricevuto:', body);
     
     // Dati necessari per creare una prenotazione
     const { 

@@ -1,5 +1,6 @@
 // lib/chat-parser.ts
 import { Message } from './types';
+import { addDays, setHours, setMinutes, setSeconds, startOfDay } from 'date-fns';
 
 export type BookingSlotKey = 'nome' | 'telefono' | 'data' | 'orario' | 'persone' | 'allergeni';
 
@@ -54,10 +55,12 @@ const PERSONE_REGEX =
   /\b(?:siamo|saremmo|saranno|vorremmo|avremmo|per)\s*(?:circa\s*)?(?:in\s*)?(\d{1,2})\s*(?:persone|pers|pax|coperti)?\b/i;
 const PERSONE_LABEL_REGEX = /\b(?:numero|n°|num\.?)\s*(?:di)?\s*(?:persone|ospiti|coperti)[\s:]*([0-9]{1,2})\b/i;
 const ORARIO_REGEX = /(?:alle|per le|verso le|alle ore|alle h)\s*(\d{1,2})(?::(\d{2}))?/i;
+const PRECISE_TIME_CONTEXT_REGEX = /\b(?:alle|alle ore|alle h|per le)\s*\d{1,2}(?::\d{2})?\b/gi;
+const DIGITAL_TIME_REGEX = /\b\d{1,2}:\d{2}\b/g;
+const APPROX_TIME_PREFIX_REGEX = /(verso|circa|intorno|dopo|prima)\s*$/i;
+const APPROX_TIME_SUFFIX_REGEX = /^\s*(circa|ca\.|verso|intorno)/i;
 const DATE_NUMERIC_REGEX = /(?:il\s*)?(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/i;
 const DATE_TEXT_REGEX = /(?:il\s*)?(\d{1,2})\s+(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)/i;
-const RELATIVE_DATE_REGEX = /\b(oggi|domani|dopodomani)\b/i;
-
 const MONTH_MAP: Record<string, number> = {
   gennaio: 0,
   febbraio: 1,
@@ -73,7 +76,7 @@ const MONTH_MAP: Record<string, number> = {
   dicembre: 11,
 };
 
-const NLU_TIMEOUT_MS = 6000;
+const NLU_TIMEOUT_MS = 15000;
 
 const AMBIGUOUS_TIME_PATTERNS: { regex: RegExp; reason: string }[] = [
   { regex: /\b(verso|intorno(?:\s+a)?|dopo|prima)(?:\s+le|\s+alle)?\s+\d{1,2}\b/i, reason: 'Orario espresso in modo approssimativo.' },
@@ -87,6 +90,26 @@ const AMBIGUOUS_DATE_PATTERNS: { regex: RegExp; reason: string }[] = [
   { regex: /\b(questo\s+weekend|nel\s+weekend|fine\s+settimana|i\s+prossimi\s+giorni|nei\s+prossimi\s+giorni|in\s+settimana)\b/i, reason: 'Data indicata in modo generico.' },
   { regex: /\b(prossima\s+settimana|la\s+settimana\s+prossima)\b/i, reason: 'Data generica senza giorno specifico.' },
 ];
+
+const RELATIVE_DATE_RULES: Array<{ regex: RegExp; offset: number; confidence: ConfidenceLevel }> = [
+  { regex: /\bdopodomani(?:\s+(?:sera|pomeriggio|mattina|notte))?\b/i, offset: 2, confidence: 'low' },
+  { regex: /\bdomani(?:\s+(?:sera|pomeriggio|mattina|notte))?\b/i, offset: 1, confidence: 'medium' },
+  { regex: /\b(oggi|stasera|questa\s+sera|stanotte|questa\s+notte)\b/i, offset: 0, confidence: 'low' },
+];
+
+const detectRelativeDate = (
+  text: string,
+  reference: Date
+): { date: Date; confidence: ConfidenceLevel } | null => {
+  for (const rule of RELATIVE_DATE_RULES) {
+    if (rule.regex.test(text)) {
+      const base = startOfDay(reference);
+      const resolvedDate = rule.offset === 0 ? base : addDays(base, rule.offset);
+      return { date: resolvedDate, confidence: rule.confidence };
+    }
+  }
+  return null;
+};
 
 const normalizePhone = (value: string | null | undefined) => {
   if (!value) return undefined;
@@ -119,27 +142,84 @@ const normalizeNotes = (value: string | null | undefined) => {
   return value.trim() || undefined;
 };
 
-function parseWithHeuristics(messages: Message[]): ParsedChatData {
+type ConfidenceLevel = 'low' | 'medium' | 'high';
+type ConfidenceKey = 'nome' | 'telefono' | 'booking_date_time' | 'orario' | 'party_size';
+type ConfidenceMap = Partial<Record<ConfidenceKey, ConfidenceLevel>>;
+type NluAmbiguityMap = Partial<Record<ConfidenceKey, boolean>>;
+type NluParsedData = Partial<ParsedChatData> & { ambiguities: NluAmbiguityMap };
+
+const AMBIGUITY_REASON_MAP: Record<ConfidenceKey, { slot: BookingSlotKey; reason: string }> = {
+  nome: {
+    slot: 'nome',
+    reason: 'Il nome indicato sembra incompleto o poco chiaro; chiedi conferma esplicita.',
+  },
+  telefono: {
+    slot: 'telefono',
+    reason: 'Il numero di telefono non è espresso in modo completo; chiedi conferma.',
+  },
+  booking_date_time: {
+    slot: 'data',
+    reason: 'La data della prenotazione è stata espressa in modo generico; chiedi il giorno preciso.',
+  },
+  orario: {
+    slot: 'orario',
+    reason: "L'orario è stato indicato in modo generico; chiedi un orario esatto (HH:MM).",
+  },
+  party_size: {
+    slot: 'persone',
+    reason: 'Il numero di persone risulta approssimativo; chiedi conferma del totale.',
+  },
+};
+
+function parseWithHeuristics(messages: Message[]): { data: ParsedChatData; confidence: ConfidenceMap } {
   const fullText = messages.map((m) => `${m.role}: ${m.content}`).join('\n');
   const data: ParsedChatData = {};
   const now = new Date();
   const accumulatedNotes: string[] = [];
   const clarifications: BookingClarification[] = [];
+  const confidence: ConfidenceMap = {};
+
+  let shouldClarifyNome = false;
+  let nomeClarificationPhrase: string | undefined;
 
   const nomeMatch = fullText.match(
     /(?:mi\s+chiamo|chiamarmi|mio\s+nome\s+è|sono)\s+([A-Za-zÀ-ÖØ-öø-ÿ\s'-]+?)(?:\.|\n|,|$)/i
   );
+  const nomeMatchAlt = fullText.match(
+    /(?:a\s+nome|il\s+mio\s+nome\s+è)\s+([A-Za-zÀ-ÖØ-öø-ÿ\s'-]+?)(?:\.|\n|,|$)/i
+  );
+  const nomeMatchGeneric = fullText.match(
+    /(?:^|\n)(?:user:\s*)?([A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ'’-]+(?:\s+[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ'’-]+)+)\b/
+  );
+
+  let rawNome: string | undefined;
   if (nomeMatch?.[1]) {
-    const rawNome = nomeMatch[1]
+    rawNome = nomeMatch[1];
+  } else if (nomeMatchAlt?.[1]) {
+    rawNome = nomeMatchAlt[1];
+  } else if (nomeMatchGeneric?.[1]) {
+    rawNome = nomeMatchGeneric[1];
+  }
+
+  if (rawNome) {
+    const cleanedCandidate = rawNome
       .replace(/(?:il|la)\s+mio\s+numero.*/i, '')
       .replace(/(?:allergico|allergica|intollerante).*/i, '');
-    const cleaned = rawNome
+    const cleaned = cleanedCandidate
       .replace(/\b(?:allergico|allergica|intollerante)\b/gi, '')
       .replace(/\b(?:glutine|lattosio|nichel|frutta secca|noci|arachidi)\b/gi, '')
       .replace(/[:.,]+$/g, '')
       .trim();
     if (cleaned) {
       data.nome = cleaned;
+      const tokenCount = cleaned.split(/\s+/).filter(Boolean).length;
+      if (tokenCount <= 1) {
+        shouldClarifyNome = true;
+        nomeClarificationPhrase = cleaned;
+        confidence.nome = 'low';
+      } else {
+        confidence.nome = 'medium';
+      }
     }
   }
 
@@ -147,7 +227,11 @@ function parseWithHeuristics(messages: Message[]): ParsedChatData {
   if (telMatch) {
     const prefix = telMatch[1] ? telMatch[1].replace(/[\s-]/g, '') : '';
     const number = telMatch[2].replace(/[\s-]/g, '');
-    data.telefono = normalizePhone(`${prefix}${number}`);
+    const normalizedPhone = normalizePhone(`${prefix}${number}`);
+    if (normalizedPhone) {
+      data.telefono = normalizedPhone;
+      confidence.telefono = normalizedPhone.length >= 9 ? 'high' : 'medium';
+    }
   }
 
   const emailMatch = fullText.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/);
@@ -171,6 +255,7 @@ function parseWithHeuristics(messages: Message[]): ParsedChatData {
     const parsedNumber = Number(personeMatch[1]);
     if (!Number.isNaN(parsedNumber) && parsedNumber > 0) {
       data.party_size = parsedNumber;
+      confidence.party_size = 'medium';
     }
   }
 
@@ -188,6 +273,7 @@ function parseWithHeuristics(messages: Message[]): ParsedChatData {
       const candidate = new Date(year, month, day);
       if (!Number.isNaN(candidate.getTime())) {
         bookingDate = candidate;
+        confidence.booking_date_time = 'medium';
       }
     }
   }
@@ -206,21 +292,17 @@ function parseWithHeuristics(messages: Message[]): ParsedChatData {
             candidate.setFullYear(year + 1);
           }
           bookingDate = candidate;
+          confidence.booking_date_time = 'medium';
         }
       }
     }
   }
 
   if (!bookingDate) {
-    const relativeMatch = fullText.match(RELATIVE_DATE_REGEX);
-    if (relativeMatch) {
-      const base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      if (relativeMatch[1].toLowerCase() === 'domani') {
-        base.setDate(base.getDate() + 1);
-      } else if (relativeMatch[1].toLowerCase() === 'dopodomani') {
-        base.setDate(base.getDate() + 2);
-      }
-      bookingDate = base;
+    const relativeDate = detectRelativeDate(fullText, now);
+    if (relativeDate) {
+      bookingDate = relativeDate.date;
+      confidence.booking_date_time = relativeDate.confidence;
     }
   }
 
@@ -229,10 +311,14 @@ function parseWithHeuristics(messages: Message[]): ParsedChatData {
     const hours = orarioMatch[1].padStart(2, '0');
     const minutes = orarioMatch[2] ?? '00';
     data.orario = `${hours}:${minutes}`;
+    confidence.orario = 'medium';
     if (bookingDate) {
-      const dateTime = new Date(bookingDate);
-      dateTime.setHours(Number(hours), Number(minutes), 0, 0);
+      let dateTime = setHours(bookingDate, Number(hours));
+      dateTime = setMinutes(dateTime, Number(minutes));
+      dateTime = setSeconds(dateTime, 0);
       data.booking_date_time = dateTime.toISOString();
+      confidence.booking_date_time = 'high';
+      confidence.orario = 'high';
     }
   }
 
@@ -278,9 +364,54 @@ function parseWithHeuristics(messages: Message[]): ParsedChatData {
     }
   };
 
+  if (shouldClarifyNome && data.nome) {
+    addClarification(
+      'nome',
+      'È stato indicato solo il nome, chiedi anche il cognome per completare la prenotazione.',
+      nomeClarificationPhrase
+    );
+  }
+
+  let hasContextualPreciseTime = false;
+  for (const match of fullText.matchAll(PRECISE_TIME_CONTEXT_REGEX)) {
+    const startIndex = match.index ?? 0;
+    const endIndex = startIndex + match[0].length;
+    const prefix = fullText.slice(Math.max(0, startIndex - 12), startIndex).toLowerCase().trimEnd();
+    if (APPROX_TIME_PREFIX_REGEX.test(prefix)) {
+      continue;
+    }
+    const suffix = fullText.slice(endIndex, endIndex + 12).toLowerCase();
+    if (APPROX_TIME_SUFFIX_REGEX.test(suffix)) {
+      continue;
+    }
+    hasContextualPreciseTime = true;
+    break;
+  }
+
+  let hasDigitalPreciseTime = false;
+  for (const match of fullText.matchAll(DIGITAL_TIME_REGEX)) {
+    const startIndex = match.index ?? 0;
+    const endIndex = startIndex + match[0].length;
+    const prefix = fullText.slice(Math.max(0, startIndex - 12), startIndex).toLowerCase().trimEnd();
+    if (APPROX_TIME_PREFIX_REGEX.test(prefix)) {
+      continue;
+    }
+    const suffix = fullText.slice(endIndex, endIndex + 12).toLowerCase();
+    if (APPROX_TIME_SUFFIX_REGEX.test(suffix)) {
+      continue;
+    }
+    hasDigitalPreciseTime = true;
+    break;
+  }
+
+  const hasPreciseTimeReference = hasContextualPreciseTime || hasDigitalPreciseTime;
+
   AMBIGUOUS_TIME_PATTERNS.forEach(({ regex, reason }) => {
     const match = fullText.match(regex);
     if (match) {
+      if (hasPreciseTimeReference) {
+        return;
+      }
       addClarification('orario', reason, match[0]);
     }
   });
@@ -302,10 +433,10 @@ function parseWithHeuristics(messages: Message[]): ParsedChatData {
     data.clarifications = clarifications;
   }
 
-  return data;
+  return { data, confidence };
 }
 
-async function callNluService(messages: Message[]): Promise<Partial<ParsedChatData>> {
+async function callNluService(messages: Message[]): Promise<NluParsedData> {
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -325,10 +456,15 @@ async function callNluService(messages: Message[]): Promise<Partial<ParsedChatDa
             return `${baseUrl.replace(/\/$/, '')}/api/nlu`;
           })();
 
+    const sanitizedMessages = messages.map(({ role, content }) => ({
+      role,
+      content,
+    }));
+
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages: sanitizedMessages }),
       signal: controller?.signal,
     });
 
@@ -339,6 +475,14 @@ async function callNluService(messages: Message[]): Promise<Partial<ParsedChatDa
     const json = await response.json();
     const payload = json?.data ?? {};
 
+    const ambiguities: NluAmbiguityMap = {
+      nome: Boolean(payload.nome_is_ambiguous ?? false),
+      telefono: Boolean(payload.telefono_is_ambiguous ?? false),
+      booking_date_time: Boolean(payload.booking_date_time_is_ambiguous ?? false),
+      orario: Boolean(payload.orario_is_ambiguous ?? false),
+      party_size: Boolean(payload.party_size_is_ambiguous ?? false),
+    };
+
     return {
       intent: payload.intent ?? undefined,
       nome: payload.nome ?? undefined,
@@ -348,6 +492,7 @@ async function callNluService(messages: Message[]): Promise<Partial<ParsedChatDa
       orario: normalizeTime(payload.orario ?? undefined),
       party_size: typeof payload.party_size === 'number' && payload.party_size > 0 ? payload.party_size : undefined,
       notes: normalizeNotes(payload.notes ?? undefined),
+      ambiguities,
     };
   } finally {
     if (timeoutId) {
@@ -356,20 +501,92 @@ async function callNluService(messages: Message[]): Promise<Partial<ParsedChatDa
   }
 }
 
-const mergeParsedData = (heuristic: ParsedChatData, nlu?: Partial<ParsedChatData>): ParsedChatData => {
+const mergeParsedData = (
+  heuristic: ParsedChatData,
+  heuristicConfidence: ConfidenceMap,
+  nlu?: Partial<ParsedChatData>
+): ParsedChatData => {
   if (!nlu) return heuristic;
 
   const merged: ParsedChatData = { ...heuristic };
 
-  if (nlu.nome) merged.nome = nlu.nome;
-  if (nlu.telefono) merged.telefono = nlu.telefono;
+  const chooseValue = <T>(
+    key: ConfidenceKey,
+    heuristicValue: T | undefined,
+    nluValue: T | undefined
+  ): T | undefined => {
+    if (nluValue === undefined || nluValue === null) {
+      return heuristicValue;
+    }
+    if (heuristicValue === undefined || heuristicValue === null) {
+      return nluValue;
+    }
+
+    const level = heuristicConfidence[key];
+    if (level !== 'high') {
+      return nluValue;
+    }
+
+    if (key === 'telefono') {
+      const normalizedNlu = typeof nluValue === 'string' ? nluValue.replace(/[^\d+]/g, '') : '';
+      if (normalizedNlu.length < 6) {
+        return heuristicValue;
+      }
+    }
+
+    if (key === 'booking_date_time') {
+      const nluIso = typeof nluValue === 'string' ? nluValue : '';
+      const heuristicIso = typeof heuristicValue === 'string' ? heuristicValue : '';
+      if (!nluIso.includes('T') && heuristicIso.includes('T')) {
+        return heuristicValue;
+      }
+      if (Number.isNaN(new Date(nluIso).getTime())) {
+        return heuristicValue;
+      }
+    }
+
+    if (key === 'orario') {
+      const nluTime = typeof nluValue === 'string' ? nluValue : '';
+      if (!/^\d{2}:\d{2}$/.test(nluTime)) {
+        return heuristicValue;
+      }
+    }
+
+    if (key === 'party_size') {
+      const nluNumber = typeof nluValue === 'number' ? nluValue : Number(nluValue);
+      if (!Number.isFinite(nluNumber) || nluNumber <= 0) {
+        return heuristicValue;
+      }
+    }
+
+    return nluValue;
+  };
+
+  const mergedNome = chooseValue('nome', heuristic.nome, nlu.nome);
+  if (mergedNome) merged.nome = mergedNome;
+
+  const mergedTelefono = chooseValue('telefono', heuristic.telefono, nlu.telefono);
+  if (mergedTelefono) merged.telefono = mergedTelefono;
+
   if (nlu.email) merged.email = nlu.email;
-  if (nlu.party_size) {
-    merged.party_size = nlu.party_size;
-    merged.persone = String(nlu.party_size);
+
+  const mergedBookingDateTime = chooseValue('booking_date_time', heuristic.booking_date_time, nlu.booking_date_time);
+  if (mergedBookingDateTime) merged.booking_date_time = mergedBookingDateTime;
+
+  const mergedOrario = chooseValue('orario', heuristic.orario, nlu.orario);
+  if (mergedOrario) merged.orario = mergedOrario;
+
+  const mergedPartySize = chooseValue('party_size', heuristic.party_size, nlu.party_size);
+  if (mergedPartySize !== undefined && mergedPartySize !== null) {
+    const numericPartySize = Number(mergedPartySize);
+    if (Number.isFinite(numericPartySize) && numericPartySize > 0) {
+      merged.party_size = numericPartySize;
+      merged.persone = String(numericPartySize);
+    }
+  } else if (!merged.persone && merged.party_size) {
+    merged.persone = String(merged.party_size);
   }
-  if (nlu.orario) merged.orario = nlu.orario;
-  if (nlu.booking_date_time) merged.booking_date_time = nlu.booking_date_time;
+
   if (nlu.notes) merged.notes = nlu.notes;
   if (nlu.intent) merged.intent = nlu.intent;
 
@@ -377,14 +594,29 @@ const mergeParsedData = (heuristic: ParsedChatData, nlu?: Partial<ParsedChatData
     merged.persone = String(nlu.party_size);
   }
 
-  const clarifications = heuristic.clarifications ?? [];
-  const filteredClarifications = clarifications.filter((clar) => {
-    if (clar.slot === 'orario' && nlu.orario) return false;
-    if (clar.slot === 'data' && nlu.booking_date_time) return false;
-    return true;
-  });
-  if (filteredClarifications.length) {
-    merged.clarifications = filteredClarifications;
+  const nluAmbiguities = nlu.ambiguities;
+  let finalClarifications: BookingClarification[] | undefined;
+
+  if (nluAmbiguities) {
+    const newClarifications: BookingClarification[] = [];
+    (Object.entries(nluAmbiguities) as [ConfidenceKey, boolean][]).forEach(([key, isAmbiguous]) => {
+      if (isAmbiguous) {
+        const meta = AMBIGUITY_REASON_MAP[key];
+        if (meta) {
+          newClarifications.push({
+            slot: meta.slot,
+            reason: meta.reason,
+          });
+        }
+      }
+    });
+    finalClarifications = newClarifications;
+  } else if (heuristic.clarifications && heuristic.clarifications.length) {
+    finalClarifications = heuristic.clarifications;
+  }
+
+  if (finalClarifications && finalClarifications.length > 0) {
+    merged.clarifications = finalClarifications;
   } else {
     delete merged.clarifications;
   }
@@ -393,19 +625,39 @@ const mergeParsedData = (heuristic: ParsedChatData, nlu?: Partial<ParsedChatData
 };
 
 export async function parseChatData(messages: Message[]): Promise<ParsedChatData> {
-  const heuristic = parseWithHeuristics(messages);
+  const { data: heuristic, confidence: heuristicConfidence } = parseWithHeuristics(messages);
+
+  const lastUserIndex = [...messages]
+    .map((msg, index) => ({ msg, index }))
+    .reverse()
+    .find(({ msg }) => msg.role === 'user')?.index ?? -1;
+
+  if (lastUserIndex === -1) {
+    return heuristic;
+  }
+
+  const relevantMessages: Message[] = [];
+  const previousMessage = messages[lastUserIndex - 1];
+  if (previousMessage && previousMessage.role === 'assistant') {
+    relevantMessages.push(previousMessage);
+  }
+  relevantMessages.push(messages[lastUserIndex]);
+  const nextMessage = messages[lastUserIndex + 1];
+  if (nextMessage && nextMessage.role === 'assistant') {
+    relevantMessages.push(nextMessage);
+  }
 
   try {
-    const nlu = await callNluService(messages);
-    return mergeParsedData(heuristic, nlu);
+    const nlu = await callNluService(relevantMessages);
+    return mergeParsedData(heuristic, heuristicConfidence, nlu);
   } catch (error) {
-    console.warn('Fallback al parser heuristico:', error);
+    console.warn('[parseChatData] NLU non disponibile, uso parser heuristico:', error);
     return heuristic;
   }
 }
 
 export function parseLeadDraft(current: LeadDraft, message: string): LeadDraft {
-  const parsed = parseWithHeuristics([{ id: `msg-${Date.now()}`, role: 'user', content: message }]);
+  const { data: parsed } = parseWithHeuristics([{ id: `msg-${Date.now()}`, role: 'user', content: message }]);
   const next: LeadDraft = {
     ...current,
     specialNotes: [...current.specialNotes],

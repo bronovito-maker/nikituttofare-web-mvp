@@ -153,7 +153,19 @@ const formatTimeFromISO = (iso: string | undefined) => {
 };
 
 const sanitizeMessages = (messages: Message[]) =>
-  messages.map(({ id, role, content }) => ({ id, role, content }));
+  messages.map(({ id, role, content, createdAt }) => {
+    const base = { id, role, content };
+    if (!createdAt) {
+      return base;
+    }
+
+    const parsed = createdAt instanceof Date ? createdAt : new Date(createdAt);
+    if (Number.isNaN(parsed.getTime())) {
+      return base;
+    }
+
+    return { ...base, createdAt: parsed.toISOString() };
+  });
 
 export const useChat = (
   options?: Omit<VercelUseChatOptions, 'api' | 'onFinish' | 'onError'>
@@ -171,6 +183,7 @@ export const useChat = (
   const [confirmationError, setConfirmationError] = useState<string | null>(null);
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
   const confirmationMessageIdsRef = useRef<Set<string>>(new Set());
+  const latestMessagesRef = useRef<Message[]>([]);
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -199,9 +212,23 @@ export const useChat = (
   });
 
   useEffect(() => {
+    latestMessagesRef.current = Array.isArray(messages) ? messages : [];
+  }, [messages]);
+
+  const lastMessageSignature = useMemo(() => {
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return 'empty';
+    }
+    const lastMessage = messages[messages.length - 1];
+    return `${messages.length}:${lastMessage?.id ?? 'unknown'}`;
+  }, [messages]);
+
+  useEffect(() => {
     let cancelled = false;
 
-    if (!Array.isArray(messages) || messages.length === 0) {
+    const currentMessages = latestMessagesRef.current;
+
+    if (!Array.isArray(currentMessages) || currentMessages.length === 0) {
       setParsedData(null);
       setSlots(createInitialSlotState());
       setDetectedEmail(null);
@@ -214,7 +241,7 @@ export const useChat = (
     const runParse = async () => {
       const parseStartedAt = Date.now();
       try {
-        const parsed = await parseChatData(messages);
+        const parsed = await parseChatData(currentMessages);
         if (cancelled) return;
 
         setParsedData(parsed);
@@ -263,6 +290,20 @@ export const useChat = (
             allowParserUpdate: boolean
           ) => {
             if (!allowParserUpdate) {
+              if (
+                !meta &&
+                (slot.needsClarification ||
+                  slot.clarificationReason !== null ||
+                  slot.clarificationPhrase !== null)
+              ) {
+                hasChange = true;
+                return {
+                  ...slot,
+                  needsClarification: false,
+                  clarificationReason: null,
+                  clarificationPhrase: null,
+                };
+              }
               return slot;
             }
 
@@ -326,8 +367,17 @@ export const useChat = (
             if (!changedSlots.includes(key)) {
               changedSlots.push(key);
             }
+            const clarificationState =
+              allowParserUpdate
+                ? {
+                    needsClarification: Boolean(slotClarification),
+                    clarificationReason: slotClarification?.reason ?? null,
+                    clarificationPhrase: slotClarification?.phrase ?? null,
+                  }
+                : {};
             next[key] = {
               ...updatedSlot,
+              ...clarificationState,
               value: normalized,
               isFilled: true,
               source,
@@ -371,7 +421,7 @@ export const useChat = (
     return () => {
       cancelled = true;
     };
-  }, [messages]);
+  }, [lastMessageSignature]);
 
   const bookingData = useMemo<BookingData>(() => {
     const resolveSlotValue = (key: BookingSlotKey) => {
@@ -555,14 +605,37 @@ export const useChat = (
       let leadInfo = savedLeadInfo;
 
       if (!leadInfo) {
+        const nomePerApi = bookingData.nome.trim();
+        const telefonoPerApi = bookingData.telefono.trim();
+        const emailPerApi = bookingData.email ?? parsedData?.email ?? null;
+
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[handleConfirmBooking] Tentativo chiamata /api/leads con:', {
+            summaryReady,
+            nome: nomePerApi,
+            telefono: telefonoPerApi,
+            email: emailPerApi,
+          });
+        }
+
+        if (!nomePerApi || nomePerApi.length < 2) {
+          console.error(
+            '[handleConfirmBooking] BLOCCO PREVENTIVO: Nome non valido prima della fetch a /api/leads!',
+            { nome: nomePerApi }
+          );
+          setConfirmationError('Errore interno: nome non valido.');
+          setIsConfirming(false);
+          return;
+        }
+
         const leadsResponse = await fetch('/api/leads', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             messages: sanitizeMessages(messages),
-            nome: bookingData.nome,
-            telefono: bookingData.telefono,
-            email: bookingData.email ?? parsedData?.email ?? null,
+            nome: nomePerApi,
+            telefono: telefonoPerApi,
+            email: emailPerApi,
             intent: 'prenotazione',
             booking_date_time: bookingData.bookingDateTime,
             party_size: bookingData.partySize,
@@ -584,16 +657,22 @@ export const useChat = (
         throw new Error('Lead non disponibile dopo la creazione.');
       }
 
+      const bookingPayload = {
+        customerId: leadInfo.customerId,
+        conversationId: leadInfo.conversationId,
+        bookingDateTime: bookingData.bookingDateTime,
+        partySize: bookingData.partySize,
+        notes: bookingData.allergeni ?? parsedData?.notes ?? '',
+      };
+
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[useChat] Dati inviati a /api/bookings:', bookingPayload);
+      }
+
       const bookingResponse = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerId: leadInfo.customerId,
-          conversationId: leadInfo.conversationId,
-          bookingDateTime: bookingData.bookingDateTime,
-          partySize: bookingData.partySize,
-          notes: bookingData.allergeni ?? parsedData?.notes ?? '',
-        }),
+        body: JSON.stringify(bookingPayload),
       });
 
       if (!bookingResponse.ok) {
@@ -669,6 +748,7 @@ export const useChat = (
       id: String(Date.now()),
       role: 'user',
       content: messageContent,
+      createdAt: new Date(),
     };
 
     await append(userMessage);

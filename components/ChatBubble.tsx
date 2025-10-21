@@ -7,6 +7,7 @@ type ChatBubbleProps = {
   role?: "user" | "assistant" | "system";
   content: string;
   menuUrl?: string;
+  createdAt?: Date | string;
 };
 
 const URL_REGEX = /(https?:\/\/[^\s]+)/gi;
@@ -71,11 +72,22 @@ const renderContent = (content: string) => {
   ));
 };
 
-export default function ChatBubble({ role = "assistant", content, menuUrl }: ChatBubbleProps) {
+export default function ChatBubble({ role = "assistant", content, menuUrl, createdAt }: ChatBubbleProps) {
   const isUser = role === "user";
   const containsUrl = URL_TEST_REGEX.test(content);
   const mentionsMenu = /menu|listino/i.test(content);
   const shouldRenderMenuCTA = Boolean(!isUser && menuUrl && mentionsMenu && !containsUrl);
+  let formattedTime: string | null = null;
+
+  if (createdAt) {
+    const parsedDate = createdAt instanceof Date ? createdAt : new Date(createdAt);
+    if (!Number.isNaN(parsedDate.getTime())) {
+      formattedTime = parsedDate.toLocaleTimeString("it-IT", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+  }
 
   return (
     <div className={clsx("flex w-full", isUser ? "justify-end" : "justify-start")}>
@@ -96,6 +108,16 @@ export default function ChatBubble({ role = "assistant", content, menuUrl }: Cha
               </a>
             </Button>
           </div>
+        )}
+        {formattedTime && (
+          <span
+            className={clsx(
+              "mt-2 block text-[11px] font-medium",
+              isUser ? "text-right text-white/70" : "text-left text-gray-500"
+            )}
+          >
+            {formattedTime}
+          </span>
         )}
       </div>
     </div>
