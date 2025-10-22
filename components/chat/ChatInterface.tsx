@@ -343,8 +343,7 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
 
   const chatMessagesWithMeta = useMemo(() => {
     if (!Array.isArray(messages)) return [];
-    const allowedRoles = new Set(['user', 'assistant', 'system']);
-    const baseMessages = messages.slice(1).filter((msg) => allowedRoles.has(msg.role));
+    const baseMessages = messages.slice(1);
     type ChatMessage = (typeof baseMessages)[number];
     const mapped: Array<{
       message: ChatMessage;
