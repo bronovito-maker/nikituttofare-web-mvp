@@ -8,6 +8,7 @@ import Typing from '../Typing';
 import ChatBubble from '../ChatBubble';
 import type { AssistantConfig } from '@/lib/types';
 import type { BookingSlotKey } from '@/lib/chat-parser';
+import type { Message } from 'ai/react';
 
 type SummaryData = {
   nome: string;
@@ -30,6 +31,11 @@ type SlotConfig = {
   label: string;
   editTemplate: { missing: string; clarify: string; complete: string };
 };
+
+const isDisplayableMessage = (
+  message: Message
+): message is Message & { role: Extract<Message['role'], 'user' | 'assistant' | 'system'> } =>
+  message.role === 'user' || message.role === 'assistant' || message.role === 'system';
 
 const SLOT_CONFIG: SlotConfig[] = [
   {
@@ -509,12 +515,7 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
         <div className="flex-1 overflow-y-auto px-4 pb-28 pt-4 space-y-4">
           {messages
             .slice(1)
-            .filter(
-              (msg) =>
-                msg.role === 'user' ||
-                msg.role === 'assistant' ||
-                msg.role === 'system'
-            )
+            .filter(isDisplayableMessage)
             .map((msg, index) => {
               const metaKey =
                 msg.id === undefined || msg.id === null ? index : msg.id;

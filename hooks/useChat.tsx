@@ -8,6 +8,7 @@ import {
   type BookingClarification,
   type BookingSlotKey,
 } from '@/lib/chat-parser';
+import type { Message as ParserMessage } from '@/lib/types';
 
 type SavedLeadInfo = {
   customerId: string;
@@ -152,20 +153,32 @@ const formatTimeFromISO = (iso: string | undefined) => {
   return date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 };
 
-const sanitizeMessages = (messages: Message[]) =>
-  messages.map(({ id, role, content, createdAt }) => {
-    const base = { id, role, content };
-    if (!createdAt) {
-      return base;
-    }
+const sanitizeMessages = (messages: Message[]): ParserMessage[] =>
+  messages
+    .filter(
+      (message): message is Message & { role: ParserMessage['role'] } =>
+        message.role === 'user' || message.role === 'assistant' || message.role === 'system'
+    )
+    .map(({ id, role, content, createdAt }, index) => {
+      const baseId =
+        typeof id === 'string'
+          ? id
+          : `msg-${index}-${typeof Date !== 'undefined' ? Date.now() : Math.random()}`;
+      const sanitized: ParserMessage = {
+        id: baseId,
+        role,
+        content,
+      };
 
-    const parsed = createdAt instanceof Date ? createdAt : new Date(createdAt);
-    if (Number.isNaN(parsed.getTime())) {
-      return base;
-    }
+      if (createdAt) {
+        const parsed = createdAt instanceof Date ? createdAt : new Date(createdAt);
+        if (!Number.isNaN(parsed.getTime())) {
+          sanitized.createdAt = parsed;
+        }
+      }
 
-    return { ...base, createdAt: parsed.toISOString() };
-  });
+      return sanitized;
+    });
 
 export const useChat = (
   options?: Omit<VercelUseChatOptions, 'api' | 'onFinish' | 'onError'>
@@ -241,7 +254,7 @@ export const useChat = (
     const runParse = async () => {
       const parseStartedAt = Date.now();
       try {
-        const parsed = await parseChatData(currentMessages);
+        const parsed = await parseChatData(sanitizeMessages(currentMessages));
         if (cancelled) return;
 
         setParsedData(parsed);

@@ -4,6 +4,11 @@
 
 export type NocoClientOpts = { baseUrl: string; token: string };
 
+type JsonLikeBody = Record<string, unknown> | Array<unknown>;
+type NocoRequestInit = Omit<RequestInit, 'body'> & {
+  body?: RequestInit['body'] | JsonLikeBody | null;
+};
+
 export class Noco {
   private baseUrl: string;
   private token: string;
@@ -17,14 +22,33 @@ export class Noco {
    * Esegue una richiesta fetch all'API NocoDB v2
    * Gestisce l'autenticazione, i body JSON e il parsing degli errori.
    */
-  private async req(path: string, options: RequestInit = {}) {
+  private async req(path: string, options: NocoRequestInit = {}) {
     const url = `${this.baseUrl}${path}`;
-    const headers = new Headers(options.headers || {});
+    const { body: rawBody, ...rest } = options;
+    const headers = new Headers(rest.headers || {});
     headers.set('xc-token', this.token);
 
-    if (options.body && typeof options.body !== 'string') {
+    let body: RequestInit['body'] | undefined;
+
+    const isReadableStream =
+      typeof ReadableStream !== 'undefined' && rawBody instanceof ReadableStream;
+    const isBlob = typeof Blob !== 'undefined' && rawBody instanceof Blob;
+    const isFormData = typeof FormData !== 'undefined' && rawBody instanceof FormData;
+
+    if (rawBody === undefined || rawBody === null) {
+      body = undefined;
+    } else if (
+      typeof rawBody === 'string' ||
+      rawBody instanceof ArrayBuffer ||
+      isBlob ||
+      isFormData ||
+      rawBody instanceof URLSearchParams ||
+      isReadableStream
+    ) {
+      body = rawBody;
+    } else {
       try {
-        options.body = JSON.stringify(options.body);
+        body = JSON.stringify(rawBody as JsonLikeBody);
         headers.set('Content-Type', 'application/json');
       } catch (error) {
         console.error('[NocoClient Error] Errore nel serializzare il body JSON:', error);
@@ -33,8 +57,9 @@ export class Noco {
     }
 
     const fetchOptions: RequestInit = {
-      ...options,
+      ...rest,
       headers,
+      body,
     };
 
     const res = await fetch(url, fetchOptions);

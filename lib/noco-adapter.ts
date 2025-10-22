@@ -1,6 +1,7 @@
 // lib/noco-adapter.ts
 import { noco } from '@/lib/noco'; // Importa la NUOVA istanza client
 import { NC_TABLE_USERS_ID } from '@/lib/noco-ids'; // Importa l'ID della tabella Users
+import type { User } from 'next-auth';
 import type { Adapter, AdapterUser } from 'next-auth/adapters';
 import { compare } from 'bcryptjs';
 
@@ -16,10 +17,21 @@ type NocoUser = {
 // Definiamo un tipo per l'utente "interno" dell'adapter
 type AppUser = AdapterUser & {
   passwordHash: string;
-  tenantId: number;
+  tenantId: string;
 };
 
-export function NocoAdapter(): Adapter {
+type AuthorizeCredentials = {
+  email?: string;
+  password?: string;
+};
+
+type AuthorizeUser = User & { tenantId: string };
+
+type AdapterWithAuthorize = Adapter & {
+  authorize(credentials: AuthorizeCredentials): Promise<AuthorizeUser | null>;
+};
+
+export function NocoAdapter(): AdapterWithAuthorize {
   const getUserByEmail = async (email: string): Promise<AppUser | null> => {
     if (!email) return null;
 
@@ -47,9 +59,9 @@ export function NocoAdapter(): Adapter {
         email: user.email,
         emailVerified: null, // NocoDB non gestisce questo di default
         passwordHash: user.password_hash,
-        tenantId: user.tenant_id,
+        tenantId: String(user.tenant_id),
         name: user.full_name,
-      };
+      } as AppUser;
     } catch (error) {
       console.error('[NocoAdapter] Errore getUserByEmail:', error);
       return null;
@@ -71,18 +83,17 @@ export function NocoAdapter(): Adapter {
     },
 
     // Funzione "authorize" (non standard dell'adapter, ma usata da noi in [auth].ts)
-    async authorize(credentials: any) {
-      const user = await getUserByEmail(credentials.email as string);
+    async authorize(credentials: AuthorizeCredentials) {
+      const user = credentials.email ? await getUserByEmail(credentials.email) : null;
 
       if (!user) {
         console.log('[Authorize] Login fallito: utente non trovato');
         return null;
       }
 
-      const isPasswordValid = await compare(
-        credentials.password as string,
-        user.passwordHash
-      );
+      const isPasswordValid =
+        typeof credentials.password === 'string' &&
+        (await compare(credentials.password, user.passwordHash));
 
       if (!isPasswordValid) {
         console.log('[Authorize] Login fallito: password errata');

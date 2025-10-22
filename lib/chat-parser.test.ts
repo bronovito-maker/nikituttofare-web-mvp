@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { parseChatData } from './chat-parser';
 import type { Message } from './types';
 
@@ -9,17 +9,20 @@ const createResponse = (data: unknown) => ({
 
 describe('parseChatData', () => {
   const originalFetch = global.fetch;
+  let fetchMock: Mock<[RequestInfo | URL, RequestInit?], Promise<unknown>>;
 
   beforeEach(() => {
-    global.fetch = vi.fn();
+    fetchMock = vi.fn<[RequestInfo | URL, RequestInit?], Promise<unknown>>();
+    global.fetch = fetchMock as unknown as typeof fetch;
   });
 
   afterEach(() => {
     global.fetch = originalFetch;
+    fetchMock.mockReset();
   });
 
   it('falls back to heuristics when NLU request fails', async () => {
-    (global.fetch as unknown as vi.Mock).mockRejectedValueOnce(new Error('network error'));
+    fetchMock.mockRejectedValueOnce(new Error('network error'));
 
     const messages: Message[] = [
       {
@@ -37,7 +40,7 @@ describe('parseChatData', () => {
   });
 
   it('keeps high confidence heuristic values when NLU result is partial', async () => {
-    (global.fetch as unknown as vi.Mock).mockResolvedValueOnce(
+    fetchMock.mockResolvedValueOnce(
       createResponse({
         data: {
           intent: 'prenotazione',
@@ -71,7 +74,7 @@ describe('parseChatData', () => {
   });
 
   it('derives clarifications from NLU ambiguities', async () => {
-    (global.fetch as unknown as vi.Mock).mockResolvedValueOnce(
+    fetchMock.mockResolvedValueOnce(
       createResponse({
         data: {
           intent: 'prenotazione',

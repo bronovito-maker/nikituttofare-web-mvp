@@ -1,10 +1,11 @@
 // components/ChatBubble.tsx
 import clsx from "clsx";
 import { Fragment, type ReactNode } from "react";
+import type { Message } from "ai/react";
 import { Button } from "@/components/ui/button";
 
 type ChatBubbleProps = {
-  role?: "user" | "assistant" | "system";
+  role?: Extract<Message["role"], "user" | "assistant" | "system">;
   content: string;
   menuUrl?: string;
   createdAt?: Date | string;

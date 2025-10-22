@@ -1,5 +1,5 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { useChat } from './useChat';
 import type { ParsedChatData } from '@/lib/chat-parser';
 
@@ -27,8 +27,10 @@ vi.mock('@/lib/chat-parser', async () => {
   };
 });
 
-const createFetchMock = () =>
-  vi.fn(async (input: RequestInfo | URL) => {
+type FetchMock = Mock<[RequestInfo | URL, RequestInit?], Promise<unknown>>;
+
+const createFetchMock = (): FetchMock =>
+  vi.fn<[RequestInfo | URL, RequestInit?], Promise<unknown>>(async (input: RequestInfo | URL) => {
     const url = typeof input === 'string' ? input : input.toString();
     if (url.includes('/api/assistente')) {
       return {
@@ -190,7 +192,7 @@ describe('useChat', () => {
     ];
     parseChatDataMock.mockResolvedValueOnce(baseParsedData());
 
-    const fetchMock = global.fetch as unknown as vi.Mock;
+    const fetchMock = global.fetch as unknown as FetchMock;
 
     renderHook(() => useChat());
 
@@ -207,7 +209,7 @@ describe('useChat', () => {
     ];
     parseChatDataMock.mockResolvedValueOnce(baseParsedData());
 
-    const fetchMock = global.fetch as unknown as vi.Mock;
+    const fetchMock = global.fetch as unknown as FetchMock;
 
     renderHook(() => useChat());
 

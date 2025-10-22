@@ -504,7 +504,7 @@ async function callNluService(messages: Message[]): Promise<NluParsedData> {
 const mergeParsedData = (
   heuristic: ParsedChatData,
   heuristicConfidence: ConfidenceMap,
-  nlu?: Partial<ParsedChatData>
+  nlu?: NluParsedData
 ): ParsedChatData => {
   if (!nlu) return heuristic;
 
