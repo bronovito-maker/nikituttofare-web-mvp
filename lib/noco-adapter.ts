@@ -9,9 +9,9 @@ import { compare } from 'bcryptjs';
 type NocoUser = {
   Id: number;
   email: string;
-  password_hash: string;
+  password: string;
   tenant_id: number;
-  full_name: string;
+  name: string;
 };
 
 // Definiamo un tipo per l'utente "interno" dell'adapter
@@ -58,9 +58,9 @@ export function NocoAdapter(): AdapterWithAuthorize {
         id: user.Id.toString(),
         email: user.email,
         emailVerified: null, // NocoDB non gestisce questo di default
-        passwordHash: user.password_hash,
+        passwordHash: user.password,
         tenantId: String(user.tenant_id),
-        name: user.full_name,
+        name: user.name,
       } as AppUser;
     } catch (error) {
       console.error('[NocoAdapter] Errore getUserByEmail:', error);
@@ -91,9 +91,13 @@ export function NocoAdapter(): AdapterWithAuthorize {
         return null;
       }
 
-      const isPasswordValid =
+      let isPasswordValid = false;
+      if (
         typeof credentials.password === 'string' &&
-        (await compare(credentials.password, user.passwordHash));
+        user.passwordHash
+      ) {
+        isPasswordValid = await compare(credentials.password, user.passwordHash);
+      }
 
       if (!isPasswordValid) {
         console.log('[Authorize] Login fallito: password errata');
