@@ -1,6 +1,13 @@
 'use client';
 
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ChangeEvent,
+  CSSProperties,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useChat } from '@/hooks/useChat';
 import { ChatIntroScreen } from './ChatIntroScreen';
 import MessageInput from './MessageInput';
@@ -22,6 +29,7 @@ type SummaryData = {
 
 type ChatInterfaceProps = {
   assistantConfig?: AssistantConfig | null;
+  widgetColor?: string | null;
 };
 
 type SlotStatus = 'missing' | 'clarify' | 'complete';
@@ -143,7 +151,10 @@ const formatDayDividerLabel = (date: Date) => {
   return formatted ? formatted.charAt(0).toUpperCase() + formatted.slice(1) : '';
 };
 
-export default function ChatInterface({ assistantConfig = null }: ChatInterfaceProps) {
+export default function ChatInterface({
+  assistantConfig = null,
+  widgetColor,
+}: ChatInterfaceProps) {
   const {
     messages = [],
     isLoading,
@@ -269,6 +280,11 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
     ? `Completa i dati mancanti: ${pendingSlots.map((slot) => slot.label).join(', ')}`
     : '';
   const confirmTooltipId = 'confirm-booking-tooltip';
+
+  const accentColor = widgetColor?.trim() || '#4f46e5';
+  const accentVars = {
+    '--widget-primary-color': accentColor,
+  } as CSSProperties;
 
   const handleSlotClick = (slotKey: BookingSlotKey) => {
     const slot = slotItems.find((item) => item.key === slotKey);
@@ -408,8 +424,10 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
   }
 
   return (
-    <>
-      <div className="relative flex h-full min-h-full flex-col bg-gray-50">
+    <div
+      className="relative flex h-full min-h-full flex-col bg-gray-50"
+      style={accentVars}
+    >
         {bookingFlowActive && (
           <div className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 px-4 py-3 backdrop-blur">
             <div className="flex items-center justify-between gap-3">
@@ -426,7 +444,8 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
               <button
                 type="button"
                 onClick={() => setIsSummaryOpen((prev) => !prev)}
-                className="text-xs font-semibold text-indigo-600 underline-offset-4 transition hover:underline"
+                className="text-xs font-semibold underline-offset-4 transition hover:underline"
+                style={{ color: 'var(--widget-primary-color)' }}
                 aria-expanded={isSummaryOpen}
               >
                 {isSummaryOpen ? 'Nascondi' : 'Vedi riepilogo'}
@@ -447,9 +466,9 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
                       const badge = SLOT_STATUS_LABEL[status];
                       const highlightClass =
                         activeSlotKey === key
-                          ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-white'
+                          ? 'ring-2 ring-[var(--widget-primary-color)] ring-offset-2 ring-offset-white'
                           : isRecent
-                          ? 'ring-2 ring-indigo-300'
+                          ? 'ring-2 ring-[var(--widget-primary-color)] ring-opacity-50'
                           : '';
 
                       const className = [
@@ -579,7 +598,8 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
             >
               <button
                 type="button"
-                className="w-full rounded-md bg-indigo-600 px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-300"
+                className="w-full rounded-md px-4 py-2 font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                style={{ backgroundColor: 'var(--widget-primary-color)' }}
                 onClick={confirmBooking}
                 disabled={confirmButtonDisabled}
                 aria-describedby={shouldShowConfirmTooltip ? confirmTooltipId : undefined}
@@ -602,19 +622,18 @@ export default function ChatInterface({ assistantConfig = null }: ChatInterfaceP
             </div>
           )}
         </div>
-      </div>
-      <div className="fixed bottom-0 left-0 right-0 z-40">
-        <MessageInput
-          input={input}
-          handleInputChange={handleInputChange}
-          handleSend={handleSendMessage}
-          isLoading={isLoading || isConfirming}
-          inputRef={messageInputRef}
-          selection={inputSelection}
-          onSelectionHandled={() => setInputSelection(null)}
-        />
-      </div>
-    </>
+        <div className="fixed bottom-0 left-0 right-0 z-40">
+          <MessageInput
+            input={input}
+            handleInputChange={handleInputChange}
+            handleSend={handleSendMessage}
+            isLoading={isLoading || isConfirming}
+            inputRef={messageInputRef}
+            selection={inputSelection}
+            onSelectionHandled={() => setInputSelection(null)}
+          />
+        </div>
+    </div>
   );
 }
 

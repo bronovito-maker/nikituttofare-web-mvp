@@ -10,6 +10,10 @@ export interface Tenant {
   system_prompt: string; // Istruzioni base per l'AI
   extra_info?: string; // Informazioni aggiuntive (policy, menu testuale semplice, ecc.)
   notification_email?: string; // Email per ricevere notifiche
+  menu_pdf_url?: string;
+  menu_text?: string;
+  ai_tone?: string;
+  widget_color?: string;
   // Aggiungi altri campi della tabella 'tenants' se necessario
 }
 

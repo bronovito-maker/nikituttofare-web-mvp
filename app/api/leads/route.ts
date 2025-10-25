@@ -115,6 +115,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Messaggi mancanti' }, { status: 400 });
     }
 
+    if (!tenantId || typeof telefono !== 'string' || telefono.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'Missing required fields: tenantId and telefono are required.' },
+        { status: 400 }
+      );
+    }
+
     // --- MODIFICA 1: Validazione "Senior" del nome (Patch + Suggerimento) ---
     const lowerCaseName = typeof nome === 'string' ? nome.toLowerCase().trim() : '';
     // Lista robusta di nomi non validi

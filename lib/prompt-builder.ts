@@ -80,7 +80,18 @@ export async function buildSystemPrompt(
   // Costruisci il prompt usando i campi della tabella 'tenants'
   
   // 1. Inizia con il prompt di sistema base (le istruzioni principali)
-  let prompt = config.system_prompt || 'Sei un assistente per un ristorante. Il tuo obiettivo è aiutare i clienti a prenotare un tavolo e rispondere alle loro domande.';
+  let prompt =
+    config.system_prompt ||
+    'Sei un assistente per un ristorante. Il tuo obiettivo è aiutare i clienti a prenotare un tavolo e rispondere alle loro domande.';
+
+  const tone = config.ai_tone?.trim().toLowerCase();
+  if (tone === 'amichevole') {
+    prompt += '\nParla con un tono amichevole e informale.';
+  } else if (tone === 'formale') {
+    prompt += '\nParla con un tono formale e professionale.';
+  } else if (tone === 'professionale') {
+    prompt += '\nMantieni un tono professionale, rassicurante e preciso.';
+  }
   
   // --- Aggiungi Contesto Chiave ---
   prompt += `\n\n### Contesto Attuale e Regole Obbligatorie ###`;
@@ -195,6 +206,18 @@ export async function buildSystemPrompt(
   // 4. Aggiungi le informazioni extra (es. policy, info su parcheggio, ecc.)
   if (config.extra_info) {
     prompt += `\n\n### Informazioni Aggiuntive e Policy ###\n${config.extra_info}`;
+  }
+
+  if (config.menu_text) {
+    prompt += `\n\n### MENU DEL RISTORANTE ###\n${config.menu_text}\n### FINE MENU ###`;
+    prompt += `\nIstruzioni sul menu:`;
+    prompt += `\n1. Usa *solo* il menu qui sopra per rispondere alle domande sui piatti.`;
+    prompt += `\n2. Analizza il menu: se noti sezioni speciali (es. "Specialità dello Chef", "I nostri classici") o piatti che sembrano particolarmente interessanti, memorizzali.`;
+    prompt += `\n3. Sii proattivo: se un utente chiede "cosa consigliate?" o "avete dei piatti forti?", suggerisci 1-2 piatti basandoti sulla tua analisi (es. "Il nostro Chef consiglia la Carbonara, è una specialità della casa!").`;
+  }
+
+  if (config.menu_pdf_url) {
+    prompt += `\n\nSe il cliente desidera consultare il menu completo, fornisci gentilmente questo link al PDF ufficiale: ${config.menu_pdf_url}`;
   }
   
   // 5. (Fase Futura) Aggiungi il menu

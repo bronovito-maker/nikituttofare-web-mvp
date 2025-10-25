@@ -43,22 +43,68 @@ export async function PUT(request: Request) {
 
   try {
     const tenantId = session.user.tenantId;
-    // Estrai solo i campi che permettiamo di aggiornare dal body
-    const body: Partial<Tenant> = await request.json();
+    const payload = (await request.json()) as Partial<Tenant> & Record<string, unknown>;
 
-    // Rimuovi campi che non dovrebbero essere aggiornati da questo endpoint
-    // (es. Id, CreatedAt, UpdatedAt)
-    const { 
-      Id, 
-      // Aggiungi qui altri campi da escludere se NocoDB li include
-      ...updateData 
-    } = body; 
+    const {
+      system_prompt,
+      opening_hours_json,
+      menu_pdf_url,
+      menu_text,
+      ai_tone,
+      widget_color,
+    } = payload;
+
+    const updatedData: Partial<Tenant> = {};
+
+    const assignIfString = (key: keyof Tenant, value: unknown) => {
+      if (value === undefined) return;
+
+      if (key === 'opening_hours_json' && value === '') {
+        updatedData[key] = null as Tenant[keyof Tenant];
+        return;
+      }
+
+      if (value === null) {
+        updatedData[key] = null as Tenant[keyof Tenant];
+        return;
+      }
+
+      if (typeof value === 'string') {
+        updatedData[key] = value;
+        return;
+      }
+
+      updatedData[key] = String(value) as Tenant[keyof Tenant];
+    };
+
+    assignIfString('system_prompt', system_prompt);
+    assignIfString('opening_hours_json', opening_hours_json);
+    assignIfString('menu_pdf_url', menu_pdf_url);
+    assignIfString('menu_text', menu_text);
+    assignIfString('ai_tone', ai_tone);
+    assignIfString('widget_color', widget_color);
+
+    const allowedBaseFields: Array<keyof Tenant> = [
+      'name',
+      'phone_number',
+      'address',
+      'notification_email',
+      'extra_info',
+    ];
+    allowedBaseFields.forEach((field) => assignIfString(field, payload[field]));
+
+    if (Object.keys(updatedData).length === 0) {
+      return NextResponse.json(
+        { error: 'Nessun campo valido da aggiornare' },
+        { status: 400 }
+      );
+    }
 
     // Esegui l'aggiornamento sulla riga del tenant
     const updatedConfig = await updateTableRowById(
       NC_TABLE_TENANTS_ID,
       Number(tenantId),
-      updateData // Invia solo i dati da aggiornare
+      updatedData
     );
 
     return NextResponse.json(updatedConfig);

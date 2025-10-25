@@ -27,7 +27,10 @@ export default async function ChatPage() {
           <Balancer>{assistantConfig?.name || 'Assistente Virtuale'}</Balancer>
         </h1>
         <div className="flex-grow overflow-hidden border bg-white rounded-lg shadow-xl">
-          <ChatInterface assistantConfig={assistantConfig} />
+          <ChatInterface
+            assistantConfig={assistantConfig}
+            widgetColor={assistantConfig?.widget_color}
+          />
         </div>
       </div>
     </div>

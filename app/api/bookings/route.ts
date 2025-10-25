@@ -35,9 +35,12 @@ export async function POST(request: Request) {
     } = body;
 
     // Validazione robusta dei dati
-    if (!customerId || !bookingDateTime || !partySize) {
+    if (!tenantId || !customerId || !bookingDateTime || !partySize) {
       console.error('Errore API Bookings: Dati incompleti', body);
-      return NextResponse.json({ error: 'Dati prenotazione incompleti: mancano customerId, data/ora o numero persone.' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Missing required fields: tenantId, customerId, bookingDateTime e partySize sono obbligatori.' },
+        { status: 400 }
+      );
     }
 
     // 1. Prepara il payload per NocoDB
