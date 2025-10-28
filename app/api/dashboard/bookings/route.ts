@@ -6,10 +6,7 @@ import {
 } from '@/lib/noco-helpers';
 import type { Booking, Customer } from '@/lib/types';
 
-const parseNumberParam = (
-  value: string | null,
-  fallback: number
-) => {
+const parseNumberParam = (value: string | null, fallback: number) => {
   if (!value) return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -75,20 +72,19 @@ export async function GET(request: Request) {
       status,
       from,
       to,
+      sort: '-booking_datetime',
     });
 
     const bookings = bookingsResult.list ?? [];
-    const customerIds = uniqueNumbers(
-      bookings.map((booking) => booking.customer_id)
-    );
+
+    const customerIds = uniqueNumbers(bookings.map((booking) => booking.customer_id));
 
     let customersMap = new Map<number, Customer>();
-
     if (customerIds.length > 0) {
       const customersResult = await getTenantCustomers(tenantId, {
         ids: customerIds,
+        limit: customerIds.length,
       });
-
       customersMap = new Map(
         (customersResult.list ?? []).map((customer) => [
           Number(customer.Id),
@@ -108,8 +104,7 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error('[API /api/dashboard/bookings] Errore:', error);
-    const message =
-      error instanceof Error ? error.message : 'Errore sconosciuto';
+    const message = error instanceof Error ? error.message : 'Errore sconosciuto';
     return NextResponse.json(
       { error: `Impossibile recuperare le prenotazioni: ${message}` },
       { status: 500 }

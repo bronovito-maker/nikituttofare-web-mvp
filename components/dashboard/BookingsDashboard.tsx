@@ -43,10 +43,10 @@ type BookingsDashboardProps = {
   onStatusChange: (status: StatusFilter) => void;
 };
 
-const formatBookingDate = (dateString: string): string => {
-  if (!dateString) return '—';
-  const parsed = new Date(dateString);
-  if (Number.isNaN(parsed.getTime())) return dateString;
+const formatBookingDate = (value: string): string => {
+  if (!value) return '—';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleString('it-IT', {
     day: '2-digit',
     month: 'short',
@@ -92,9 +92,7 @@ export default function BookingsDashboard({
             <CardTitle>Gestione Prenotazioni</CardTitle>
             <p className="text-sm text-muted-foreground">
               Visualizza e aggiorna le prenotazioni in tempo reale.
-              {typeof totalRows === 'number' && (
-                <> Totale archivio: {totalRows}</>
-              )}
+              {typeof totalRows === 'number' && <> Totale archivio: {totalRows}</>}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -145,19 +143,19 @@ export default function BookingsDashboard({
       </CardHeader>
       <CardContent>
         {error && (
-          <div className="text-red-500 p-4 rounded border border-red-200 bg-red-50">
+          <div className="rounded border border-red-200 bg-red-50 p-4 text-red-500">
             {error.message}
           </div>
         )}
 
         {!error && bookings.length === 0 && !isLoading && (
-          <div className="text-center text-muted-foreground p-8">
+          <div className="p-8 text-center text-muted-foreground">
             Nessuna prenotazione trovata per i filtri selezionati.
           </div>
         )}
 
         {isLoading && bookings.length === 0 && (
-          <div className="text-center text-muted-foreground p-8">
+          <div className="p-8 text-center text-muted-foreground">
             Caricamento prenotazioni...
           </div>
         )}
@@ -169,11 +167,9 @@ export default function BookingsDashboard({
                 <TableHead>Data e Ora</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Contatti</TableHead>
-                <TableHead>Persone</TableHead>
+                <TableHead className="text-center">Persone</TableHead>
                 <TableHead>Stato</TableHead>
-                <TableHead className="hidden md:table-cell">
-                  Note
-                </TableHead>
+                <TableHead className="hidden md:table-cell">Note</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -182,12 +178,10 @@ export default function BookingsDashboard({
                   <TableCell className="font-medium">
                     {formatBookingDate(booking.booking_datetime)}
                   </TableCell>
-                  <TableCell>
-                    {booking.customer?.full_name || 'N/D'}
-                  </TableCell>
+                  <TableCell>{booking.customer?.full_name || 'N/D'}</TableCell>
                   <TableCell className="text-sm">
-                    {booking.customer?.phone_number ||
-                      booking.customer?.email ||
+                    {booking.customer?.phone_number ??
+                      booking.customer?.email ??
                       'N/D'}
                   </TableCell>
                   <TableCell className="text-center">
@@ -198,7 +192,7 @@ export default function BookingsDashboard({
                       {booking.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell text-xs truncate max-w-xs">
+                  <TableCell className="hidden max-w-xs truncate text-xs md:table-cell">
                     {booking.notes || '—'}
                   </TableCell>
                 </TableRow>

@@ -36,15 +36,14 @@ export default function PrenotazioniPage() {
     return `/api/dashboard/bookings?${params.toString()}`;
   }, [range, status]);
 
-  const {
-    data,
-    error,
-    isLoading,
-    isValidating,
-  } = useSWR<DashboardBookingsResponse>(endpoint, fetcher, {
-    refreshInterval: 15000,
-    revalidateOnFocus: true,
-  });
+  const { data, error, isLoading, isValidating } = useSWR<DashboardBookingsResponse>(
+    endpoint,
+    fetcher,
+    {
+      refreshInterval: 15000,
+      revalidateOnFocus: true,
+    }
+  );
 
   return (
     <BookingsDashboard

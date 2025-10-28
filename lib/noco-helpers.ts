@@ -36,16 +36,41 @@ export async function listViewRowsById(
   };
 
   try {
-    const result = await noco.listView(tableId, viewId, payload);
+    const raw = (await noco.listView(tableId, viewId, payload)) as {
+      list?: unknown;
+      pageInfo?: ListViewResult<unknown>['pageInfo'];
+    };
 
-    if (result && typeof result === 'object' && 'list' in result) {
+    if (raw) {
+      const list = Array.isArray(raw.list)
+        ? raw.list
+        : raw.list !== undefined && raw.list !== null
+        ? [raw.list]
+        : [];
+
+      const pageInfo: ListViewResult<unknown>['pageInfo'] = raw.pageInfo ?? {
+        totalRows: list.length,
+        page: 1,
+        pageSize: list.length,
+      };
+
+      if (typeof pageInfo.totalRows !== 'number') {
+        console.warn(
+          `[NocoHelper] pageInfo.totalRows assente per ${tableId}. Stimiamo da list.length.`
+        );
+        pageInfo.totalRows = list.length;
+      }
+
       return {
-        list: (result as any).list ?? [],
-        pageInfo: (result as any).pageInfo ?? { totalRows: 0, page: 1, pageSize: 0 },
+        list,
+        pageInfo,
       };
     }
 
-    console.warn('[NocoHelper] listViewRowsById ha ricevuto una risposta inattesa:', result);
+    console.error(
+      `[NocoHelper] listViewRowsById ha ricevuto risultato invalido da noco.listView per ${tableId}:`,
+      raw
+    );
     return { list: [], pageInfo: { totalRows: 0, page: 1, pageSize: 0 } };
   } catch (error) {
     console.error(
@@ -188,6 +213,117 @@ export async function getTenantBookings(
   );
 
   return normalizeListResult<Booking>(rawResult);
+}
+
+export async function getTenantCustomersCount(tenantId: number): Promise<number> {
+  if (!tenantId) {
+    throw new Error('tenantId mancante per getTenantCustomersCount');
+  }
+
+  if (!NC_TABLE_CUSTOMERS_ID) {
+    throw new Error('ID NocoDB mancanti per i clienti');
+  }
+
+  try {
+    return await noco.getRecordCount(NC_TABLE_CUSTOMERS_ID, {
+      where: `(tenant_id,eq,${tenantId})`,
+    });
+  } catch (error) {
+    console.error('[NocoHelper] Errore in getTenantCustomersCount:', error);
+    return 0;
+  }
+}
+
+export async function getTenantBookingsCount(tenantId: number): Promise<number> {
+  if (!tenantId) {
+    throw new Error('tenantId mancante per getTenantBookingsCount');
+  }
+
+  if (!NC_TABLE_BOOKINGS_ID) {
+    throw new Error('ID NocoDB mancanti per le prenotazioni');
+  }
+
+  try {
+    return await noco.getRecordCount(NC_TABLE_BOOKINGS_ID, {
+      where: `(tenant_id,eq,${tenantId})`,
+    });
+  } catch (error) {
+    console.error('[NocoHelper] Errore in getTenantBookingsCount:', error);
+    return 0;
+  }
+}
+
+const formatDateYYYYMMDD = (date: Date): string => {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  return `${year}-${month}-${day}`;
+};
+
+export async function getRecentBookingsCount(tenantId: number): Promise<number> {
+  if (!tenantId) {
+    throw new Error('tenantId mancante per getRecentBookingsCount');
+  }
+
+  if (!NC_TABLE_BOOKINGS_ID) {
+    throw new Error('ID NocoDB mancanti per le prenotazioni');
+  }
+
+  const today = new Date();
+  const dateStr = formatDateYYYYMMDD(today);
+
+  try {
+    return await noco.getRecordCount(NC_TABLE_BOOKINGS_ID, {
+      where: `(tenant_id,eq,${tenantId})~and(booking_datetime,date,eq,${dateStr})`,
+    });
+  } catch (error) {
+    console.error('[NocoHelper] Errore in getRecentBookingsCount:', error);
+    return 0;
+  }
+}
+
+export async function getMonthlyBookingsCount(tenantId: number): Promise<number> {
+  if (!tenantId) {
+    throw new Error('tenantId mancante per getMonthlyBookingsCount');
+  }
+
+  if (!NC_TABLE_BOOKINGS_ID) {
+    throw new Error('ID NocoDB mancanti per le prenotazioni');
+  }
+
+  const today = new Date();
+  const startOfMonthStr = formatDateYYYYMMDD(new Date(today.getFullYear(), today.getMonth(), 1));
+  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  const endOfMonthStr = formatDateYYYYMMDD(new Date(nextMonth.getTime() - 1));
+
+  try {
+    return await noco.getRecordCount(NC_TABLE_BOOKINGS_ID, {
+      where: `(tenant_id,eq,${tenantId})~and(booking_datetime,ge,${startOfMonthStr})~and(booking_datetime,le,${endOfMonthStr})`,
+    });
+  } catch (error) {
+    console.error('[NocoHelper] Errore in getMonthlyBookingsCount:', error);
+    return 0;
+  }
+}
+
+export async function getPendingBookingsCount(tenantId: number): Promise<number> {
+  if (!tenantId) {
+    throw new Error('tenantId mancante per getPendingBookingsCount');
+  }
+
+  if (!NC_TABLE_BOOKINGS_ID) {
+    throw new Error('ID NocoDB mancanti per le prenotazioni');
+  }
+
+  try {
+    return await noco.getRecordCount(NC_TABLE_BOOKINGS_ID, {
+      where: `(tenant_id,eq,${tenantId})~and(status,eq,${sanitizeWhereValue('richiesta')})`,
+    });
+  } catch (error) {
+    console.error('[NocoHelper] Errore in getPendingBookingsCount:', error);
+    return 0;
+  }
 }
 
 export async function readTableRowById(

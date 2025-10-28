@@ -97,7 +97,7 @@ export class Noco {
    * L'API V2 usa POST e {viewId}.
    * I parametri (where, limit, sort) vanno nel BODY JSON.
    */
-  listView(tableId: string, viewId: string, params: Record<string, any> = {}) {
+  async listView(tableId: string, viewId: string, params: Record<string, any> = {}) {
     const path = `/tables/${tableId}/records`;
     const body: Record<string, any> = {
       viewId,
@@ -109,10 +109,84 @@ export class Noco {
 
     console.log('[NocoDBG_v2] listView (PATH CORRETTO) →', { path, body });
 
-    return this.req(path, {
+    const result = await this.req(path, {
       method: 'POST',
       body,
     });
+
+    console.log(
+      `[NocoClient RAW listView Response] ${tableId}:`,
+      JSON.stringify(result)
+    );
+
+    if (
+      result &&
+      typeof result === 'object' &&
+      !Array.isArray(result) &&
+      'list' in result &&
+      'pageInfo' in result
+    ) {
+      console.log(`[NocoClient] listView ${tableId} ha restituito il formato V2 standard.`);
+      (result as any).list = Array.isArray((result as any).list) ? (result as any).list : [];
+      return result;
+    }
+
+    if (Array.isArray(result)) {
+      console.warn(`[NocoClient] listView ${tableId} ha restituito un Array (formato V1?). Lo normalizzo.`);
+      return {
+        list: result,
+        pageInfo: {
+          totalRows: result.length,
+          page: 1,
+          pageSize: params?.limit ?? result.length,
+        },
+      };
+    }
+
+    if (result && typeof result === 'object' && !Array.isArray(result) && 'Id' in result) {
+      console.warn(`[NocoClient] listView ${tableId} ha restituito un singolo oggetto. Lo normalizzo in una lista.`);
+      return {
+        list: [result],
+        pageInfo: { totalRows: 1, page: 1, pageSize: 1 },
+      };
+    }
+
+    console.error(`[NocoClient] listView ${tableId} ha restituito una risposta inattesa:`, result);
+    return { list: [], pageInfo: { totalRows: 0, page: 1, pageSize: 0 } };
+  }
+
+  /**
+   * Restituisce il conteggio dei record per una tabella usando l'endpoint /count.
+   */
+  async getRecordCount(tableId: string, params: { where?: string } = {}): Promise<number> {
+    if (!tableId) {
+      throw new Error('[NocoClient] getRecordCount richiede un tableId');
+    }
+
+    const qs = new URLSearchParams();
+    if (params.where) {
+      qs.append('where', params.where);
+    }
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    const path = `/tables/${tableId}/records/count${suffix}`;
+
+    console.log('[NocoDBG_v2] getRecordCount (PATH GET) →', { path });
+
+    try {
+      const result = await this.req(path, { method: 'GET' });
+      if (
+        typeof result === 'object' &&
+        result !== null &&
+        typeof (result as { count?: unknown }).count === 'number'
+      ) {
+        return (result as { count: number }).count;
+      }
+      console.warn(`[NocoClient] Risposta inattesa da ${path}:`, result);
+      return 0;
+    } catch (error) {
+      console.error(`[NocoClient] Errore durante la chiamata a ${path}:`, error);
+      return 0;
+    }
   }
 
   // --- METODI PER LE TABELLE (CREATE, UPDATE, DELETE) ---

@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import {
-  getTenantBookings,
-  getTenantCustomers,
+  getTenantBookingsCount,
+  getTenantCustomersCount,
+  getMonthlyBookingsCount,
+  getPendingBookingsCount,
+  getRecentBookingsCount,
   listViewRowsById,
 } from '@/lib/noco-helpers';
 import {
@@ -10,27 +13,6 @@ import {
   NC_VIEW_CONVERSATIONS_ID,
 } from '@/lib/noco-ids';
 import type { Conversation } from '@/lib/types';
-
-const toCount = (value: unknown) => {
-  const numeric = Number(
-    typeof value === 'object' && value !== null
-      ? (value as { totalRows?: number }).totalRows
-      : value
-  );
-  return Number.isFinite(numeric) ? numeric : 0;
-};
-
-const startOfDay = (date: Date) => {
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  return start;
-};
-
-const addDays = (date: Date, days: number) => {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-};
 
 export async function GET() {
   const session = await auth();
@@ -40,37 +22,20 @@ export async function GET() {
   }
 
   const tenantId = Number(session.user.tenantId);
-  const now = new Date();
-  const todayStart = startOfDay(now);
-  const tomorrowStart = addDays(todayStart, 1);
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-
   try {
     const [
-      customersResult,
-      totalBookingsResult,
-      bookingsTodayResult,
-      bookingsMonthResult,
-      pendingBookingsResult,
+      totalCustomers,
+      totalBookings,
+      bookingsToday,
+      bookingsMonth,
+      pendingBookings,
       recentConversationsResult,
     ] = await Promise.all([
-      getTenantCustomers(tenantId, { limit: 1 }),
-      getTenantBookings(tenantId, { limit: 1 }),
-      getTenantBookings(tenantId, {
-        limit: 1,
-        from: todayStart,
-        to: tomorrowStart,
-      }),
-      getTenantBookings(tenantId, {
-        limit: 1,
-        from: monthStart,
-        to: nextMonthStart,
-      }),
-      getTenantBookings(tenantId, {
-        limit: 1,
-        status: 'richiesta',
-      }),
+      getTenantCustomersCount(tenantId),
+      getTenantBookingsCount(tenantId),
+      getRecentBookingsCount(tenantId),
+      getMonthlyBookingsCount(tenantId),
+      getPendingBookingsCount(tenantId),
       listViewRowsById(
         NC_TABLE_CONVERSATIONS_ID,
         NC_VIEW_CONVERSATIONS_ID,
@@ -86,13 +51,13 @@ export async function GET() {
       []) as Conversation[];
 
     return NextResponse.json({
-      totalCustomers: toCount(customersResult.pageInfo),
-      totalBookings: toCount(totalBookingsResult.pageInfo),
-      bookingsToday: toCount(bookingsTodayResult.pageInfo),
-      bookingsThisMonth: toCount(bookingsMonthResult.pageInfo),
-      pendingBookings: toCount(pendingBookingsResult.pageInfo),
+      totalCustomers,
+      totalBookings,
+      bookingsToday,
+      bookingsThisMonth: bookingsMonth,
+      pendingBookings,
       recentConversations,
-      updatedAt: now.toISOString(),
+      updatedAt: new Date().toISOString(),
     });
   } catch (error) {
     console.error('[API /api/dashboard/stats] Errore:', error);

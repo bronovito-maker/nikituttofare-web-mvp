@@ -237,10 +237,23 @@ export const useChat = (
     return `${messages.length}:${lastMessage?.id ?? 'unknown'}`;
   }, [messages]);
 
+  const missingSteps = useMemo<BookingSlotKey[]>(() => {
+    return SLOT_KEYS.filter((key) => {
+      const slot = slots[key];
+      return !slot.isFilled || slot.needsClarification;
+    });
+  }, [slots]);
+
+  const summaryReady = missingSteps.length === 0;
+
   useEffect(() => {
     let cancelled = false;
 
     const currentMessages = latestMessagesRef.current;
+    const lastMessage =
+      Array.isArray(currentMessages) && currentMessages.length > 0
+        ? currentMessages[currentMessages.length - 1]
+        : null;
 
     if (!Array.isArray(currentMessages) || currentMessages.length === 0) {
       setParsedData(null);
@@ -253,6 +266,10 @@ export const useChat = (
     }
 
     const runParse = async () => {
+      if (summaryReady && lastMessage?.role === 'assistant') {
+        return;
+      }
+
       const parseStartedAt = Date.now();
       try {
         const parsed = await parseChatData(sanitizeMessages(currentMessages));
@@ -322,23 +339,27 @@ export const useChat = (
               return slot;
             }
 
-            const needsClarification = Boolean(meta);
+            const needsClarificationFromParser = Boolean(meta);
             const clarificationReason = meta?.reason ?? null;
             const clarificationPhrase = meta?.phrase ?? null;
 
-            const shouldApplyClarification = !isNewlyUpdated || !needsClarification;
+            let finalNeedsClarification = slot.needsClarification;
+
+            if (!needsClarificationFromParser) {
+              finalNeedsClarification = false;
+            } else if (!slot.isFilled || isNewlyUpdated) {
+              finalNeedsClarification = true;
+            }
 
             if (
-              (shouldApplyClarification && slot.needsClarification !== needsClarification) ||
+              slot.needsClarification !== finalNeedsClarification ||
               slot.clarificationReason !== clarificationReason ||
               slot.clarificationPhrase !== clarificationPhrase
             ) {
               hasChange = true;
               return {
                 ...slot,
-                needsClarification: shouldApplyClarification
-                  ? needsClarification
-                  : slot.needsClarification,
+                needsClarification: finalNeedsClarification,
                 clarificationReason,
                 clarificationPhrase,
               };
@@ -453,7 +474,7 @@ export const useChat = (
     return () => {
       cancelled = true;
     };
-  }, [lastMessageSignature]);
+  }, [lastMessageSignature, summaryReady]);
 
   const bookingData = useMemo<BookingData>(() => {
     const resolveSlotValue = (key: BookingSlotKey) => {
@@ -485,13 +506,6 @@ export const useChat = (
     };
   }, [slots, detectedEmail]);
 
-  const missingSteps = useMemo<BookingSlotKey[]>(() => {
-    return SLOT_KEYS.filter((key) => {
-      const slot = slots[key];
-      return !slot.isFilled || slot.needsClarification;
-    });
-  }, [slots]);
-
   useEffect(() => {
     if (clarifications.length > 0) {
       setHighlightSlot(clarifications[0].slot);
@@ -503,8 +517,6 @@ export const useChat = (
     }
     setHighlightSlot(null);
   }, [clarifications, missingSteps]);
-
-  const summaryReady = missingSteps.length === 0;
 
   const isAffirmativeConfirmation = useCallback((rawContent: string) => {
     if (!rawContent) return false;

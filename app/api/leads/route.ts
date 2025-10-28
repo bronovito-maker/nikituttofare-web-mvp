@@ -81,7 +81,19 @@ async function findOrCreateCustomer(
           last_visit_date: new Date().toISOString(),
         }
       );
-      return updatedCustomer as Customer;
+      const normalized =
+        Array.isArray(updatedCustomer) && updatedCustomer.length > 0
+          ? (updatedCustomer[0] as Customer)
+          : (updatedCustomer as Customer | null);
+      if (normalized && normalized.Id) {
+        return normalized;
+      }
+      return {
+        ...customer,
+        full_name: nome || customer.full_name,
+        visit_count: (Number(customer.visit_count) || 0) + 1,
+        last_visit_date: new Date().toISOString(),
+      };
     }
   }
 
@@ -95,7 +107,14 @@ async function findOrCreateCustomer(
     last_visit_date: new Date().toISOString(),
   });
 
-  return newCustomer as Customer;
+  const normalizedNew =
+    Array.isArray(newCustomer) && newCustomer.length > 0
+      ? (newCustomer[0] as Customer)
+      : (newCustomer as Customer | null);
+  if (normalizedNew && normalizedNew.Id) {
+    return normalizedNew;
+  }
+  throw new Error('Creazione cliente non ha restituito un ID valido');
 }
 
 /**
@@ -170,17 +189,22 @@ export async function POST(request: Request) {
         typeof party_size === 'number' && Number.isFinite(party_size) && party_size > 0
           ? party_size
           : '?';
-      let dateStr = 'Data non specificata';
+      let dateStr = 'Data/Ora non specificata';
       if (booking_date_time) {
-        const parsed = new Date(booking_date_time);
-        if (!Number.isNaN(parsed.getTime())) {
-          dateStr = parsed.toLocaleString('it-IT', {
-            day: '2-digit',
-            month: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-          });
-        } else {
+        try {
+          const parsed = new Date(booking_date_time);
+          if (!Number.isNaN(parsed.getTime())) {
+            dateStr = parsed.toLocaleString('it-IT', {
+              day: '2-digit',
+              month: 'short',
+              hour: '2-digit',
+              minute: '2-digit',
+            });
+          } else {
+            dateStr = booking_date_time;
+          }
+        } catch (err) {
+          console.warn('Errore formattazione data per summary:', booking_date_time, err);
           dateStr = booking_date_time;
         }
       }

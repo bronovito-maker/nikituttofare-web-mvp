@@ -361,124 +361,122 @@ export default function ChatInterface({
       className="relative flex h-full min-h-full flex-col bg-gray-50"
       style={accentVars}
     >
-        <div className="flex-1 overflow-y-auto px-4 pb-28 pt-4 space-y-4">
-          {messages
-            .slice(1)
-            .filter(isDisplayableMessage)
-            .map((msg, index) => {
-              const metaKey =
-                msg.id === undefined || msg.id === null ? index : msg.id;
-              const meta = metaByMessageId.get(metaKey) ?? {};
-              const { dividerLabel, date } = meta;
-              return (
-                <div key={msg.id ?? index} className="space-y-2">
-                  {dividerLabel && (
-                    <div className="flex justify-center">
-                      <span className="rounded-full bg-gray-200 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-600">
-                        {dividerLabel}
-                      </span>
-                    </div>
-                  )}
-                  <ChatBubble
-                    role={msg.role}
-                    content={msg.content}
-                    menuUrl={assistantConfig?.menu_url ? String(assistantConfig.menu_url) : undefined}
-                    createdAt={date}
-                  />
-                </div>
-              );
-            })}
-          {isLoading && <Typing />}
-          <div ref={messagesEndRef} />
-        </div>
-        <div className="border-t border-gray-200 bg-white px-4 pb-6 pt-4 space-y-3 shadow-sm">
-          {(error || confirmationError) && (
-            <p className="text-sm text-red-600">
-              {confirmationError || error}
-            </p>
-          )}
-          {bookingFlowActive && pendingSlots.length > 0 && !bookingSaved && (
-            <p className="text-xs text-gray-500">
-              Dati da completare o confermare: {pendingSlots.map((slot) => slot.label).join(', ')}
-            </p>
-          )}
-          {clarifications.length > 0 && (
-            <div className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
-              Alcuni dati sono generici o ambigui: conferma{' '}
-              {clarifications
-                .map(
-                  ({ slot }) => SLOT_CONFIG.find((item) => item.key === slot)?.label ?? slot
-                )
-                .join(', ')}
-              .
-            </div>
-          )}
-          {bookingSaved && (
-            <p className="text-sm text-green-600">
-              Richiesta inviata con successo. Il ristorante ti contatterà a breve!
-            </p>
-          )}
-          {bookingFlowActive && (
-            <div
-              className="relative w-full"
-              onMouseEnter={showConfirmTooltip}
-              onMouseLeave={() => hideConfirmTooltip()}
-              onFocus={showConfirmTooltip}
-              onBlur={() => hideConfirmTooltip()}
-              onTouchStart={() => {
-                showConfirmTooltip();
-                hideConfirmTooltip(2500);
-              }}
-              onTouchEnd={() => hideConfirmTooltip(1200)}
-              role="group"
-              tabIndex={shouldShowConfirmTooltip ? 0 : -1}
+      <div className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur">
+        {bookingFlowActive && (
+          <BookingPillBar
+            slots={slotState}
+            highlightSlot={highlightSlot}
+            updateSlotValue={handlePillBarUpdate}
+            onClearSlot={handlePillBarClear}
+          />
+        )}
+
+        {(error || confirmationError) && (
+          <div className="border-t border-gray-200 bg-white px-4 py-2 text-center text-xs text-red-600">
+            {confirmationError || error}
+          </div>
+        )}
+
+        {summaryReady && !bookingSaved && (
+          <div
+            className="relative border-t border-gray-200 bg-white px-4 pb-3 pt-3 shadow-sm"
+            onMouseEnter={showConfirmTooltip}
+            onMouseLeave={() => hideConfirmTooltip()}
+            onFocus={showConfirmTooltip}
+            onBlur={() => hideConfirmTooltip()}
+            onTouchStart={() => {
+              showConfirmTooltip();
+              hideConfirmTooltip(2500);
+            }}
+            onTouchEnd={() => hideConfirmTooltip(1200)}
+            role="group"
+            tabIndex={shouldShowConfirmTooltip ? 0 : -1}
+            aria-describedby={shouldShowConfirmTooltip ? confirmTooltipId : undefined}
+          >
+            <button
+              type="button"
+              className="w-full rounded-md px-4 py-2 font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              style={{ backgroundColor: 'var(--widget-primary-color)' }}
+              onClick={confirmBooking}
+              disabled={confirmButtonDisabled}
               aria-describedby={shouldShowConfirmTooltip ? confirmTooltipId : undefined}
             >
-              <button
-                type="button"
-                className="w-full rounded-md px-4 py-2 font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                style={{ backgroundColor: 'var(--widget-primary-color)' }}
-                onClick={confirmBooking}
-                disabled={confirmButtonDisabled}
-                aria-describedby={shouldShowConfirmTooltip ? confirmTooltipId : undefined}
+              {isConfirming ? 'Invio in corso...' : 'Conferma prenotazione'}
+            </button>
+            {shouldShowConfirmTooltip && isConfirmTooltipVisible && (
+              <div
+                id={confirmTooltipId}
+                role="tooltip"
+                className="pointer-events-none absolute bottom-full left-1/2 z-30 w-max max-w-[min(280px,90vw)] -translate-x-1/2 -translate-y-1 rounded-md bg-gray-900 px-3 py-2 text-xs font-medium text-white shadow-lg"
               >
-                {bookingSaved
-                  ? 'Prenotazione inviata'
-                  : isConfirming
-                  ? 'Invio in corso...'
-                  : 'Conferma prenotazione'}
-              </button>
-              {shouldShowConfirmTooltip && isConfirmTooltipVisible && (
-                <div
-                  id={confirmTooltipId}
-                  role="tooltip"
-                  className="pointer-events-none absolute bottom-full left-1/2 z-30 w-max max-w-[min(280px,90vw)] -translate-x-1/2 -translate-y-2 rounded-md bg-gray-900 px-3 py-2 text-xs font-medium text-white shadow-lg"
-                >
-                  {confirmTooltipContent}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="fixed bottom-0 left-0 right-0 z-40">
-          {bookingFlowActive && (
-            <BookingPillBar
-              slots={slotState}
-              highlightSlot={highlightSlot}
-              updateSlotValue={handlePillBarUpdate}
-              onClearSlot={handlePillBarClear}
-            />
-          )}
-          <MessageInput
-            input={input}
-            handleInputChange={handleInputChange}
-            handleSend={handleSendMessage}
-            isLoading={isLoading || isConfirming}
-            inputRef={messageInputRef}
-            selection={inputSelection}
-            onSelectionHandled={() => setInputSelection(null)}
-          />
-        </div>
+                {confirmTooltipContent}
+              </div>
+            )}
+          </div>
+        )}
+
+        {bookingSaved && (
+          <div className="border-t border-gray-200 bg-green-50 px-4 py-3 text-center text-sm font-medium text-green-700">
+            Prenotazione inviata con successo!
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 pb-24 pt-4 space-y-4">
+        {bookingFlowActive && pendingSlots.length > 0 && !bookingSaved && (
+          <p className="text-xs text-gray-500">
+            Dati da completare o confermare: {pendingSlots.map((slot) => slot.label).join(', ')}
+          </p>
+        )}
+        {clarifications.length > 0 && (
+          <div className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            Alcuni dati sono generici o ambigui: conferma{' '}
+            {clarifications
+              .map(({ slot }) => SLOT_CONFIG.find((item) => item.key === slot)?.label ?? slot)
+              .join(', ')}
+            .
+          </div>
+        )}
+        {messages
+          .slice(1)
+          .filter(isDisplayableMessage)
+          .map((msg, index) => {
+            const metaKey = msg.id === undefined || msg.id === null ? index : msg.id;
+            const meta = metaByMessageId.get(metaKey) ?? {};
+            const { dividerLabel, date } = meta;
+            return (
+              <div key={msg.id ?? index} className="space-y-2">
+                {dividerLabel && (
+                  <div className="flex justify-center">
+                    <span className="rounded-full bg-gray-200 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-600">
+                      {dividerLabel}
+                    </span>
+                  </div>
+                )}
+                <ChatBubble
+                  role={msg.role}
+                  content={msg.content}
+                  menuUrl={assistantConfig?.menu_url ? String(assistantConfig.menu_url) : undefined}
+                  createdAt={date}
+                />
+              </div>
+            );
+          })}
+        {isLoading && <Typing />}
+        <div ref={messagesEndRef} className="h-0" />
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white">
+        <MessageInput
+          input={input}
+          handleInputChange={handleInputChange}
+          handleSend={handleSendMessage}
+          isLoading={isLoading || isConfirming}
+          inputRef={messageInputRef}
+          selection={inputSelection}
+          onSelectionHandled={() => setInputSelection(null)}
+        />
+      </div>
     </div>
   );
 }

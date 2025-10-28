@@ -6,7 +6,7 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { SessionProvider, useSession, signOut } from "next-auth/react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { MessageSquare, LayoutDashboard, LogOut, Menu, X, LogIn, User, HelpCircle } from 'lucide-react';
+import { MessageSquare, LayoutDashboard, LogOut, Menu, X, LogIn, User, HelpCircle, Settings } from 'lucide-react';
 import Image from "next/image";
 
 // --- MODIFICA CHIAVE: Definizione completa di AppHeader ---
@@ -15,6 +15,7 @@ const AppHeader = ({ onMenuToggle }: { onMenuToggle: () => void; }) => {
   const pathname = usePathname();
   const isChat = pathname === '/chat' || pathname === '/';
   const isDash = pathname === '/dashboard';
+  const isConfig = pathname === '/dashboard/configurazione';
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -30,6 +31,9 @@ const AppHeader = ({ onMenuToggle }: { onMenuToggle: () => void; }) => {
             </Link>
             <Link href="/dashboard" className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-all ${isDash ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}>
               <LayoutDashboard className="h-4 w-4 mr-2" />Dashboard
+            </Link>
+            <Link href="/dashboard/configurazione" className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-all ${isConfig ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}>
+              <Settings className="h-4 w-4 mr-2" />Configura
             </Link>
           </nav>
         )}
@@ -82,6 +86,7 @@ const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void;
                                 <nav className="flex flex-col gap-2 flex-grow">
                                     <Link href="/chat" onClick={onClose} className={`${linkClasses} ${pathname === '/chat' || pathname === '/' ? activeLinkClasses : ''}`}><MessageSquare size={20} /> Chat</Link>
                                     <Link href="/dashboard" onClick={onClose} className={`${linkClasses} ${pathname === '/dashboard' ? activeLinkClasses : ''}`}><LayoutDashboard size={20} /> Dashboard</Link>
+                                    <Link href="/dashboard/configurazione" onClick={onClose} className={`${linkClasses} ${pathname === '/dashboard/configurazione' ? activeLinkClasses : ''}`}><Settings size={20} /> Configura</Link>
                                     <Link href="/profilo" onClick={onClose} className={`${linkClasses} ${pathname === '/profilo' ? activeLinkClasses : ''}`}><User size={20} /> Profilo</Link>
                                     <Link href="/faq" onClick={onClose} className={`${linkClasses} ${pathname === '/faq' ? activeLinkClasses : ''}`}><HelpCircle size={20} /> Serve Aiuto?</Link>
                                 </nav>
