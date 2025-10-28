@@ -16,6 +16,23 @@ import {
 // @ts-ignore: nocodb-sdk non espone direttamente il tipo Filterv1
 import type { lib as nocoLib } from 'nocodb-sdk';
 
+type LeadMessage = {
+  role: string;
+  content?: string | null;
+};
+
+type LeadRequestBody = {
+  messages: LeadMessage[];
+  nome?: string;
+  telefono?: string;
+  email?: string;
+  intent?: string;
+  party_size?: number;
+  booking_date_time?: string;
+  notes?: string;
+  [key: string]: unknown;
+};
+
 /**
  * Funzione "Upsert": Cerca un cliente in base a telefono o email.
  * (Logica invariata, usa già gli helper corretti)
@@ -103,13 +120,10 @@ export async function POST(request: Request) {
       telefono,
       email,
       intent,
-    } = rawBody as {
-      messages: Array<{ role: string; content: string }>;
-      nome?: string;
-      telefono?: string;
-      email?: string;
-      intent?: string;
-    };
+      party_size,
+      booking_date_time,
+      notes,
+    } = rawBody as LeadRequestBody;
 
     if (!messages || messages.length === 0) {
       return NextResponse.json({ error: 'Messaggi mancanti' }, { status: 400 });
@@ -144,11 +158,38 @@ export async function POST(request: Request) {
     // 1. Trova o crea il cliente usando il nome pulito
     const customer = await findOrCreateCustomer(tenantId, validName, telefono, email);
 
-    // --- MODIFICA 2: Summary basato sull'ultimo messaggio dell'UTENTE ---
-    const lastUserMessage =
-      messages.filter((m: any) => m.role === 'user').pop()?.content || 'Nessun messaggio utente.';
-    const summary =
-      lastUserMessage.substring(0, 150) + (lastUserMessage.length > 150 ? '...' : '');
+    // Sintesi conversazione basata sui dati estratti
+    const trimmedIntent = intent?.trim();
+    const conversationIntent =
+      trimmedIntent && trimmedIntent.length > 0 ? trimmedIntent : 'informazioni';
+    const normalizedIntent = conversationIntent.toLowerCase();
+    let summary = 'Conversazione informativa';
+
+    if (normalizedIntent === 'prenotazione') {
+      const partySizeDisplay =
+        typeof party_size === 'number' && Number.isFinite(party_size) && party_size > 0
+          ? party_size
+          : '?';
+      let dateStr = 'Data non specificata';
+      if (booking_date_time) {
+        const parsed = new Date(booking_date_time);
+        if (!Number.isNaN(parsed.getTime())) {
+          dateStr = parsed.toLocaleString('it-IT', {
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+        } else {
+          dateStr = booking_date_time;
+        }
+      }
+      const noteStr = notes && notes.trim().length > 0 ? notes.trim() : 'Nessuna';
+      summary = `Prenotazione per ${validName} (${partySizeDisplay}p) il ${dateStr}. Note: ${noteStr}`;
+    } else if (messages.length > 0) {
+      const lastUserContent = messages.filter((m) => m.role === 'user').pop()?.content?.trim();
+      summary = lastUserContent && lastUserContent.length > 0 ? lastUserContent : 'Nessun messaggio utente';
+    }
 
     const conversationLog: Partial<Conversation> = {
       tenant_id: tenantId,
@@ -160,8 +201,8 @@ export async function POST(request: Request) {
 
       channel: 'web_widget',
       // @ts-ignore - Il tipo SDK è troppo restrittivo, 'intent' è una stringa valida
-      intent: intent || 'info',
-      summary, // Ora usa il summary corretto
+      intent: conversationIntent,
+      summary: summary.substring(0, 255),
       raw_log_json: JSON.stringify(messages),
       status: 'chiusa',
     };

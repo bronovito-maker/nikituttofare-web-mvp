@@ -30,7 +30,7 @@ type BookingStep = BookingSlotKey | 'riepilogo' | 'completato';
 
 type SlotSource = 'parser' | 'manual';
 
-type SlotState = {
+export type SlotState = {
   value: string | number | null;
   isFilled: boolean;
   source: SlotSource | null;
@@ -40,7 +40,7 @@ type SlotState = {
   clarificationPhrase: string | null;
 };
 
-type BookingSlots = Record<BookingSlotKey, SlotState>;
+export type BookingSlots = Record<BookingSlotKey, SlotState>;
 
 type BookingData = {
   nome?: string;
@@ -195,6 +195,7 @@ export const useChat = (
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmationError, setConfirmationError] = useState<string | null>(null);
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+  const [highlightSlot, setHighlightSlot] = useState<BookingSlotKey | null>(null);
   const confirmationMessageIdsRef = useRef<Set<string>>(new Set());
   const latestMessagesRef = useRef<Message[]>([]);
 
@@ -300,7 +301,8 @@ export const useChat = (
           const applyClarificationMeta = (
             slot: SlotState,
             meta: BookingClarification | undefined,
-            allowParserUpdate: boolean
+            allowParserUpdate: boolean,
+            isNewlyUpdated: boolean
           ) => {
             if (!allowParserUpdate) {
               if (
@@ -324,15 +326,19 @@ export const useChat = (
             const clarificationReason = meta?.reason ?? null;
             const clarificationPhrase = meta?.phrase ?? null;
 
+            const shouldApplyClarification = !isNewlyUpdated || !needsClarification;
+
             if (
-              slot.needsClarification !== needsClarification ||
+              (shouldApplyClarification && slot.needsClarification !== needsClarification) ||
               slot.clarificationReason !== clarificationReason ||
               slot.clarificationPhrase !== clarificationPhrase
             ) {
               hasChange = true;
               return {
                 ...slot,
-                needsClarification,
+                needsClarification: shouldApplyClarification
+                  ? needsClarification
+                  : slot.needsClarification,
                 clarificationReason,
                 clarificationPhrase,
               };
@@ -353,7 +359,12 @@ export const useChat = (
             const allowParserUpdate = shouldAllowParserUpdate(currentSlot, source, parseStartedAt);
 
             if (normalized === null) {
-              next[key] = applyClarificationMeta(currentSlot, slotClarification, allowParserUpdate);
+              next[key] = applyClarificationMeta(
+                currentSlot,
+                slotClarification,
+                allowParserUpdate,
+                false
+              );
               return;
             }
 
@@ -362,7 +373,12 @@ export const useChat = (
               return;
             }
 
-            let updatedSlot = applyClarificationMeta(currentSlot, slotClarification, allowParserUpdate);
+            let updatedSlot = applyClarificationMeta(
+              currentSlot,
+              slotClarification,
+              allowParserUpdate,
+              false
+            );
 
             const isSameValue =
               updatedSlot.isFilled && areSlotValuesEqual(key, updatedSlot.value, normalized);
@@ -380,22 +396,20 @@ export const useChat = (
             if (!changedSlots.includes(key)) {
               changedSlots.push(key);
             }
-            const clarificationState =
-              allowParserUpdate
-                ? {
-                    needsClarification: Boolean(slotClarification),
-                    clarificationReason: slotClarification?.reason ?? null,
-                    clarificationPhrase: slotClarification?.phrase ?? null,
-                  }
-                : {};
-            next[key] = {
+            const isNewlyUpdated = source === 'parser' && changedSlots.includes(key);
+            const newSlot: SlotState = {
               ...updatedSlot,
-              ...clarificationState,
               value: normalized,
               isFilled: true,
               source,
               updatedAt: source === 'parser' ? parseStartedAt : Date.now(),
             };
+            next[key] = applyClarificationMeta(
+              newSlot,
+              slotClarification,
+              allowParserUpdate,
+              isNewlyUpdated
+            );
           };
 
           updateSlot('nome', parsed.nome);
@@ -409,7 +423,12 @@ export const useChat = (
             const slotClarification = clarificationsBySlot[key];
             const currentSlot = next[key];
             const allowParserUpdate = shouldAllowParserUpdate(currentSlot, 'parser', parseStartedAt);
-            const updatedSlot = applyClarificationMeta(currentSlot, slotClarification, allowParserUpdate);
+            const updatedSlot = applyClarificationMeta(
+              currentSlot,
+              slotClarification,
+              allowParserUpdate,
+              false
+            );
             if (updatedSlot !== currentSlot) {
               next[key] = updatedSlot;
             }
@@ -472,6 +491,18 @@ export const useChat = (
       return !slot.isFilled || slot.needsClarification;
     });
   }, [slots]);
+
+  useEffect(() => {
+    if (clarifications.length > 0) {
+      setHighlightSlot(clarifications[0].slot);
+      return;
+    }
+    if (missingSteps.length > 0) {
+      setHighlightSlot(missingSteps[0]);
+      return;
+    }
+    setHighlightSlot(null);
+  }, [clarifications, missingSteps]);
 
   const summaryReady = missingSteps.length === 0;
 
@@ -559,6 +590,32 @@ export const useChat = (
 
     return false;
   }, []);
+
+  const handlePillBarUpdate = (slot: BookingSlotKey, value: string) => {
+    console.log(`[useChat] Iniezione da Pill Bar: ${slot} = ${value}`);
+    void append({
+      id: `system-update-${Date.now()}`,
+      role: 'system',
+      content: `[CONTESTO UTENTE] L'utente ha aggiornato manualmente il campo ${slot} a: ${value}. Procedi con la conversazione.`,
+      createdAt: new Date(),
+    });
+    if (highlightSlot === slot) {
+      setHighlightSlot(null);
+    }
+  };
+
+  const handlePillBarClear = (slot: BookingSlotKey) => {
+    console.log(`[useChat] Rimozione da Pill Bar: ${slot}`);
+    void append({
+      id: `system-clear-${Date.now()}`,
+      role: 'system',
+      content: `[CONTESTO UTENTE] L'utente ha rimosso il valore per ${slot}. Chiedi nuovamente questo dato se necessario.`,
+      createdAt: new Date(),
+    });
+    if (highlightSlot === slot) {
+      setHighlightSlot(null);
+    }
+  };
 
   useEffect(() => {
     if (bookingSaved) {
@@ -791,5 +848,8 @@ export const useChat = (
     isConfirming,
     confirmationError,
     resetConfirmationError: () => setConfirmationError(null),
+    highlightSlot,
+    handlePillBarUpdate,
+    handlePillBarClear,
   };
 };

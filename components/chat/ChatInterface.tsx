@@ -13,19 +13,10 @@ import { ChatIntroScreen } from './ChatIntroScreen';
 import MessageInput from './MessageInput';
 import Typing from '../Typing';
 import ChatBubble from '../ChatBubble';
+import { BookingPillBar } from './BookingPillBar';
 import type { AssistantConfig } from '@/lib/types';
 import type { BookingSlotKey } from '@/lib/chat-parser';
 import type { Message } from 'ai/react';
-
-type SummaryData = {
-  nome: string;
-  telefono: string;
-  partySize: number;
-  allergeni: string;
-  bookingDateTime: string;
-  dateDisplay?: string;
-  timeDisplay?: string;
-};
 
 type ChatInterfaceProps = {
   assistantConfig?: AssistantConfig | null;
@@ -102,21 +93,6 @@ const SLOT_CONFIG: SlotConfig[] = [
   },
 ];
 
-const SLOT_STATUS_LABEL: Record<SlotStatus, { text: string; className: string }> = {
-  complete: {
-    text: 'Completo',
-    className: 'bg-green-100 text-green-700',
-  },
-  clarify: {
-    text: 'Da confermare',
-    className: 'bg-amber-100 text-amber-700',
-  },
-  missing: {
-    text: 'Mancante',
-    className: 'bg-red-100 text-red-700',
-  },
-};
-
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
 const getDayKey = (date: Date) =>
@@ -162,7 +138,6 @@ export default function ChatInterface({
     parsedData,
     bookingData,
     summaryReady,
-    summaryData,
     confirmBooking,
     isConfirming,
     bookingSaved,
@@ -172,15 +147,15 @@ export default function ChatInterface({
     slotState,
     clarifications,
     recentlyUpdatedSlots,
+    highlightSlot,
+    handlePillBarUpdate,
+    handlePillBarClear,
   } = useChat();
 
   const [input, setInput] = useState('');
   const [inputSelection, setInputSelection] = useState<{ start: number; end: number } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
-  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
-  const [activeSlotKey, setActiveSlotKey] = useState<BookingSlotKey | null>(null);
-  const slotFlashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isConfirmTooltipVisible, setIsConfirmTooltipVisible] = useState(false);
   const confirmTooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -189,12 +164,6 @@ export default function ChatInterface({
   };
 
   useEffect(scrollToBottom, [messages]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const prefersExpandedSummary = window.innerWidth >= 768;
-    setIsSummaryOpen(prefersExpandedSummary);
-  }, []);
 
   const handleSendMessage = (override?: string) => {
     const messageToSend = override ?? input;
@@ -286,39 +255,6 @@ export default function ChatInterface({
     '--widget-primary-color': accentColor,
   } as CSSProperties;
 
-  const handleSlotClick = (slotKey: BookingSlotKey) => {
-    const slot = slotItems.find((item) => item.key === slotKey);
-    if (!slot || bookingSaved) return;
-
-    resetConfirmationError();
-    const baseTemplate =
-      slot.status === 'missing'
-        ? slot.editTemplate.missing
-        : slot.status === 'clarify'
-        ? slot.editTemplate.clarify
-        : slot.editTemplate.complete;
-    const placeholder = '...';
-    const template = `${baseTemplate}${placeholder}`;
-
-    setInput(template);
-    setInputSelection({
-      start: baseTemplate.length,
-      end: baseTemplate.length + placeholder.length,
-    });
-    requestAnimationFrame(() => {
-      messageInputRef.current?.focus();
-    });
-
-    if (slotFlashTimeoutRef.current) {
-      clearTimeout(slotFlashTimeoutRef.current);
-    }
-    setActiveSlotKey(slotKey);
-    slotFlashTimeoutRef.current = setTimeout(() => {
-      setActiveSlotKey(null);
-      slotFlashTimeoutRef.current = null;
-    }, 300);
-  };
-
   const showConfirmTooltip = () => {
     if (!shouldShowConfirmTooltip) return;
     if (confirmTooltipTimeoutRef.current) {
@@ -354,9 +290,6 @@ export default function ChatInterface({
 
   useEffect(() => {
     return () => {
-      if (slotFlashTimeoutRef.current) {
-        clearTimeout(slotFlashTimeoutRef.current);
-      }
       if (confirmTooltipTimeoutRef.current) {
         clearTimeout(confirmTooltipTimeoutRef.current);
       }
@@ -428,109 +361,6 @@ export default function ChatInterface({
       className="relative flex h-full min-h-full flex-col bg-gray-50"
       style={accentVars}
     >
-        {bookingFlowActive && (
-          <div className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 px-4 py-3 backdrop-blur">
-            <div className="flex items-center justify-between gap-3">
-              <div className="space-y-1">
-                <h2 className="text-sm font-semibold text-gray-700">
-                  Panoramica prenotazione
-                </h2>
-                {!bookingSaved && pendingSlots.length > 0 && (
-                  <p className="text-xs text-gray-500">
-                    Clicca su un dato per aggiornarlo
-                  </p>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsSummaryOpen((prev) => !prev)}
-                className="text-xs font-semibold underline-offset-4 transition hover:underline"
-                style={{ color: 'var(--widget-primary-color)' }}
-                aria-expanded={isSummaryOpen}
-              >
-                {isSummaryOpen ? 'Nascondi' : 'Vedi riepilogo'}
-              </button>
-            </div>
-            {isSummaryOpen && (
-              <div className="mt-3 space-y-3">
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 md:grid-cols-3">
-                  {slotItems.map(
-                    ({ key, label, status, displayValue, helper, isRecent, hasValue }) => {
-                      const statusStyles =
-                        status === 'complete'
-                          ? 'border-green-200 bg-green-50/70 hover:bg-green-100'
-                          : status === 'clarify'
-                          ? 'border-amber-200 bg-amber-50/70 hover:bg-amber-100'
-                          : 'border-red-200 bg-red-50/70 hover:bg-red-100';
-
-                      const badge = SLOT_STATUS_LABEL[status];
-                      const highlightClass =
-                        activeSlotKey === key
-                          ? 'ring-2 ring-[var(--widget-primary-color)] ring-offset-2 ring-offset-white'
-                          : isRecent
-                          ? 'ring-2 ring-[var(--widget-primary-color)] ring-opacity-50'
-                          : '';
-
-                      const className = [
-                        'text-left rounded-lg border px-2 py-1.5 text-xs transition focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:px-3 sm:py-2 sm:text-sm',
-                        statusStyles,
-                        highlightClass,
-                        bookingSaved ? 'cursor-default opacity-80 hover:bg-inherit focus:ring-0' : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ');
-
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => handleSlotClick(key)}
-                          className={className}
-                          disabled={bookingSaved}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:text-xs">
-                              {label}
-                            </p>
-                            <span
-                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold sm:text-xs ${badge.className}`}
-                            >
-                              {badge.text}
-                            </span>
-                          </div>
-                          <p className="mt-1 text-xs text-gray-900 sm:text-sm">
-                            {displayValue ||
-                              (status === 'missing'
-                                ? 'Dato mancante'
-                                : hasValue
-                                ? 'Dato da confermare'
-                                : 'Dato mancante')}
-                          </p>
-                          {helper && (
-                            <p className="mt-1 text-[11px] text-amber-700 sm:text-xs">
-                              {helper}
-                            </p>
-                          )}
-                        </button>
-                      );
-                    }
-                  )}
-                </div>
-                {clarifications.length > 0 && (
-                  <div className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                    Alcuni dati sono generici o ambigui: conferma{' '}
-                    {clarifications
-                      .map(
-                        ({ slot }) => SLOT_CONFIG.find((item) => item.key === slot)?.label ?? slot
-                      )
-                      .join(', ')}
-                    .
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
         <div className="flex-1 overflow-y-auto px-4 pb-28 pt-4 space-y-4">
           {messages
             .slice(1)
@@ -558,9 +388,6 @@ export default function ChatInterface({
                 </div>
               );
             })}
-          {bookingFlowActive && summaryReady && summaryData && (
-            <BookingSummaryCard data={summaryData} />
-          )}
           {isLoading && <Typing />}
           <div ref={messagesEndRef} />
         </div>
@@ -574,6 +401,17 @@ export default function ChatInterface({
             <p className="text-xs text-gray-500">
               Dati da completare o confermare: {pendingSlots.map((slot) => slot.label).join(', ')}
             </p>
+          )}
+          {clarifications.length > 0 && (
+            <div className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+              Alcuni dati sono generici o ambigui: conferma{' '}
+              {clarifications
+                .map(
+                  ({ slot }) => SLOT_CONFIG.find((item) => item.key === slot)?.label ?? slot
+                )
+                .join(', ')}
+              .
+            </div>
           )}
           {bookingSaved && (
             <p className="text-sm text-green-600">
@@ -623,6 +461,14 @@ export default function ChatInterface({
           )}
         </div>
         <div className="fixed bottom-0 left-0 right-0 z-40">
+          {bookingFlowActive && (
+            <BookingPillBar
+              slots={slotState}
+              highlightSlot={highlightSlot}
+              updateSlotValue={handlePillBarUpdate}
+              onClearSlot={handlePillBarClear}
+            />
+          )}
           <MessageInput
             input={input}
             handleInputChange={handleInputChange}
@@ -633,42 +479,6 @@ export default function ChatInterface({
             onSelectionHandled={() => setInputSelection(null)}
           />
         </div>
-    </div>
-  );
-}
-
-function BookingSummaryCard({ data }: { data: SummaryData }) {
-  const isoDate = data.bookingDateTime ? new Date(data.bookingDateTime) : null;
-  const validDate = isoDate && !Number.isNaN(isoDate.getTime()) ? isoDate : null;
-  const dateLabel =
-    data.dateDisplay ||
-    (validDate ? validDate.toLocaleDateString('it-IT') : '—');
-  const timeLabel =
-    data.timeDisplay ||
-    (validDate
-      ? validDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
-      : '—');
-
-  return (
-    <div className="rounded-lg border border-indigo-200 bg-white p-4 text-sm text-gray-900 shadow-sm">
-      <h3 className="mb-3 text-sm font-semibold">Riepilogo prenotazione</h3>
-      <dl className="space-y-2">
-        <SummaryRow label="Nome" value={data.nome} />
-        <SummaryRow label="Telefono" value={data.telefono} />
-        <SummaryRow label="Data" value={dateLabel} />
-        <SummaryRow label="Orario" value={timeLabel} />
-        <SummaryRow label="Persone" value={`${data.partySize}`} />
-        <SummaryRow label="Allergie/Richieste" value={data.allergeni || 'Nessuna'} />
-      </dl>
-    </div>
-  );
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between gap-4">
-      <dt className="text-gray-500">{label}</dt>
-      <dd className="font-medium text-gray-900 text-right">{value || '—'}</dd>
     </div>
   );
 }
