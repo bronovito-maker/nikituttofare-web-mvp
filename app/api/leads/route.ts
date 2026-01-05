@@ -3,16 +3,16 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { Customer, Conversation } from '@/lib/types';
 // Importa i nostri helper e ID
-import {
-  listViewRowsById,
-  createTableRowById,
-  updateTableRowById,
-} from '@/lib/noco-helpers';
-import {
-  NC_TABLE_CUSTOMERS_ID,
-  NC_VIEW_CUSTOMERS_ID,
-  NC_TABLE_CONVERSATIONS_ID,
-} from '@/lib/noco-ids';
+// import {
+//   listViewRowsById,
+//   createTableRowById,
+//   updateTableRowById,
+// } from '@/lib/noco-helpers';
+// import {
+//   NC_TABLE_CUSTOMERS_ID,
+//   NC_VIEW_CUSTOMERS_ID,
+//   NC_TABLE_CONVERSATIONS_ID,
+// } from '@/lib/noco-ids';
 // @ts-ignore: nocodb-sdk non espone direttamente il tipo Filterv1
 import type { lib as nocoLib } from 'nocodb-sdk';
 
@@ -43,78 +43,19 @@ async function findOrCreateCustomer(
   telefono?: string,
   email?: string
 ): Promise<Customer> {
-
-  let whereParts: string[] = [`(tenant_id,eq,${tenantId})`];
-  let searchClauses: string[] = [];
-
-  if (telefono) {
-    searchClauses.push(`(phone_number,eq,${telefono.trim()})`);
-  }
-  if (email) {
-    searchClauses.push(`(email,eq,${email.trim().toLowerCase()})`);
-  }
-
-  if (searchClauses.length > 0) {
-    whereParts.push(`~and(${searchClauses.join('~or')})`);
-
-    const queryParams = {
-      where: whereParts.join('~and'),
-      limit: 1,
-    };
-
-    const existingCustomers = await listViewRowsById(
-      NC_TABLE_CUSTOMERS_ID,
-      NC_VIEW_CUSTOMERS_ID,
-      queryParams
-    );
-
-    const candidateList = (existingCustomers as { list?: unknown[] })?.list ?? [];
-    if (candidateList.length > 0) {
-      const customer = candidateList[0] as Customer;
-
-      const updatedCustomer = await updateTableRowById(
-        NC_TABLE_CUSTOMERS_ID,
-        customer.Id,
-        {
-          full_name: nome || customer.full_name, // Usa il nome parsato se disponibile
-          visit_count: (Number(customer.visit_count) || 0) + 1,
-          last_visit_date: new Date().toISOString(),
-        }
-      );
-      const normalized =
-        Array.isArray(updatedCustomer) && updatedCustomer.length > 0
-          ? (updatedCustomer[0] as Customer)
-          : (updatedCustomer as Customer | null);
-      if (normalized && normalized.Id) {
-        return normalized;
-      }
-      return {
-        ...customer,
-        full_name: nome || customer.full_name,
-        visit_count: (Number(customer.visit_count) || 0) + 1,
+    // TODO: Replace this with Supabase logic
+    const mockCustomer: Customer = {
+        Id: 1,
+        tenant_id: tenantId,
+        full_name: nome,
+        phone_number: telefono,
+        email: email,
+        visit_count: 1,
         last_visit_date: new Date().toISOString(),
-      };
-    }
-  }
-
-  // Creazione nuovo cliente
-  const newCustomer = await createTableRowById(NC_TABLE_CUSTOMERS_ID, {
-    tenant_id: tenantId,
-    full_name: nome, // Il nome è già stato validato nel POST
-    phone_number: telefono ? telefono.trim() : undefined,
-    email: email ? email.trim().toLowerCase() : undefined,
-    visit_count: 1,
-    last_visit_date: new Date().toISOString(),
-  });
-
-  const normalizedNew =
-    Array.isArray(newCustomer) && newCustomer.length > 0
-      ? (newCustomer[0] as Customer)
-      : (newCustomer as Customer | null);
-  if (normalizedNew && normalizedNew.Id) {
-    return normalizedNew;
-  }
-  throw new Error('Creazione cliente non ha restituito un ID valido');
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    };
+    return mockCustomer;
 }
 
 /**
@@ -138,10 +79,6 @@ export async function POST(request: Request) {
       nome,
       telefono,
       email,
-      intent,
-      party_size,
-      booking_date_time,
-      notes,
     } = rawBody as LeadRequestBody;
 
     if (!messages || messages.length === 0) {
@@ -177,65 +114,9 @@ export async function POST(request: Request) {
     // 1. Trova o crea il cliente usando il nome pulito
     const customer = await findOrCreateCustomer(tenantId, validName, telefono, email);
 
-    // Sintesi conversazione basata sui dati estratti
-    const trimmedIntent = intent?.trim();
-    const conversationIntent =
-      trimmedIntent && trimmedIntent.length > 0 ? trimmedIntent : 'informazioni';
-    const normalizedIntent = conversationIntent.toLowerCase();
-    let summary = 'Conversazione informativa';
-
-    if (normalizedIntent === 'prenotazione') {
-      const partySizeDisplay =
-        typeof party_size === 'number' && Number.isFinite(party_size) && party_size > 0
-          ? party_size
-          : '?';
-      let dateStr = 'Data/Ora non specificata';
-      if (booking_date_time) {
-        try {
-          const parsed = new Date(booking_date_time);
-          if (!Number.isNaN(parsed.getTime())) {
-            dateStr = parsed.toLocaleString('it-IT', {
-              day: '2-digit',
-              month: 'short',
-              hour: '2-digit',
-              minute: '2-digit',
-            });
-          } else {
-            dateStr = booking_date_time;
-          }
-        } catch (err) {
-          console.warn('Errore formattazione data per summary:', booking_date_time, err);
-          dateStr = booking_date_time;
-        }
-      }
-      const noteStr = notes && notes.trim().length > 0 ? notes.trim() : 'Nessuna';
-      summary = `Prenotazione per ${validName} (${partySizeDisplay}p) il ${dateStr}. Note: ${noteStr}`;
-    } else if (messages.length > 0) {
-      const lastUserContent = messages.filter((m) => m.role === 'user').pop()?.content?.trim();
-      summary = lastUserContent && lastUserContent.length > 0 ? lastUserContent : 'Nessun messaggio utente';
-    }
-
-    const conversationLog: Partial<Conversation> = {
-      tenant_id: tenantId,
-
-      // --- MODIFICA 3: Fix per 400 Bad Request (Link NocoDB) ---
-      // I campi Link (FK) in NocoDB richiedono un ARRAY di ID
-      // @ts-ignore - Il tipo SDK è errato, NocoDB si aspetta un array per i link
-      customer_id: [customer.Id],
-
-      channel: 'web_widget',
-      // @ts-ignore - Il tipo SDK è troppo restrittivo, 'intent' è una stringa valida
-      intent: conversationIntent,
-      summary: summary.substring(0, 255),
-      raw_log_json: JSON.stringify(messages),
-      status: 'chiusa',
-    };
-
     // 2. Salva la conversazione
-    const savedConversation = await createTableRowById(
-      NC_TABLE_CONVERSATIONS_ID,
-      conversationLog
-    );
+    // TODO: Replace with Supabase logic
+    const savedConversation = { Id: Math.floor(Math.random() * 1000) };
 
     // 3. Restituisci gli ID
     return NextResponse.json({

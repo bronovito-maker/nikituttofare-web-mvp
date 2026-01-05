@@ -37,11 +37,11 @@ Interventi principali
 5. Integrazione personalizzata lato backend (`app/api/assist/route.ts`)
    - L’handler, oltre a costruire il prompt, tenta di caricare il profilo cliente tramite l’email presente in sessione. In caso di successo, passa l’oggetto a `buildSystemPrompt`; in caso di errore logga un warning e prosegue senza interrompere il flusso.
    - Stream verso OpenAI invariato, ma ora alimentato da prompt arricchito con insight storici.
-   - Il recupero del profilo cliente usa una cache in memoria con TTL 5 minuti (`lib/customer-personalization.ts`), riducendo le chiamate ripetute a NocoDB durante la stessa conversazione.
+   - Il recupero del profilo cliente usa una cache in memoria con TTL 5 minuti (`lib/customer-personalization.ts`), riducendo le chiamate ripetute a Supabase durante la stessa conversazione.
 
 6. Endpoint e stato per conferma multimodale
    - `useChat` marca automaticamente i messaggi di conferma già processati e gestisce conflitti con slot ambigui.
-   - Il pulsante “Conferma prenotazione” rimane disponibile, ma la conferma testuale viene intercettata solo quando il messaggio è totalmente affermativo: la logica esclude frasi con domande o richieste di modifica e invia feedback d’errore in caso di mancanza dati o fail lato NocoDB.
+   - Il pulsante “Conferma prenotazione” rimane disponibile, ma la conferma testuale viene intercettata solo quando il messaggio è totalmente affermativo: la logica esclude frasi con domande o richieste di modifica e invia feedback d’errore in caso di mancanza dati o fail lato Supabase.
    - Gli aggiornamenti degli slot provenienti dal parser sono ora ordinati tramite timestamp: un parse lento non può sovrascrivere correzioni manuali o dati più recenti (`hooks/useChat.tsx`).
 
 7. Affidabilità NLU e gestione fallback (`lib/chat-parser.ts`, `app/api/nlu/route.ts`)
@@ -62,11 +62,11 @@ Comportamento finale atteso
 2. L’interfaccia mostra in tempo reale lo stato di ogni slot, evidenziando quelli aggiornati dall’AI e permettendo correzioni rapide con un click.
 3. Il riepilogo finale riflette esclusivamente dati confermati (nessun valore ambiguo o incompleto) e la conferma può avvenire sia via pulsante sia via messaggio testuale.
 4. Utenti autenticati vengono accolti in maniera proattiva: nome precompilato, suggerimenti su party size/orario abituali e reminder dell’ultima prenotazione.
-5. Tutte le richieste a NocoDB restano dietro conferma esplicita dell’utente, garantendo coerenza tra lead e booking.
+5. Tutte le richieste a Supabase restano dietro conferma esplicita dell’utente, garantendo coerenza tra lead e booking.
 
 Suggerimenti futuri
 -------------------
 - Estendere il recupero storico anche a preferenze specifiche (tavolo finestra, allergie ricorrenti) e collegarlo a prompt UI (“Vuoi lo stesso tavolo?”).
 - Aggiungere test automatici sul parser (mockando l’endpoint `/api/nlu`) e sulla logica di auto-conferma per evitare regressioni.
-- Valutare un caching leggero della personalizzazione per ridurre le chiamate a NocoDB su conversazioni lunghe.
+- Valutare un caching leggero della personalizzazione per ridurre le chiamate a Supabase su conversazioni lunghe.
 - Documentare nel README la nuova pipeline slot → NLU → slot state e le istruzioni per configurare i modelli OpenAI dedicati (chat vs parser).

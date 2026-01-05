@@ -1,107 +1,101 @@
 import Link from 'next/link';
-import { Bot, Settings, Users, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ShieldCheck, Clock, Wrench, ArrowRight, Star } from 'lucide-react';
 
-export default function HomePage() {
+export default function Home() {
   return (
-    <div className="bg-white text-gray-800">
-      <section className="text-center py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <span className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
-            <Bot className="h-4 w-4" />
-            Receptionist AI multi-tenant
-          </span>
-          <h1 className="mt-6 text-4xl font-bold tracking-tight md:text-5xl">
-            Il tuo assistente intelligente, attivo 24/7
+    <div className="flex flex-col min-h-screen bg-white text-slate-900 font-sans">
+      
+      {/* HERO SECTION: Trust & Speed */}
+      <section className="relative py-20 px-6 md:px-12 lg:px-24 bg-white border-b border-slate-100">
+        <div className="max-w-4xl mx-auto text-center space-y-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-sm font-medium border border-blue-100">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+            </span>
+            Servizio Attivo H24 a Rimini & Riccione
+          </div>
+          
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 leading-tight">
+            Manutenzione d'Emergenza <br/>
+            <span className="text-blue-600">Semplice e Sicura.</span>
           </h1>
-          <p className="mt-4 text-lg text-gray-600 md:text-xl">
-            Rispondi subito ai tuoi clienti, raccogli contatti qualificati e gestisci prenotazioni senza perdere tempo.
+          
+          <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto">
+            Idraulici, Elettricisti e Fabbri certificati pronti a intervenire.
+            Ottieni una stima del prezzo garantita <strong>prima</strong> di prenotare.
           </p>
-          <div className="mt-10 flex justify-center gap-4">
-            <Link
-              href="/login"
-              className="rounded-lg bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow hover:bg-blue-700 transition-colors"
-            >
-              Accedi alla dashboard
-            </Link>
-            <Link
-              href="/chat"
-              className="rounded-lg border border-blue-200 px-6 py-3 text-base font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
-            >
-              Guarda la demo
-            </Link>
+
+          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+            {/* IL TASTO ARANCIONE (FIXED) */}
+            <Button asChild size="lg" className="bg-orange-600 hover:bg-orange-700 text-white font-bold text-lg px-8 py-6 h-auto shadow-lg shadow-orange-100 transition-all hover:scale-105">
+              <Link href="/chat">
+                Richiedi Intervento Ora <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+            
+            <p className="text-sm text-slate-500 mt-2 sm:mt-0">
+              <ShieldCheck className="inline w-4 h-4 mr-1 text-green-600"/> 
+              Nessun pagamento anticipato richiesto.
+            </p>
           </div>
         </div>
       </section>
 
-      <section className="py-16">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold">Come funziona</h2>
-          <p className="mt-2 text-gray-600">Configura, attiva, rilassati. Bastano pochi minuti.</p>
-          <div className="mt-12 grid gap-8 md:grid-cols-3">
-            <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-                <Settings className="h-6 w-6 text-blue-600" />
-              </div>
-              <h3 className="mt-4 text-xl font-semibold">1. Configura</h3>
-              <p className="mt-2 text-sm text-gray-600">
-                Inserisci orari, servizi, tono di voce e tutte le informazioni che vuoi far conoscere ai tuoi clienti.
-              </p>
-            </div>
-            <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-                <Zap className="h-6 w-6 text-blue-600" />
-              </div>
-              <h3 className="mt-4 text-xl font-semibold">2. Integra</h3>
-              <p className="mt-2 text-sm text-gray-600">
-                Incolla il widget sul tuo sito, collega WhatsApp o usa la pagina chat dedicata pronta all’uso.
-              </p>
-            </div>
-            <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-                <Users className="h-6 w-6 text-blue-600" />
-              </div>
-              <h3 className="mt-4 text-xl font-semibold">3. Cresci</h3>
-              <p className="mt-2 text-sm text-gray-600">
-                L’assistente risponde ai clienti, raccoglie contatti e prenotazioni che trovi subito nella dashboard.
-              </p>
-            </div>
+      {/* TRUST SECTION: Why Us? */}
+      <section className="py-16 px-6 bg-slate-50">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8">
+            <FeatureCard 
+              icon={<Clock className="w-10 h-10 text-blue-600" />}
+              title="Intervento in 60 Minuti"
+              desc="La nostra rete locale garantisce tempi di risposta immediati per le urgenze critiche."
+            />
+            <FeatureCard 
+              icon={<Wrench className="w-10 h-10 text-blue-600" />}
+              title="Prezzi Chiari"
+              desc="L'Intelligenza Artificiale calcola un range di prezzo preciso basato sulla foto del danno. Niente sorprese."
+            />
+            <FeatureCard 
+              icon={<ShieldCheck className="w-10 h-10 text-blue-600" />}
+              title="Tecnici Verificati"
+              desc="Ogni artigiano è certificato e valutato. Se qualcosa va storto, garantiamo noi."
+            />
           </div>
         </div>
       </section>
 
-      <section className="bg-gray-50 py-16">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold">Perfetto per ogni attività</h2>
-          <p className="mt-2 text-gray-600">Personalizza il receptionist per qualsiasi settore.</p>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {['Ristoranti & Bar', 'Negozi e eCommerce', 'Studi professionali', 'Beauty & Wellness'].map((item) => (
-              <div key={item} className="rounded-xl bg-white p-6 text-left shadow-sm ring-1 ring-gray-100">
-                <p className="text-lg font-semibold text-gray-800">{item}</p>
-                <p className="mt-2 text-sm text-gray-600">
-                  Risposte automatiche, promozioni, prenotazioni e raccolta contatti senza fatica.
-                </p>
-              </div>
-            ))}
+      {/* SOCIAL PROOF: Non siamo soli */}
+      <section className="py-16 px-6 bg-white border-t border-slate-100">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-2xl font-bold mb-8">Già scelto da oltre 50 Hotel e B&B in Riviera</h2>
+          <div className="flex flex-wrap justify-center gap-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+             {/* Placeholder loghi - In produzione mettere SVG reali */}
+             <span className="text-xl font-bold text-slate-400">HOTEL SAVOIA</span>
+             <span className="text-xl font-bold text-slate-400">RESIDENCE MARE</span>
+             <span className="text-xl font-bold text-slate-400">B&B RIVIERA</span>
+             <span className="text-xl font-bold text-slate-400">GRAND HOTEL</span>
           </div>
         </div>
       </section>
 
-      <section className="py-20 text-center">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold">Pronto a non perdere più clienti?</h2>
-          <p className="mt-3 text-gray-600">
-            Prova gratuitamente la piattaforma e attiva il tuo receptionist AI in pochi minuti.
-          </p>
-          <div className="mt-8 flex justify-center">
-            <Link
-              href="/login"
-              className="rounded-lg bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow hover:bg-blue-700 transition-colors"
-            >
-              Inizia subito
-            </Link>
-          </div>
-        </div>
-      </section>
     </div>
+  );
+}
+
+// Componente di supporto per le Card
+function FeatureCard({ icon, title, desc }: { icon: any, title: string, desc: string }) {
+  return (
+    <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow bg-white">
+      <CardHeader>
+        <div className="mb-2 p-3 bg-blue-50 w-fit rounded-xl">{icon}</div>
+        <CardTitle className="text-xl font-bold text-slate-900">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-slate-600 leading-relaxed">{desc}</p>
+      </CardContent>
+    </Card>
   );
 }

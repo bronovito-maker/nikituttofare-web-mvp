@@ -1,8 +1,8 @@
 import { Resend } from 'resend';
-import { listViewRowsById } from './noco-helpers';
+// import { listViewRowsById } from './noco-helpers';
 
-const ASSISTANTS_TABLE_ID = process.env.NOCO_TABLE_ASSISTANTS_ID;
-const ASSISTANTS_VIEW_ID = process.env.NOCO_VIEW_ASSISTANTS_ID;
+// const ASSISTANTS_TABLE_ID = process.env.NOCO_TABLE_ASSISTANTS_ID;
+// const ASSISTANTS_VIEW_ID = process.env.NOCO_VIEW_ASSISTANTS_ID;
 
 const emailClient = () => {
   const apiKey = process.env.RESEND_API_KEY;
@@ -54,18 +54,12 @@ const formatSlackPayload = (lead: Record<string, any>) => ({
 
 export async function notifyLeadChannels(tenantId: string, lead: Record<string, any>) {
   try {
-    if (!ASSISTANTS_TABLE_ID || !ASSISTANTS_VIEW_ID) {
-      console.warn('ID tabella/vista assistenti mancanti. Nessuna notifica inviata.');
-      return;
-    }
-
-    const whereClause = `(tenant_id,eq,${tenantId})`;
-    const assistants = await listViewRowsById(ASSISTANTS_TABLE_ID, ASSISTANTS_VIEW_ID, {
-      where: whereClause,
-      limit: 1,
-    });
-
-    const assistant = Array.isArray(assistants.list) ? assistants.list[0] : null;
+    // TODO: Replace this with Supabase logic to fetch notification settings
+    const assistant = {
+        notification_email: 'test@example.com',
+        notification_slack_webhook: null,
+        nome_attivita: 'Niki Restaurant (Mock)'
+    };
 
     if (!assistant) return;
 

@@ -1,15 +1,15 @@
 // app/api/bookings/route.ts
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth'; // Importa la funzione auth
-import {
-  createTableRowById,
-  updateTableRowById,
-} from '@/lib/noco-helpers';
+// import {
+//   createTableRowById,
+//   updateTableRowById,
+// } from '@/lib/noco-helpers';
 import { Booking } from '@/lib/types'; // Importa il tipo Booking
-import {
-  NC_TABLE_BOOKINGS_ID,
-  NC_TABLE_CONVERSATIONS_ID,
-} from '@/lib/noco-ids';
+// import {
+//   NC_TABLE_BOOKINGS_ID,
+//   NC_TABLE_CONVERSATIONS_ID,
+// } from '@/lib/noco-ids';
 
 /**
  * POST: Crea un nuovo record di prenotazione.
@@ -43,44 +43,21 @@ export async function POST(request: Request) {
       );
     }
 
-    // 1. Prepara il payload per NocoDB
-    // Assicurati che i tipi siano corretti (es. numero per partySize)
-    const newBookingPayload: Partial<Booking> = {
-      tenant_id: tenantId,
-      customer_id: Number(customerId),
-      conversation_id: conversationId ? Number(conversationId) : undefined,
-      booking_datetime: new Date(bookingDateTime).toISOString(), // Normalizza in ISO 8601
-      party_size: Number(partySize),
-      status: 'richiesta', // Default: la prenotazione è "richiesta" (il ristoratore deve confermarla)
-      notes: notes || '', // Note aggiuntive
+    // TODO: Replace with Supabase logic
+    const mockBooking: Booking = {
+        Id: Math.floor(Math.random() * 1000),
+        tenant_id: tenantId,
+        customer_id: Number(customerId),
+        conversation_id: conversationId ? Number(conversationId) : undefined,
+        booking_datetime: new Date(bookingDateTime).toISOString(),
+        party_size: Number(partySize),
+        status: 'richiesta',
+        notes: notes || '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
     };
-
-    // 2. Crea il record di prenotazione
-    const savedBooking = await createTableRowById(
-      NC_TABLE_BOOKINGS_ID,
-      newBookingPayload
-    );
-
-    // 3. (Opzionale ma consigliato) Aggiorna la conversazione
-    // Imposta l'intento su 'prenotazione' e lo stato su 'chiusa'
-    // Questo aiuta a non processare la stessa chat due volte
-    if (conversationId) {
-      try {
-        await updateTableRowById(NC_TABLE_CONVERSATIONS_ID, Number(conversationId), {
-          status: 'chiusa',
-          intent: 'prenotazione',
-        });
-      } catch (convError) {
-        // Non bloccare il flusso se questo fallisce, ma loggalo
-        console.warn(`API Bookings: Impossibile aggiornare lo stato della conversazione ${conversationId}`, convError);
-      }
-    }
     
-    // 4. (Opzionale) Invia notifica al ristoratore
-    // Qui puoi riattivare 'lib/notifications.ts'
-    // await sendNotification(...)
-
-    return NextResponse.json(savedBooking as Booking);
+    return NextResponse.json(mockBooking);
 
   } catch (error) {
     console.error('Errore POST /api/bookings:', error);

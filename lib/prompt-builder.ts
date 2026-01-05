@@ -1,8 +1,8 @@
 // lib/prompt-builder.ts
 import { Tenant } from './types';
 // Importa i nostri NUOVI helper e ID
-import { readTableRowById } from './noco-helpers';
-import { NC_TABLE_TENANTS_ID } from './noco-ids';
+// import { readTableRowById } from './noco-helpers';
+// import { NC_TABLE_TENANTS_ID } from './noco-ids';
 import type { CustomerPersonalization } from './customer-personalization';
 
 /**
@@ -13,36 +13,28 @@ import type { CustomerPersonalization } from './customer-personalization';
 export async function getAssistantConfig(
   tenantId: string | number
 ): Promise<Tenant | null> {
-  // Validazione input
+  // TODO: Replace this with Supabase logic
   if (!tenantId) {
     console.error('getAssistantConfig: tenantId nullo o non definito.');
     return null;
   }
+  
+  const mockTenant: Tenant = {
+    Id: 1,
+    name: 'Niki Restaurant (Mock)',
+    phone_number: '1234567890',
+    address: 'Via Codice, 1, 00100 Roma',
+    opening_hours_json: '{"lun": "10-14, 18-22", "mar": "10-14, 18-22", "mer": "10-14, 18-22", "gio": "10-14, 18-22", "ven": "10-14, 18-24", "sab": "18-24", "dom": "chiuso"}',
+    system_prompt: 'Sei un assistente per un ristorante. Il tuo obiettivo è aiutare i clienti a prenotare un tavolo e rispondere alle loro domande.',
+    extra_info: 'Il parcheggio è disponibile in strada.',
+    notification_email: 'test@example.com',
+    menu_pdf_url: 'https://example.com/menu.pdf',
+    menu_text: 'Carbonara, Amatriciana, Gricia',
+    ai_tone: 'amichevole',
+    widget_color: '#ff0000',
+  };
 
-  // VALIDAZIONE ID STELLA POLARE
-  if (!NC_TABLE_TENANTS_ID) {
-    console.error('getAssistantConfig: ID Tabella Tenants non definito in noco-ids.ts');
-    return null;
-  }
-
-  try {
-    // Usa il NUOVO helper con gli ID centralizzati
-    const config = await readTableRowById(
-      NC_TABLE_TENANTS_ID,
-      Number(tenantId) // Assicura che sia un numero
-    );
-    
-    if (!config || !(config as Tenant).Id) {
-        console.warn(`getAssistantConfig: Nessuna configurazione trovata per tenantId ${tenantId}`);
-        return null;
-    }
-
-    return config as Tenant;
-
-  } catch (error) {
-    console.error(`Errore nel recupero della configurazione per il tenant ${tenantId}:`, error);
-    return null;
-  }
+  return mockTenant;
 }
 
 /**

@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import {
-  getTenantBookings,
-  getTenantCustomers,
-} from '@/lib/noco-helpers';
+// import {
+//   getTenantBookings,
+//   getTenantCustomers,
+// } from '@/lib/noco-helpers';
 import type { Booking, Customer } from '@/lib/types';
 
 const parseNumberParam = (value: string | null, fallback: number) => {
@@ -43,64 +43,58 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 });
   }
 
-  const tenantId = Number(session.user.tenantId);
-  const { searchParams } = new URL(request.url);
-
-  const limit = parseNumberParam(searchParams.get('limit'), 50);
-  const offset = parseNumberParam(searchParams.get('offset'), 0);
-  const status = searchParams.get('status') ?? undefined;
-  const range = searchParams.get('range') ?? undefined;
-  const fromParam = searchParams.get('from');
-  const toParam = searchParams.get('to');
-
-  let from: Date | string | undefined = fromParam ?? undefined;
-  let to: Date | string | undefined = toParam ?? undefined;
-
-  if (range === 'today') {
-    const todayStart = startOfDay(new Date());
-    from = todayStart;
-    to = addDays(todayStart, 1);
-  } else if (range === 'upcoming') {
-    from = new Date();
-    to = undefined;
-  }
-
   try {
-    const bookingsResult = await getTenantBookings(tenantId, {
-      limit,
-      offset,
-      status,
-      from,
-      to,
-      sort: '-booking_datetime',
-    });
+    // TODO: Replace this with Supabase logic
+    const mockBookings: Booking[] = [
+      {
+        Id: 1,
+        tenant_id: Number(session.user.tenantId),
+        customer_id: 1,
+        booking_datetime: new Date().toISOString(),
+        party_size: 2,
+        status: 'confermata',
+        notes: 'Tavolo vicino alla finestra',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        Id: 2,
+        tenant_id: Number(session.user.tenantId),
+        customer_id: 2,
+        booking_datetime: new Date().toISOString(),
+        party_size: 4,
+        status: 'richiesta',
+        notes: 'Seggiolone per bambino',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ];
 
-    const bookings = bookingsResult.list ?? [];
+    const mockCustomers: Customer[] = [
+        { Id: 1, tenant_id: Number(session.user.tenantId), full_name: 'Mario Rossi (Mock)', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { Id: 2, tenant_id: Number(session.user.tenantId), full_name: 'Luigi Verdi (Mock)', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    ]
 
-    const customerIds = uniqueNumbers(bookings.map((booking) => booking.customer_id));
-
-    let customersMap = new Map<number, Customer>();
-    if (customerIds.length > 0) {
-      const customersResult = await getTenantCustomers(tenantId, {
-        ids: customerIds,
-        limit: customerIds.length,
-      });
-      customersMap = new Map(
-        (customersResult.list ?? []).map((customer) => [
+    const customersMap = new Map(
+        mockCustomers.map((customer) => [
           Number(customer.Id),
           customer,
         ])
       );
-    }
 
-    const list = bookings.map((booking) => ({
+    const list = mockBookings.map((booking) => ({
       ...booking,
       customer: customersMap.get(Number(booking.customer_id)) ?? null,
     }));
 
     return NextResponse.json({
       list,
-      pageInfo: bookingsResult.pageInfo,
+      pageInfo: {
+        totalRows: mockBookings.length,
+        page: 1,
+        isFirstPage: true,
+        isLastPage: true,
+      },
     });
   } catch (error) {
     console.error('[API /api/dashboard/bookings] Errore:', error);

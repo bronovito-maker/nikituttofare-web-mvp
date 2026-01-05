@@ -1,10 +1,10 @@
-import { listViewRowsById } from '@/lib/noco-helpers';
-import {
-  NC_TABLE_CUSTOMERS_ID,
-  NC_VIEW_CUSTOMERS_ID,
-  NC_TABLE_BOOKINGS_ID,
-  NC_VIEW_BOOKINGS_ID,
-} from '@/lib/noco-ids';
+// import { listViewRowsById } from '@/lib/noco-helpers';
+// import {
+//   NC_TABLE_CUSTOMERS_ID,
+//   NC_VIEW_CUSTOMERS_ID,
+//   NC_TABLE_BOOKINGS_ID,
+//   NC_VIEW_BOOKINGS_ID,
+// } from '@/lib/noco-ids';
 
 type RawRecord = Record<string, any>;
 
@@ -42,103 +42,26 @@ export async function fetchCustomerPersonalization(
   tenantId: number,
   email?: string
 ): Promise<CustomerPersonalization | null> {
+  // TODO: Replace this with Supabase logic
   if (!email || !tenantId) {
     return null;
   }
-
-  const emailValue = sanitizeWhereValue(email.trim().toLowerCase());
-  if (!emailValue) return null;
-
-  const cacheKey = `${tenantId}|${emailValue}`;
-  const cached = personalizationCache.get(cacheKey);
-  const now = Date.now();
-  if (cached && cached.expiresAt > now) {
-    return cached.data;
-  }
-
-  const customerResult = await listViewRowsById(NC_TABLE_CUSTOMERS_ID, NC_VIEW_CUSTOMERS_ID, {
-    where: `(tenant_id,eq,${tenantId})~and((email,eq,${emailValue}))`,
-    limit: 1,
-  });
-
-  const customerRecord = (customerResult.list as RawRecord[])[0];
-  if (!customerRecord) {
-    personalizationCache.set(cacheKey, {
-      data: null,
-      expiresAt: now + CACHE_TTL_MS,
-    });
-    return null;
-  }
-
-  const customerId = Number(customerRecord.Id);
-  if (!Number.isFinite(customerId)) {
-    return null;
-  }
-
-  const bookingsResult = await listViewRowsById(NC_TABLE_BOOKINGS_ID, NC_VIEW_BOOKINGS_ID, {
-    where: `(tenant_id,eq,${tenantId})~and((customer_id,eq,${customerId}))`,
-    sort: '-booking_datetime',
-    limit: 10,
-  });
-
-  const bookings = (bookingsResult.list as RawRecord[]) ?? [];
-  const totalBookings = Number(bookingsResult.pageInfo?.totalRows ?? bookings.length) || bookings.length;
-
-  const lastBookingRecord = bookings[0];
-
-  let favoritePartySize: number | null = null;
-  const partySizeCounts = new Map<number, number>();
-  const timeCounts = new Map<string, number>();
-
-  bookings.forEach((booking) => {
-    const partySize = Number(booking.party_size);
-    if (Number.isFinite(partySize) && partySize > 0) {
-      partySizeCounts.set(partySize, (partySizeCounts.get(partySize) ?? 0) + 1);
-    }
-
-    const bookingIso = booking.booking_datetime as string | undefined;
-    if (bookingIso) {
-      const timeKey = toTimeKey(bookingIso);
-      if (timeKey) {
-        timeCounts.set(timeKey, (timeCounts.get(timeKey) ?? 0) + 1);
-      }
-    }
-  });
-
-  if (partySizeCounts.size > 0) {
-    favoritePartySize = [...partySizeCounts.entries()].sort((a, b) => b[1] - a[1])[0][0];
-  }
-
-  const preferredTimes =
-    timeCounts.size > 0
-      ? [...timeCounts.entries()]
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 3)
-          .map(([time]) => time)
-      : undefined;
-
-  const personalization: CustomerPersonalization = {
-    customerId,
-    fullName: customerRecord.full_name as string | undefined,
-    phoneNumber: customerRecord.phone_number as string | undefined,
-    email: customerRecord.email as string | undefined,
-    totalBookings,
-    lastBooking: lastBookingRecord
-      ? {
-          bookingId: Number(lastBookingRecord.Id),
-          bookingDateTime: String(lastBookingRecord.booking_datetime),
-          partySize: Number(lastBookingRecord.party_size) || null,
-          notes: (lastBookingRecord.notes as string) ?? null,
-        }
-      : undefined,
-    favoritePartySize,
-    preferredTimes,
+  
+  const mockPersonalization: CustomerPersonalization = {
+    customerId: 1,
+    fullName: 'Mario Rossi (Mock)',
+    phoneNumber: '0987654321',
+    email: email,
+    totalBookings: 5,
+    lastBooking: {
+      bookingId: 123,
+      bookingDateTime: new Date().toISOString(),
+      partySize: 2,
+      notes: 'Nessuna nota',
+    },
+    favoritePartySize: 2,
+    preferredTimes: ['20:00', '20:30'],
   };
 
-  personalizationCache.set(cacheKey, {
-    data: personalization,
-    expiresAt: now + CACHE_TTL_MS,
-  });
-
-  return personalization;
+  return mockPersonalization;
 }

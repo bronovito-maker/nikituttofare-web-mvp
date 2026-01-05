@@ -1,59 +1,40 @@
 // auth.ts
-import NextAuth from 'next-auth';
-import Credentials from 'next-auth/providers/credentials';
-// --- MODIFICATO: Importa l'adapter ---
-import { NocoAdapter } from '@/lib/noco-adapter';
+import NextAuth from "next-auth"
+import Credentials from "next-auth/providers/credentials"
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
-  // --- MODIFICATO: Usa l'adapter ---
-  adapter: NocoAdapter(),
+export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
+    // Login semplificato per sviluppo: accetta qualsiasi email
     Credentials({
+      name: "Ospite",
       credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
+        email: { label: "Email", type: "email" },
       },
-      // --- MODIFICATO: La logica authorize è ora DENTRO l'adapter ---
-      // L'adapter DEVE esporre una funzione authorize se si usa Credentials
-      // Se NocoAdapter() non ha authorize, NextAuth userà getUserByEmail + confronto hash
-      // Assicuriamoci che NocoAdapter abbia la funzione authorize come l'abbiamo scritta
-      async authorize(credentials) {
-        // NextAuth passa l'adapter qui se presente
-        // @ts-ignore // NextAuth type qui può essere complesso
-        const adapter = NocoAdapter();
-        // @ts-ignore
-        if (adapter.authorize) {
-          // @ts-ignore
-          return await adapter.authorize(credentials);
+      authorize: async (credentials) => {
+        // Simuliamo un utente valido
+        return { 
+          id: "user-1", 
+          name: "Ospite", 
+          email: credentials.email as string 
         }
-        // Fallback se authorize non è definito (improbabile con il nostro codice)
-        console.error('Funzione Authorize non trovata nell\'adapter!');
-        return null;
       },
     }),
   ],
-  session: {
-    strategy: 'jwt',
+  session: { strategy: "jwt" }, // Nessun database richiesto
+  pages: {
+    signIn: "/login", // La tua pagina di login custom
   },
   callbacks: {
-    async jwt({ token, user }) {
-      // Aggiungi tenantId al token JWT dopo il login
-      if (user) {
-        token.tenantId = (user as any).tenantId; // Assicurati che authorize ritorni tenantId
-        token.name = user.name; // Includi il nome se disponibile
+    authorized({ auth, request: { nextUrl } }) {
+      const isLoggedIn = !!auth?.user;
+      const isOnDashboard = nextUrl.pathname.startsWith('/dashboard');
+      const isOnChat = nextUrl.pathname.startsWith('/chat');
+
+      if (isOnDashboard) {
+        if (isLoggedIn) return true;
+        return false; // Reindirizza al login
       }
-      return token;
-    },
-    async session({ session, token }) {
-      // Aggiungi tenantId alla sessione dall'oggetto token
-      if (token && session.user) {
-        (session.user as any).tenantId = token.tenantId;
-        session.user.name = token.name as string | null | undefined;
-      }
-      return session;
+      return true;
     },
   },
-  pages: {
-    signIn: '/login',
-  },
-});
+})

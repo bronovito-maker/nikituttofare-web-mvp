@@ -1,9 +1,10 @@
+
 // app/api/contact/route.ts
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { generateTicketId } from '@/lib/utils';
 
-// Lo schema di validazione rimane invariato
+// 1. Zod Schema Stricter: Using .strict()
 const ContactSchema = z.object({
   name: z.string().min(2, "Il nome è troppo corto").max(50, "Il nome è troppo lungo"),
   phone: z.string().min(8, "Numero di telefono non valido").max(20, "Numero di telefono non valido"),
@@ -19,53 +20,84 @@ const ContactSchema = z.object({
   }).optional(),
   ai: z.any().optional(),
   imageUrl: z.string().url().optional(),
-});
+}).strict(); // No extra fields allowed
+
+// 2. In-memory Rate Limiter
+const rateLimitStore: Record<string, { count: number, timestamp: number }> = {};
+const RATE_LIMIT_COUNT = 10; // Max requests
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute in milliseconds
+
+const isRateLimited = (ip: string) => {
+  const now = Date.now();
+  const record = rateLimitStore[ip];
+
+  if (record && now - record.timestamp < RATE_LIMIT_WINDOW) {
+    if (record.count >= RATE_LIMIT_COUNT) {
+      return true; // Rate limit exceeded
+    }
+    record.count++;
+  } else {
+    // New record or window expired
+    rateLimitStore[ip] = { count: 1, timestamp: now };
+  }
+  return false;
+};
+
 
 export async function POST(req: Request) {
+  // Rate Limiting Check
+  const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
+  if (isRateLimited(ip)) {
+    // 3. Sanitized Logging
+    console.warn(`Rate limit exceeded for IP: ${ip}`);
+    return NextResponse.json({ error: "Troppe richieste. Riprova più tardi." }, { status: 429 });
+  }
+
   try {
     const body = await req.json();
     const validation = ContactSchema.safeParse(body);
 
     if (!validation.success) {
-      console.error("Errore di validazione:", validation.error.flatten().fieldErrors);
-      return NextResponse.json({ error: "Dati inviati non validi" }, { status: 400 });
+      // 3. Sanitized Logging - Log only the fact of validation error, not the data
+      console.warn({
+        message: "Validation failed for /api/contact",
+        errors: validation.error.flatten().fieldErrors
+      });
+      return NextResponse.json({ error: "Dati inviati non validi o incompleti.", details: validation.error.flatten().fieldErrors }, { status: 400 });
     }
     
-    // --- MODIFICA CHIAVE ---
-    // 1. Generiamo il Ticket ID QUI, subito.
     const ticketId = generateTicketId();
 
-    // 2. Aggiungiamo il ticketId al payload che inviamo a n8n
     const payloadForN8n = {
       ...validation.data,
-      ticketId: ticketId, // Includiamo l'ID generato
+      ticketId: ticketId,
     };
-    // --- FINE MODIFICA ---
 
     const n8nWebhookUrl = process.env.N8N_CONTACT_WEBHOOK_URL;
     if (!n8nWebhookUrl) {
+      // This is a server error, so logging it is fine.
+      console.error("Webhook URL for n8n not configured.");
       throw new Error("Webhook URL per n8n non configurato.");
     }
     
-    // Invia i dati a n8n (ma non aspettare la sua risposta completa)
     fetch(n8nWebhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payloadForN8n), // Invia il payload con il ticketId
+      body: JSON.stringify(payloadForN8n),
     }).catch(err => {
-      // Logga l'errore ma non bloccare la risposta al cliente
-      console.error("Errore nell'invio a n8n (asincrono):", err);
+      // 3. Sanitized Logging - Log the error, but not the payload
+      console.error("Error sending to n8n (async)", { error: err });
     });
 
-    // 3. Rispondiamo IMMEDIATAMENTE al frontend con il ticketId
     return NextResponse.json({
       ok: true,
       message: "Richiesta ricevuta con successo.",
-      ticketId: ticketId, // Restituiamo l'ID che abbiamo creato!
+      ticketId: ticketId,
     });
 
   } catch (error: any) {
-    console.error("Errore nell'API /api/contact:", error);
+    // 3. Sanitized Logging - Avoid logging the whole request or error object if it contains PII
+    console.error("Generic error in /api/contact", { error: error.message });
     return NextResponse.json({ error: "Errore interno del server." }, { status: 500 });
   }
 }

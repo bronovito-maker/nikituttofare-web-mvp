@@ -1,9 +1,9 @@
 // app/api/assistente/route.ts
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth'; // Importa la funzione auth
-import { readTableRowById, updateTableRowById } from '@/lib/noco-helpers';
+// import { readTableRowById, updateTableRowById } from '@/lib/noco-helpers';
 import { Tenant } from '@/lib/types'; // Importa il nostro tipo Tenant
-import { NC_TABLE_TENANTS_ID } from '@/lib/noco-ids';
+// import { NC_TABLE_TENANTS_ID } from '@/lib/noco-ids';
 
 /**
  * GET: Recupera la configurazione corrente del tenant loggato
@@ -17,14 +17,23 @@ export async function GET() {
   try {
     const tenantId = session.user.tenantId;
     
-    // Leggi la riga dalla tabella 'tenants' usando il tenantId
-    const config = await readTableRowById(NC_TABLE_TENANTS_ID, Number(tenantId));
+    // TODO: Replace this with Supabase logic
+    const mockTenant: Tenant = {
+        Id: 1,
+        name: 'Niki Restaurant (Mock)',
+        phone_number: '1234567890',
+        address: 'Via Codice, 1, 00100 Roma',
+        opening_hours_json: '{"lun": "10-14, 18-22", "mar": "10-14, 18-22", "mer": "10-14, 18-22", "gio": "10-14, 18-22", "ven": "10-14, 18-24", "sab": "18-24", "dom": "chiuso"}',
+        system_prompt: 'Sei un assistente per un ristorante. Il tuo obiettivo è aiutare i clienti a prenotare un tavolo e rispondere alle loro domande.',
+        extra_info: 'Il parcheggio è disponibile in strada.',
+        notification_email: 'test@example.com',
+        menu_pdf_url: 'https://example.com/menu.pdf',
+        menu_text: 'Carbonara, Amatriciana, Gricia',
+        ai_tone: 'amichevole',
+        widget_color: '#ff0000',
+    };
     
-    if (!config) {
-         return NextResponse.json({ error: 'Configurazione non trovata' }, { status: 404 });
-    }
-    
-    return NextResponse.json(config as Tenant);
+    return NextResponse.json(mockTenant);
 
   } catch (error) {
     console.error('Errore GET /api/assistente:', error);
@@ -45,72 +54,15 @@ export async function PUT(request: Request) {
     const tenantId = session.user.tenantId;
     const payload = (await request.json()) as Partial<Tenant> & Record<string, unknown>;
 
-    const {
-      system_prompt,
-      opening_hours_json,
-      menu_pdf_url,
-      menu_text,
-      ai_tone,
-      widget_color,
-    } = payload;
+    // TODO: Replace this with Supabase logic
+    console.log('Mocking update for tenant:', tenantId);
+    console.log('Payload:', payload);
 
-    const updatedData: Partial<Tenant> = {};
-
-    const assignIfString = (key: keyof Tenant, value: unknown) => {
-      if (value === undefined) return;
-
-      if (key === 'opening_hours_json' && value === '') {
-        updatedData[key] = null as Tenant[keyof Tenant];
-        return;
-      }
-
-      if (value === null) {
-        updatedData[key] = null as Tenant[keyof Tenant];
-        return;
-      }
-
-      if (typeof value === 'string') {
-        updatedData[key] = value;
-        return;
-      }
-
-      updatedData[key] = String(value) as Tenant[keyof Tenant];
-    };
-
-    assignIfString('system_prompt', system_prompt);
-    assignIfString('opening_hours_json', opening_hours_json);
-    assignIfString('menu_pdf_url', menu_pdf_url);
-    assignIfString('menu_text', menu_text);
-    assignIfString('ai_tone', ai_tone);
-    assignIfString('widget_color', widget_color);
-
-    const allowedBaseFields: Array<keyof Tenant> = [
-      'name',
-      'phone_number',
-      'address',
-      'notification_email',
-      'extra_info',
-    ];
-    allowedBaseFields.forEach((field) => assignIfString(field, payload[field]));
-
-    if (Object.keys(updatedData).length === 0) {
-      return NextResponse.json(
-        { error: 'Nessun campo valido da aggiornare' },
-        { status: 400 }
-      );
-    }
-
-    // Esegui l'aggiornamento sulla riga del tenant
-    const updatedConfig = await updateTableRowById(
-      NC_TABLE_TENANTS_ID,
-      Number(tenantId),
-      updatedData
-    );
-
-    return NextResponse.json(updatedConfig);
+    return NextResponse.json(payload);
 
   } catch (error) {
     console.error('Errore PUT /api/assistente:', error);
     return NextResponse.json({ error: "Errore nell'aggiornamento della configurazione" }, { status: 500 });
   }
 }
+

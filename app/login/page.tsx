@@ -1,130 +1,114 @@
-// app/login/page.tsx
-'use client';
+"use client";
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn } from 'next-auth/react';
-import { LoaderCircle, Eye, EyeOff } from 'lucide-react';
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { ShieldCheck, ArrowRight, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
-function LoginForm() {
+export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const callbackError = searchParams.get('error');
-    if (callbackError === 'CredentialsSignin') {
-      setError('Email o password non validi. Riprova.');
-    }
-  }, [searchParams]);
-
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
+    setIsLoading(true);
+
+    if (!email || !email.includes("@")) {
+      toast.error("Inserisci un'email valida per continuare.");
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      const result = await signIn('credentials', {
+      // Usiamo il provider "credentials" configurato in auth.ts
+      // In modalità sviluppo, accetta qualsiasi email senza password
+      const result = await signIn("credentials", {
+        email,
         redirect: false,
-        email: email,
-        password: password,
       });
 
       if (result?.error) {
-        setError('Credenziali non valide. Controlla email e password.');
-      } else if (result?.ok) {
-        router.push('/dashboard');
+        toast.error("Errore durante l'accesso. Riprova.");
+      } else {
+        toast.success("Accesso effettuato!");
+        router.push("/chat"); // Porta l'utente alla chat
+        router.refresh();
       }
-    } catch (err) {
-      console.error(err);
-      setError('Si è verificato un errore inaspettato durante il login.');
+    } catch (error) {
+      toast.error("Qualcosa è andato storto.");
     } finally {
-        setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-      <div className="w-full max-w-sm rounded-xl border bg-card text-card-foreground shadow-lg">
-        <form onSubmit={handleLogin} className="p-6 sm:p-8">
-          <div className="mb-6 text-center">
-            <h1 className="text-2xl font-bold tracking-tight">Accedi</h1>
-            <p className="text-sm text-muted-foreground">
-              Inserisci le tue credenziali per continuare
-            </p>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+      <Card className="w-full max-w-md shadow-xl border-slate-200 bg-white">
+        <CardHeader className="space-y-1 text-center pb-2">
+          <div className="mx-auto bg-blue-100 p-3 rounded-full w-fit mb-2">
+            <ShieldCheck className="w-8 h-8 text-blue-600" />
           </div>
+          <CardTitle className="text-2xl font-bold text-slate-900">
+            Benvenuto in NikiTuttoFare
+          </CardTitle>
+          <CardDescription className="text-slate-500 text-base">
+            Per iniziare la diagnosi e ricevere un preventivo, ci serve solo la tua email.
+          </CardDescription>
+        </CardHeader>
 
-          {error && (
-            <div className="mb-4 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-center text-sm text-destructive">
-              {error}
-            </div>
-          )}
-          
-          <div className="space-y-4">
+        <CardContent className="pt-6">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium leading-none">Email</label>
-              <input
+              <Label htmlFor="email" className="text-slate-700 font-medium">
+                Indirizzo Email
+              </Label>
+              <Input
                 id="email"
-                name="email"
                 type="email"
-                // --- MODIFICA #1: Aggiunto autoComplete per l'email ---
-                autoComplete="email"
+                placeholder="nome@esempio.it"
+                className="h-12 text-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="nome@esempio.com"
+                disabled={isLoading}
                 required
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
+              <p className="text-xs text-slate-400">
+                Non serve registrarsi. Se sei nuovo, creeremo un profilo istantaneo per te.
+              </p>
             </div>
-            
-            <div className="space-y-2 relative">
-              <label htmlFor="password" className="text-sm font-medium leading-none">Password</label>
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                // --- MODIFICA #2: Aggiunto autoComplete per la password ---
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-9 text-muted-foreground"
-                aria-label={showPassword ? "Nascondi password" : "Mostra password"}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-          
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-6 inline-flex h-10 w-full items-center justify-center whitespace-nowrap rounded-md bg-primary text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-          >
-            {loading ? <LoaderCircle className="h-5 w-5 animate-spin" /> : 'Entra'}
-          </button>
-        </form>
 
-      </div>
-  );
-}
+            <Button 
+              type="submit" 
+              className="w-full h-12 text-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Accesso in corso...
+                </>
+              ) : (
+                <>
+                  Inizia Diagnosi <ArrowRight className="ml-2 h-5 w-5" />
+                </>
+              )}
+            </Button>
+          </form>
+        </CardContent>
 
-export default function LoginPage() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-secondary/50 p-4">
-      <Suspense fallback={<div className="w-full max-w-sm h-96 rounded-xl border bg-card animate-pulse" />}>
-        <LoginForm />
-      </Suspense>
-    </main>
+        <CardFooter className="bg-slate-50 border-t border-slate-100 p-6">
+          <p className="text-xs text-center text-slate-400 w-full leading-relaxed">
+            Continuando, accetti i nostri Termini di Servizio. 
+            I tuoi dati sono protetti e usati solo per gestire l'intervento.
+          </p>
+        </CardFooter>
+      </Card>
+    </div>
   );
 }

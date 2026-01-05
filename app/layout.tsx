@@ -1,6 +1,7 @@
 import "./globals.css";
-import "./globals.css";
 import { Providers } from "./providers";
+import { AppHeader } from "@/components/AppHeader";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function RootLayout({
   children,
@@ -11,7 +12,9 @@ export default function RootLayout({
     <html lang="it" suppressHydrationWarning>
       <body>
         <Providers>
-          <main>{children}</main>
+          <AppHeader />
+          <main className="p-4">{children}</main>
+          <Toaster />
         </Providers>
       </body>
     </html>

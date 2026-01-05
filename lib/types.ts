@@ -31,7 +31,6 @@ export interface User {
   role?: string; // Es: 'admin', 'staff'
   createdAt: string;
   updatedAt: string;
-  // Relazione (opzionale, NocoDB potrebbe fornirla)
   tenant?: Tenant; 
 }
 
@@ -46,7 +45,6 @@ export interface Customer {
   last_visit_date?: string;
   createdAt: string;
   updatedAt: string;
-  // Relazione (opzionale, NocoDB potrebbe fornirla)
   tenant?: Tenant;
 }
 
@@ -62,7 +60,6 @@ export interface Conversation {
   status?: 'aperta' | 'chiusa' | 'in_attesa' | 'errore';
   createdAt: string;
   updatedAt: string;
-  // Relazioni (opzionali, NocoDB potrebbe fornirle)
   tenant?: Tenant;
   customer?: Customer;
 }
@@ -79,7 +76,6 @@ export interface Booking {
   notes?: string; // Note aggiuntive (es. allergie, richiesta tavolo specifico)
   createdAt: string;
   updatedAt: string;
-  // Relazioni (opzionali, NocoDB potrebbe fornirle)
   tenant?: Tenant;
   customer?: Customer;
   conversation?: Conversation;
@@ -94,7 +90,6 @@ export interface Menu {
   is_active?: boolean; // Se il menu è attualmente disponibile
   createdAt: string;
   updatedAt: string;
-  // Relazione (opzionale, NocoDB potrebbe fornirla)
   tenant?: Tenant;
 }
 
@@ -109,7 +104,6 @@ export interface MenuItem {
   allergens_json?: string; // Es: ["glutine", "lattosio"]
   createdAt: string;
   updatedAt: string;
-  // Relazione (opzionale, NocoDB potrebbe fornirla)
   menu?: Menu;
 }
 
@@ -131,11 +125,3 @@ export interface Request {
   createdAt: string;
   [key: string]: unknown;
 }
-
-// Tipo generico per i record NocoDB (quando il tipo specifico non è noto)
-export type NocoRecord = {
-  Id: number;
-  CreatedAt: string;
-  UpdatedAt: string;
-  [key: string]: any; // Permette altri campi
-};
