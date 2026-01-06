@@ -46,14 +46,16 @@ export default function Home() {
 
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-5 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-500 fill-mode-forwards opacity-0">
             {/* TASTO ARANCIONE POTENZIATO */}
-            <Link href="/chat" className="relative overflow-hidden bg-orange-600 hover:bg-orange-700 text-white font-bold text-lg px-8 py-8 h-auto shadow-xl shadow-orange-200 transition-all hover:scale-105 hover:-translate-y-1 group inline-flex items-center">
-              <span className="relative z-10 flex items-center">
-                Richiedi Intervento Ora 
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-              </span>
-              {/* Effetto luce interno al bottone (Shiny effect CSS puro) */}
-              <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent z-0" />
-            </Link>
+            <Button asChild size="lg" className="relative overflow-hidden bg-orange-600 hover:bg-orange-700 text-white font-bold text-lg px-8 py-8 h-auto shadow-xl shadow-orange-200 transition-all hover:scale-105 hover:-translate-y-1 group">
+              <Link href="/chat">
+                <span className="relative z-10 flex items-center">
+                  Richiedi Intervento Ora 
+                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </span>
+                {/* Effetto luce interno al bottone (Shiny effect CSS puro) */}
+                <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent z-0" />
+              </Link>
+            </Button>
             
             <p className="text-sm text-slate-500 font-medium flex items-center bg-white/60 backdrop-blur px-3 py-1 rounded-lg">
               <ShieldCheck className="inline w-4 h-4 mr-1.5 text-green-600"/> 
