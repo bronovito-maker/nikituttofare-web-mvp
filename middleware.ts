@@ -1,77 +1,102 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase-server';
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(req: NextRequest) {
-  const pathname = req.nextUrl.pathname;
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({
+    request,
+  });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          supabaseResponse = NextResponse.next({
+            request,
+          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  // IMPORTANT: DO NOT remove this line - it refreshes the session
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const pathname = request.nextUrl.pathname;
 
   // Public routes - accessible to everyone
   const isPublicRoute = pathname === '/' || pathname.startsWith('/api');
-
+  
   // Auth callback route - must be accessible for Magic Link flow
   const isAuthCallback = pathname.startsWith('/auth/callback');
-
+  
   // Guest-allowed routes - accessible without login (chat for initial contact)
-  const isGuestRoute = pathname === '/chat';
-
+  const isGuestRoute = pathname === '/chat' || pathname === '/privacy';
+  
   // Auth pages
   const isAuthPage = pathname.startsWith('/login');
-
+  
   // Protected routes - require authentication
   const isAdminRoute = pathname.startsWith('/admin');
   const isDashboardRoute = pathname.startsWith('/dashboard');
   const isProtectedRoute = isAdminRoute || isDashboardRoute;
 
+  // Allow public routes, guest routes, and auth callback
   if (isPublicRoute || isGuestRoute || isAuthCallback) {
-    return NextResponse.next();
+    return supabaseResponse;
   }
 
-  const supabase = createServerClient();
-  const { data: userData } = await supabase.auth.getUser();
-  const isAuth = !!userData?.user;
-
-  if (isProtectedRoute && !isAuth) {
-    const loginUrl = new URL('/login', req.url);
+  // Redirect to login if trying to access protected route without auth
+  if (isProtectedRoute && !user) {
+    const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isAdminRoute) {
-    if (!userData?.user?.id) {
-      const loginUrl = new URL('/login', req.url);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    const { data: profile } = await supabase
+  // Admin route protection - check role
+  if (isAdminRoute && user) {
+    const { data: profile } = await (supabase as any)
       .from('profiles')
       .select('role')
-      .eq('id', userData.user.id)
+      .eq('id', user.id)
       .single();
 
-    if (!profile || (profile as any)?.role !== 'admin') {
-      const homeUrl = new URL('/dashboard', req.url);
+    if (!profile || profile.role !== 'admin') {
+      const homeUrl = new URL('/dashboard', request.url);
       return NextResponse.redirect(homeUrl);
     }
   }
 
-  if (isAuth && isAuthPage) {
-    const callbackUrl = req.nextUrl.searchParams.get('callbackUrl');
-    const redirectUrl = new URL(callbackUrl || '/dashboard', req.url);
+  // Redirect authenticated users away from login page
+  if (user && isAuthPage) {
+    const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
+    const redirectUrl = new URL(callbackUrl || '/dashboard', request.url);
     return NextResponse.redirect(redirectUrl);
   }
 
-  return NextResponse.next();
+  return supabaseResponse;
 }
 
 export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

@@ -18,7 +18,7 @@ export async function getCurrentUser() {
   if (!isSupabaseConfigured()) return null;
 
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { data, error } = await supabase.auth.getUser();
     if (error || !data?.user) return null;
     return data.user;
@@ -45,7 +45,7 @@ export async function getOrCreateProfile(userId: string, email: string): Promise
   }
 
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     // Prova a recuperare il profilo esistente
     const { data: existingProfile, error: fetchError } = await (supabase as any)
@@ -119,7 +119,7 @@ export async function createTicket(
   }
 
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const { data, error } = await (supabase as any)
       .from('tickets')
@@ -183,7 +183,7 @@ export async function saveMessage(
   }
 
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const { data, error } = await (supabase as any)
       .from('messages')
@@ -229,7 +229,7 @@ export async function getTicketMessages(ticketId: string): Promise<TicketMessage
   }
 
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const { data, error } = await (supabase as any)
       .from('messages')
@@ -260,7 +260,7 @@ export async function getUserTickets(userId: string): Promise<Ticket[]> {
   }
 
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const { data, error } = await (supabase as any)
       .from('tickets')
@@ -294,7 +294,7 @@ export async function updateTicketStatus(
   }
 
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const { error } = await (supabase as any)
       .from('tickets')

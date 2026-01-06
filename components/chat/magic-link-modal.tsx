@@ -38,9 +38,8 @@ export function MagicLinkModal({
     setIsLoading(true);
 
     try {
-      // Redirect directly to /chat - the browser client with detectSessionInUrl: true
-      // will automatically exchange the code for a session
-      const redirectTo = `${window.location.origin}/chat`;
+      // Redirect to auth callback which will exchange code for session on server
+      const redirectTo = `${window.location.origin}/auth/callback?next=/chat`;
       const { error: magicError } = await supabase.auth.signInWithOtp({
         email,
         options: {

@@ -18,8 +18,8 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
           {/* Logo & Brand */}
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <div className="relative h-9 sm:h-11 w-9 sm:w-11 overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow flex-shrink-0 bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center">
-              <span className="text-white font-bold text-lg">NTF</span>
+            <div className="relative h-9 sm:h-11 w-9 sm:w-11 overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow flex-shrink-0">
+              <Image src="/logo_ntf.png" alt="NTF Logo" fill className="object-cover" />
             </div>
             <div className="flex flex-col">
               <span className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-slate-900 leading-none">
@@ -69,12 +69,12 @@ export default function Home() {
             <div className="space-y-3 sm:space-y-6">
               <BlurText 
                 text="Manutenzione d'Emergenza" 
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-black tracking-tighter text-slate-900 leading-[0.9] px-2"
+                className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-black tracking-tighter text-slate-900 leading-[0.95] px-2"
                 delay={0.05}
               />
               <BlurText 
                 text="Semplice e Sicura." 
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 leading-[0.9] px-2"
+                className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 leading-[0.95] px-2"
                 delay={0.25}
               />
             </div>

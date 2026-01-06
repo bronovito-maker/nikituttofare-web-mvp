@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Use server client for auth check
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { data: profile, error: profileError } = await (supabase as any)
       .from('profiles')
       .select('role')
@@ -98,7 +98,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Verify admin role
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { data: profile, error: profileError } = await (supabase as any)
       .from('profiles')
       .select('role')

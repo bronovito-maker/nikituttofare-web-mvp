@@ -1,30 +1,21 @@
 // lib/supabase-browser.ts
-// Client-side only Supabase client - safe to use in 'use client' components
+// Browser-side Supabase client using @supabase/ssr
 
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient as createSupabaseBrowserClient } from '@supabase/ssr';
 import { Database } from './database.types';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_anon_key';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 /**
- * Browser-side Supabase client for Client Components.
- * Persists session in localStorage/cookies automatically.
+ * Browser-side Supabase client.
+ * Use in: Client Components ('use client')
  * 
- * Use this in components with 'use client' directive.
+ * This client automatically handles cookie-based session management.
  */
 export function createBrowserClient() {
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      flowType: 'pkce',
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-    },
-    global: {
-      headers: {
-        'x-client-info': 'nikituttofare-web',
-      },
-    },
-  });
+  return createSupabaseBrowserClient<Database>(
+    supabaseUrl,
+    supabaseAnonKey
+  );
 }

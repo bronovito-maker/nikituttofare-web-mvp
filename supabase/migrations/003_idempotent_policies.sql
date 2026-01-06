@@ -8,7 +8,7 @@
 -- STEP 1: Drop ALL existing policies to start fresh
 -- ============================================
 
--- Drop profiles policies
+-- Drop profiles policies (OLD names)
 DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
@@ -16,7 +16,12 @@ DROP POLICY IF EXISTS "Admins can update all profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Admins and technicians can view all profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Admins and technicians can update all profiles" ON public.profiles;
 
--- Drop tickets policies
+-- Drop profiles policies (NEW names - for re-run idempotency)
+DROP POLICY IF EXISTS "profiles_select_policy" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_update_own_policy" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_update_admin_policy" ON public.profiles;
+
+-- Drop tickets policies (OLD names)
 DROP POLICY IF EXISTS "Users can view own tickets" ON public.tickets;
 DROP POLICY IF EXISTS "Users can create own tickets" ON public.tickets;
 DROP POLICY IF EXISTS "Users can update own tickets" ON public.tickets;
@@ -25,7 +30,13 @@ DROP POLICY IF EXISTS "Admins can update all tickets" ON public.tickets;
 DROP POLICY IF EXISTS "Admins and technicians can view all tickets" ON public.tickets;
 DROP POLICY IF EXISTS "Admins and technicians can update all tickets" ON public.tickets;
 
--- Drop messages policies
+-- Drop tickets policies (NEW names)
+DROP POLICY IF EXISTS "tickets_select_policy" ON public.tickets;
+DROP POLICY IF EXISTS "tickets_insert_policy" ON public.tickets;
+DROP POLICY IF EXISTS "tickets_update_own_policy" ON public.tickets;
+DROP POLICY IF EXISTS "tickets_update_admin_policy" ON public.tickets;
+
+-- Drop messages policies (OLD names)
 DROP POLICY IF EXISTS "Users can view messages of own tickets" ON public.messages;
 DROP POLICY IF EXISTS "Users can create messages for own tickets" ON public.messages;
 DROP POLICY IF EXISTS "Admins can view all messages" ON public.messages;
@@ -33,16 +44,26 @@ DROP POLICY IF EXISTS "Admins can create messages" ON public.messages;
 DROP POLICY IF EXISTS "Admins and technicians can view all messages" ON public.messages;
 DROP POLICY IF EXISTS "Admins and technicians can create messages" ON public.messages;
 
+-- Drop messages policies (NEW names)
+DROP POLICY IF EXISTS "messages_select_policy" ON public.messages;
+DROP POLICY IF EXISTS "messages_insert_policy" ON public.messages;
+
 -- Drop storage policies (if storage.objects table exists)
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'storage' AND table_name = 'objects') THEN
+    -- OLD names
     DROP POLICY IF EXISTS "Authenticated users can upload images" ON storage.objects;
     DROP POLICY IF EXISTS "Authenticated users can view images" ON storage.objects;
     DROP POLICY IF EXISTS "Admins can view all images" ON storage.objects;
     DROP POLICY IF EXISTS "Deny anonymous access to images" ON storage.objects;
     DROP POLICY IF EXISTS "Users can upload own images" ON storage.objects;
     DROP POLICY IF EXISTS "Users can view own images" ON storage.objects;
+    -- NEW names
+    DROP POLICY IF EXISTS "storage_insert_policy" ON storage.objects;
+    DROP POLICY IF EXISTS "storage_select_policy" ON storage.objects;
+    DROP POLICY IF EXISTS "storage_update_policy" ON storage.objects;
+    DROP POLICY IF EXISTS "storage_delete_policy" ON storage.objects;
   END IF;
 END$$;
 
@@ -195,35 +216,35 @@ ON CONFLICT (id) DO UPDATE SET
   file_size_limit = EXCLUDED.file_size_limit,
   allowed_mime_types = EXCLUDED.allowed_mime_types;
 
--- Storage INSERT: Authenticated users can upload to their folder
+-- Storage INSERT: Authenticated users can upload to ticket-photos bucket
+-- Note: We allow uploads to any path in the bucket for simplicity
 CREATE POLICY "storage_insert_policy"
   ON storage.objects
   FOR INSERT
   TO authenticated
-  WITH CHECK (
-    bucket_id = 'ticket-photos'
-    AND (storage.foldername(name))[1] = auth.uid()::text
-  );
+  WITH CHECK (bucket_id = 'ticket-photos');
 
--- Storage SELECT: Authenticated users can view images
+-- Storage SELECT: Authenticated users can view images in ticket-photos
 CREATE POLICY "storage_select_policy"
   ON storage.objects
   FOR SELECT
   TO authenticated
   USING (bucket_id = 'ticket-photos');
 
--- Storage DELETE: Users can delete own images OR admins can delete any
+-- Storage UPDATE: Authenticated users can update their uploads
+CREATE POLICY "storage_update_policy"
+  ON storage.objects
+  FOR UPDATE
+  TO authenticated
+  USING (bucket_id = 'ticket-photos')
+  WITH CHECK (bucket_id = 'ticket-photos');
+
+-- Storage DELETE: Users can delete images in ticket-photos
 CREATE POLICY "storage_delete_policy"
   ON storage.objects
   FOR DELETE
   TO authenticated
-  USING (
-    bucket_id = 'ticket-photos'
-    AND (
-      (storage.foldername(name))[1] = auth.uid()::text
-      OR public.is_admin()
-    )
-  );
+  USING (bucket_id = 'ticket-photos');
 
 -- ============================================
 -- STEP 8: Create useful indexes

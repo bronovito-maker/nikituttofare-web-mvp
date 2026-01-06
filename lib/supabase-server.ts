@@ -1,39 +1,44 @@
 // lib/supabase-server.ts
-// Server-side only Supabase clients - DO NOT import in 'use client' components
+// Server-side Supabase clients using @supabase/ssr
 
-import { cookies } from 'next/headers';
 import { createServerClient as createSupabaseServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
 import { Database } from './database.types';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_anon_key';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 /**
  * Server-side Supabase client that persists/reads auth via Next.js cookies.
- * Use in: Route handlers, Server Components, Server Actions, Middleware
+ * Use in: Route handlers, Server Components, Server Actions
  *
  * ⚠️ DO NOT import this in Client Components ('use client')
  */
-export function createServerClient() {
-  return createSupabaseServerClient<Database>(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return cookies().then(store => store.getAll());
-      },
-      setAll(cookiesToSet) {
-        cookies().then(store => {
+export async function createServerClient() {
+  const cookieStore = await cookies();
+
+  return createSupabaseServerClient<Database>(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              store.set(name, value, options)
-            );
-          } catch (error) {
-            console.warn('Could not set cookies:', error);
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {
+            // The `setAll` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing sessions.
           }
-        });
+        },
       },
-    },
-  });
+    }
+  );
 }
 
 /**
@@ -56,11 +61,6 @@ export function createAdminClient() {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
-    },
-    global: {
-      headers: {
-        'x-client-info': 'nikituttofare-web-admin',
-      },
     },
   });
 }
