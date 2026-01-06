@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 // Types for admin dashboard
 interface TicketData {
   id: string;
-  category: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'generic';
+  category: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'handyman' | 'generic';
   status: 'new' | 'pending_verification' | 'confirmed' | 'assigned' | 'in_progress' | 'resolved' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'emergency';
   description: string;

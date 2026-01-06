@@ -181,6 +181,12 @@ export function extractSlotsFromConversation(
   for (const [category, keywords] of Object.entries(categoryKeywords)) {
     if (keywords.some(kw => text.includes(kw))) {
       slots.problemCategory = category as ConversationSlots['problemCategory'];
+
+      // Se riconosciamo una categoria dal testo, e non abbiamo ancora dettagli del problema,
+      // usa il testo come descrizione del problema
+      if (!slots.problemDetails && text.length > 10) {
+        slots.problemDetails = text.slice(0, 300);
+      }
       break;
     }
   }
@@ -208,7 +214,8 @@ export function extractSlotsFromConversation(
   // ============================================
   // ESTRAZIONE DETTAGLI PROBLEMA
   // ============================================
-  if (userMessages.length > 20) {
+  // Usa il testo completo della conversazione per ora, ma pulito
+  if (userMessages.length > 10) {
     slots.problemDetails = userMessages.slice(0, 300);
   }
   
@@ -253,11 +260,12 @@ export function getMissingSlots(slots: ConversationSlots): string[] {
     missing.push('problemCategory');
   }
   
-  // 3. Dettagli problema (o foto)
-  if (!slots.problemDetails || slots.problemDetails.length < 15) {
-    if (!slots.hasPhoto) {
-      missing.push('problemDetails');
-    }
+  // 3. Dettagli problema OBBLIGATORI (foto richiesta sempre)
+  const hasDetailedDescription = slots.problemDetails &&
+    (slots.problemDetails.split(' ').length >= 20 || slots.problemDetails.length >= 100);
+
+  if (!slots.hasPhoto && !hasDetailedDescription) {
+    missing.push('problemDetails');
   }
   
   // 4. Telefono (ultimo, dopo aver dato il preventivo)
@@ -413,14 +421,16 @@ Quando hai TUTTI i dati:
 
 **Maggiorazione emergenza:** +30-50%
 
-# 📸 FOTO E DESCRIZIONI OBBLIGATORIE
+# 📸 FOTO E DESCRIZIONI OBBLIGATORIE - REGOLA CRITICA
 
-**REGOLE ASSOLUTE per raccolta dati:**
-- NON generare MAI un range di prezzo senza avere una FOTO del danno
-- NON procedere al riepilogo senza foto O descrizione dettagliata (minimo 10 parole)
-- Se l'utente dice "idraulico" o "guasto": chiedi SUBITO "Puoi farmi una foto del problema? O descrivimi esattamente cosa vedi?"
-- Se l'utente rifiuta la foto: insisti sulla descrizione dettagliata
-- Solo dopo aver ottenuto foto/descrizione puoi dare il preventivo
+**STOP IMMEDIATO - NON PROCEDERE MAI SENZA:**
+- ❌ **BLOCCO ASSOLUTO:** Se non hai una FOTO del problema E la descrizione è meno di 20 parole
+- ⚠️ **AZIONE OBBLIGATORIA:** Quando ricevi una categoria, chiedi SUBITO: "Puoi mandarmi una foto del problema? O descrivimi in dettaglio cosa vedi (almeno 20 parole)?"
+- 🚫 **NON ACCETTARE:** Risposte vaghe come "è rotto", "non funziona", "c'è un problema"
+- ✅ **SOLO DOPO:** Foto ricevuta OPPURE descrizione dettagliata ≥20 parole, puoi procedere
+- 🔄 **INSISTI:** Se l'utente rifiuta, chiedi di nuovo: "Per dare un preventivo accurato, ho bisogno di vedere il problema. Puoi descrivere meglio?"
+
+**Questa è la regola più importante - violandola si rischia di mandare tecnici impreparati!**
 
 # ❌ COSA NON FARE MAI
 - NON creare ticket senza indirizzo completo, categoria, telefono, email

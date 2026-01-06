@@ -122,6 +122,7 @@ export async function createTicket(
       id: `ticket-${Date.now()}`,
       user_id: userId,
       status: 'new',
+      // @ts-ignore - handyman category not in generated types yet
       category,
       priority,
       description,

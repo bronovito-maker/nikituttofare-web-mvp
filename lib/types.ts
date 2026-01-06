@@ -146,7 +146,7 @@ export interface Ticket {
   id: string; // uuid
   user_id: string; // uuid (FK -> profiles.id)
   status: 'new' | 'pending_verification' | 'confirmed' | 'assigned' | 'in_progress' | 'resolved' | 'cancelled';
-  category: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'generic';
+  category: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'handyman' | 'generic';
   priority: 'low' | 'medium' | 'high' | 'emergency';
   description: string;
   address: string | null;

@@ -25,7 +25,7 @@ export interface ConversationSlots {
 
 // Ticket data extracted from conversation
 export interface ExtractedTicketData {
-  category: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'generic';
+  category: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'handyman' | 'generic';
   priority: 'low' | 'medium' | 'high' | 'emergency';
   description: string;
   address?: string;
