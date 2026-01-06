@@ -173,13 +173,20 @@ function generateFallbackResponse(
   }
   
 
-  // Se abbiamo tutti i dati tranne l'email, chiedi l'email
-  const missingOnlyEmail = missingSlots.length === 1 && missingSlots.includes('phoneNumber') === false &&
-                          slots.city && slots.problemCategory && (slots.problemDetails || slots.hasPhoto);
-  if (missingOnlyEmail && !slots.userEmail) {
+  // Se abbiamo tutti i dati necessari MA manca l'email, chiedi l'email
+  const hasAllDataExceptEmail = missingSlots.length === 0 || (missingSlots.length === 1 && missingSlots.includes('phoneNumber'));
+  if (hasAllDataExceptEmail && !slots.userEmail && !authenticatedUserEmail) {
     return {
       type: 'text',
       content: 'Perfetto! Ora ho tutte le informazioni necessarie per l\'intervento.\n\n**Per completare la richiesta**, inserisci il tuo indirizzo email. Ti invierò un link sicuro per confermare l\'intervento e attivare le notifiche al tecnico.'
+    } as AIResponseType;
+  }
+
+  // Se abbiamo tutti i dati E l'email (da sessione o inserita), il ticket dovrebbe essere già stato creato dal backend
+  if (hasAllDataExceptEmail && (slots.userEmail || authenticatedUserEmail) && !userConfirmed) {
+    return {
+      type: 'text',
+      content: 'Perfetto! Ho tutte le informazioni necessarie. Ti ho appena inviato una mail di conferma all\'indirizzo ' + (slots.userEmail || authenticatedUserEmail) + '.\n\n**IMPORTANTE:** Clicca sul link nella mail per attivare la richiesta. Il tecnico non riceverà nulla finché non confermi.'
     } as AIResponseType;
   }
 
@@ -194,8 +201,8 @@ function generateFallbackResponse(
     } as AIResponseType;
   }
 
-  // Se abbiamo tutti i dati ma NON c'è ancora conferma, mostra il riepilogo
-  if (missingSlots.length === 0 && !userConfirmed) {
+  // Se abbiamo tutti i dati ma NON c'è ancora conferma, mostra il riepilogo (solo se abbiamo anche l'email)
+  if (missingSlots.length === 0 && !userConfirmed && (slots.userEmail || userEmail)) {
     const priority = determinePriority(slots);
     const timeEstimate = priority === 'emergency' ? '30-60 minuti' : 
                          priority === 'high' ? '2-4 ore' : '24-48 ore';
@@ -250,7 +257,8 @@ async function generateAIResponse(
   slots: ConversationSlots,
   ticketId: string | null,
   isFirstMessage: boolean,
-  userConfirmed: boolean = false
+  userConfirmed: boolean = false,
+  authenticatedUserEmail?: string
 ): Promise<AIResponseType> {
   // Fallback se Gemini non è disponibile
   if (!genAI) {
@@ -477,7 +485,8 @@ export async function POST(request: NextRequest) {
       slots,
       ticketId,
       isFirstMessage,
-      userConfirmed
+      userConfirmed,
+      userEmail
     );
 
     // Salva la risposta AI se abbiamo un ticket

@@ -214,8 +214,25 @@ export function extractSlotsFromConversation(
   // ============================================
   // ESTRAZIONE DETTAGLI PROBLEMA
   // ============================================
-  // Usa il testo completo della conversazione per ora, ma pulito
-  if (userMessages.length > 10) {
+  // Cerca il messaggio che descrive il problema (dopo la selezione categoria)
+  const problemMessages = [];
+  let foundCategoryQuestion = false;
+
+  for (const msg of messages.slice().reverse()) { // Dalla fine all'inizio
+    if (msg.role === 'assistant' && msg.content.includes('Raccontami') || msg.content.includes('descrivi')) {
+      foundCategoryQuestion = true;
+      continue;
+    }
+    if (foundCategoryQuestion && msg.role === 'user' && typeof msg.content === 'string') {
+      problemMessages.unshift(msg.content); // Aggiungi all'inizio per mantenere ordine
+      if (problemMessages.length >= 3) break; // Prendi max 3 messaggi di descrizione
+    }
+  }
+
+  if (problemMessages.length > 0) {
+    slots.problemDetails = problemMessages.join(' ').slice(0, 300);
+  } else if (userMessages.length > 10) {
+    // Fallback: usa il testo completo
     slots.problemDetails = userMessages.slice(0, 300);
   }
   
@@ -261,8 +278,10 @@ export function getMissingSlots(slots: ConversationSlots): string[] {
   }
   
   // 3. Dettagli problema OBBLIGATORI (foto richiesta sempre)
+  // Verifica se abbiamo una descrizione sufficiente
   const hasDetailedDescription = slots.problemDetails &&
-    (slots.problemDetails.split(' ').length >= 20 || slots.problemDetails.length >= 100);
+    (slots.problemDetails.split(' ').length >= 8 || slots.problemDetails.length >= 50 ||
+     /\b(montare|installare|sistemare|riparare|aggiustare|pulire|smontare)\b/i.test(slots.problemDetails));
 
   if (!slots.hasPhoto && !hasDetailedDescription) {
     missing.push('problemDetails');
@@ -451,12 +470,13 @@ Quando hai TUTTI i dati:
 **Quando ricevi solo città:**
 *"Ho bisogno dell'indirizzo preciso a [CITTÀ] (Via e Numero Civico) per mandare il tecnico. Ad esempio: Via Garibaldi 25"*
 
-# 👤 GESTIONE UTENTE LOGGATO
+# 👤 GESTIONE UTENTE LOGGATO - REGOLA ASSOLUTA
 
-**PRIMA di chiedere l'email, controlla se l'utente è già autenticato:**
-- Se "userEmail" è già presente nei dati utente: usa quella email automaticamente
-- NON chiedere l'email se l'utente è già loggato
-- Vai direttamente al riepilogo chiedendo conferma: "Uso l'email xxxx@gmail.com per la conferma?"
+**CHECK OBBLIGATORIO PRIMA DI QUALSIASI DOMANDA:**
+- Se "userEmail" è popolato e valido: USA QUELL'EMAIL AUTOMATICAMENTE
+- NON chiedere MAI l'email se "userEmail" esiste
+- Salta direttamente al riepilogo: "Perfetto! Ho tutte le informazioni necessarie. Procediamo con la conferma?"
+- Se "userEmail" è null/undefined/vuoto: ALLORA chiedi l'email all'utente
 
 # 📧 FLUSSO EMAIL E CONFERMA (solo per utenti NON loggati)
 

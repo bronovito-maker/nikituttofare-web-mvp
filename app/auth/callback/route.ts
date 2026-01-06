@@ -46,12 +46,14 @@ export async function GET(request: NextRequest) {
       try {
         const adminSupabase = createAdminClient();
 
-        // Cerca l'ultimo ticket "new" dell'utente (che dovrebbe essere quello appena creato)
+        // Cerca l'ultimo ticket "new" dell'utente creato di recente (ultimi 10 minuti)
+        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
         const { data: pendingTicket } = await adminSupabase
           .from('tickets')
           .select('*')
           .eq('user_id', data.user.id)
           .eq('status', 'new')
+          .gte('created_at', tenMinutesAgo)
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
@@ -64,7 +66,7 @@ export async function GET(request: NextRequest) {
           const { error: updateError } = await adminSupabase
             .from('tickets')
             // @ts-ignore - Type system constraints
-            .update({ status: 'confirmed' })
+            .update({ status: 'assigned' })
             .eq('id', ticket.id);
 
           if (!updateError) {
