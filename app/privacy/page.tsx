@@ -45,7 +45,7 @@ export default function PrivacyPage() {
           <p>Raccogliamo i seguenti dati personali:</p>
           <ul>
             <li><strong>Dati di contatto:</strong> email, numero di telefono (opzionale)</li>
-            <li><strong>Dati sulla richiesta:</strong> descrizione del problema, indirizzo dell'intervento, foto allegate</li>
+            <li><strong>Dati sulla richiesta:</strong> descrizione del problema, indirizzo dell&apos;intervento, foto allegate</li>
             <li><strong>Dati tecnici:</strong> indirizzo IP, tipo di browser, pagine visitate (per migliorare il servizio)</li>
           </ul>
 
@@ -64,7 +64,7 @@ export default function PrivacyPage() {
           </p>
           <ul>
             <li><strong>Esecuzione contrattuale:</strong> per fornirti il servizio richiesto</li>
-            <li><strong>Consenso:</strong> per l'invio di comunicazioni di marketing (se acconsentito)</li>
+            <li><strong>Consenso:</strong> per l&apos;invio di comunicazioni di marketing (se acconsentito)</li>
             <li><strong>Interesse legittimo:</strong> per migliorare il servizio e prevenire frodi</li>
           </ul>
 
@@ -77,7 +77,7 @@ export default function PrivacyPage() {
           <h2>6. Condivisione dei Dati</h2>
           <p>I tuoi dati possono essere condivisi con:</p>
           <ul>
-            <li><strong>Tecnici partner:</strong> per eseguire l'intervento richiesto</li>
+            <li><strong>Tecnici partner:</strong> per eseguire l&apos;intervento richiesto</li>
             <li><strong>Fornitori di servizi:</strong> hosting (Vercel), database (Supabase), email (Resend)</li>
             <li><strong>Autorità:</strong> se richiesto dalla legge</li>
           </ul>
@@ -88,7 +88,7 @@ export default function PrivacyPage() {
           <h2>7. Trasferimento Extra-UE</h2>
           <p>
             Alcuni dei nostri fornitori (es. Vercel, Google) possono trasferire dati al di fuori 
-            dell'Unione Europea. In tal caso, ci assicuriamo che vengano rispettate le garanzie 
+            dell&apos;Unione Europea. In tal caso, ci assicuriamo che vengano rispettate le garanzie 
             previste dal GDPR (Clausole Contrattuali Standard o Data Privacy Framework).
           </p>
 
@@ -97,7 +97,7 @@ export default function PrivacyPage() {
           <ul>
             <li><strong>Accesso:</strong> richiedere copia dei tuoi dati</li>
             <li><strong>Rettifica:</strong> correggere dati inesatti</li>
-            <li><strong>Cancellazione:</strong> richiedere la cancellazione dei dati ("diritto all'oblio")</li>
+            <li><strong>Cancellazione:</strong> richiedere la cancellazione dei dati (&quot;diritto all&apos;oblio&quot;)</li>
             <li><strong>Portabilità:</strong> ricevere i tuoi dati in formato elettronico</li>
             <li><strong>Opposizione:</strong> opporti al trattamento per interessi legittimi</li>
             <li><strong>Revoca consenso:</strong> ritirare il consenso in qualsiasi momento</li>

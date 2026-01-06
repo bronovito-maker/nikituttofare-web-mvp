@@ -279,6 +279,7 @@ export function ImageUpload({
       {/* Preview tooltip on success */}
       {state === 'success' && previewUrl && (
         <div className="absolute bottom-full left-0 mb-2 p-1 bg-white rounded-lg shadow-xl border border-slate-200 animate-in slide-in-from-bottom-2 duration-300">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
             src={previewUrl} 
             alt="Preview" 
@@ -321,6 +322,7 @@ export function ImagePreview({
 }) {
   return (
     <div className={`relative inline-block ${className}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img 
         src={url} 
         alt="Preview" 

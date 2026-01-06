@@ -568,6 +568,7 @@ function MessageBubble({
       >
         {/* Image if present */}
         {message.photo && (
+          // eslint-disable-next-line @next/next/no-img-element
           <img 
             src={message.photo} 
             alt="Foto allegata" 
