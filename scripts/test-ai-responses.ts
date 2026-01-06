@@ -216,7 +216,7 @@ async function runTests(options: {
     testCases = testCases.filter(tc => tc.urgency === options.urgency);
   }
   if (options.userType) {
-    testCases = testCases.filter(tc => tc.user_type.includes(options.userType));
+    testCases = testCases.filter(tc => tc.user_type === options.userType);
   }
   if (options.limit) {
     testCases = testCases.slice(0, options.limit);
