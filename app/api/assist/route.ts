@@ -4,43 +4,171 @@ import { AIResponseSchema, type AIResponseType } from '@/lib/ai-structures';
 import { createTicket, saveMessage, getOrCreateProfile, getCurrentUser } from '@/lib/supabase-helpers';
 import { notifyNewTicket } from '@/lib/notifications';
 
+// Normalizza testo (typos, dialetti, etc.)
+function normalizeText(text: string): string {
+  let normalized = text.toLowerCase();
+  
+  // Typos comuni
+  const typoMap: Record<string, string> = {
+    'alagamento': 'allagamento', 'alagato': 'allagato', 'allagametno': 'allagamento',
+    'ovuneuqe': 'ovunque', 'solpito': 'scoppiato', 'sepozzata': 'spezzata',
+    'chisua': 'chiusa', 'blocataaa': 'bloccata', 'presaaaa': 'presa',
+    'brucoato': 'bruciato', 'preseee': 'prese', 'bgano': 'bagno',
+    'foco': 'fuoco', 'semrba': 'sembra', 'tremamo': 'tremano',
+  };
+  
+  for (const [typo, correct] of Object.entries(typoMap)) {
+    normalized = normalized.replace(new RegExp(typo, 'gi'), correct);
+  }
+  
+  // Rimuovi ripetizioni di lettere
+  normalized = normalized.replace(/(.)\1{2,}/g, '$1$1');
+  
+  return normalized;
+}
+
 // Funzione di fallback per l'analisi dei messaggi quando Gemini non è disponibile
 function fallbackMessageAnalysis(message: string) {
-  const lowerMessage = message.toLowerCase();
+  const lowerMessage = normalizeText(message);
 
-  // Analisi base per determinare la categoria
+  // Keywords per categoria (IT + EN)
+  const categoryKeywords: Record<string, { keywords: string[]; weight: number }> = {
+    gas: {
+      keywords: ['gas', 'odore di uova', 'uova marce', 'puzza di gas', 'bombola', 'metano', 'gas smell'],
+      weight: 10
+    },
+    plumbing: {
+      keywords: [
+        'idraulico', 'acqua', 'tubo', 'perdita', 'scarico', 'rubinetto', 'lavandino', 
+        'doccia', 'wc', 'water', 'bidet', 'allagamento', 'allagato', 'goccia', 
+        'sifone', 'lavastoviglie', 'lavatrice', 'trabocca', 'spurgo', 'otturato',
+        'leak', 'plumber', 'pipe', 'drain', 'flooding', 'toilet', 'sink'
+      ],
+      weight: 5
+    },
+    electric: {
+      keywords: [
+        'elettric', 'luce', 'presa', 'corrente', 'interruttore', 'scintill', 
+        'salvavita', 'magnetotermico', 'quadro', 'fili', 'cavi', 'lampadina',
+        'forno', 'televisore', 'tv', 'inverter', 'blackout', 'buio', 'salta',
+        'sfarfalla', 'contatore', 'elettrogeno', 'ascensore', 'insegna',
+        'electric', 'power', 'light', 'socket', 'spark', 'charger'
+      ],
+      weight: 5
+    },
+    locksmith: {
+      keywords: [
+        'fabbro', 'serratura', 'chiave', 'chiavi', 'porta', 'bloccato', 'bloccata', 
+        'chiuso fuori', 'cassaforte', 'cancello', 'blindata', 'cilindro', 'maniglia',
+        'chiuso dentro', 'non esco', 'perso le chiavi', 'spezzata', 'serranda',
+        'key', 'keys', 'lock', 'locked', 'door', 'locksmith', 'stuck', 'cant enter'
+      ],
+      weight: 5
+    },
+    climate: {
+      keywords: [
+        'clima', 'condizionatore', 'caldaia', 'riscaldamento', 'termosifone', 'split',
+        'aria condizionata', 'frigorifero', 'cella', 'fan-coil', 'deumidificatore',
+        'ventilazione', 'radiatore', 'calorifero', 'termostato', 'errore caldaia',
+        'acqua calda', 'cappa', 'aspirazione', 'climatizzatore', 'pompa di calore',
+        'air conditioning', 'heater', 'heating', 'cooling', 'thermostat'
+      ],
+      weight: 5
+    },
+  };
+
+  // Calcola score per ogni categoria
   let category = 'generic';
-  if (lowerMessage.includes('idraulico') || lowerMessage.includes('acqua') || lowerMessage.includes('tubo')) {
-    category = 'plumbing';
-  } else if (lowerMessage.includes('elettric') || lowerMessage.includes('luce') || lowerMessage.includes('presa')) {
-    category = 'electric';
-  } else if (lowerMessage.includes('fabbro') || lowerMessage.includes('serratura') || lowerMessage.includes('porta')) {
-    category = 'locksmith';
-  } else if (lowerMessage.includes('clima') || lowerMessage.includes('condizionatore') || lowerMessage.includes('caldaia')) {
-    category = 'climate';
+  let maxScore = 0;
+  
+  for (const [cat, config] of Object.entries(categoryKeywords)) {
+    let score = 0;
+    for (const keyword of config.keywords) {
+      if (lowerMessage.includes(keyword)) {
+        score += config.weight;
+      }
+    }
+    if (score > maxScore) {
+      maxScore = score;
+      category = cat === 'gas' ? 'climate' : cat;
+    }
   }
 
-  // Determina priorità basandosi su parole chiave urgenti
-  let priority = 'medium';
-  if (lowerMessage.includes('emergenza') || lowerMessage.includes('urgente') || lowerMessage.includes('subito')) {
-    priority = 'high';
-  } else if (lowerMessage.includes('rotto') || lowerMessage.includes('non funziona') || lowerMessage.includes('guasto')) {
-    priority = 'high';
-  }
-
-  // Estrai indirizzo se presente
-  let address = null;
-  const addressPatterns = [
-    /(?:via|corso|piazza|viale|piazzale)\s+[^,]+(?:,\s*\d+)?/i,
-    /(?:indirizzo|abito in)\s*[:\-]?\s*([^.!?]+)/i
+  // Keywords EMERGENCY - pericolo vita/incendio immediato
+  const emergencyKeywords = [
+    'fuoco', 'incendio', 'fiamme', 'scoppia', 'esplos', 'gas', 'uova marce',
+    'bambino dentro', 'bambino chiuso', 'bloccato dentro', 'non riesco a uscire',
+    'chiuso dentro', 'medicinali salvavita', 'scottato', 'soffocando',
+    'allagamento totale', 'acqua ovunque', 'scintille', 'fumo dalla presa',
+    'cavi scoperti', 'fumo nero', 'fire', 'explosion', 'trapped', 'emergency', 'help me'
+  ];
+  
+  // Keywords HIGH - urgente ma non pericolo vita
+  const highKeywords = [
+    'rotto', 'non funziona', 'guasto', 'saltato', 'bloccata', 'bloccato',
+    'non risponde', 'non si accende', 'non parte', 'non scalda',
+    'perdita', 'gocciola', 'allaga', 'riflusso', 'trabocca', 'perde acqua',
+    'hotel', 'ristorante', 'bar', 'clienti', 'ospiti', 'camera', 'suite',
+    'cella frigorifera', 'sala server', 'furto', 'ladri', 'chiuso fuori',
+    'chiave spezzata', 'freddissimo', 'caldissimo',
+    'broken', 'not working', 'flooding', 'urgent', 'locked out'
   ];
 
-  for (const pattern of addressPatterns) {
-    const match = message.match(pattern);
-    if (match && match[1]) {
-      address = match[1].trim();
+  // Keywords LOW - manutenzione programmabile
+  const lowKeywords = [
+    'preventivo', 'vorrei', 'quanto costa', 'programmare', 'manutenzione',
+    'sanificazione', 'pulizia', 'lucidatura', 'installare', 'montare',
+    'regolazione', 'certificazione', 'quote', 'price', 'schedule'
+  ];
+
+  // Calcola priorità
+  let priority: 'low' | 'medium' | 'high' | 'emergency' = 'medium';
+  let emergencyScore = 0;
+  let highScore = 0;
+
+  for (const keyword of emergencyKeywords) {
+    if (lowerMessage.includes(keyword)) emergencyScore += 3;
+  }
+  for (const keyword of highKeywords) {
+    if (lowerMessage.includes(keyword)) highScore += 2;
+  }
+
+  // Check CAPS LOCK
+  const capsChars = (message.match(/[A-Z]/g) || []).length;
+  const letterChars = (message.match(/[a-zA-Z]/g) || []).length;
+  if (letterChars > 20 && capsChars / letterChars > 0.6) {
+    emergencyScore += 5;
+  }
+
+  // Check punti esclamativi multipli
+  const exclamations = (message.match(/!{2,}/g) || []).length;
+  if (exclamations >= 2) {
+    emergencyScore += 2;
+  }
+
+  // Check LOW priority prima
+  let isLowPriority = false;
+  for (const keyword of lowKeywords) {
+    if (lowerMessage.includes(keyword)) {
+      isLowPriority = true;
       break;
     }
+  }
+
+  // Determina priorità finale
+  if (isLowPriority && emergencyScore < 3 && highScore < 4) {
+    priority = 'low';
+  } else if (emergencyScore >= 3) {
+    priority = 'emergency';
+  } else if (highScore >= 2 || emergencyScore >= 1) {
+    priority = 'high';
+  }
+
+  // Estrai indirizzo
+  let address: string | null = null;
+  const addressMatch = message.match(/(?:via|corso|piazza|viale)\s+[^,\.!?]+/i);
+  if (addressMatch) {
+    address = addressMatch[0].trim();
   }
 
   return {
@@ -49,7 +177,7 @@ function fallbackMessageAnalysis(message: string) {
     shouldCreateTicket: true,
     address,
     emergency: priority === 'emergency',
-    needsMoreInfo: [],
+    needsMoreInfo: [] as string[],
     responseType: 'text'
   };
 }
