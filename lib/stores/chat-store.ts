@@ -60,6 +60,25 @@ interface ChatState {
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
+// Funzione di migrazione per pulire messaggi corrotti
+const migrateMessages = (messages: ChatMessage[]): ChatMessage[] => {
+  return messages.filter((msg) => {
+    // Rimuovi messaggi auth_required senza ticketData valido
+    if (typeof msg.content === 'object' && msg.content !== null) {
+      const content = msg.content as AIResponseType;
+      if (content.type === 'auth_required') {
+        const authContent = content.content as any;
+        // Se non ha ticketData o è vuoto, rimuovi il messaggio
+        if (!authContent?.ticketData || Object.keys(authContent.ticketData).length === 0) {
+          console.warn('Rimosso messaggio auth_required corrotto:', msg.id);
+          return false;
+        }
+      }
+    }
+    return true;
+  });
+};
+
 export const useChatStore = create<ChatState>()(
   persist(
     (set, get) => ({
@@ -122,6 +141,7 @@ export const useChatStore = create<ChatState>()(
     }),
     {
       name: 'ntf-chat-storage',
+      version: 2, // Incrementa versione per forzare migrazione
       partialize: (state) => ({
         messages: state.messages,
         currentTicketId: state.currentTicketId,
@@ -129,6 +149,14 @@ export const useChatStore = create<ChatState>()(
         sessionId: state.sessionId,
         collectedSlots: state.collectedSlots,
       }),
+      migrate: (persistedState: any, version: number) => {
+        // Migrazione da v1 a v2: pulisci messaggi corrotti
+        if (version < 2 && persistedState.messages) {
+          console.log('🔄 Migrazione chat store v1 → v2: pulizia messaggi corrotti');
+          persistedState.messages = migrateMessages(persistedState.messages);
+        }
+        return persistedState;
+      },
     }
   )
 );

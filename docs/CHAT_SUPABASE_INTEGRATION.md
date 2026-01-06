@@ -59,13 +59,22 @@
 {
   id: string (uuid)
   user_id: string (uuid)
-  category: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'generic'
-  status: 'new' | 'assigned' | 'in_progress' | 'resolved' | 'cancelled'
+  category: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'handyman' | 'generic'
+  status: 'new' | 'pending_verification' | 'confirmed' | 'assigned' | 'in_progress' | 'resolved' | 'cancelled'
   priority: 'low' | 'medium' | 'high' | 'emergency'
   description: string
   address: string | null
   created_at: timestamptz
 }
+
+// STATI DEL TICKET:
+// - 'new': Ticket appena creato (legacy)
+// - 'pending_verification': In attesa di conferma Magic Link
+// - 'confirmed': Verificato via Magic Link, notifica Telegram inviata
+// - 'assigned': Tecnico ha accettato l'intervento
+// - 'in_progress': Intervento in corso
+// - 'resolved': Intervento completato
+// - 'cancelled': Annullato
 ```
 
 ### Message

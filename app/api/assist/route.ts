@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AIResponseSchema, type AIResponseType } from '@/lib/ai-structures';
-import { createTicket, saveMessage, getCurrentUser } from '@/lib/supabase-helpers';
+import { createTicket, saveMessage, getCurrentUser, updateTicketStatus } from '@/lib/supabase-helpers';
+import { notifyNewTicket } from '@/lib/notifications';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitExceededResponse } from '@/lib/rate-limit';
 import { 
   type ConversationSlots,
@@ -13,7 +14,8 @@ import {
   getQuestionForSlot,
   generateRecapMessage,
   SLOT_NAMES_IT,
-  CATEGORY_NAMES_IT
+  CATEGORY_NAMES_IT,
+  calculatePriceRange
 } from '@/lib/system-prompt';
 
 // ============================================
@@ -445,27 +447,75 @@ export async function POST(request: NextRequest) {
         priority,
         slots.serviceAddress || undefined,
         undefined, // messageContent
-        'new' // Temporaneamente usiamo 'new' finché non applichiamo la migration
+        'pending_verification' // Ticket in attesa di conferma via Magic Link
       );
 
       if (ticket) {
         ticketId = ticket.id;
 
-        // Salva il messaggio (notifica spostata alla conferma autenticata)
+        // Salva il messaggio
         await saveMessage(ticketId, 'user', lastUserMessage.content, lastUserMessage.photo);
 
         console.log('✅ Ticket creato:', ticketId);
 
-        // Restituisci messaggio che informa dell'invio mail (NON conferma ancora)
+        // ========================================
+        // FLUSSO DIFFERENZIATO: LOGGATO vs OSPITE
+        // ========================================
+        
+        // Se l'utente è GIÀ AUTENTICATO (ha una sessione Supabase valida),
+        // conferma immediatamente il ticket e invia notifiche Telegram
+        if (user && user.id && userEmail && !userEmail.includes('guest')) {
+          console.log('🔐 Utente già autenticato - conferma immediata');
+          
+          // Aggiorna status a confirmed
+          await updateTicketStatus(ticketId, 'confirmed');
+          
+          // Calcola range prezzo per la notifica
+          const priceRange = calculatePriceRange(slots);
+          
+          // Invia notifica Telegram IMMEDIATAMENTE
+          await notifyNewTicket({
+            id: ticketId,
+            category: slots.problemCategory || 'generic',
+            priority: priority,
+            city: slots.city,
+            price_range_min: priceRange.min,
+            price_range_max: priceRange.max,
+            description: slots.problemDetails,
+            address: slots.serviceAddress,
+            phone: slots.phoneNumber,
+          });
+          
+          console.log('📤 Telegram notification sent for authenticated user');
+          
+          // Restituisci conferma immediata
+          return NextResponse.json({
+            type: 'confirmation',
+            content: {
+              message: `🎉 La tua richiesta è stata confermata!\n\nUn tecnico **${CATEGORY_NAMES_IT[slots.problemCategory || 'generic']}** ti chiamerà al numero **${slots.phoneNumber}** entro 30-60 minuti per confermare l'appuntamento.\n\n📍 Intervento a: ${slots.serviceAddress}\n💰 Preventivo: ${priceRange.min}€ - ${priceRange.max}€`,
+              ticketId: ticketId
+            },
+            _debug: {
+              ticketCreated: true,
+              ticketId,
+              status: 'confirmed',
+              telegramSent: true
+            }
+          });
+        }
+        
+        // Se l'utente NON è autenticato, richiedi Magic Link
         return NextResponse.json({
           type: 'auth_required',
-          content: `Perfetto! Ho raccolto tutte le informazioni necessarie per la tua richiesta di intervento **${CATEGORY_NAMES_IT[slots.problemCategory || 'generic']}**.\n\n**Per completare la richiesta e attivare le notifiche al tecnico, devi accedere al tuo account.**\n\nClicca sul pulsante di login qui sotto per procedere in sicurezza.`,
-          ticketData: {
-            category: slots.problemCategory,
-            city: slots.city,
-            address: slots.serviceAddress,
-            description: slots.problemDetails,
-            phone: slots.phoneNumber
+          content: {
+            content: `Perfetto! Ho raccolto tutte le informazioni necessarie per la tua richiesta di intervento **${CATEGORY_NAMES_IT[slots.problemCategory || 'generic']}**.\n\n📧 **Per completare la richiesta in sicurezza, accedi con la tua email.**\n\nRiceverai un link di conferma e solo dopo il click il tecnico verrà avvisato.`,
+            ticketData: {
+              category: slots.problemCategory,
+              city: slots.city,
+              address: slots.serviceAddress,
+              description: slots.problemDetails,
+              phone: slots.phoneNumber
+            }
           }
         });
       }

@@ -113,7 +113,7 @@ export async function createTicket(
   priority: 'low' | 'medium' | 'high' | 'emergency' = 'medium',
   address?: string,
   messageContent?: string,
-  status?: string,
+  status: 'new' | 'pending_verification' | 'confirmed' = 'pending_verification',
   imageUrl?: string
 ): Promise<Ticket | null> {
   if (!isSupabaseConfigured()) {
@@ -121,7 +121,7 @@ export async function createTicket(
     const mockTicket: Ticket = {
       id: `ticket-${Date.now()}`,
       user_id: userId,
-      status: 'new',
+      status: status,
       // @ts-ignore - handyman category not in generated types yet
       category,
       priority,
@@ -145,7 +145,7 @@ export async function createTicket(
         description,
         priority,
         address: address || null,
-        status: status || 'new',
+        status: status,
       })
       .select()
       .single();
@@ -162,7 +162,7 @@ export async function createTicket(
     return {
       id: `ticket-${Date.now()}`,
       user_id: userId,
-      status: 'new',
+      status: status,
       category,
       priority,
       description,

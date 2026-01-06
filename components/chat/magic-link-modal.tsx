@@ -60,10 +60,6 @@ export function MagicLinkModal({
     }
   };
 
-  const handleContinueAsGuest = () => {
-    onSuccess('guest@ntf.local');
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -149,25 +145,6 @@ export function MagicLinkModal({
                   )}
                 </Button>
 
-                {/* Divider */}
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-slate-200"></div>
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-white px-4 text-slate-400 font-medium">oppure</span>
-                  </div>
-                </div>
-
-                {/* Continue as Guest */}
-                <button
-                  type="button"
-                  onClick={handleContinueAsGuest}
-                  className="w-full py-3 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors"
-                >
-                  Continua senza registrazione
-                </button>
-
                 {/* Trust Badge */}
                 <div className="flex items-center justify-center gap-2 text-xs text-slate-500 pt-2">
                   <Shield className="w-4 h-4 text-green-600" />
@@ -190,11 +167,11 @@ export function MagicLinkModal({
               Controlla la tua casella email.
             </p>
             
-            <div className="p-4 bg-blue-50 rounded-xl border border-blue-200/50 text-left">
-              <p className="text-sm font-medium text-blue-800 mb-2">Nel frattempo:</p>
-              <p className="text-sm text-blue-700">
-                Il tuo ticket è stato creato e un tecnico è già stato avvisato. 
-                Riceverai una chiamata di conferma entro 60 minuti.
+            <div className="p-4 bg-amber-50 rounded-xl border border-amber-200/50 text-left">
+              <p className="text-sm font-medium text-amber-800 mb-2">⚠️ Importante:</p>
+              <p className="text-sm text-amber-700">
+                Il tuo ticket è in attesa di verifica. 
+                <strong>Clicca sul link nell&apos;email per confermare</strong> e attivare la notifica al tecnico.
               </p>
             </div>
 

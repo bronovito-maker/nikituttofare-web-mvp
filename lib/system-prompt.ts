@@ -277,11 +277,19 @@ export function getMissingSlots(slots: ConversationSlots): string[] {
     missing.push('problemCategory');
   }
   
-  // 3. Dettagli problema OBBLIGATORI (foto richiesta sempre)
-  // Verifica se abbiamo una descrizione sufficiente
-  const hasDetailedDescription = slots.problemDetails &&
-    (slots.problemDetails.split(' ').length >= 8 || slots.problemDetails.length >= 50 ||
-     /\b(montare|installare|sistemare|riparare|aggiustare|pulire|smontare)\b/i.test(slots.problemDetails));
+  // 3. Dettagli problema OBBLIGATORI (foto O descrizione dettagliata)
+  // REGOLA: Serve FOTO oppure descrizione significativa
+  const wordCount = slots.problemDetails ? slots.problemDetails.split(/\s+/).filter(w => w.length > 0).length : 0;
+  
+  // Pattern keywords emergenza idraulica/elettrica
+  const emergencyKeywords = /\b(perde|perdita|allagamento|acqua|scarico|intasato|bruciato|scintille|cortocircuito|bloccato|rotto)\b/i;
+  
+  const hasDetailedDescription = slots.problemDetails && (
+    wordCount >= 12 ||  // Almeno 12 parole (ridotto da 20)
+    slots.problemDetails.length >= 60 || // Oppure 60+ caratteri
+    emergencyKeywords.test(slots.problemDetails) || // Keywords emergenza
+    /\b(montare|installare|sistemare|riparare|aggiustare|pulire|smontare|sostituire|verificare|controllare)\b/i.test(slots.problemDetails)
+  );
 
   if (!slots.hasPhoto && !hasDetailedDescription) {
     missing.push('problemDetails');
@@ -443,13 +451,14 @@ Quando hai TUTTI i dati:
 # 📸 FOTO E DESCRIZIONI OBBLIGATORIE - REGOLA CRITICA
 
 **STOP IMMEDIATO - NON PROCEDERE MAI SENZA:**
-- ❌ **BLOCCO ASSOLUTO:** Se non hai una FOTO del problema E la descrizione è meno di 20 parole
-- ⚠️ **AZIONE OBBLIGATORIA:** Quando ricevi una categoria, chiedi SUBITO: "Puoi mandarmi una foto del problema? O descrivimi in dettaglio cosa vedi (almeno 20 parole)?"
-- 🚫 **NON ACCETTARE:** Risposte vaghe come "è rotto", "non funziona", "c'è un problema"
-- ✅ **SOLO DOPO:** Foto ricevuta OPPURE descrizione dettagliata ≥20 parole, puoi procedere
-- 🔄 **INSISTI:** Se l'utente rifiuta, chiedi di nuovo: "Per dare un preventivo accurato, ho bisogno di vedere il problema. Puoi descrivere meglio?"
+- ❌ **BLOCCO ASSOLUTO:** Se non hai una FOTO del problema E la descrizione è troppo vaga (meno di 12 parole significative)
+- ⚠️ **AZIONE OBBLIGATORIA:** Quando ricevi una categoria, chiedi: "Puoi mandarmi una foto del problema? Oppure descrivimi in dettaglio: cosa vedi esattamente, da dove perde/cosa non funziona?"
+- 🚫 **NON ACCETTARE:** Risposte troppo vaghe come "è rotto", "non funziona" (senza contesto)
+- ✅ **ACCETTA COME VALIDO:** Descrizioni con keywords specifiche (es: "perde acqua", "tubo rotto", "scarico intasato", "presa bruciata") ANCHE se brevi
+- ✅ **SOLO DOPO:** Foto ricevuta OPPURE descrizione con dettagli concreti (dove, cosa, come)
+- 🔄 **INSISTI UNA SOLA VOLTA:** Se troppo vago, chiedi una volta di più. Se l'utente ripete descrizione simile, accettala e procedi.
 
-**Questa è la regola più importante - violandola si rischia di mandare tecnici impreparati!**
+**Importante:** Una descrizione breve ma specifica ("perde tubo lavandino, acqua in terra") è MEGLIO di una lunga generica.
 
 # ❌ COSA NON FARE MAI
 - NON creare ticket senza indirizzo completo, categoria, telefono, email
@@ -575,9 +584,9 @@ export function getQuestionForSlot(slotName: string): string {
       'Se possibile, mandami una foto così il tecnico sa già cosa aspettarsi.'
     ],
     problemDetails: [
-      'Se non puoi fare una foto, descrivimi nel dettaglio cosa succede. Cosa vedi esattamente?',
-      'Raccontami cosa sta succedendo. Più dettagli mi dai, più preciso sarà il preventivo.',
-      'Descrivi il problema: cosa è rotto/non funziona? Da quanto tempo?'
+      'Descrivimi il problema: da dove perde? Cosa non funziona? Cosa vedi?',
+      'Raccontami cosa succede: dove si trova il guasto? Quando è iniziato?',
+      'Dammi qualche dettaglio in più: quale parte è rotta? C\'è acqua/fumo/altro?'
     ],
     phoneNumber: [
       'Perfetto! A che numero può **chiamarti il tecnico** per confermare l\'appuntamento?',

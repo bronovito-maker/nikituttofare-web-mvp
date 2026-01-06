@@ -46,14 +46,14 @@ export async function GET(request: NextRequest) {
       try {
         const adminSupabase = createAdminClient();
 
-        // Cerca l'ultimo ticket "new" dell'utente creato di recente (ultimi 10 minuti)
-        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+        // Cerca l'ultimo ticket "pending_verification" dell'utente creato di recente (ultimi 30 minuti)
+        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
         const { data: pendingTicket } = await adminSupabase
           .from('tickets')
           .select('*')
           .eq('user_id', data.user.id)
-          .eq('status', 'new')
-          .gte('created_at', tenMinutesAgo)
+          .eq('status', 'pending_verification')
+          .gte('created_at', thirtyMinutesAgo)
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
@@ -62,11 +62,11 @@ export async function GET(request: NextRequest) {
           const ticket = pendingTicket as any;
           console.log('🔍 Found pending ticket to confirm:', ticket.id);
 
-          // Aggiorna lo status a "confirmed"
+          // Aggiorna lo status a "confirmed" (verificato via Magic Link)
           const { error: updateError } = await adminSupabase
             .from('tickets')
             // @ts-ignore - Type system constraints
-            .update({ status: 'assigned' })
+            .update({ status: 'confirmed' })
             .eq('id', ticket.id);
 
           if (!updateError) {

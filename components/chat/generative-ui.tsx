@@ -179,12 +179,12 @@ interface RecapContent {
 
 interface AuthRequiredContent {
   content?: string;
-  ticketData: {
-    category: string;
-    city: string;
-    address: string;
-    description: string;
-    phone: string;
+  ticketData?: {
+    category?: string;
+    city?: string;
+    address?: string;
+    description?: string;
+    phone?: string;
   };
 }
 
@@ -460,6 +460,10 @@ function ConfirmationResponse({ content }: { content: string | Record<string, un
 // AUTH REQUIRED RESPONSE - Login Request
 // ============================================
 function AuthRequiredResponse({ content }: { content: AuthRequiredContent }) {
+  // Validazione difensiva: verifica che ticketData esista
+  const ticketData = content.ticketData || {};
+  const hasTicketData = content.ticketData && Object.keys(content.ticketData).length > 0;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
@@ -476,15 +480,25 @@ function AuthRequiredResponse({ content }: { content: AuthRequiredContent }) {
         <p>{content.content || 'Devi accedere al tuo account per procedere con la richiesta.'}</p>
       </div>
 
-      <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Riepilogo richiesta:</p>
-        <div className="space-y-1 text-sm">
-          <p><strong>Categoria:</strong> {CATEGORY_NAMES_IT[content.ticketData.category] || content.ticketData.category}</p>
-          <p><strong>Città:</strong> {content.ticketData.city}</p>
-          <p><strong>Indirizzo:</strong> {content.ticketData.address}</p>
-          <p><strong>Telefono:</strong> {content.ticketData.phone}</p>
+      {hasTicketData && (
+        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Riepilogo richiesta:</p>
+          <div className="space-y-1 text-sm">
+            {ticketData.category && (
+              <p><strong>Categoria:</strong> {CATEGORY_NAMES_IT[ticketData.category] || ticketData.category}</p>
+            )}
+            {ticketData.city && (
+              <p><strong>Città:</strong> {ticketData.city}</p>
+            )}
+            {ticketData.address && (
+              <p><strong>Indirizzo:</strong> {ticketData.address}</p>
+            )}
+            {ticketData.phone && (
+              <p><strong>Telefono:</strong> {ticketData.phone}</p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex gap-3">
         <a

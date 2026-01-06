@@ -283,15 +283,27 @@ export default function ChatPage() {
         setConfirmationPending(true);
       }
 
-      // Handle authentication required
-      if (aiResponse.type === 'auth_required') {
-        // Save ticket data for after authentication
-        const ticketData = (aiResponse as any).ticketData;
-        if (ticketData) {
-          localStorage.setItem('pendingTicketData', JSON.stringify(ticketData));
+      // Handle direct confirmation (utente già autenticato - ticket confermato immediatamente)
+      if (aiResponse.type === 'confirmation') {
+        // Ticket già confermato, aggiorna l'ID se presente
+        const ticketId = responseData._debug?.ticketId;
+        if (ticketId && !currentTicketId) {
+          setCurrentTicketId(ticketId);
         }
-        // Redirect to login
-        window.location.href = '/login?callbackUrl=' + encodeURIComponent(window.location.pathname);
+        setConfirmationPending(false);
+        // Non fare redirect, mostra il messaggio di conferma
+        return;
+      }
+
+      // Handle authentication required (utente NON autenticato - richiedi Magic Link)
+      if (aiResponse.type === 'auth_required') {
+        // Aggiorna ticket ID se presente
+        const ticketId = responseData._debug?.ticketId;
+        if (ticketId && !currentTicketId) {
+          setCurrentTicketId(ticketId);
+        }
+        // Mostra il modal Magic Link invece di redirect immediato
+        setShowMagicLinkModal(true);
         return;
       }
 
@@ -606,7 +618,7 @@ export default function ChatPage() {
                   </div>
                   <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
                     <CheckCircle2 className="w-3.5 h-3.5 text-orange-600" />
-                    <span>Intervento in 60 min</span>
+                    <span>Chiamata in 60 min</span>
                   </div>
                 </div>
 
