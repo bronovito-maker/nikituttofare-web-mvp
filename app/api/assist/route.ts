@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AIResponseSchema, type AIResponseType } from '@/lib/ai-structures';
 import { createTicket, saveMessage, getOrCreateProfile, getCurrentUser } from '@/lib/supabase-helpers';
 import { notifyNewTicket } from '@/lib/notifications';
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitExceededResponse } from '@/lib/rate-limit';
 
 // Normalizza testo (typos, dialetti, etc.)
 function normalizeText(text: string): string {
@@ -201,6 +202,14 @@ function stringifyContent(content: unknown) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting - protegge da abusi e risparmia quota Gemini
+    const clientId = getClientIdentifier(request);
+    const rateLimitResult = checkRateLimit(`assist:${clientId}`, RATE_LIMITS.assist);
+    
+    if (!rateLimitResult.success) {
+      return rateLimitExceededResponse(rateLimitResult);
+    }
+
     const { messages, ticketId: existingTicketId } = await request.json();
     const user = await getCurrentUser();
     if (!user?.id) {

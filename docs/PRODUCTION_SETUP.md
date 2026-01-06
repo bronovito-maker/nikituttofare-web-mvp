@@ -156,7 +156,7 @@ TELEGRAM_CHAT_ID=-1001234567890
 1. Crea un gruppo Telegram per le notifiche
 2. Aggiungi il bot al gruppo
 3. Invia un messaggio nel gruppo
-4. Vai su: `https://api.telegram.org/bot<TOKEN>/getUpdates`
+4. Vai su: `https://api.telegram.org/bot<8003586096:AAH5HFKR2S65MG4NbHJZ14il6hRauxRh01I>/getUpdates`
 5. Cerca `"chat":{"id":-100xxxxxxxxxx}` - questo è il Chat ID
 
 #### Per notifiche personali:

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { CookieBanner } from "@/components/ui/cookie-banner";
 
 const dmSans = DM_Sans({ 
   subsets: ["latin"],
@@ -43,6 +44,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <CookieBanner />
         </ThemeProvider>
       </body>
     </html>

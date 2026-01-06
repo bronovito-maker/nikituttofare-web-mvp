@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createTicket, getUserTickets, getOrCreateProfile, getCurrentUser } from '@/lib/supabase-helpers';
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitExceededResponse } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting - previene spam di ticket
+    const clientId = getClientIdentifier(request);
+    const rateLimitResult = checkRateLimit(`tickets:${clientId}`, RATE_LIMITS.tickets);
+    
+    if (!rateLimitResult.success) {
+      return rateLimitExceededResponse(rateLimitResult);
+    }
+
     const user = await getCurrentUser();
     if (!user?.id) {
       return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });

@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { 
   Send, 
-  Camera, 
   ArrowLeft, 
   Phone, 
   Wrench, 
@@ -22,6 +21,7 @@ import { LoadingDots, LoadingSpinner } from '@/components/ui/loading-dots';
 import { ClientAnimationWrapper } from '@/components/ui/client-animation-wrapper';
 import { GenerativeUI } from '@/components/chat/generative-ui';
 import { MagicLinkModal } from '@/components/chat/magic-link-modal';
+import { ImageUpload, ImagePreview } from '@/components/ui/image-upload';
 import { useChatStore, type ChatMessage } from '@/lib/stores/chat-store';
 import type { AIResponseType } from '@/lib/ai-structures';
 import { createBrowserClient } from '@/lib/supabase-browser';
@@ -78,12 +78,12 @@ export default function ChatPage() {
   } = useChatStore();
   
   const [input, setInput] = useState('');
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [showMagicLinkModal, setShowMagicLinkModal] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Handle Magic Link auth redirect - exchange code for session
@@ -213,14 +213,15 @@ export default function ChatPage() {
   }, [messages, isLoading, currentTicketId, addMessage, setLoading, setError, setCurrentTicketId, setConfirmationPending]);
 
   const handleSend = useCallback(async () => {
-    if ((!input.trim() && !selectedImage) || isLoading) return;
+    if ((!input.trim() && !uploadedImageUrl) || isLoading || isUploading) return;
     
     const messageToSend = input.trim();
+    const imageUrl = uploadedImageUrl;
     setInput('');
-    setSelectedImage(null);
+    setUploadedImageUrl(null);
     
-    await sendMessage(messageToSend, selectedImage || undefined);
-  }, [input, selectedImage, isLoading, sendMessage]);
+    await sendMessage(messageToSend, imageUrl || undefined);
+  }, [input, uploadedImageUrl, isLoading, isUploading, sendMessage]);
 
   const handleQuickAction = async (action: typeof QUICK_ACTIONS[0]) => {
     setShowQuickActions(false);
@@ -266,16 +267,19 @@ export default function ChatPage() {
     [currentTicketId, addMessage, setError, setLoading]
   );
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setSelectedImage(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  const handleImageUploaded = useCallback((url: string) => {
+    setUploadedImageUrl(url);
+    setIsUploading(false);
+  }, []);
+
+  const handleUploadStart = useCallback(() => {
+    setIsUploading(true);
+  }, []);
+
+  const handleUploadError = useCallback((error: string) => {
+    setIsUploading(false);
+    setError(error);
+  }, [setError]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -464,41 +468,25 @@ export default function ChatPage() {
       <div className="sticky bottom-0 w-full bg-white border-t border-slate-200 shadow-lg shadow-slate-200/20">
         <div className="max-w-4xl mx-auto px-4 py-4">
           
-          {/* Image Preview */}
-          {selectedImage && (
-            <div className="mb-3 relative inline-block">
-              <img 
-                src={selectedImage} 
-                alt="Preview" 
-                className="h-20 w-auto rounded-xl border border-slate-200 shadow-sm"
+          {/* Image Preview - shown when image is uploaded */}
+          {uploadedImageUrl && (
+            <div className="mb-3">
+              <ImagePreview 
+                url={uploadedImageUrl} 
+                onRemove={() => setUploadedImageUrl(null)} 
               />
-              <button
-                onClick={() => setSelectedImage(null)}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-slate-700 transition-colors shadow-lg"
-              >
-                <X className="w-4 h-4" />
-              </button>
             </div>
           )}
 
           {/* Input Row */}
           <div className="flex items-end gap-3">
             
-            {/* Image Upload Button */}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex-shrink-0 w-12 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors group"
+            {/* Image Upload Button with Progress */}
+            <ImageUpload
+              onUploadComplete={handleImageUploaded}
+              onUploadStart={handleUploadStart}
+              onError={handleUploadError}
               disabled={isLoading}
-            >
-              <Camera className="w-5 h-5 text-slate-500 group-hover:text-slate-700 transition-colors" />
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleImageUpload}
-              className="hidden"
             />
 
             {/* Text Input */}
@@ -517,7 +505,7 @@ export default function ChatPage() {
               {/* Send Button (inside input) */}
               <button
                 onClick={handleSend}
-                disabled={(!input.trim() && !selectedImage) || isLoading}
+                disabled={(!input.trim() && !uploadedImageUrl) || isLoading || isUploading}
                 className="absolute right-2 bottom-2 w-10 h-10 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:from-blue-700 hover:to-blue-600 transition-all shadow-lg shadow-blue-500/25 hover:shadow-xl hover:scale-105 active:scale-95"
               >
                 {isLoading ? (
