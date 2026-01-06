@@ -18,7 +18,7 @@ export interface ChatMessage {
 export interface ConversationSlots {
   phoneNumber?: string;
   serviceAddress?: string;
-  problemCategory?: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'generic';
+  problemCategory?: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'handyman' | 'generic';
   problemDetails?: string;
   urgencyLevel?: 'emergency' | 'today' | 'this_week' | 'flexible';
 }

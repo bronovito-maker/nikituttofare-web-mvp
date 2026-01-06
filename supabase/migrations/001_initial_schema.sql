@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS public.tickets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'assigned', 'in_progress', 'resolved', 'cancelled')),
-  category TEXT NOT NULL CHECK (category IN ('plumbing', 'electric', 'locksmith', 'climate', 'generic')),
+  category TEXT NOT NULL CHECK (category IN ('plumbing', 'electric', 'locksmith', 'climate', 'handyman', 'generic')),
   priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'emergency')),
   description TEXT NOT NULL,
   address TEXT,

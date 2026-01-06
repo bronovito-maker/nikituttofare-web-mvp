@@ -28,7 +28,7 @@ import { Button } from '@/components/ui/button';
 interface TicketData {
   id: string;
   category: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'generic';
-  status: 'new' | 'assigned' | 'in_progress' | 'resolved' | 'cancelled';
+  status: 'new' | 'pending_verification' | 'confirmed' | 'assigned' | 'in_progress' | 'resolved' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'emergency';
   description: string;
   address: string | null;

@@ -121,7 +121,7 @@ export async function PATCH(request: NextRequest) {
 
     // Build update object
     const updateData: {
-      status?: 'new' | 'assigned' | 'in_progress' | 'resolved' | 'cancelled';
+      status?: 'new' | 'pending_verification' | 'confirmed' | 'assigned' | 'in_progress' | 'resolved' | 'cancelled';
       priority?: 'low' | 'medium' | 'high' | 'emergency';
     } = {};
     

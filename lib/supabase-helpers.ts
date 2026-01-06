@@ -108,11 +108,12 @@ export async function getOrCreateProfile(userId: string, email: string): Promise
  */
 export async function createTicket(
   userId: string,
-  category: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'generic',
+  category: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'handyman' | 'generic',
   description: string,
   priority: 'low' | 'medium' | 'high' | 'emergency' = 'medium',
   address?: string,
   messageContent?: string,
+  status?: string,
   imageUrl?: string
 ): Promise<Ticket | null> {
   if (!isSupabaseConfigured()) {
@@ -139,11 +140,12 @@ export async function createTicket(
       .from('tickets')
       .insert({
         user_id: userId,
+        // @ts-expect-error - handyman category not in generated types yet
         category,
         description,
         priority,
         address: address || null,
-        status: 'new',
+        status: status || 'new',
       })
       .select()
       .single();
@@ -299,7 +301,7 @@ export async function getUserTickets(userId: string): Promise<Ticket[]> {
  */
 export async function updateTicketStatus(
   ticketId: string,
-  status: 'new' | 'assigned' | 'in_progress' | 'resolved' | 'cancelled'
+  status: 'new' | 'pending_verification' | 'confirmed' | 'assigned' | 'in_progress' | 'resolved' | 'cancelled'
 ): Promise<boolean> {
   if (!isSupabaseConfigured()) {
     // Simula successo se Supabase non è configurato

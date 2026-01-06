@@ -172,6 +172,17 @@ function generateFallbackResponse(
     return { type: 'text', content: greeting };
   }
   
+
+  // Se abbiamo tutti i dati tranne l'email, chiedi l'email
+  const missingOnlyEmail = missingSlots.length === 1 && missingSlots.includes('phoneNumber') === false &&
+                          slots.city && slots.problemCategory && (slots.problemDetails || slots.hasPhoto);
+  if (missingOnlyEmail && !slots.userEmail) {
+    return {
+      type: 'text',
+      content: 'Perfetto! Ora ho tutte le informazioni necessarie per l\'intervento.\n\n**Per completare la richiesta**, inserisci il tuo indirizzo email. Ti invierò un link sicuro per confermare l\'intervento e attivare le notifiche al tecnico.'
+    } as AIResponseType;
+  }
+
   // Se abbiamo tutti i dati E l'utente ha confermato, il ticket dovrebbe essere stato creato
   if (missingSlots.length === 0 && userConfirmed && ticketId) {
     return {
@@ -182,7 +193,7 @@ function generateFallbackResponse(
       }
     } as AIResponseType;
   }
-  
+
   // Se abbiamo tutti i dati ma NON c'è ancora conferma, mostra il riepilogo
   if (missingSlots.length === 0 && !userConfirmed) {
     const priority = determinePriority(slots);
@@ -402,16 +413,17 @@ export async function POST(request: NextRequest) {
       }
     });
     
-    // Crea ticket SOLO se:
+    // Crea ticket se:
     // 1. Non esiste già un ticket
-    // 2. Abbiamo TUTTI i dati necessari
-    // 3. L'utente ha CONFERMATO esplicitamente
-    // 4. L'utente ha un ID (anche ospite può avere profilo temporaneo)
-    if (!ticketId && hasAllRequiredData && userConfirmed && user?.id) {
-      shouldCreateTicket = true;
-      
+    // 2. Abbiamo email E almeno città, categoria, descrizione (telefono può venire dopo)
+    // 3. L'utente ha un ID
+    const hasMinimumDataForTicket = slots.city && slots.problemCategory && (slots.problemDetails || slots.hasPhoto);
+    const shouldCreateNewTicket = !ticketId && slots.userEmail && hasMinimumDataForTicket && user?.id;
+
+    if (shouldCreateNewTicket) {
+
       const priority = determinePriority(slots);
-      
+
       console.log('🎫 Creazione ticket con:', {
         userId: user.id,
         category: slots.problemCategory,
@@ -419,22 +431,34 @@ export async function POST(request: NextRequest) {
         phone: slots.phoneNumber,
         priority
       });
-      
+
+      // Usa solo il problema estratto, non tutto il messaggio
+      const problemDescription = slots.problemDetails ||
+        'Problema descritto dall\'utente - dettagli da confermare con il tecnico';
+
       const ticket = await createTicket(
         user.id,
-        slots.problemCategory || 'generic',
-        slots.problemDetails || stringifyContent(lastUserMessage.content),
+        slots.problemCategory || 'handyman',
+        problemDescription,
         priority,
-        slots.serviceAddress || undefined
+        slots.serviceAddress || undefined,
+        undefined, // messageContent
+        'pending_verification'
       );
 
       if (ticket) {
         ticketId = ticket.id;
-        
+
         // Salva il messaggio (notifica spostata alla conferma autenticata)
         await saveMessage(ticketId, 'user', lastUserMessage.content, lastUserMessage.photo);
-        
+
         console.log('✅ Ticket creato:', ticketId);
+
+        // Restituisci direttamente il messaggio di conferma email
+        return NextResponse.json({
+          type: 'text',
+          content: `Perfetto! Ho ricevuto tutti i tuoi dati. Ti ho appena inviato una mail di conferma all'indirizzo ${slots.userEmail}.\n\n**IMPORTANTE:** Clicca sul link nella mail per completare la richiesta. Solo dopo la conferma il tecnico riceverà la notifica e ti contatterà.`
+        });
       }
     } else if (!ticketId && hasAllRequiredData && !userConfirmed) {
       console.log('⏳ Tutti i dati raccolti, in attesa di conferma utente');
@@ -450,14 +474,6 @@ export async function POST(request: NextRequest) {
       isFirstMessage,
       userConfirmed
     );
-
-    // Se abbiamo appena creato il ticket, aggiungi l'ID alla risposta
-    if (shouldCreateTicket && ticketId && aiResponse.type !== 'recap') {
-      // Modifica la risposta per includere conferma ticket
-      if (typeof aiResponse.content === 'string') {
-        aiResponse.content += `\n\n✅ **Ticket #${ticketId.slice(-8).toUpperCase()} creato!**\nUn tecnico ti contatterà presto al numero ${slots.phoneNumber}.`;
-      }
-    }
 
     // Salva la risposta AI se abbiamo un ticket
     if (ticketId && typeof aiResponse.content === 'string') {

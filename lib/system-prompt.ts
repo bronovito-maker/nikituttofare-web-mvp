@@ -23,7 +23,7 @@ export interface ConversationSlots {
   
   // Da raccogliere dall'utente (OBBLIGATORI)
   phoneNumber?: string;
-  problemCategory?: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'generic';
+  problemCategory?: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'handyman' | 'generic';
   problemDetails?: string;
   
   // NUOVO: Foto del problema
@@ -52,10 +52,16 @@ export const REQUIRED_SLOTS: (keyof ConversationSlots)[] = [
 
 // Città servite
 export const SERVED_CITIES = [
-  'rimini', 'riccione', 'cattolica', 'misano adriatico', 'bellaria', 
+  'rimini', 'riccione', 'cattolica', 'misano adriatico', 'bellaria',
   'igea marina', 'san giovanni in marignano', 'coriano', 'santarcangelo',
-  'verucchio', 'poggio torriana', 'morciano'
+  'verucchio', 'poggio torriana', 'morciano',
+  // Zone limitrofe accettate
+  'pesaro' // per richieste da Cattolica
 ];
+
+export const CITY_MAPPING: Record<string, string> = {
+  'pesaro': 'Cattolica (zona Pesaro)' // Pesaro viene mappato a Cattolica
+};
 
 /**
  * Analizza la conversazione e estrae i dati già raccolti
@@ -82,7 +88,9 @@ export function extractSlotsFromConversation(
   // ============================================
   for (const city of SERVED_CITIES) {
     if (text.includes(city)) {
-      slots.city = city.charAt(0).toUpperCase() + city.slice(1);
+      // Usa il mapping se esiste (es. pesaro -> cattolica)
+      const mappedCity = CITY_MAPPING[city] || city;
+      slots.city = mappedCity.charAt(0).toUpperCase() + mappedCity.slice(1);
       break;
     }
   }
@@ -121,14 +129,11 @@ export function extractSlotsFromConversation(
     }
   }
   
-  // Combina città e indirizzo
+  // Combina città e indirizzo SOLO se abbiamo entrambi
   if (slots.city && slots.streetAddress) {
     slots.serviceAddress = `${slots.streetAddress}, ${slots.city}`;
-  } else if (slots.city) {
-    slots.serviceAddress = slots.city;
-  } else if (slots.streetAddress) {
-    slots.serviceAddress = slots.streetAddress;
   }
+  // NON impostare serviceAddress se abbiamo solo la città - serve indirizzo completo
   
   // ============================================
   // ESTRAZIONE CATEGORIA PROBLEMA
@@ -155,11 +160,21 @@ export function extractSlotsFromConversation(
       'locksmith', 'key', 'keys', 'locked out', 'door', 'lock'
     ],
     climate: [
-      'condizionatore', 'climatizzatore', 'aria condizionata', 'caldaia', 
+      'condizionatore', 'climatizzatore', 'aria condizionata', 'caldaia',
       'riscaldamento', 'termosifone', 'radiatore', 'split', 'pompa di calore',
       'gas', 'metano', 'scaldabagno', 'boiler', 'termostato', 'valvola',
       'spurgo', 'pressione', 'non scalda', 'non raffresca',
       'ac', 'air conditioning', 'heating', 'heater', 'boiler', 'radiator'
+    ],
+    handyman: [
+      'montare', 'montaggio', 'assemblare', 'assemblaggio', 'mobile', 'mobili',
+      'ikea', 'componibile', 'armadio', 'libreria', 'tavolo', 'sedia', 'letto',
+      'cucina', 'bagno', 'soggiorno', 'camera', 'ufficio', 'montaggio mobili',
+      'tuttofare', 'piccole riparazioni', 'lavori di casa', 'bricolage',
+      'appendere', 'appendere', 'quadro', 'shelf', 'mensola', 'tenda', 'tende',
+      'installare', 'installazione', 'sostituire', 'sostituzione', 'riparare',
+      'riparazione', 'aggiustare', 'sistemare', 'piccola riparazione',
+      'assemble', 'assembly', 'furniture', 'handyman', 'fix', 'repair', 'install'
     ]
   };
   
@@ -223,9 +238,14 @@ export function extractSlotsFromConversation(
 export function getMissingSlots(slots: ConversationSlots): string[] {
   const missing: string[] = [];
   
-  // 1. Città (priorità massima)
-  if (!slots.city) {
-    missing.push('city');
+  // 1. Indirizzo completo (città + via/civico, O città limitrofa accettata)
+  if (!slots.serviceAddress) {
+    if (!slots.city) {
+      missing.push('city');
+    } else if (!slots.streetAddress) {
+      // Ha la città ma non l'indirizzo completo
+      missing.push('streetAddress');
+    }
   }
   
   // 2. Categoria problema
@@ -394,11 +414,31 @@ Quando hai TUTTI i dati:
 **Maggiorazione emergenza:** +30-50%
 
 # ❌ COSA NON FARE MAI
-- NON creare ticket senza città, categoria, telefono
+- NON creare ticket senza indirizzo completo, categoria, telefono, email
+- NON accettare solo "città" - serve VIA + CIVICO
 - NON inventare prezzi senza aver capito il problema
 - NON promettere tempi di arrivo specifici
-- NON chiedere l'email (ce l'abbiamo già)
 - NON fare più di 2 domande per messaggio
+
+# 📍 VALIDAZIONE INDIRIZZO STRICT
+
+**Regole indirizzo:**
+- ✅ "Via Roma 15, Rimini" = ACCETTATO
+- ❌ "Rimini" = NON SUFFICIENTE, chiedi via/civico
+- ✅ "Pesaro" per richieste da Cattolica = ACCETTATO (zona limitrofa)
+- ✅ "Riccione" per richieste da Misano = ACCETTATO (zona limitrofa)
+
+**Quando ricevi solo città:**
+*"Ho bisogno dell'indirizzo preciso a [CITTÀ] (Via e Numero Civico) per mandare il tecnico. Ad esempio: Via Garibaldi 25"*
+
+# 📧 FLUSSO EMAIL E CONFERMA
+
+**Quando tutti i dati sono completi (città, categoria, telefono, descrizione):**
+1. Chiedi l'email: *"Per confermare l'intervento, inserisci la tua email. Ti invierò un link sicuro per completare la richiesta."*
+2. Quando ricevi l'email: imposta "shouldCreateTicket: true" e "nextSlotToAsk: null"
+3. Il sistema creerà automaticamente un ticket con status "pending_verification"
+4. L'utente riceverà un magic link via email per confermare
+5. Solo dopo il click sul magic link il ticket diventa "confirmed" e vengono inviate le notifiche Telegram
 
 # 📤 FORMATO RISPOSTA
 JSON valido:
@@ -453,7 +493,8 @@ export const CATEGORY_NAMES_IT: Record<string, string> = {
   electric: 'Elettricista ⚡',
   locksmith: 'Fabbro 🔑',
   climate: 'Climatizzazione ❄️',
-  generic: 'Generico'
+  generic: 'Generico',
+  handyman: 'Tuttofare 🔨'
 };
 
 /**
