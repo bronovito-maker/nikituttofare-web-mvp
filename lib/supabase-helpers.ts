@@ -140,8 +140,7 @@ export async function createTicket(
       .from('tickets')
       .insert({
         user_id: userId,
-        // @ts-expect-error - handyman category not in generated types yet
-        category,
+        category, // @ts-ignore
         description,
         priority,
         address: address || null,

@@ -379,6 +379,11 @@ export async function POST(request: NextRequest) {
     
     // Estrai slot già presenti nella conversazione
     const slots = extractSlotsFromConversation(conversationMessages, userEmail);
+
+    // Se l'utente è loggato, imposta direttamente l'email negli slot
+    if (userEmail && !slots.userEmail) {
+      slots.userEmail = userEmail;
+    }
     
     // Aggiorna con eventuali nuovi dati dall'ultimo messaggio
     const newData = extractDataFromMessage(stringifyContent(lastUserMessage.content));
@@ -443,7 +448,7 @@ export async function POST(request: NextRequest) {
         priority,
         slots.serviceAddress || undefined,
         undefined, // messageContent
-        'pending_verification'
+        'new' // Temporaneamente usiamo 'new' finché non applichiamo la migration
       );
 
       if (ticket) {
@@ -454,10 +459,10 @@ export async function POST(request: NextRequest) {
 
         console.log('✅ Ticket creato:', ticketId);
 
-        // Restituisci direttamente il messaggio di conferma email
+        // Restituisci messaggio che informa dell'invio mail (NON conferma ancora)
         return NextResponse.json({
           type: 'text',
-          content: `Perfetto! Ho ricevuto tutti i tuoi dati. Ti ho appena inviato una mail di conferma all'indirizzo ${slots.userEmail}.\n\n**IMPORTANTE:** Clicca sul link nella mail per completare la richiesta. Solo dopo la conferma il tecnico riceverà la notifica e ti contatterà.`
+          content: `Perfetto! Ho ricevuto tutti i tuoi dati. Ti ho appena inviato una mail di conferma all'indirizzo ${slots.userEmail}.\n\n**IMPORTANTE:** Clicca sul link nella mail per attivare la richiesta. Il tecnico non riceverà nulla finché non confermi.`
         });
       }
     } else if (!ticketId && hasAllRequiredData && !userConfirmed) {
