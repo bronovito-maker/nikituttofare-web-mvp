@@ -15,55 +15,13 @@ const isSupabaseConfigured = () => {
 };
 
 /**
- * Recupera l'utente corrente dalla sessione (NextAuth o Supabase).
+ * Recupera l'utente corrente dalla sessione (Supabase Auth).
+ * Nota: NextAuth JWT validation è temporaneamente disabilitata per problemi di firma
  */
 export async function getCurrentUser() {
   console.log('[getCurrentUser] Starting user retrieval...');
 
-  // Prima prova con NextAuth via JWT token dai cookies
-  try {
-    console.log('[getCurrentUser] Trying NextAuth JWT...');
-    const cookieStore = await cookies();
-
-    // Lista tutti i cookies per debug
-    const allCookies = cookieStore.getAll();
-    console.log('[getCurrentUser] Available cookies:', allCookies.map(c => c.name));
-
-    const sessionToken = cookieStore.get('authjs.session-token')?.value ||
-                        cookieStore.get('__Secure-authjs.session-token')?.value ||
-                        cookieStore.get('next-auth.session-token')?.value ||
-                        cookieStore.get('__Secure-next-auth.session-token')?.value;
-
-    console.log('[getCurrentUser] Session token found:', !!sessionToken);
-    console.log('[getCurrentUser] NEXTAUTH_SECRET available:', !!process.env.NEXTAUTH_SECRET);
-
-    if (sessionToken && process.env.NEXTAUTH_SECRET) {
-      console.log('[getCurrentUser] Validating JWT...');
-      // Decodifica il JWT per ottenere i dati utente
-      const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
-      const { payload } = await jwtVerify(sessionToken, secret);
-
-      console.log('[getCurrentUser] JWT payload:', payload);
-
-      if (payload?.sub || payload?.id) {
-        const userId = payload.sub || payload.id;
-        console.log('[getCurrentUser] Found user from JWT:', userId);
-
-        return {
-          id: userId as string,
-          email: payload.email as string,
-          user_metadata: {
-            full_name: payload.name as string,
-          }
-        };
-      }
-    }
-  } catch (error) {
-    console.error('[getCurrentUser] NextAuth JWT validation failed:', error);
-  }
-
-  // Fallback a Supabase se NextAuth non funziona
-  console.log('[getCurrentUser] Trying Supabase fallback...');
+  // Per ora usiamo solo Supabase Auth dato che NextAuth ha problemi di validazione JWT
   if (!isSupabaseConfigured()) {
     console.log('[getCurrentUser] Supabase not configured');
     return null;
@@ -73,7 +31,7 @@ export async function getCurrentUser() {
     const supabase = await createServerClient();
     const { data, error } = await supabase.auth.getUser();
     if (error || !data?.user) {
-      console.log('[getCurrentUser] Supabase auth failed:', error);
+      console.log('[getCurrentUser] Supabase auth failed:', error?.message);
       return null;
     }
     console.log('[getCurrentUser] Found user from Supabase:', data.user.id);

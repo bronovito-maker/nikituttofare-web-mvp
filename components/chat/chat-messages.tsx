@@ -4,6 +4,16 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { Bot, User } from 'lucide-react';
 import { AIResponseType } from '@/lib/ai-structures';
 
+// Helper function to safely stringify content
+function stringifyContent(content: unknown): string {
+  if (typeof content === 'string') return content;
+  try {
+    return JSON.stringify(content, null, 2);
+  } catch {
+    return String(content ?? '');
+  }
+}
+
 // Message type
 interface ChatMessageData {
   id: string;
@@ -104,7 +114,7 @@ function AIResponseRenderer({ content }: { content: AIResponseType }) {
             Prenotazione Confermata
           </div>
           <div className="text-sm text-slate-700">
-            {typeof content.content === 'string' ? content.content : JSON.stringify(content.content)}
+            {typeof content.content === 'string' ? content.content : stringifyContent(content.content)}
           </div>
         </div>
       );
@@ -112,7 +122,7 @@ function AIResponseRenderer({ content }: { content: AIResponseType }) {
     case 'text':
       return (
         <div className="whitespace-pre-wrap">
-          {typeof content.content === 'string' ? content.content : JSON.stringify(content.content)}
+          {typeof content.content === 'string' ? content.content : stringifyContent(content.content)}
         </div>
       );
 
@@ -135,7 +145,7 @@ function AIResponseRenderer({ content }: { content: AIResponseType }) {
         <div className="space-y-2">
           <div className="font-semibold">📝 Riepilogo</div>
           <div className="text-sm">
-            {typeof content.content === 'string' ? content.content : JSON.stringify(content.content)}
+            {typeof content.content === 'string' ? content.content : stringifyContent(content.content)}
           </div>
         </div>
       );
@@ -143,9 +153,9 @@ function AIResponseRenderer({ content }: { content: AIResponseType }) {
     default:
       return (
         <div className="whitespace-pre-wrap">
-          {typeof content.content === 'string' 
-            ? content.content 
-            : JSON.stringify(content.content) || 'Risposta ricevuta'}
+          {typeof content.content === 'string'
+            ? content.content
+            : stringifyContent(content.content) || 'Risposta ricevuta'}
         </div>
       );
   }

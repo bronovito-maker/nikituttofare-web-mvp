@@ -2,14 +2,15 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { 
-  Send, 
-  ArrowLeft, 
-  Phone, 
-  Wrench, 
-  Zap, 
-  Key, 
+import {
+  Send,
+  ArrowLeft,
+  Phone,
+  Wrench,
+  Zap,
+  Key,
   Thermometer,
+  Settings,
   CheckCircle2,
   Clock,
   Shield,
@@ -31,37 +32,45 @@ import { createBrowserClient } from '@/lib/supabase-browser';
 
 // Quick action categories
 const QUICK_ACTIONS = [
-  { 
-    id: 'plumbing', 
-    label: 'Idraulico', 
-    icon: Wrench, 
+  {
+    id: 'plumbing',
+    label: 'Idraulico',
+    icon: Wrench,
     color: 'from-blue-600 to-blue-500',
     shadowColor: 'shadow-blue-500/25',
-    message: 'Ho bisogno di un idraulico urgente'
+    message: 'Vorrei un preventivo per un intervento idraulico'
   },
-  { 
-    id: 'electric', 
-    label: 'Elettricista', 
-    icon: Zap, 
+  {
+    id: 'electric',
+    label: 'Elettricista',
+    icon: Zap,
     color: 'from-yellow-500 to-orange-500',
     shadowColor: 'shadow-orange-500/25',
-    message: 'Ho bisogno di un elettricista urgente'
+    message: 'Vorrei un preventivo per un intervento elettrico'
   },
-  { 
-    id: 'locksmith', 
-    label: 'Fabbro', 
-    icon: Key, 
+  {
+    id: 'locksmith',
+    label: 'Fabbro',
+    icon: Key,
     color: 'from-slate-700 to-slate-600',
     shadowColor: 'shadow-slate-500/25',
-    message: 'Ho bisogno di un fabbro urgente'
+    message: 'Vorrei un preventivo per un intervento da fabbro'
   },
-  { 
-    id: 'climate', 
-    label: 'Clima', 
-    icon: Thermometer, 
+  {
+    id: 'climate',
+    label: 'Clima',
+    icon: Thermometer,
     color: 'from-cyan-500 to-blue-500',
     shadowColor: 'shadow-cyan-500/25',
-    message: 'Ho un problema con il condizionatore/caldaia'
+    message: 'Vorrei un preventivo per un intervento di climatizzazione'
+  },
+  {
+    id: 'generic',
+    label: 'Tuttofare',
+    icon: Settings,
+    color: 'from-purple-600 to-purple-500',
+    shadowColor: 'shadow-purple-500/25',
+    message: 'Vorrei un preventivo per un intervento generico'
   },
 ];
 
@@ -361,20 +370,46 @@ export default function ChatPage() {
     setShowMagicLinkModal(true);
   };
 
-  const handleMagicLinkSuccess = (email: string) => {
-    // Add confirmation message
-    addMessage({
-      role: 'assistant',
-      content: {
-        type: 'confirmation',
+  const handleMagicLinkSuccess = async (email: string) => {
+    try {
+      // Conferma il ticket e invia notifiche Telegram
+      if (currentTicketId) {
+        await fetch('/api/tickets/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticketId: currentTicketId }),
+        });
+      }
+
+      // Add confirmation message
+      addMessage({
+        role: 'assistant',
         content: {
-          message: `Perfetto! La tua richiesta è stata confermata. Un tecnico ti contatterà a breve all'indirizzo ${email}.`,
+          type: 'confirmation',
+          content: {
+            message: `Perfetto! La tua richiesta è stata confermata e inviata ai nostri tecnici. Un tecnico ti contatterà a breve all'indirizzo ${email}.`,
           ticketId: currentTicketId,
         }
       }
-    });
-    setConfirmationPending(false);
-    setShowMagicLinkModal(false);
+      });
+      setConfirmationPending(false);
+      setShowMagicLinkModal(false);
+    } catch (error) {
+      console.error('Errore conferma ticket:', error);
+      // Fallback: mostra comunque il messaggio di conferma
+      addMessage({
+        role: 'assistant',
+        content: {
+          type: 'confirmation',
+          content: {
+            message: `La tua richiesta è stata registrata. Un tecnico ti contatterà a breve all'indirizzo ${email}.`,
+            ticketId: currentTicketId,
+          }
+        }
+      });
+      setConfirmationPending(false);
+      setShowMagicLinkModal(false);
+    }
   };
 
   return (
@@ -574,7 +609,7 @@ export default function ChatPage() {
                 <p className="text-sm font-semibold text-slate-600 text-center">
                   Seleziona il tipo di emergenza:
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                   {QUICK_ACTIONS.map((action) => {
                     const Icon = action.icon;
                     return (

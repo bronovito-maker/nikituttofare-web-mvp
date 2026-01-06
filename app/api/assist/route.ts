@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AIResponseSchema, type AIResponseType } from '@/lib/ai-structures';
 import { createTicket, saveMessage, getCurrentUser } from '@/lib/supabase-helpers';
-import { notifyNewTicket } from '@/lib/notifications';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitExceededResponse } from '@/lib/rate-limit';
 import { 
   type ConversationSlots,
@@ -432,13 +431,8 @@ export async function POST(request: NextRequest) {
       if (ticket) {
         ticketId = ticket.id;
         
-        // Salva il messaggio e notifica
+        // Salva il messaggio (notifica spostata alla conferma autenticata)
         await saveMessage(ticketId, 'user', lastUserMessage.content, lastUserMessage.photo);
-        await notifyNewTicket({
-          ...ticket,
-          phone: slots.phoneNumber,
-          address: slots.serviceAddress
-        });
         
         console.log('✅ Ticket creato:', ticketId);
       }
