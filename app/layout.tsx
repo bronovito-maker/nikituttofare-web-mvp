@@ -1,6 +1,5 @@
 import "./globals.css";
 import { Providers } from "./providers";
-import { AppHeader } from "@/components/AppHeader";
 import { Toaster } from "@/components/ui/sonner";
 
 export default function RootLayout({
@@ -12,8 +11,7 @@ export default function RootLayout({
     <html lang="it" suppressHydrationWarning>
       <body>
         <Providers>
-          <AppHeader />
-          <main className="p-4">{children}</main>
+          <main className="h-full">{children}</main>
           <Toaster />
         </Providers>
       </body>

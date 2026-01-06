@@ -125,3 +125,42 @@ export interface Request {
   createdAt: string;
   [key: string]: unknown;
 }
+
+// ============================================
+// SUPABASE DATABASE TYPES
+// Tipi per le tabelle del database Supabase
+// ============================================
+
+// Profile (extends auth.users)
+export interface Profile {
+  id: string; // uuid
+  email: string;
+  full_name: string | null;
+  phone: string | null;
+  role: 'user' | 'admin' | 'technician';
+  created_at: string; // timestamptz
+}
+
+// Ticket (service request)
+export interface Ticket {
+  id: string; // uuid
+  user_id: string; // uuid (FK -> profiles.id)
+  status: 'new' | 'assigned' | 'in_progress' | 'resolved' | 'cancelled';
+  category: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'generic';
+  priority: 'low' | 'medium' | 'high' | 'emergency';
+  description: string;
+  address: string | null;
+  payment_status: 'pending' | 'paid' | 'waived';
+  created_at: string; // timestamptz
+}
+
+// Message (chat message associated with ticket)
+export interface TicketMessage {
+  id: string; // uuid
+  ticket_id: string; // uuid (FK -> tickets.id)
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  image_url: string | null;
+  meta_data: Record<string, unknown> | null; // JSONB
+  created_at: string; // timestamptz
+}

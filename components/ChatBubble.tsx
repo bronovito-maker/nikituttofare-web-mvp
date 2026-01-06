@@ -9,6 +9,7 @@ type ChatBubbleProps = {
   content: string;
   menuUrl?: string;
   createdAt?: Date | string;
+  imageUrl?: string | null;
 };
 
 const URL_REGEX = /(https?:\/\/[^\s]+)/gi;
@@ -73,7 +74,7 @@ const renderContent = (content: string) => {
   ));
 };
 
-export default function ChatBubble({ role = "assistant", content, menuUrl, createdAt }: ChatBubbleProps) {
+export default function ChatBubble({ role = "assistant", content, menuUrl, createdAt, imageUrl }: ChatBubbleProps) {
   const isUser = role === "user";
   const containsUrl = URL_TEST_REGEX.test(content);
   const mentionsMenu = /menu|listino/i.test(content);
@@ -94,12 +95,22 @@ export default function ChatBubble({ role = "assistant", content, menuUrl, creat
     <div className={clsx("flex w-full", isUser ? "justify-end" : "justify-start")}>
       <div
         className={clsx(
-          "max-w-[85%] px-4 py-3 rounded-2xl leading-relaxed",
+          "max-w-[85%] sm:max-w-[75%] md:max-w-[65%] px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl leading-relaxed text-sm sm:text-base",
           isUser
-            ? "bg-primary text-primary-foreground rounded-br-lg"
-            : "bg-secondary text-secondary-foreground rounded-bl-lg"
+            ? "bg-blue-600 text-white rounded-br-lg"
+            : "bg-gray-100 text-gray-900 rounded-bl-lg"
         )}
       >
+        {/* Mostra immagine se presente */}
+        {imageUrl && (
+          <div className="mb-3 rounded-lg overflow-hidden">
+            <img
+              src={imageUrl}
+              alt="Foto allegata"
+              className="max-w-full h-auto max-h-64 object-cover rounded-lg"
+            />
+          </div>
+        )}
         {renderContent(content)}
         {shouldRenderMenuCTA && (
           <div className="mt-3">

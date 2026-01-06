@@ -9,29 +9,28 @@ import type { AssistantConfig } from '@/lib/types';
 export default async function ChatPage() {
   const session = await auth();
 
-  if (!session?.user?.tenantId) {
+  // Controlla prima se l'utente è autenticato
+  if (!session?.user) {
     redirect('/login');
   }
 
+  // Usa tenantId dalla sessione o un default per sviluppo
+  const tenantId = session.user.tenantId || '1';
+
   let assistantConfig: AssistantConfig | null = null;
   try {
-    assistantConfig = await getAssistantConfig(session.user.tenantId);
+    assistantConfig = await getAssistantConfig(tenantId);
   } catch (error) {
     console.error('Errore nel recuperare la configurazione dell\'assistente:', error);
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-indigo-100 via-white to-cyan-100 p-4">
-      <div className="w-full max-w-2xl h-[80vh] min-h-[500px] flex flex-col">
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
-          <Balancer>{assistantConfig?.name || 'Assistente Virtuale'}</Balancer>
-        </h1>
-        <div className="flex-grow overflow-hidden border bg-white rounded-lg shadow-xl">
-          <ChatInterface
-            assistantConfig={assistantConfig}
-            widgetColor={assistantConfig?.widget_color}
-          />
-        </div>
+    <div className="flex flex-col h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] md:h-[calc(100vh-4rem)]">
+      <div className="flex-grow overflow-hidden bg-white">
+        <ChatInterface
+          assistantConfig={assistantConfig}
+          widgetColor={assistantConfig?.widget_color}
+        />
       </div>
     </div>
   );

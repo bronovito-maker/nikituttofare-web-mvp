@@ -1,0 +1,72 @@
+[
+    {
+      "category": "plumbing",
+      "urgency": "emergency",
+      "user_type": "private_elderly",
+      "text": "aiuto mi esce acqua da sotto il lavandino in cucina non so chiudere il rubinetto venite subito vi prego sono sola",
+      "expected_action": "Calmare utente, spiegare come chiudere la generale, inviare idraulico priorità massima"
+    },
+    {
+      "category": "electric",
+      "urgency": "high",
+      "user_type": "horeca_manager",
+      "text": "Sono il direttore dell'Hotel Riviera. È saltata la corrente nella cucina del ristorante e abbiamo il servizio tra un'ora. Intervento immediato richiesto.",
+      "expected_action": "Tono formale/business, priorità assoluta, conferma immediata presa in carico"
+    },
+    {
+      "category": "locksmith",
+      "urgency": "emergency",
+      "user_type": "private_parent",
+      "text": "SONO RIMASTA CHIUSA FUORI SUL BALCONE E DENTRO C'È IL BAMBINO DI 2 ANNI CHE PIANGE FATE PRESTOOOO",
+      "expected_action": "Massima priorità (codice rosso), istruire di chiamare anche VVF se necessario, invio fabbro immediato"
+    },
+    {
+      "category": "climate",
+      "urgency": "medium",
+      "user_type": "private_generic",
+      "text": "salve, il condizionatore fa un rumore strano tipo clac clac e non esce aria fredda. si può vedere?",
+      "expected_action": "Richiedere audio o video del rumore, programmare intervento non urgente"
+    },
+    {
+      "category": "generic",
+      "urgency": "low",
+      "user_type": "private_confused",
+      "text": "sentite io ho la tapparella che è scesa storta e non sale più. non so se serve un fabbro o un elettricista è quella col pulsante.",
+      "expected_action": "Classificare come 'serramenti/elettrico', rassicurare, chiedere foto"
+    },
+    {
+      "category": "plumbing",
+      "urgency": "high",
+      "user_type": "horeca_staff",
+      "text": "Bar Centrale, bagno clienti allagato. Il water non scarica e sta tracimando. Urgente puzza terribile.",
+      "expected_action": "Intervento spurgo urgente, gestire disagio business"
+    },
+    {
+      "category": "electric",
+      "urgency": "medium",
+      "user_type": "private_tech_savvy",
+      "text": "Ho un salvavita che scatta randomicamente. Ho già staccato tutti gli elettrodomestici ma continua. Probabile dispersione sull'impianto luci esterno.",
+      "expected_action": "Saltare domande base, inviare elettricista esperto ricerca guasti"
+    },
+    {
+      "category": "generic",
+      "urgency": "low",
+      "user_type": "angry_client",
+      "text": "È da due giorni che aspetto che mi richiamate per quel preventivo della caldaia. Siete poco seri.",
+      "expected_action": "Gestione reclamo, scuse, escalation immediata all'admin"
+    },
+    {
+      "category": "locksmith",
+      "urgency": "high",
+      "user_type": "private_generic",
+      "text": "Ho spezzato la chiave nella serratura blindata. Non riesco a rientrare in casa.",
+      "expected_action": "Richiedere foto toppa, inviare fabbro per estrazione"
+    },
+    {
+      "category": "plumbing",
+      "urgency": "medium",
+      "user_type": "private_vague",
+      "text": "c'è una macchia sul soffitto che si allarga.",
+      "expected_action": "Identificare perdita piano superiore, richiedere foto macchia"
+    }
+  ]

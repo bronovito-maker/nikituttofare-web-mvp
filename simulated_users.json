@@ -1,0 +1,1199 @@
+[
+    {
+      "category": "gas",
+      "urgency": "emergency",
+      "user_type": "private_elderly",
+      "text": "Sento un odore strano in cucina come di uova marce non capisco se ho lasciato acceso il fornello aiuto mi gira la testa",
+      "expected_action": "Massima urgenza, istruire di chiudere il gas, aprire finestre e uscire subito. Invio tecnico certificato gas."
+    },
+    {
+      "category": "electric",
+      "urgency": "high",
+      "user_type": "horeca_manager",
+      "text": "SONO IL DIRETTORE DEL GRAND HOTEL. È SALTATO IL GRUPPO ELETTROGENO E ABBIAMO 4 PERSONE BLOCCATE IN ASCENSORE. CHIAMATE SUBITO QUALCUNO.",
+      "expected_action": "Attivazione procedura emergenza ascensori, allerta ditta manutentrice e VVF, tono calmo ma risoluto."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "high",
+      "user_type": "tourist_vague",
+      "text": "hello we are in via something near a big church and the key is stuck in the door we cannot enter the airbnb help",
+      "expected_action": "Localizzazione tramite coordinate GPS o foto, invio fabbro multilingua."
+    },
+    {
+      "category": "climate",
+      "urgency": "emergency",
+      "user_type": "horeca_staff",
+      "text": "Cella frigorifera della carne segna 12 gradi. Se non intervenite entro due ore buttiamo 5000 euro di merce. Muovetevi!",
+      "expected_action": "Intervento frigorista d'urgenza (entro 60 min), segnalare valore merce a rischio."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "medium",
+      "user_type": "luxury_hotel_concierge",
+      "text": "Buongiorno, si richiede assistenza per la Suite Reale. Il miscelatore della doccia presenta un'estetica ossidata e un flusso d'acqua non omogeneo. Gradito intervento discreto.",
+      "expected_action": "Tono estremamente formale, invio idraulico in divisa, orario concordato per non disturbare l'ospite."
+    },
+    {
+      "category": "generic",
+      "urgency": "low",
+      "user_type": "private_tech_savvy",
+      "text": "Configurazione gateway domotico fallita dopo update firmware. I relè delle tapparelle non rispondono più via Zigbee. Serve un tecnico che sappia resettare il bridge.",
+      "expected_action": "Inviare tecnico specializzato in domotica/smart home, non un semplice elettricista."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "emergency",
+      "user_type": "private_parent",
+      "text": "HO PERSO LE CHIAVI DELLA CASSAFORTE DOVE CI SONO I MEDICINALI SALVAVITA DI MIO FIGLIO VI PREGO DITEMI CHE POTETE APRIRLA ORA",
+      "expected_action": "Codice rosso, invio specialista aperture forzate/casseforti immediato."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "high",
+      "text": "uè guagliò m'è scoppiato o' tubo d'a lavatrice sta allagando pure o' vicino 'e sotto venite de corsa",
+      "user_type": "private_generic",
+      "expected_action": "Identificare perdita da elettrodomestico, suggerire chiusura valvola a monte, invio idraulico."
+    },
+    {
+      "category": "electric",
+      "urgency": "emergency",
+      "user_type": "private_elderly",
+      "text": "escono le scintille dalla presa della televisione ho tanta paura",
+      "expected_action": "Rassicurare, ordinare di non toccare la presa, spiegare come staccare il contatore generale, invio elettricista."
+    },
+    {
+      "category": "climate",
+      "urgency": "low",
+      "user_type": "horeca_manager",
+      "text": "Dovremmo programmare la sanificazione dei filtri per i 15 fan-coil del ristorante prima dell'apertura stagionale di maggio.",
+      "expected_action": "Pianificazione manutenzione ordinaria, invio preventivo forfait per HORECA."
+    },
+    {
+      "category": "generic",
+      "urgency": "medium",
+      "user_type": "private_confused",
+      "text": "non so bene cosa sia ma sento un rumore tipo un ronzio nel muro vicino al quadro elettrico forse c'è un nido di vespe o sono i fili?",
+      "expected_action": "Chiedere video per distinguere tra ronzio elettrico o insetti, invio tecnico per sopralluogo."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "high",
+      "user_type": "horeca_staff",
+      "text": "Cucina bloccata. Lo scarico della lavastoviglie industriale rigurgita schiuma nera dappertutto. Non possiamo lavare i piatti.",
+      "expected_action": "Intervento spurgo/canaljet urgente per settore ristorazione."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "high",
+      "user_type": "private_generic",
+      "text": "Tentativo di furto subito. Serratura manomessa, non riesco a infilare la chiave e la porta è rimasta aperta. Ho paura a stare qui stanotte.",
+      "expected_action": "Intervento cambio cilindro immediato (emergenza sicurezza), supporto psicologico base."
+    },
+    {
+      "category": "electric",
+      "urgency": "medium",
+      "user_type": "private_tech_savvy",
+      "text": "Il tester rileva una tensione di 180V sulle prese invece di 230V. Sospetto neutro instabile in cabina o problema al montante.",
+      "expected_action": "Inviare elettricista esperto con strumentazione di misura, avvisare possibile guasto fornitore rete."
+    },
+    {
+      "category": "climate",
+      "urgency": "high",
+      "user_type": "private_elderly",
+      "text": "Fa freddissimo e la caldaia segna errore E10. Sono vecchia e non ho nessuno che mi aiuta a rimettere l'acqua.",
+      "expected_action": "Spiegazione guidata per caricamento pressione (rubinetto sotto caldaia), se non risolve invio tecnico."
+    },
+    {
+      "category": "generic",
+      "urgency": "low",
+      "user_type": "private_generic",
+      "text": "volevo sapere quanto costa cambiare 4 maniglie delle porte interne che sono tutte rovinate",
+      "expected_action": "Richiesta foto maniglie per preventivo, programmazione intervento non urgente."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "emergency",
+      "user_type": "private_parent",
+      "text": "MIO FIGLIO HA LANCIATO UN GIOCATTOLO NEL WATER E ORA SI È BLOCCATO TUTTO E L'ACQUA STA USCENDO SUL TAPPETO AIUTOOOO",
+      "expected_action": "Calmare l'utente, invio idraulico con sonda meccanica, priorità alta."
+    },
+    {
+      "category": "electric",
+      "urgency": "high",
+      "user_type": "horeca_manager",
+      "text": "Insegna luminosa esterna in corto. Fa fumo e puzza di bruciato proprio sopra l'ingresso principale. I clienti hanno paura ad entrare.",
+      "expected_action": "Intervento elettricista per messa in sicurezza insegna, cestello se necessario."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "low",
+      "user_type": "private_elderly",
+      "text": "Vorrei mettere quel coso... l'occhiello elettronico per vedere chi c'è alla porta che non ci vedo bene.",
+      "expected_action": "Proposta installazione spioncino digitale, fissare appuntamento."
+    },
+    {
+      "category": "gas",
+      "urgency": "high",
+      "user_type": "private_generic",
+      "text": "Ho provato ad accendere il piano cottura ma fa una fiammata gialla enorme e si sente puzza. Ho chiuso la bombola.",
+      "expected_action": "Elogiare la chiusura della bombola, invio tecnico per controllo ugelli e pressione."
+    },
+    {
+      "category": "generic",
+      "urgency": "low",
+      "user_type": "luxury_hotel_concierge",
+      "text": "Gentili, si è allentata la testiera del letto nella camera 402. Necessitiamo di un falegname per il consolidamento entro il check-in delle ore 15:00.",
+      "expected_action": "Tono formale, invio tuttofare entro il timeframe richiesto."
+    },
+    {
+      "category": "climate",
+      "urgency": "high",
+      "user_type": "horeca_staff",
+      "text": "Il condizionatore della sala server è morto. I server stanno andando in protezione termica. Se crasha tutto siamo finiti.",
+      "expected_action": "Intervento priorità business continuity, tecnico climatizzazione industriale."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "low",
+      "user_type": "private_tech_savvy",
+      "text": "Vorrei installare un addolcitore a monte dell'impianto. Ho già la predisposizione e lo scarico. Mi serve solo il montaggio e il collaudo.",
+      "expected_action": "Richiedere scheda tecnica modello acquistato, invio preventivo installazione."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "high",
+      "user_type": "tourist_vague",
+      "text": "I lost the bag with house keys on the beach. I don't know the address but I have the google maps position. Can you help me?",
+      "expected_action": "Supporto localizzazione, richiesta documento d'identità, invio fabbro per apertura."
+    },
+    {
+      "category": "electric",
+      "urgency": "emergency",
+      "user_type": "private_parent",
+      "text": "C'È UN CAVO SCOPERTO CHE PENZOLA DAL SOFFITTO E IL BAMBINO CERCA DI PRENDERLO HO STACCATO LA LUCE MA NON SO SE È SICURO",
+      "expected_action": "Confermare di tenere la luce staccata, invio elettricista d'urgenza per messa in sicurezza."
+    },
+    {
+      "category": "generic",
+      "urgency": "medium",
+      "user_type": "private_elderly",
+      "text": "scusate ho la tapparella che non viene più giù e stasera ho paura a dormire con la finestra aperta",
+      "expected_action": "Invio tapparellista in giornata per garantire sicurezza notturna."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "high",
+      "user_type": "horeca_manager",
+      "text": "Perdita occulta nel bagno disabili. L'acqua sta filtrando nel negozio di scarpe al piano di sotto. Il proprietario è furioso e minaccia denunce.",
+      "expected_action": "Intervento ricerca guasto con termocamera, gestione emergenza legale/vicinato."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "low",
+      "user_type": "private_generic",
+      "text": "devo cambiare la serratura perché ho lasciato le chiavi alla mia ex e non me le ridà",
+      "expected_action": "Consigliare cilindro europeo di alta sicurezza, programmare intervento."
+    },
+    {
+      "category": "climate",
+      "urgency": "medium",
+      "user_type": "private_generic",
+      "text": "il riscaldamento funziona ma un termosifone rimane freddo in alto anche se ho provato a svitare la valvolina",
+      "expected_action": "Istruire su sfiato aria, se persiste suggerire lavaggio impianto o controllo valvola termostatica."
+    },
+    {
+      "category": "electric",
+      "urgency": "low",
+      "user_type": "private_tech_savvy",
+      "text": "Avrei bisogno di certificazione DiCo per l'impianto elettrico di un box appena ristrutturato. L'impianto è a norma, serve solo il sopralluogo del tecnico abilitato.",
+      "expected_action": "Verifica requisiti legali, invio tecnico abilitato per certificazione."
+    },
+    {
+      "category": "generic",
+      "urgency": "high",
+      "user_type": "private_parent",
+      "text": "MI SI È ROTTO IL VETRO DELLA FINESTRA IN CAMERA DEI BAMBINI C'È VETRO OVUNQUE E FA FREDDO VI PREGO VENITE A METTERLO IN SICUREZZA",
+      "expected_action": "Invio vetraio d'urgenza, istruire su come isolare la stanza e non toccare i vetri."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "low",
+      "user_type": "private_elderly",
+      "text": "il rubinetto della cucina fa goccino goccino tutta la notte e non mi fa dormire",
+      "expected_action": "Sostituzione guarnizione o cartuccia, intervento di routine."
+    },
+    {
+      "category": "electric",
+      "urgency": "emergency",
+      "user_type": "horeca_staff",
+      "text": "Puzza di cavi bruciati dal quadro generale del bar. Metà luci spente. C'è rischio incendio?",
+      "expected_action": "Ordinare distacco generale se possibile, invio immediato elettricista per ispezione quadro."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "high",
+      "user_type": "private_generic",
+      "text": "Sono rimasto bloccato nel bagno di casa mia. La maniglia gira a vuoto. Sono solo e ho il telefono per fortuna.",
+      "expected_action": "Calmare l'utente, invio fabbro per apertura porta interna d'urgenza."
+    },
+    {
+      "category": "climate",
+      "urgency": "low",
+      "user_type": "horeca_manager",
+      "text": "Salve, vorrei un preventivo per installare delle barriere d'aria sopra l'ingresso del bistrot per non disperdere il calore d'inverno.",
+      "expected_action": "Sopralluogo commerciale per dimensionamento barriere d'aria."
+    },
+    {
+      "category": "generic",
+      "urgency": "medium",
+      "user_type": "private_confused",
+      "text": "c'è una specie di muffa nera che sta mangiando il muro nell'angolo vicino alla finestra non so se è un tubo rotto o solo umidità",
+      "expected_action": "Sopralluogo con igrometro per distinguere tra condensa e infiltrazione."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "high",
+      "user_type": "luxury_hotel_concierge",
+      "text": "Segnaliamo riflusso di acque nere dalla piletta della Spa. La situazione è critica data la presenza di ospiti di alto profilo.",
+      "expected_action": "Intervento spurgo con massima discrezione, mezzo non loggato se possibile."
+    },
+    {
+      "category": "electric",
+      "urgency": "low",
+      "user_type": "private_generic",
+      "text": "vorrei mettere i led sotto i pensili della cucina ma non ho la presa vicina come si può fare?",
+      "expected_action": "Suggerire preventivo per piccoli lavori elettrici e canaline estetiche."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "emergency",
+      "user_type": "private_parent",
+      "text": "CHIAVI RIMASTE DENTRO CASA CON I FORNELLI ACCESI VI PREGO FATE PRESTO PRIMA CHE SCOPPI TUTTO",
+      "expected_action": "Massima urgenza, allertare VVF parallelamente, invio fabbro più vicino."
+    },
+    {
+      "category": "climate",
+      "urgency": "high",
+      "user_type": "private_elderly",
+      "text": "il telecomando del condizionatore non risponde e io sto soffocando dal caldo ho 85 anni non ce la faccio",
+      "expected_action": "Verifica batterie via telefono, se non risolve invio tecnico per accensione manuale/sostituzione."
+    },
+    {
+      "category": "generic",
+      "urgency": "low",
+      "user_type": "private_tech_savvy",
+      "text": "Devo montare un supporto TV a parete motorizzato su muro in cartongesso. Servono tasselli chimici o rinforzo interno?",
+      "expected_action": "Inviare tuttofare esperto cartongesso con attrezzatura specifica."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "medium",
+      "user_type": "private_generic",
+      "text": "l'acqua della doccia non va giù bene ma se uso la ventosa peggiora la situazione",
+      "expected_action": "Evitare acidi corrosivi, invio idraulico per pulizia sifone o disotturazione."
+    },
+    {
+      "category": "electric",
+      "urgency": "high",
+      "user_type": "horeca_manager",
+      "text": "Ristorante al buio. Il magnetotermico non ne vuole sapere di stare su. Abbiamo 80 persone sedute che mangiano a lume di candela.",
+      "expected_action": "Supporto telefonico per isolare zona guasta, invio elettricista d'urgenza."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "low",
+      "user_type": "private_elderly",
+      "text": "la porta del garage è diventata pesantissima non riesco più ad alzarla",
+      "expected_action": "Controllo molle di bilanciamento serranda, invio tecnico."
+    },
+    {
+      "category": "climate",
+      "urgency": "medium",
+      "user_type": "private_parent",
+      "text": "Dalla caldaia esce un rumore tipo fischio quando apriamo l'acqua calda e il bambino si spaventa. È pericoloso?",
+      "expected_action": "Rassicurare (probabile calcare o circolatore), programmare decalcificazione."
+    },
+    {
+      "category": "generic",
+      "urgency": "low",
+      "user_type": "luxury_hotel_concierge",
+      "text": "Si richiede la regolazione delle cerniere della porta tagliafuoco nel corridoio est. Produce un cigolio non consono agli standard dell'hotel.",
+      "expected_action": "Manutenzione ferramenta, lubrificazione professionale."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "high",
+      "user_type": "private_generic",
+      "text": "ho provato a cambiare il rubinetto da solo e ho rotto il tubo nel muro ora schizza tutto",
+      "expected_action": "Istruire su chiusura chiave d'arresto generale, invio idraulico per riparazione danno."
+    },
+    {
+      "category": "electric",
+      "urgency": "low",
+      "user_type": "private_elderly",
+      "text": "mi si sono bruciate tutte le lampadine del lampadario grande non ci arrivo con la scala",
+      "expected_action": "Intervento 'piccole manutenzioni' per sostituzione lampadine e controllo portalampade."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "emergency",
+      "user_type": "horeca_staff",
+      "text": "Chiusi fuori dal magazzino bevande, la chiave si è spezzata dentro. Tra mezz'ora inizia il turno e non abbiamo le bottiglie!",
+      "expected_action": "Apertura forzata e sostituzione cilindro rapida per attività commerciale."
+    },
+    {
+      "category": "climate",
+      "urgency": "high",
+      "user_type": "horeca_manager",
+      "text": "Il sistema di estrazione fumi della cucina è andato. C'è nebbia in sala, non si respira. Devo chiudere tutto se non risolvete.",
+      "expected_action": "Intervento urgente su motori aspirazione cappe industriali."
+    },
+    {
+      "category": "generic",
+      "urgency": "low",
+      "user_type": "private_tech_savvy",
+      "text": "Ho acquistato un termostato Nest e devo interfacciarlo con una vecchia caldaia Beretta. Mi serve qualcuno che faccia il ponte corretto sulla scheda.",
+      "expected_action": "Inviare tecnico caldaista con competenze elettroniche/smart home."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "medium",
+      "user_type": "private_confused",
+      "text": "c'è l'acqua nel giardino che zampilla dal prato ma non ho acceso l'irrigazione",
+      "expected_action": "Identificare rottura tubo interrato, invio idraulico con strumenti scavo."
+    },
+    {
+      "category": "electric",
+      "urgency": "high",
+      "user_type": "tourist_vague",
+      "text": "The phone charger exploded in the socket and now all lights are off. We smell smoke. What do we do?",
+      "expected_action": "Istruire su distacco corrente, ispezione danni all'impianto, invio elettricista."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "medium",
+      "user_type": "private_generic",
+      "text": "mi hanno rubato lo zaino con le chiavi ma ho un duplicato da mia madre. voglio però cambiare la serratura per sicurezza.",
+      "expected_action": "Programmare cambio cilindro per sicurezza preventiva."
+    },
+    {
+      "category": "climate",
+      "urgency": "low",
+      "user_type": "private_elderly",
+      "text": "fa un rumore come di sassi dentro il termosifone quando si accende",
+      "expected_action": "Spiegazione depositi calcare/fanghi, proposta lavaggio chimico impianto."
+    },
+    {
+      "category": "generic",
+      "urgency": "high",
+      "user_type": "horeca_manager",
+      "text": "Si è staccato un pezzo di intonaco dal soffitto della hall. Per fortuna non ha preso nessuno. Serve subito un muratore per ripristinare e controllare il resto.",
+      "expected_action": "Messa in sicurezza soffitto, controllo sfondellamento solai."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "emergency",
+      "user_type": "private_parent",
+      "text": "L'ACQUA CALDE È BOLLENTE E NON SI REGOLA MIO FIGLIO SI È QUASI SCOTTATO ESCE SOLO VAPORE",
+      "expected_action": "Istruire di spegnere la caldaia, invio tecnico per controllo valvola miscelatrice/termostato."
+    },
+    {
+      "category": "electric",
+      "urgency": "low",
+      "user_type": "luxury_hotel_concierge",
+      "text": "Si richiede l'installazione di una stazione di ricarica per veicoli elettrici nel parcheggio ospiti. Necessitiamo di consulenza tecnica sulla potenza disponibile.",
+      "expected_action": "Sopralluogo tecnico per installazione Wallbox."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "medium",
+      "user_type": "private_tech_savvy",
+      "text": "Vorrei installare una serratura smart Nuki ma ho un cilindro senza doppia funzione frizionata. Potete sostituire il cilindro con uno compatibile?",
+      "expected_action": "Inviare fabbro esperto smart-lock con cilindro frizionato a misura."
+    },
+    {
+      "category": "climate",
+      "urgency": "emergency",
+      "user_type": "private_elderly",
+      "text": "sono tre giorni che non ho riscaldamento e sto male vi prego aiutatemi non ho soldi per una caldaia nuova",
+      "expected_action": "Priorità sociale, invio tecnico per riparazione economica o valutazione bonus, tono empatico."
+    },
+    {
+      "category": "generic",
+      "urgency": "low",
+      "user_type": "private_generic",
+      "text": "devo montare tre mobili dell'ikea e non ci capisco niente con le istruzioni",
+      "expected_action": "Assegnazione tuttofare montaggio mobili, tariffa oraria."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "high",
+      "user_type": "horeca_staff",
+      "text": "Il ghiacciatore del bar perde acqua da sotto. Tutto il bancone è allagato e i clienti scivolano.",
+      "expected_action": "Spegnimento macchina ghiaccio, invio tecnico elettrodomestici/idraulico."
+    },
+    {
+      "category": "electric",
+      "urgency": "medium",
+      "user_type": "private_parent",
+      "text": "Le luci del corridoio sfarfallano continuamente, sembra un film horror e i bambini hanno paura di andare in camera.",
+      "expected_action": "Controllo driver led o morsetti allentati, intervento risolutivo."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "high",
+      "user_type": "luxury_hotel_concierge",
+      "text": "La porta blindata della Suite Presidenziale non si chiude correttamente a causa di un cedimento strutturale delle cerniere. Urgente.",
+      "expected_action": "Intervento fabbro specializzato porte blindate alta gamma, massima urgenza."
+    },
+    {
+      "category": "climate",
+      "urgency": "medium",
+      "user_type": "private_generic",
+      "text": "ho il condizionatore che sputa pezzi di ghiaccio neri, credo sia sporco",
+      "expected_action": "Sanificazione completa unità interna (evaporatore e ventola)."
+    },
+    {
+      "category": "generic",
+      "urgency": "low",
+      "user_type": "private_elderly",
+      "text": "mi si è scollato lo specchio in bagno ho paura che mi cada sui piedi",
+      "expected_action": "Intervento fissaggio specchio in sicurezza."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "medium",
+      "user_type": "horeca_manager",
+      "text": "Abbiamo l'acqua del bagno che esce giallastra. Forse i tubi sono vecchi? Non possiamo farla usare ai clienti.",
+      "expected_action": "Analisi chimica rapida o spurgo tubature, ispezione autoclave."
+    },
+    {
+      "category": "electric",
+      "urgency": "emergency",
+      "user_type": "private_generic",
+      "text": "C'È STATA UNA SBERLA DI CORRENTE E ORA Puzza DI BRUCIATO OVUNQUE E IL COMPUTER NON SI ACCENDE PIÙ",
+      "expected_action": "Verifica sovratensione, controllo impianto di terra, distacco apparecchi danneggiati."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "low",
+      "user_type": "private_tech_savvy",
+      "text": "Voglio automatizzare il basculante del garage con un motore Somfy. Ho già la 220V portata sul punto luce.",
+      "expected_action": "Inviare preventivo motorizzazione garage."
+    },
+    {
+      "category": "climate",
+      "urgency": "high",
+      "user_type": "horeca_staff",
+      "text": "Si è bloccato il riscaldamento nel dehor esterno proprio oggi che c'è l'evento aziendale. I funghi a gas non bastano.",
+      "expected_action": "Intervento urgente riscaldatori esterni/pompa di calore."
+    },
+    {
+      "category": "generic",
+      "urgency": "medium",
+      "user_type": "private_parent",
+      "text": "ho visto un topo in soffitta dove ci sono le scatole dei vestiti dei piccoli vi prego aiutatemi",
+      "expected_action": "Servizio derattizzazione/sanificazione soffitta."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "low",
+      "user_type": "private_elderly",
+      "text": "non riesco a girare la manopola del termosifone è tutta dura",
+      "expected_action": "Sbloccaggio valvola o sostituzione testina termostatica."
+    },
+    {
+      "category": "electric",
+      "urgency": "high",
+      "user_type": "horeca_manager",
+      "text": "Il forno trifase della pasticceria ha fatto un botto. Produzione ferma. Se non riparate subito non abbiamo le brioches domani.",
+      "expected_action": "Intervento elettricista industriale per macchinari cucina."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "emergency",
+      "user_type": "tourist_vague",
+      "text": "HELP! the door closed with the wind and the baby is inside the house ALONE we are in the hallway",
+      "expected_action": "Codice rosso assoluto, invio fabbro flash, allertare emergenza se necessario."
+    },
+    {
+      "category": "climate",
+      "urgency": "low",
+      "user_type": "private_tech_savvy",
+      "text": "Il sensore di umidità della VMC non attiva la ventola. Probabile guasto al sensore o cablaggio bus interrotto.",
+      "expected_action": "Inviare tecnico specializzato in ventilazione meccanica controllata."
+    },
+    {
+      "category": "generic",
+      "urgency": "medium",
+      "user_type": "private_confused",
+      "text": "mi è caduto l'anello nello scarico del lavandino non ho aperto l'acqua è ancora lì?",
+      "expected_action": "Istruire di NON aprire l'acqua, invio idraulico per smontaggio sifone e recupero."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "high",
+      "user_type": "luxury_hotel_concierge",
+      "text": "Urgentissima riparazione perdita occulta bidet camera 201. L'acqua sta rovinando il parquet originale del '700.",
+      "expected_action": "Intervento massima urgenza con protezione superfici pregiate."
+    },
+    {
+      "category": "electric",
+      "urgency": "low",
+      "user_type": "private_generic",
+      "text": "vorrei spostare l'interruttore della luce dietro la porta perché è scomodo",
+      "expected_action": "Piccola opera muraria/elettrica, fissare sopralluogo."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "medium",
+      "user_type": "private_elderly",
+      "text": "ho paura dei ladri vorrei mettere una sbarra rinforzata sulla porta della cantina",
+      "expected_action": "Consulenza sistemi di sicurezza passiva, invio fabbro."
+    },
+    {
+      "category": "climate",
+      "urgency": "high",
+      "user_type": "horeca_manager",
+      "text": "Climatizzatore principale lobby Hotel gocciola in testa agli ospiti che fanno il check-in. Imbarazzante.",
+      "expected_action": "Pulizia scarico condensa urgente, ripristino decoro."
+    },
+    {
+      "category": "generic",
+      "urgency": "low",
+      "user_type": "private_parent",
+      "text": "devo montare il cancelletto per le scale per il bambino ma non voglio bucare il marmo come si fa?",
+      "expected_action": "Consulenza fissaggi a pressione o soluzioni non invasive."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "emergency",
+      "user_type": "private_generic",
+      "text": "MI È ESPLOSO IL TUBO DEL FLESSIBILE MENTRE ERO SOTTO LA DOCCIA ALLAGAMENTO TOTALE",
+      "expected_action": "Istruire su chiusura valvola generale, invio idraulico immediato."
+    },
+    {
+      "category": "electric",
+      "urgency": "medium",
+      "user_type": "private_tech_savvy",
+      "text": "L'inverter del fotovoltaico segna 'Isolation Fault'. Probabile infiltrazione d'acqua nei connettori MC4 sul tetto.",
+      "expected_action": "Inviare tecnico specializzato in impianti fotovoltaici."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "high",
+      "user_type": "horeca_staff",
+      "text": "Cassaforte del front desk bloccata. Non accetta il codice master e dobbiamo dare i passaporti ai clienti in partenza.",
+      "expected_action": "Intervento tecnico casseforti, sblocco d'emergenza per documenti."
+    },
+    {
+      "category": "climate",
+      "urgency": "low",
+      "user_type": "private_elderly",
+      "text": "il tecnico che è venuto l'anno scorso non mi ha lasciato il libretto della caldaia",
+      "expected_action": "Recupero dati, emissione nuovo libretto impianto, controllo fumi."
+    },
+    {
+      "category": "generic",
+      "urgency": "high",
+      "user_type": "horeca_manager",
+      "text": "Vetrata del buffet crepata. Rischio che i frammenti finiscano nel cibo. Serve sostituzione immediata!",
+      "expected_action": "Rimozione vetro lesionato, installazione provvisoria o definitiva vetro stratificato."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "medium",
+      "user_type": "private_generic",
+      "text": "ogni volta che i vicini scaricano io sento un rumore di gorgoglio nel mio lavandino",
+      "expected_action": "Controllo sfiati colonna di scarico, possibile ostruzione parziale."
+    },
+    {
+      "category": "electric",
+      "urgency": "low",
+      "user_type": "private_elderly",
+      "text": "non vedo bene l'ora del forno perché la lucina si è spenta",
+      "expected_action": "Sostituzione lampadina forno o riparazione display."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "high",
+      "user_type": "private_parent",
+      "text": "Mi hanno scippato la borsa con dentro le chiavi di casa e l'indirizzo era sui documenti. Ho paura che vengano qui subito!",
+      "expected_action": "Cambio serratura immediato per motivi di sicurezza, priorità alta."
+    },
+    {
+      "category": "climate",
+      "urgency": "emergency",
+      "user_type": "private_parent",
+      "text": "SENTO PUZZA DI BRUCIATO DALLO SPLIT DEL CONDIZIONATORE IN CAMERA DEI BAMBINI HO VISTO UNA FIAMMELLA",
+      "expected_action": "Staccare subito corrente, invio tecnico/vigili del fuoco, emergenza incendio."
+    },
+    {
+      "category": "generic",
+      "urgency": "low",
+      "user_type": "private_tech_savvy",
+      "text": "Devo installare una pellicola specchiata anti-UV su 4 vetrate esposte a sud per abbattere il carico termico.",
+      "expected_action": "Inviare specialista pellicole per vetri."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "medium",
+      "user_type": "horeca_staff",
+      "text": "L'acqua della macchina del caffè esce tiepida. Il tecnico della torrefazione dice che è un problema di pressione idrica nostra.",
+      "expected_action": "Controllo pompa autoclave o riduttore di pressione."
+    },
+    {
+      "category": "electric",
+      "urgency": "high",
+      "user_type": "private_generic",
+      "text": "TUTTO IL PALAZZO HA LA LUCE TRANNE ME COSA HO FATTO DI MALE",
+      "expected_action": "Verifica se è saltato il contatore esterno o morosità, altrimenti guasto linea privata."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "low",
+      "user_type": "private_elderly",
+      "text": "vorrei mettere una catenella alla porta così non la devo aprire tutta quando bussano gli sconosciuti",
+      "expected_action": "Installazione limitatore d'apertura, intervento di sicurezza sociale."
+    },
+    {
+      "category": "climate",
+      "urgency": "medium",
+      "user_type": "horeca_manager",
+      "text": "L'umidità in cantina vini è salita al 90%. Il sistema di deumidificazione non scarica l'acqua. I tappi rischiano la muffa.",
+      "expected_action": "Riparazione deumidificatore industriale o pompa scarico condensa."
+    },
+    {
+      "category": "generic",
+      "urgency": "low",
+      "user_type": "luxury_hotel_concierge",
+      "text": "Si richiede la lucidatura del marmo nell'atrio principale per un evento di gala previsto sabato sera.",
+      "expected_action": "Servizio levigatura e lucidatura marmi professionale."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "high",
+      "user_type": "private_parent",
+      "text": "Il bidet sta traboccando e l'acqua è arrivata nel corridoio sui mobili antichi aiuto",
+      "expected_action": "Istruire su chiusura rubinetti sottolavabo, invio idraulico d'urgenza."
+    },
+    {
+      "category": "electric",
+      "urgency": "medium",
+      "user_type": "private_tech_savvy",
+      "text": "Ho un ronzio armonico persistente sui diffusori audio quando accendo i dimmer delle luci led. Serve un filtro EMI o rifare le masse.",
+      "expected_action": "Inviare elettricista esperto in qualità dell'energia/audiofilia."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "emergency",
+      "user_type": "private_elderly",
+      "text": "non riesco a uscire di casa la serratura è bloccata e mi sento mancare l'aria",
+      "expected_action": "Apertura porta dall'esterno d'urgenza, tranquillizzare l'utente per evitare malori."
+    },
+    {
+      "category": "gas",
+      "urgency": "emergency",
+      "user_type": "horeca_manager",
+      "text": "Puzza di gas fortissima vicino ai contatori esterni del ristorante. Ho paura che salti tutto.",
+      "expected_action": "Evacuazione zona, chiamare 115 e pronto intervento gas, invio nostro tecnico per supporto."
+    },
+    {
+      "category": "climate",
+      "urgency": "emergency",
+      "user_type": "horeca_manager",
+      "text": "Sono il responsabile del Resort Alpheus. La centrale termica è andata in blocco totale, abbiamo 150 ospiti senza acqua calda per le docce. È un disastro d'immagine, intervenite ora!",
+      "expected_action": "Inviare squadra di termotecnici industriali h24 e richiedere codice errore sul display della centralina. Tono: Estremamente formale e risolutivo."
+    },
+    {
+      "category": "electric",
+      "urgency": "high",
+      "user_type": "private_elderly",
+      "text": "Sento come un ronzio di api dentro al muro dove c'è il quadro elettrico... e se tocco la plastica scotta. Mi devo spaventare?",
+      "expected_action": "Ordinare il distacco immediato dell'interruttore generale e inviare elettricista d'urgenza per ispezione serraggio morsetti. Tono: Calmo ma direttivo."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "emergency",
+      "user_type": "angry_client",
+      "text": "AVETE ROTTO IL CAZZO! È LA TERZA VOLTA CHE VI CHIAMO PER IL LAVANDINO CHE PERDE E ORA C'È UN LAGO IN CUCINA! SE NON ARRIVA QUALCUNO ENTRO 20 MINUTI VI DENUNCIO TUTTI!",
+      "expected_action": "Inviare idraulico priorità 'Codice Rosso' e richiedere video dell'allagamento per preparare l'attrezzatura di aspirazione. Tono: Estremamente scusante ma focalizzato sull'azione."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "emergency",
+      "user_type": "private_panic",
+      "text": "AIUTOOOOO MI SI È CHIUSA LA PORTA BLINDATA CON LE CHIAVI DENTRO E C'È IL FORNELLO ACCESO CON L'OLIO SOPRA!!! PRENDERÀ FUOCO TUTTO!!!",
+      "expected_action": "Allertare immediatamente i Vigili del Fuoco (115) e inviare il fabbro più vicino per apertura distruttiva rapida. Tono: Autorevole/Emergenza."
+    },
+    {
+      "category": "generic",
+      "urgency": "medium",
+      "user_type": "horeca_staff",
+      "text": "Ristorante Da Ciro. La serranda elettrica d'ingresso scende a scatti e fa un rumore di metallo che si spezza. Se si blocca stasera non chiudiamo il locale.",
+      "expected_action": "Inviare tecnico serrandista entro il pomeriggio e richiedere foto delle guide laterali. Tono: Professionale/Business."
+    },
+    {
+      "category": "electric",
+      "urgency": "high",
+      "user_type": "private_vague",
+      "text": "La luce in salotto fa 'clack' ogni tanto e le lampadine lampeggiano tipo discoteca, ma solo quando accendo il microonde in cucina.",
+      "expected_action": "Richiedere foto del quadro elettrico per verificare sezionamento linee e inviare elettricista per controllo sovraccarico fase. Tono: Investigativo/Rassicurante."
+    },
+    {
+      "category": "climate",
+      "urgency": "high",
+      "text": "Uè uè o' condizionatore sputa acqua nera e fa na puzza de moffa che non si respira proprio, mo' si sono messi pure a tossire i bambini!",
+      "user_type": "private_elderly_dialect",
+      "expected_action": "Inviare tecnico per sanificazione profonda evaporatore e controllo scarico condensa. Vietare l'accensione fino all'arrivo. Tono: Empatico/Direttivo."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "emergency",
+      "user_type": "horeca_manager",
+      "text": "Hotel Excelsior. Rottura della colonna di scarico principale. L'acqua nera sta rifluendo nei bagni della Hall. Abbiamo un evento tra due ore!",
+      "expected_action": "Inviare immediatamente autospurgo e squadra di bonifica. Richiedere isolamento dei bagni interessati. Tono: Massima efficienza/Business."
+    },
+    {
+      "category": "electric",
+      "urgency": "medium",
+      "user_type": "private_tech_savvy",
+      "text": "Il mio inverter fotovoltaico segna 'Ground Fault'. Ho già controllato le stringhe ma sembra un problema interno al modulo DC.",
+      "expected_action": "Inviare tecnico specializzato in rinnovabili con strumentazione di misura isolamento. Tono: Tecnico/Preciso."
+    },
+    {
+      "category": "generic",
+      "urgency": "high",
+      "user_type": "private_panic",
+      "text": "MI È ESPLOSO IL VETRO DELLA DOCCIA MENTRE ERO DENTRO! SONO PIENA DI TAGLI E C'È VETRO OVUNQUE NON POSSO MUOVERMI!",
+      "expected_action": "Allertare 118 se i tagli sono profondi, inviare tuttofare per rimozione vetri in sicurezza e rilievo misure per sostituzione. Tono: Calmo/Soccorso."
+    },
+    {
+      "category": "climate",
+      "urgency": "low",
+      "user_type": "horeca_staff",
+      "text": "Buongiorno, la macchina del ghiaccio del bar produce cubetti troppo piccoli e trasparenti, sembrano sciogliersi subito.",
+      "expected_action": "Inviare tecnico frigorista per controllo ciclo di sbrinamento e filtri acqua. Tono: Cortese/Operativo."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "high",
+      "user_type": "private_elderly",
+      "text": "Il coso che tira l'acqua nel bagno non si ferma più... sento scorrere forte e la bolletta salirà tantissimo, non so che fare aiuto.",
+      "expected_action": "Spiegare come chiudere il rubinetto a squadra dietro il WC e inviare idraulico per sostituzione galleggiante. Tono: Paziente/Risolutivo."
+    },
+    {
+      "category": "electric",
+      "urgency": "emergency",
+      "user_type": "horeca_manager",
+      "text": "Cucina bloccata. È saltato il magnetotermico del forno a convenzione e puzza di gomma bruciata. Abbiamo 40 comande in attesa!",
+      "expected_action": "Inviare elettricista d'urgenza e consigliare l'uso di cotture alternative se possibile. Tono: Rapido/Pragmatico."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "medium",
+      "user_type": "private_vague",
+      "text": "La serratura della porta di casa gratta un po'... devo spingere forte col piede per far girare la chiave.",
+      "expected_action": "Richiedere foto della serratura (fronte e profilo) e inviare fabbro per rettifica incontro o sostituzione cilindro prima del blocco totale. Tono: Preventivo."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "high",
+      "user_type": "private_panic",
+      "text": "ESCE ACQUA MARRONE DAL RUBINETTO DELLA CUCINA E FA SCHIUMA! HO PAURA CHE SIA VELENOSA!",
+      "expected_action": "Ordinare di non bere o usare l'acqua, inviare idraulico per ispezione filtri autoclave o rottura tubazione esterna. Tono: Rassicurante/Analitico."
+    },
+    {
+      "category": "generic",
+      "urgency": "medium",
+      "user_type": "horeca_staff",
+      "text": "Si è staccata una cerniera della porta tagliafuoco che porta ai garage. La porta ora è sbilanciata e non si chiude a norma.",
+      "expected_action": "Inviare fabbro/manutentore antincendio per ripristino cerniera oleodinamica. Tono: Formale/Sicurezza."
+    },
+    {
+      "category": "climate",
+      "urgency": "high",
+      "user_type": "private_elderly",
+      "text": "La caldaia fa un botto ogni volta che accendo l'acqua calda, sembra che tiri un sasso dentro al muro. Ho paura che esploda.",
+      "expected_action": "Inviare tecnico caldaista per controllo camera di combustione e candelette d'accensione. Tono: Protettivo/Risolutivo."
+    },
+    {
+      "category": "electric",
+      "urgency": "emergency",
+      "user_type": "angry_client",
+      "text": "MA SIETE SERI? È ANDATO IN CORTO IL VOSTRO IMPIANTO E MI HA BRUCIATO IL TELEVISORE DA 2000 EURO! MANDATE SUBITO QUALCUNO O CI VEDIAMO IN TRIBUNALE!",
+      "expected_action": "Inviare elettricista senior per perizia tecnica e messa in sicurezza dell'impianto. Tono: Professionale/Distaccato."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "medium",
+      "user_type": "private_vague",
+      "text": "Sento un rumore di acqua che scorre sotto al pavimento del corridoio, ma non ci sono macchie.",
+      "expected_action": "Inviare idraulico specializzato in ricerca perdite non invasiva (termocamera). Tono: Diagnostico."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "high",
+      "user_type": "horeca_manager",
+      "text": "Direttore Hotel Miramare. Si è spezzata la chiave dentro la serratura della camera 204. Gli ospiti sono fuori in corridoio furiosi.",
+      "expected_action": "Inviare fabbro con kit estrazione chiavi spezzate entro 30 minuti. Tono: Conciliante/Efficace."
+    },
+    {
+      "category": "electric",
+      "urgency": "low",
+      "user_type": "private_elderly",
+      "text": "Non vedo più bene i numerini sul forno, forse si è bruciata la lampadina dentro o è rotto il vetro?",
+      "expected_action": "Inviare tuttofare per sostituzione lampadina forno e pulizia display. Tono: Gentile/Supportivo."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "emergency",
+      "user_type": "private_drunk",
+      "text": "Aò... la ciave... non gggira. Sono sssotto casa ma il buco è sstorto. Aiudooo sennò dormo sullo zzerbino.",
+      "expected_action": "Inviare fabbro d'urgenza h24 per apertura porta e verificare corretto indirizzo. Tono: Fermo e paziente."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "high",
+      "user_type": "confused_elderly",
+      "text": "Il bastone dell'acqua calda fa le bolle e puzza di zolfo... non so se devo svitare o spingere il bottone rosso.",
+      "expected_action": "Ordinare di non toccare alcuna valvola e inviare idraulico per ispezione caldaia/boiler. Tono: Molto protettivo e semplice."
+    },
+    {
+      "category": "electric",
+      "urgency": "emergency",
+      "user_type": "horeca_drunk_guest",
+      "text": "C'è... c'è un'esplosione di sssscintille nella camera 302... ho cercato di caricare il ffffon ma è ssssuvvenuto un botto.",
+      "expected_action": "Allertare il portiere notturno per stacco linea piano e inviare elettricista d'urgenza. Tono: Autorevole e rapido."
+    },
+    {
+      "category": "climate",
+      "urgency": "high",
+      "user_type": "immigrant_broken_italian",
+      "text": "Caldaia fare fumo nero forte. Io paura. Bambino piange. No caldo casa ora. Venire subito?",
+      "expected_action": "Ordinare spegnimento immediato e apertura finestre; inviare tecnico caldaista d'urgenza. Tono: Semplice, diretto e rassicurante."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "emergency",
+      "user_type": "private_panic_typos",
+      "text": "ALAGAMETNO IN CUCINAAAA IL TUBO È SOLPITO ACQUA OVUNEUQE FATE PRESTISSIMO!!!!",
+      "expected_action": "Inviare idraulico priorità massima e guidare l'utente alla chiusura della valvola generale. Tono: Calmo e direttivo."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "high",
+      "user_type": "horeca_confused_guest",
+      "text": "Scusate... sono il signor Rossi della 104... la mia tessera è diventata molle e non entra nella fessura... o forse è il muro che si muove?",
+      "expected_action": "Inviare manutentore hotel/fabbro per verifica serratura elettronica e stato dell'ospite. Tono: Estremamente cortese."
+    },
+    {
+      "category": "electric",
+      "urgency": "medium",
+      "user_type": "private_drunk",
+      "text": "Perché... perché la luce mi fissa? Sfarfalla... bzzz bzzz... sembra un'astronave. Venite a spegnere l'astronave.",
+      "expected_action": "Richiedere video dello sfarfallio per diagnosi driver/reattore e inviare elettricista. Tono: Serio e pragmatico."
+    },
+    {
+      "category": "generic",
+      "urgency": "high",
+      "user_type": "confused_elderly",
+      "text": "Sento un rumore di un gatto intrappolato nel muro... ma io non ho gatti. Forse sono i tubi che piangono?",
+      "expected_action": "Inviare idraulico per ispezione colpi d'ariete o vibrazioni tubature. Tono: Paziente e investigativo."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "emergency",
+      "user_type": "private_drunk",
+      "text": "C'è un fiume in corridoio... belisssimo... ma forse è il mio bagno che ha deciso di traslocare. Hips. Venite a fermare il fiume.",
+      "expected_action": "Inviare idraulico d'urgenza h24 per rottura tubazione o scarico otturato. Tono: Deciso e risolutivo."
+    },
+    {
+      "category": "climate",
+      "urgency": "high",
+      "user_type": "immigrant_broken_italian",
+      "text": "Macchina aria no freddo. Fare acqua su muro. Muro bagnato tanto. Tu mandare tecnico ora?",
+      "expected_action": "Inviare tecnico condizionamento per scarico condensa otturato e richiedere foto del danno. Tono: Chiaro e operativo."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "emergency",
+      "user_type": "private_panic_typos",
+      "text": "CHIAVE SEPOZZATA DENTROOO NON ESCO PIU SONO CHISUA IN CASAAA AIUTOOOOOO",
+      "expected_action": "Inviare fabbro d'urgenza per apertura porta e sostituzione cilindro. Tono: Rassicurante e rapido."
+    },
+    {
+      "category": "electric",
+      "urgency": "high",
+      "user_type": "horeca_confused_staff",
+      "text": "Il coso che fa girare la corrente nel seminterrato fa 'pop' e poi 'puzza'... non so se è il quadro o il frigo delle birre.",
+      "expected_action": "Inviare elettricista d'urgenza per ispezione quadro generale e richiedere foto dei magnetotermici. Tono: Tecnico e risolutivo."
+    },
+    {
+      "category": "generic",
+      "urgency": "medium",
+      "user_type": "private_drunk",
+      "text": "La mia tapparella è andata a farsi un giro... è ssscesa giù tutta insieme. Sbam! Ora non vedo più le ssstelle.",
+      "expected_action": "Inviare tapparellista per riparazione rullo/cinghia spezzata. Tono: Professionale."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "high",
+      "user_type": "confused_elderly",
+      "text": "L'acqua del rubinetto ha il solletico... esce a scatti e fa dei versi strani, sembra che tossisca.",
+      "expected_action": "Inviare idraulico per controllo filtri e pressione autoclave. Tono: Molto gentile."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "emergency",
+      "user_type": "immigrant_broken_italian",
+      "text": "Io perso borsa in bus. Chiave casa dentro. Io fuori con freddo. Tu manda qualcuno aprire porta?",
+      "expected_action": "Inviare fabbro h24 per apertura tecnica e cambio serratura per sicurezza. Tono: Semplice e soccorrevole."
+    },
+    {
+      "category": "electric",
+      "urgency": "high",
+      "user_type": "private_panic_typos",
+      "text": "PUZZA DI BRUCOATO DALLE PRESEEE TUTTO NEROOOO FATE PRESTOOOOO",
+      "expected_action": "Ordinare il distacco del contatore generale e inviare elettricista d'urgenza. Tono: Comando di emergenza."
+    },
+    {
+      "category": "climate",
+      "urgency": "emergency",
+      "user_type": "horeca_drunk_guest",
+      "text": "Fa... fa un caldo inferrrrnale. Il coso sul muro fischia come un arbitro. Ssspegnetelo o muoio.",
+      "expected_action": "Inviare manutentore hotel per blocco motore ventilatore o perdita gas split. Tono: Formale e calmo."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "medium",
+      "user_type": "private_vague_confused",
+      "text": "C'è dell'umido... ma non è pioggia. È un umido che sale dal pavimento e ha un sapore di sapone.",
+      "expected_action": "Inviare idraulico per ricerca perdita scarico lavatrice o lavastoviglie. Tono: Investigativo."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "high",
+      "user_type": "private_drunk",
+      "text": "M'hanno rubato la porta. Ah no... è chiussssa. Ma la chiave è rimasta nel bar... o nel taxi... o boh.",
+      "expected_action": "Inviare fabbro h24 per apertura porta e richiedere documento d'identità. Tono: Autorevole."
+    },
+    {
+      "category": "electric",
+      "urgency": "medium",
+      "user_type": "confused_elderly",
+      "text": "La televisione ha fatto un lampo azzurro e ora c'è un silenzio strano in tutta la cucina.",
+      "expected_action": "Inviare elettricista per controllo corto circuito elettrodomestico e ripristino linee. Tono: Paziente."
+    },
+    {
+      "category": "generic",
+      "urgency": "high",
+      "user_type": "immigrant_broken_italian",
+      "text": "Vetro finestra rotto forte. Vento entra casa. Bambino freddo. Tu venire chiudere vetro?",
+      "expected_action": "Inviare vetraio h24 per tamponamento provvisorio di sicurezza. Tono: Diretto e operativo."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "emergency",
+      "user_type": "private_panic_typos",
+      "text": "CE NUA CASCATA IN BGANO!!!! IL CESSO ESCE FUORIII AIUTOOOO",
+      "expected_action": "Inviare idraulico d'urgenza e autospurgo se necessario. Tono: Risolutivo e rapido."
+    },
+    {
+      "category": "climate",
+      "urgency": "high",
+      "user_type": "private_drunk",
+      "text": "Il mio termosifone... pissscia. Goccia... goccia... goccia. Mi sssbagna il tappeto buono!",
+      "expected_action": "Inviare idraulico per riparazione valvola o detentore radiatore. Tono: Pragmatico."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "high",
+      "user_type": "confused_elderly",
+      "text": "Il cancello automatico ha deciso di non conoscermi più. Gli parlo ma non si apre, fa solo un rumorino di fatica.",
+      "expected_action": "Inviare tecnico automazioni per sblocco manuale e riparazione motore. Tono: Molto cortese."
+    },
+    {
+      "category": "electric",
+      "urgency": "emergency",
+      "user_type": "horeca_drunk_guest",
+      "text": "Ho... ho versato la birra sulla presaaaa. Ha fatto 'zap' e ora la camera è svanita nel buio. Hips.",
+      "expected_action": "Inviare manutentore hotel d'urgenza per isolamento presa bagnata e ripristino corrente. Tono: Serio."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "medium",
+      "user_type": "immigrant_broken_italian",
+      "text": "Sotto lavandino molta acqua. Io messo secchio ma secchio pieno subito. Tu manda idraulico bravo?",
+      "expected_action": "Inviare idraulico per riparazione sifone o flessibile e richiedere chiusura rubinetto sottolavabo. Tono: Semplice e chiaro."
+    },
+    {
+      "category": "generic",
+      "urgency": "high",
+      "user_type": "private_panic_typos",
+      "text": "PORTA BLOCATAAA NON SI APREEE HO IL CANE DHENRTOOOO FATE PRESTOOO",
+      "expected_action": "Inviare fabbro d'urgenza per apertura porta prioritaria. Tono: Rassicurante."
+    },
+    {
+      "category": "climate",
+      "urgency": "emergency",
+      "user_type": "horeca_confused_staff",
+      "text": "La caldaia centrale emette un fischio da aeroplano e la lancetta è nel nero... o nel rosso? Non ci vedo bene senza occhiali.",
+      "expected_action": "Inviare tecnico caldaista industriale immediatamente e far evacuare il locale tecnico. Tono: Allerta massima."
+    },
+    {
+      "category": "electric",
+      "urgency": "low",
+      "user_type": "private_drunk",
+      "text": "Le mie lampadine... sssono tutte sssstanche. Non si accendono. Forse vogliono dormire anche loro.",
+      "expected_action": "Inviare elettricista per verifica interruttore generale o guasto diffuso. Tono: Professionale."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "high",
+      "user_type": "confused_elderly",
+      "text": "Sento un gorgoglio nel muro del salotto... come se ci fosse un ruscello segreto. Ma io non ho pagato per un ruscello!",
+      "expected_action": "Inviare idraulico per ricerca perdita occulta con termocamera. Tono: Investigativo e gentile."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "emergency",
+      "user_type": "immigrant_broken_italian",
+      "text": "Bambino chiuso dentro bagno. Chiave no gira. Lui piange tanto. Io no sapere cosa fare.",
+      "expected_action": "Inviare fabbro d'urgenza per apertura porta interna. Tono: Calmo e risolutivo."
+    },
+    {
+      "category": "climate",
+      "urgency": "high",
+      "user_type": "private_panic_typos",
+      "text": "CALDAIA SCOPPIATA ACQUA BOLENTE OVUNQUEEEEE AIUTOOOO MI SONO BRUCIATOO",
+      "expected_action": "Allertare 118 per la scottatura e inviare tecnico d'urgenza per chiusura impianto. Tono: Soccorso e comando."
+    },
+    {
+      "category": "electric",
+      "urgency": "medium",
+      "user_type": "horeca_drunk_guest",
+      "text": "Il... il televisore fuma. Ma non fuma ssssigarette. Fa fumo grigio. È un ffffumo magico?",
+      "expected_action": "Ordinare di staccare la spina immediatamente e inviare tecnico/manutentore. Tono: Fermo."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "high",
+      "user_type": "private_vague_confused",
+      "text": "C'è un'umidità che puzza di... di vecchio. E il muro è diventato morbido come il burro.",
+      "expected_action": "Inviare idraulico per perdita occulta cronica e infiltrazione. Tono: Metodico."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "emergency",
+      "user_type": "private_drunk",
+      "text": "C'è un mostro nella ssserratura. Non vuole la mia chiave. La sssputa fuori. Venite a uccidere il mosssstro.",
+      "expected_action": "Inviare fabbro h24 per estrazione corpo estraneo o riparazione cilindro manomesso. Tono: Paziente e autoritario."
+    },
+    {
+      "category": "climate",
+      "urgency": "low",
+      "user_type": "confused_elderly",
+      "text": "Il calorifero è tiepido come il latte la mattina... io invece lo vorrei caldo come il tè del pomeriggio.",
+      "expected_action": "Inviare tecnico per bilanciamento impianto o pulizia fanghi. Tono: Molto cortese."
+    },
+    {
+      "category": "generic",
+      "urgency": "high",
+      "user_type": "immigrant_broken_italian",
+      "text": "Porta garage no sale. Macchina bloccata dentro. Io devo andare lavoro ora. Tu aiuta?",
+      "expected_action": "Inviare tecnico automazioni/fabbro per sblocco manuale e riparazione. Tono: Semplice e rapido."
+    },
+    {
+      "category": "electric",
+      "urgency": "emergency",
+      "user_type": "private_panic_typos",
+      "text": "FOCO DALLA PRESAAAA IL MURO È NEROOOO VENITE SUBITOOOOO",
+      "expected_action": "Allertare Vigili del Fuoco (115) e inviare elettricista d'urgenza. Tono: Emergenza pura."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "high",
+      "user_type": "horeca_drunk_guest",
+      "text": "Ho... ho fatto un guaio nel bagno. Il water è diventato un'isola... ssssta galleggiando tutto. Ops.",
+      "expected_action": "Inviare idraulico d'urgenza h24 per disotturazione pesante e sanificazione. Tono: Professionale."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "medium",
+      "user_type": "private_vague_confused",
+      "text": "La porta non mi riconosce. Dice che la chiave è sssbagliata... ma è la stessa da vent'anni.",
+      "expected_action": "Inviare fabbro per verifica usura chiavi e cilindro. Tono: Diagnostico."
+    },
+    {
+      "category": "climate",
+      "urgency": "emergency",
+      "user_type": "private_drunk",
+      "text": "C'è... c'è nebbia in cucina. Ma sa di gasss. È una festa con la nebbia? Hips.",
+      "expected_action": "Emergenza Gas: Ordinare evacuazione immediata e inviare tecnico gas d'urgenza. Tono: Allerta estrema/Comando."
+    },
+    {
+      "category": "generic",
+      "urgency": "low",
+      "user_type": "confused_elderly",
+      "text": "C'è un'ombra che si allunga sull'armadio... credo sia l'anta che si è storta e sta cadendo.",
+      "expected_action": "Inviare tuttofare per registrazione cerniere armadio. Tono: Gentile."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "high",
+      "user_type": "immigrant_broken_italian",
+      "text": "Doccia no scarica acqua. Io pulito ma ancora acqua resta lì. Tu manda idraulico subito?",
+      "expected_action": "Inviare idraulico per disotturazione scarico doccia. Tono: Chiaro e operativo."
+    },
+    {
+      "category": "electric",
+      "urgency": "high",
+      "user_type": "private_panic_typos",
+      "text": "LUCI TREMAMO TUTTEEEEE SEMRBA UN TEREMOTO ELETTRICOOO AIUTOOO",
+      "expected_action": "Inviare elettricista per controllo morsettiera generale e sbalzi tensione. Tono: Rassicurante e rapido."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "emergency",
+      "user_type": "horeca_drunk_guest",
+      "text": "Ho... ho perso la camera. E la chiave. E forse anche le scarpe. Ma voglio dormire. Apitemi la porta.",
+      "expected_action": "Inviare portiere/fabbro per apertura camera e verifica identità ospite. Tono: Fermo e professionale."
+    },
+    {
+      "category": "climate",
+      "urgency": "medium",
+      "user_type": "private_vague_confused",
+      "text": "La caldaia borbotta... sembra che stia cucinando i fagioli, ma io non ne ho messi.",
+      "expected_action": "Inviare tecnico per controllo aria nel circuito o pompa circolazione. Tono: Investigativo."
+    },
+    {
+      "category": "plumbing",
+      "urgency": "emergency",
+      "user_type": "private_drunk",
+      "text": "Acqua ovunqueeee... è una pisssscina ssssorpresa! Venite con le pinne. Hips.",
+      "expected_action": "Inviare idraulico d'urgenza per allagamento grave. Tono: Deciso."
+    },
+    {
+      "category": "generic",
+      "urgency": "high",
+      "user_type": "confused_elderly",
+      "text": "Il vetro della veranda è diventato tutto bianco all'improvviso... sembra ghiaccio ma siamo ad agosto.",
+      "expected_action": "Inviare vetraio per ispezione rottura spontanea vetro temperato (esplosione). Tono: Protettivo."
+    },
+    {
+      "category": "electric",
+      "urgency": "high",
+      "user_type": "immigrant_broken_italian",
+      "text": "Presa fare scintille blu. Io paura fuoco. Tu manda tecnico veloce?",
+      "expected_action": "Ordinare di non usare la presa e inviare elettricista d'urgenza. Tono: Semplice e direttivo."
+    },
+    {
+      "category": "locksmith",
+      "urgency": "emergency",
+      "user_type": "private_panic_typos",
+      "text": "LADRI IN CASAAAA SERRATURA ROTTAAA NON POSSO CHIUDERE AIUTOOOO",
+      "expected_action": "Inviare fabbro d'urgenza per cambio cilindro e allertare 112 se non già fatto. Tono: Protezione e urgenza."
+    }
+  ]

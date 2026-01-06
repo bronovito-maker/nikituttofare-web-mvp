@@ -29,29 +29,88 @@ export const useChat = (
   const [messages, setMessages] = useState<CustomMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentTicketId, setCurrentTicketId] = useState<string | null>(null);
   
   // ... (stati esistenti)
 
-  const sendMessage = async (messageContent: string, photo?: string) => { // AGGIUNTO photo
+  const sendMessage = async (messageContent: string, photo?: string) => {
     if (isLoading) return;
+    
+    // Evita messaggi vuoti o duplicati consecutivi
+    const trimmedContent = messageContent.trim();
+    if (!trimmedContent && !photo) return;
+    
+    // Controlla se l'ultimo messaggio è identico (evita duplicati)
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === 'user' && 
+          typeof lastMessage.content === 'string' && 
+          lastMessage.content.trim() === trimmedContent &&
+          !photo) {
+        console.warn('Messaggio duplicato ignorato');
+        return;
+      }
+    }
 
     setError(null);
     setIsLoading(true);
 
     const userMessage: CustomMessage = {
-      id: String(Date.now()),
+      id: `${Date.now()}-${Math.random().toString(36).substring(7)}`, // ID più univoco
       role: 'user',
-      content: messageContent,
+      content: trimmedContent || 'Foto caricata',
       createdAt: new Date(),
-      photo, // AGGIUNTO
+      photo,
     };
 
     setMessages(prevMessages => [...prevMessages, userMessage]);
 
     try {
-      // Prepara il corpo della richiesta
+      // Se è il primo messaggio, crea un ticket
+      let ticketId = currentTicketId;
+      if (!ticketId && messages.length === 0) {
+        // Determina la categoria dal messaggio
+        const category = detectCategory(messageContent);
+        
+        const ticketRes = await fetch('/api/tickets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            category,
+            description: messageContent,
+            priority: 'medium',
+            messageContent,
+            imageUrl: photo,
+          }),
+        });
+
+        if (ticketRes.ok) {
+          const { ticketId: newTicketId } = await ticketRes.json();
+          ticketId = newTicketId;
+          setCurrentTicketId(newTicketId);
+        }
+      } else if (ticketId) {
+        // Salva il messaggio su Supabase
+        await fetch('/api/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ticketId,
+            role: 'user',
+            content: messageContent,
+            imageUrl: photo,
+          }),
+        });
+      }
+
+      // Prepara il corpo della richiesta per l'AI con tutti i messaggi per il contesto
+      const allMessages = [...messages, userMessage];
       const requestBody = {
-        messages: [...messages, userMessage].map(m => {
+        messages: allMessages.map(m => {
           const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
           const messageObject: any = { role: m.role, content };
           if (m.photo) {
@@ -77,19 +136,73 @@ export const useChat = (
       const aiResponse: AIResponseType = await res.json();
 
       const assistantMessage: CustomMessage = {
-        id: String(Date.now() + 1),
+        id: `${Date.now()}-${Math.random().toString(36).substring(7)}`, // ID più univoco
         role: 'assistant',
         content: aiResponse,
         createdAt: new Date(),
       };
       
-      setMessages(prevMessages => [...prevMessages, assistantMessage]);
+      // Evita duplicati: controlla se l'ultimo messaggio assistant è identico
+      setMessages(prevMessages => {
+        const lastMsg = prevMessages[prevMessages.length - 1];
+        if (lastMsg && 
+            lastMsg.role === 'assistant' && 
+            typeof lastMsg.content === typeof assistantMessage.content) {
+          const lastContent = typeof lastMsg.content === 'string' 
+            ? lastMsg.content 
+            : JSON.stringify(lastMsg.content);
+          const newContent = typeof assistantMessage.content === 'string'
+            ? assistantMessage.content
+            : JSON.stringify(assistantMessage.content);
+          
+          if (lastContent === newContent) {
+            console.warn('Risposta duplicata ignorata');
+            return prevMessages; // Non aggiungere il duplicato
+          }
+        }
+        return [...prevMessages, assistantMessage];
+      });
+
+      // Salva anche la risposta dell'AI se c'è un ticket
+      if (ticketId && typeof aiResponse === 'object' && aiResponse.type === 'text') {
+        await fetch('/api/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ticketId,
+            role: 'assistant',
+            content: aiResponse.content as string,
+          }),
+        });
+      }
 
     } catch (err: any) {
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Funzione helper per rilevare la categoria dal messaggio
+  const detectCategory = (message: string): 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'generic' => {
+    const lowerMessage = message.toLowerCase();
+    
+    if (lowerMessage.includes('idraulico') || lowerMessage.includes('acqua') || lowerMessage.includes('tubo') || lowerMessage.includes('perdita') || lowerMessage.includes('scarico')) {
+      return 'plumbing';
+    }
+    if (lowerMessage.includes('elettric') || lowerMessage.includes('luce') || lowerMessage.includes('presa') || lowerMessage.includes('salvavita')) {
+      return 'electric';
+    }
+    if (lowerMessage.includes('fabbro') || lowerMessage.includes('serratura') || lowerMessage.includes('chiave') || lowerMessage.includes('porta')) {
+      return 'locksmith';
+    }
+    if (lowerMessage.includes('clima') || lowerMessage.includes('condizionatore') || lowerMessage.includes('caldaia') || lowerMessage.includes('riscaldamento')) {
+      return 'climate';
+    }
+    
+    return 'generic';
   };
   
   // ... (resto del hook)
