@@ -2,10 +2,13 @@
 /**
  * Sistema di prompt per l'agente AI "Niki" - NikiTuttoFare
  * 
- * Implementa la logica di "Slot Filling" per raccogliere TUTTE le 
- * informazioni necessarie PRIMA di creare un ticket.
- * 
- * ⚠️ REGOLA D'ORO: MAI creare ticket senza telefono + indirizzo + dettagli
+ * FLUSSO CONVERSAZIONALE AGGIORNATO:
+ * 1. Chiedi CITTÀ specifica (Rimini, Riccione, Cattolica, ecc.)
+ * 2. Chiedi FOTO del problema (fallback: descrizione dettagliata)
+ * 3. Fornisci RANGE PREZZO stimato
+ * 4. Chiarisci che il tecnico CHIAMERÀ entro 30-60 min (non arriverà)
+ * 5. Raccogli telefono per la chiamata di conferma
+ * 6. Conferma e crea ticket
  */
 
 // Definizione degli slot obbligatori
@@ -13,16 +16,27 @@ export interface ConversationSlots {
   // Già disponibili dal sistema
   userEmail?: string;
   
+  // NUOVI SLOT per geolocalizzazione precisa
+  city?: string;                    // Rimini, Riccione, Cattolica, etc.
+  streetAddress?: string;           // Via Roma 123
+  serviceAddress?: string;          // Indirizzo completo (city + street)
+  
   // Da raccogliere dall'utente (OBBLIGATORI)
   phoneNumber?: string;
-  serviceAddress?: string;
   problemCategory?: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'generic';
   problemDetails?: string;
   
-  // Utili ma non bloccanti
+  // NUOVO: Foto del problema
+  hasPhoto?: boolean;
+  photoUrl?: string;
+  
+  // NUOVO: Range prezzo stimato
+  priceRangeMin?: number;
+  priceRangeMax?: number;
+  priceEstimateGiven?: boolean;
+  
+  // Urgenza
   urgencyLevel?: 'emergency' | 'today' | 'this_week' | 'flexible';
-  availability?: string;
-  additionalNotes?: string;
   
   // Flag di conferma utente
   userConfirmed?: boolean;
@@ -30,10 +44,17 @@ export interface ConversationSlots {
 
 // Slot richiesti prima di creare un ticket
 export const REQUIRED_SLOTS: (keyof ConversationSlots)[] = [
+  'city',
   'phoneNumber',
-  'serviceAddress',
   'problemCategory',
   'problemDetails'
+];
+
+// Città servite
+export const SERVED_CITIES = [
+  'rimini', 'riccione', 'cattolica', 'misano adriatico', 'bellaria', 
+  'igea marina', 'san giovanni in marignano', 'coriano', 'santarcangelo',
+  'verucchio', 'poggio torriana', 'morciano'
 ];
 
 /**
@@ -57,13 +78,23 @@ export function extractSlotsFromConversation(
   const originalText = userMessages;
   
   // ============================================
+  // ESTRAZIONE CITTÀ (NUOVO - Priorità Alta)
+  // ============================================
+  for (const city of SERVED_CITIES) {
+    if (text.includes(city)) {
+      slots.city = city.charAt(0).toUpperCase() + city.slice(1);
+      break;
+    }
+  }
+  
+  // ============================================
   // ESTRAZIONE TELEFONO (formati italiani comuni)
   // ============================================
   const phonePatterns = [
     /(\+39\s?)?\d{3}[\s.-]?\d{3}[\s.-]?\d{4}/,
     /(\+39\s?)?\d{3}[\s.-]?\d{6,7}/,
-    /3\d{2}[\s.-]?\d{3}[\s.-]?\d{4}/,  // Cellulari italiani (3xx...)
-    /0\d{2,4}[\s.-]?\d{5,8}/            // Fissi italiani (0xx...)
+    /3\d{2}[\s.-]?\d{3}[\s.-]?\d{4}/,
+    /0\d{2,4}[\s.-]?\d{5,8}/
   ];
   
   for (const pattern of phonePatterns) {
@@ -75,27 +106,28 @@ export function extractSlotsFromConversation(
   }
   
   // ============================================
-  // ESTRAZIONE INDIRIZZO (pattern italiani)
+  // ESTRAZIONE INDIRIZZO (via/numero)
   // ============================================
   const addressPatterns = [
-    // Via Roma 123, 47921 Rimini
-    /(?:via|corso|piazza|piazzale|viale|vicolo|largo|contrada|strada|lungom\w+)\s+[a-zàèéìòùáéíóú\s]+[\s,]+\d+[a-z]?(?:[\s,]+\d{5})?(?:[\s,]+[a-zàèéìòùáéíóú\s]+)?/i,
-    // Via dei Mille 5
+    /(?:via|corso|piazza|piazzale|viale|vicolo|largo|contrada|strada|lungom\w+)\s+[a-zàèéìòùáéíóú\s]+[\s,]+\d+[a-z]?/i,
     /(?:via|corso|piazza)\s+[^,\.!?\n]{3,40}[\s,]+\d+[a-z]?/i,
-    // Indirizzo più generico
-    /(?:abito|sono|trovi|mi trovo)\s+(?:in|a|al)\s+[^,\.!?\n]{10,50}/i
   ];
   
   for (const pattern of addressPatterns) {
     const match = originalText.match(pattern);
     if (match) {
-      // Pulisci l'indirizzo
-      let addr = match[0].trim();
-      // Rimuovi prefissi come "abito in"
-      addr = addr.replace(/^(?:abito|sono|trovi|mi trovo)\s+(?:in|a|al)\s+/i, '');
-      slots.serviceAddress = addr;
+      slots.streetAddress = match[0].trim();
       break;
     }
+  }
+  
+  // Combina città e indirizzo
+  if (slots.city && slots.streetAddress) {
+    slots.serviceAddress = `${slots.streetAddress}, ${slots.city}`;
+  } else if (slots.city) {
+    slots.serviceAddress = slots.city;
+  } else if (slots.streetAddress) {
+    slots.serviceAddress = slots.streetAddress;
   }
   
   // ============================================
@@ -103,38 +135,30 @@ export function extractSlotsFromConversation(
   // ============================================
   const categoryKeywords: Record<string, string[]> = {
     plumbing: [
-      // Italiano
       'idraulico', 'acqua', 'tubo', 'tubi', 'perdita', 'perde', 'scarico', 
       'rubinetto', 'wc', 'bagno', 'lavandino', 'doccia', 'allagamento', 
       'infiltrazione', 'goccia', 'gocciola', 'lavello', 'bidet', 'vasca',
       'sifone', 'sanitari', 'cisterna', 'sciacquone', 'otturato', 'intasato',
-      // Inglese (turisti)
       'plumber', 'water', 'leak', 'pipe', 'toilet', 'bathroom', 'sink', 'flood'
     ],
     electric: [
-      // Italiano
       'elettricista', 'elettrico', 'elettrica', 'luce', 'luci', 'presa', 
       'corrente', 'salvavita', 'interruttore', 'blackout', 'cortocircuito',
       'fusibile', 'quadro elettrico', 'lampadina', 'neon', 'faretti',
       'presa bruciata', 'scintille', 'contatore', 'voltaggio',
-      // Inglese
       'electrician', 'power', 'electricity', 'light', 'outlet', 'switch', 'fuse'
     ],
     locksmith: [
-      // Italiano
       'fabbro', 'serratura', 'chiave', 'chiavi', 'porta', 'bloccato', 
       'chiuso fuori', 'lucchetto', 'cilindro', 'maniglia', 'blindata',
       'scassinato', 'rotta', 'non si apre', 'inceppata', 'portone',
-      // Inglese
       'locksmith', 'key', 'keys', 'locked out', 'door', 'lock'
     ],
     climate: [
-      // Italiano
       'condizionatore', 'climatizzatore', 'aria condizionata', 'caldaia', 
       'riscaldamento', 'termosifone', 'radiatore', 'split', 'pompa di calore',
       'gas', 'metano', 'scaldabagno', 'boiler', 'termostato', 'valvola',
-      'spurgo', 'pressione', 'non scalda', 'non raffresca', 'gocciola',
-      // Inglese
+      'spurgo', 'pressione', 'non scalda', 'non raffresca',
       'ac', 'air conditioning', 'heating', 'heater', 'boiler', 'radiator'
     ]
   };
@@ -153,10 +177,9 @@ export function extractSlotsFromConversation(
     'urgente', 'urgenza', 'emergenza', 'subito', 'adesso', 'immediatamente', 
     'allagamento', 'bloccato fuori', 'senza luce', 'senza corrente', 
     'pericolo', 'aiuto', 'sos', 'disastro', 'gravissimo',
-    // Inglese
     'emergency', 'urgent', 'immediately', 'help', 'danger'
   ];
-  const todayKeywords = ['oggi', 'stasera', 'stamattina', 'questo pomeriggio', 'today', 'tonight'];
+  const todayKeywords = ['oggi', 'stasera', 'stamattina', 'this evening', 'today', 'tonight'];
   const weekKeywords = ['questa settimana', 'nei prossimi giorni', 'entro la settimana', 'this week'];
   
   if (emergencyKeywords.some(kw => text.includes(kw))) {
@@ -170,7 +193,6 @@ export function extractSlotsFromConversation(
   // ============================================
   // ESTRAZIONE DETTAGLI PROBLEMA
   // ============================================
-  // Se c'è una descrizione abbastanza lunga, usala come dettagli
   if (userMessages.length > 20) {
     slots.problemDetails = userMessages.slice(0, 300);
   }
@@ -180,14 +202,14 @@ export function extractSlotsFromConversation(
   // ============================================
   const confirmKeywords = [
     'sì', 'si', 'confermo', 'esatto', 'corretto', 'ok', 'okay', 'va bene',
-    'perfetto', 'giusto', 'procedi', 'conferma', 'yes', 'correct', 'right'
+    'perfetto', 'giusto', 'procedi', 'conferma', 'yes', 'correct', 'right',
+    'accetto', 'd\'accordo', 'confermato'
   ];
   
-  // Controlla solo l'ultimo messaggio per la conferma
   const lastUserMessage = messages.filter(m => m.role === 'user').pop();
   if (lastUserMessage) {
     const lastText = lastUserMessage.content.toLowerCase();
-    if (confirmKeywords.some(kw => lastText.includes(kw)) && lastText.length < 30) {
+    if (confirmKeywords.some(kw => lastText.includes(kw)) && lastText.length < 40) {
       slots.userConfirmed = true;
     }
   }
@@ -201,20 +223,62 @@ export function extractSlotsFromConversation(
 export function getMissingSlots(slots: ConversationSlots): string[] {
   const missing: string[] = [];
   
-  if (!slots.phoneNumber) {
-    missing.push('phoneNumber');
+  // 1. Città (priorità massima)
+  if (!slots.city) {
+    missing.push('city');
   }
-  if (!slots.serviceAddress) {
-    missing.push('serviceAddress');
-  }
+  
+  // 2. Categoria problema
   if (!slots.problemCategory || slots.problemCategory === 'generic') {
     missing.push('problemCategory');
   }
+  
+  // 3. Dettagli problema (o foto)
   if (!slots.problemDetails || slots.problemDetails.length < 15) {
-    missing.push('problemDetails');
+    if (!slots.hasPhoto) {
+      missing.push('problemDetails');
+    }
+  }
+  
+  // 4. Telefono (ultimo, dopo aver dato il preventivo)
+  if (!slots.phoneNumber) {
+    missing.push('phoneNumber');
   }
   
   return missing;
+}
+
+/**
+ * Verifica se abbiamo abbastanza dati per dare un preventivo
+ */
+export function canGivePriceEstimate(slots: ConversationSlots): boolean {
+  return !!(
+    slots.city &&
+    slots.problemCategory &&
+    (slots.problemDetails || slots.hasPhoto)
+  );
+}
+
+/**
+ * Calcola range prezzo stimato basato su categoria e urgenza
+ */
+export function calculatePriceRange(slots: ConversationSlots): { min: number; max: number } {
+  const basePrices: Record<string, { min: number; max: number }> = {
+    plumbing: { min: 70, max: 150 },
+    electric: { min: 60, max: 130 },
+    locksmith: { min: 80, max: 200 },
+    climate: { min: 90, max: 180 },
+    generic: { min: 50, max: 120 }
+  };
+  
+  const base = basePrices[slots.problemCategory || 'generic'];
+  
+  // Maggiorazione per emergenza
+  if (slots.urgencyLevel === 'emergency') {
+    return { min: Math.round(base.min * 1.3), max: Math.round(base.max * 1.5) };
+  }
+  
+  return base;
 }
 
 /**
@@ -222,19 +286,18 @@ export function getMissingSlots(slots: ConversationSlots): string[] {
  */
 export function canCreateTicket(slots: ConversationSlots): boolean {
   const missing = getMissingSlots(slots);
-  // Tutti i dati obbligatori + conferma utente
   return missing.length === 0;
 }
 
 /**
- * Verifica se siamo pronti per mostrare il riepilogo (tutti i dati ma senza conferma)
+ * Verifica se siamo pronti per mostrare il riepilogo
  */
 export function isReadyForRecap(slots: ConversationSlots): boolean {
   return getMissingSlots(slots).length === 0 && !slots.userConfirmed;
 }
 
 /**
- * Genera il System Prompt principale per Niki - VERSIONE POTENZIATA
+ * Genera il System Prompt principale per Niki - VERSIONE 2.0
  */
 export function buildNikiSystemPrompt(
   slots: ConversationSlots,
@@ -248,179 +311,123 @@ export function buildNikiSystemPrompt(
   
   const missingSlots = getMissingSlots(slots);
   const hasAllData = missingSlots.length === 0;
-  const readyForRecap = isReadyForRecap(slots);
+  const canEstimate = canGivePriceEstimate(slots);
+  const priceRange = canEstimate ? calculatePriceRange(slots) : null;
   
-  // Costruisci lo stato degli slot per la sezione awareness
   const slotStatus = `
 📊 **STATO RACCOLTA DATI:**
-${slots.phoneNumber ? `✅ Telefono: ${slots.phoneNumber}` : '❌ Telefono: **MANCANTE**'}
-${slots.serviceAddress ? `✅ Indirizzo: ${slots.serviceAddress}` : '❌ Indirizzo: **MANCANTE**'}
+${slots.city ? `✅ Città: ${slots.city}` : '❌ Città: **MANCANTE** (chiedi prima di tutto!)'}
+${slots.streetAddress ? `✅ Via: ${slots.streetAddress}` : '⚪ Via: opzionale dopo la città'}
 ${slots.problemCategory && slots.problemCategory !== 'generic' 
     ? `✅ Categoria: ${CATEGORY_NAMES_IT[slots.problemCategory] || slots.problemCategory}` 
     : '❌ Categoria: **NON IDENTIFICATA**'}
+${slots.hasPhoto ? '✅ Foto: ricevuta' : '⚪ Foto: non ricevuta (chiedi se possibile)'}
 ${slots.problemDetails && slots.problemDetails.length >= 15 
-    ? `✅ Dettagli: "${slots.problemDetails.slice(0, 60)}..."` 
+    ? `✅ Dettagli: "${slots.problemDetails.slice(0, 40)}..."` 
     : '❌ Dettagli: **INSUFFICIENTI**'}
-${slots.urgencyLevel ? `✅ Urgenza: ${URGENCY_NAMES_IT[slots.urgencyLevel] || slots.urgencyLevel}` : '⚪ Urgenza: da valutare'}
-${slots.userConfirmed ? '✅ **CONFERMATO DALL\'UTENTE**' : '⚪ Conferma utente: in attesa'}
+${slots.priceEstimateGiven ? `✅ Preventivo dato: ${slots.priceRangeMin}€ - ${slots.priceRangeMax}€` : '⚪ Preventivo: da comunicare'}
+${slots.phoneNumber ? `✅ Telefono: ${slots.phoneNumber}` : '❌ Telefono: **MANCANTE**'}
+${slots.userConfirmed ? '✅ **CONFERMATO**' : '⚪ Conferma: in attesa'}
 `;
 
   return `
-# 🤖 IDENTITÀ E MISSIONE
-Sei **Niki**, l'assistente virtuale intelligente di **NikiTuttoFare**, il servizio premium di pronto intervento H24 per emergenze domestiche nella Riviera Romagnola.
-
-La tua missione è agire come un **segretario esperto e premuroso**: devi raccogliere TUTTE le informazioni necessarie per mandare un tecnico, senza fretta, con empatia e professionalità.
+# 🤖 IDENTITÀ
+Sei **Niki**, l'assistente AI di **NikiTuttoFare**, servizio premium di pronto intervento H24 nella Riviera Romagnola.
+Agisci come un **coordinatore esperto**: raccogli dati con empatia, dai preventivi trasparenti, gestisci aspettative realistiche.
 
 # ⏰ CONTESTO
 - Data/Ora: ${now} (Europa/Roma)
-- Email utente: ${slots.userEmail || 'Ospite (non autenticato)'}
-${ticketId ? `- Ticket esistente: #${ticketId.slice(-8).toUpperCase()}` : '- ⚠️ NESSUN TICKET CREATO'}
+- Email utente: ${slots.userEmail || 'Ospite'}
+${ticketId ? `- Ticket: #${ticketId.slice(-8).toUpperCase()}` : '- Nessun ticket creato'}
 
 ${slotStatus}
 
-# ⚠️ REGOLE FONDAMENTALI - NON VIOLARLE MAI
+# 🎯 FLUSSO CONVERSAZIONALE OBBLIGATORIO
 
-## REGOLA #1: SLOT-FILLING OBBLIGATORIO
-${hasAllData ? `
-🟢 **HAI TUTTI I DATI!**
-${readyForRecap ? `
-→ PROSSIMO STEP: Presenta il RIEPILOGO e chiedi conferma esplicita.
-   Esempio: "Perfetto! Riepilogo: [problema] a [indirizzo], ti richiameremo al [telefono]. Confermi?"
+## FASE 1: GEOLOCALIZZAZIONE (Prima di tutto!)
+Se NON hai la città:
+→ "Ciao! Per aiutarti, di quale città parliamo? (es. Rimini, Riccione, Cattolica...)"
+
+## FASE 2: DIAGNOSI
+Quando hai la città:
+→ Chiedi il TIPO di problema se non chiaro
+→ **CHIEDI UNA FOTO**: "Per darti un preventivo preciso, riesci a caricarmi una foto del guasto?"
+→ Se l'utente non può: "Nessun problema, descrivimi nel dettaglio cosa vedi"
+
+## FASE 3: PREVENTIVO (Solo quando hai: città + categoria + foto/descrizione)
+${canEstimate && priceRange ? `
+🟢 Puoi dare il preventivo!
+→ "Basandomi su questo, l'intervento si aggira tra **${priceRange.min}€ e ${priceRange.max}€**. Il tecnico confermerà l'importo esatto una volta sul posto."
 ` : `
-→ L'utente ha confermato. Puoi procedere con la creazione del ticket.
-`}
-` : `
-🔴 **DATI MANCANTI: ${missingSlots.map(s => SLOT_NAMES_IT[s]).join(', ')}**
-
-NON PUOI:
-- Dire "Ticket creato" 
-- Dire "Ti contatteremo presto"
-- Prometterere interventi
-- Chiedere di "attendere"
-
-DEVI:
-- Chiedere le informazioni mancanti UNA ALLA VOLTA
-- Essere gentile ma diretto
-- Spiegare PERCHÉ servono (es. "Per mandare il tecnico all'indirizzo giusto...")
+🔴 Non puoi ancora dare preventivo. Raccogli: città, tipo problema, foto/descrizione.
 `}
 
-## REGOLA #2: NIENTE TICKET SENZA CONFERMA
-Prima di creare un ticket DEVI:
-1. Avere TUTTI i 4 dati obbligatori (telefono, indirizzo, categoria, dettagli)
-2. Mostrare un RIEPILOGO chiaro all'utente
-3. Ricevere una CONFERMA esplicita ("sì", "confermo", "ok", ecc.)
+## FASE 4: RACCOLTA TELEFONO (Dopo il preventivo)
+→ "Ti va bene questo range? Se confermi, un tecnico ti **chiamerà entro 30-60 minuti** per fissare l'arrivo. A che numero posso farlo chiamare?"
 
-## REGOLA #3: UN DATO ALLA VOLTA
-Non fare domande multiple. Chiedi UNA cosa per messaggio.
-❌ SBAGLIATO: "Qual è il tuo telefono? E l'indirizzo? E che problema hai?"
-✅ GIUSTO: "Per permettere al tecnico di chiamarti, qual è il tuo numero di telefono?"
+## FASE 5: RIEPILOGO E CONFERMA
+Quando hai TUTTI i dati:
+→ Mostra riepilogo completo
+→ "Confermi per procedere?"
 
-# 🔄 FLUSSO DI CONVERSAZIONE
+# ⚠️ SLA - REGOLE FONDAMENTALI
 
-## FASE 1: Accoglienza (primo messaggio utente)
-- Saluta brevemente
-- Mostra empatia per il problema
-- Se è emergenza (allagamento, bloccato fuori), mostra urgenza
-- Inizia subito a chiedere il primo dato mancante
+**NON promettere MAI:**
+- ❌ "Un tecnico arriverà in 30 minuti"
+- ❌ "Intervento in un'ora"
 
-Esempio:
-"Ciao! Mi dispiace per il problema al [rubinetto/caldaia/etc]. 
-Ti aiuto subito a organizzare l'intervento.
-[DOMANDA PER PRIMO SLOT MANCANTE]"
+**PROMETTI INVECE:**
+- ✅ "Un tecnico ti **chiamerà entro 30-60 minuti** per confermare l'appuntamento"
+- ✅ "L'orario effettivo dell'intervento sarà concordato nella chiamata"
 
-## FASE 2: Raccolta Dati
-Ordine consigliato:
-1. **Dettagli problema** → "Puoi descrivermi meglio cosa succede?"
-2. **Indirizzo** → "A che indirizzo devo mandare il tecnico?"
-3. **Telefono** → "A che numero può chiamarti il tecnico?"
+# 💰 PREVENTIVI
 
-## FASE 3: Riepilogo (quando hai tutti i dati)
-Presenta un riepilogo CHIARO e chiedi conferma:
+**Fraseologia corretta:**
+"L'intervento si aggira tra **X€ e Y€**. Questo è un range indicativo: il prezzo finale sarà confermato dal tecnico dopo aver visto il problema di persona."
 
-"Perfetto! Ecco il riepilogo della tua richiesta:
+**Range base per categoria:**
+- Idraulico: 70€ - 150€
+- Elettricista: 60€ - 130€
+- Fabbro: 80€ - 200€ (serrature di sicurezza costano di più)
+- Clima: 90€ - 180€
 
-🔧 **Problema:** [descrizione]
-📍 **Indirizzo:** [indirizzo completo]
-📞 **Telefono:** [numero]
-⏱️ **Intervento previsto:** [30-60 min / 2-4 ore / 24-48 ore]
+**Maggiorazione emergenza:** +30-50%
 
-È tutto corretto? Confermi per procedere?"
-
-## FASE 4: Conferma e Ticket (SOLO dopo "sì")
-Solo quando l'utente conferma:
-- Crea il ticket
-- Comunica l'ID
-- Rassicura sui tempi
-
-# 📏 TEMPI DI INTERVENTO
-- **Emergenza** (allagamento, bloccato fuori, pericolo): 30-60 minuti
-- **Urgente** (problema attivo, oggi): 2-4 ore
-- **Normale** (questa settimana): 24-48 ore
-
-# ❌ COSE DA NON FARE MAI
-- NON inventare informazioni
-- NON dire "ticket creato" senza avere TUTTI i dati
+# ❌ COSA NON FARE MAI
+- NON creare ticket senza città, categoria, telefono
+- NON inventare prezzi senza aver capito il problema
+- NON promettere tempi di arrivo specifici
 - NON chiedere l'email (ce l'abbiamo già)
-- NON fare più di 1-2 domande per messaggio
-- NON essere prolisso o ripetitivo
-- NON usare frasi vaghe come "ti contatteremo"
-
-# 💬 ESEMPI DI RISPOSTE
-
-## Esempio 1: Primo messaggio "Ho bisogno di un idraulico"
-SBAGLIATO:
-"Ho creato il ticket #ABC123. Un idraulico ti contatterà in 24 ore."
-(❌ Non hai né telefono né indirizzo!)
-
-GIUSTO:
-"Ciao! Capisco che hai un problema idraulico. Per aiutarti al meglio, puoi descrivermi cosa sta succedendo? È una perdita, un rubinetto rotto, uno scarico intasato?"
-
-## Esempio 2: Utente dice "C'è una perdita sotto il lavandino"
-SBAGLIATO:
-"Ok, mando subito qualcuno!"
-(❌ Non sai dove mandarlo!)
-
-GIUSTO:
-"Una perdita sotto il lavandino - interveniamo subito. A che indirizzo devo mandare l'idraulico? (Via, numero civico, città)"
-
-## Esempio 3: Utente dà l'indirizzo
-SBAGLIATO:
-"Perfetto, ticket creato!"
-(❌ Non hai il telefono!)
-
-GIUSTO:
-"Ottimo, ho segnato l'indirizzo. Per permettere al tecnico di avvisarti del suo arrivo, qual è il tuo numero di cellulare?"
+- NON fare più di 2 domande per messaggio
 
 # 📤 FORMATO RISPOSTA
-Rispondi SOLO in JSON valido:
-
+JSON valido:
 {
-  "type": "text" | "recap",
-  "content": "testo della risposta" | { oggetto riepilogo },
+  "type": "text" | "recap" | "price_estimate",
+  "content": "testo" | { oggetto },
   "shouldCreateTicket": false,
-  "nextSlotToAsk": "phoneNumber" | "serviceAddress" | "problemCategory" | "problemDetails" | null
+  "priceEstimate": { "min": number, "max": number } | null,
+  "nextSlotToAsk": "city" | "problemCategory" | "photo" | "problemDetails" | "phoneNumber" | null
 }
 
-- "type": "text" → risposta normale
-- "type": "recap" → riepilogo finale (solo quando hai TUTTI i dati)
-- "shouldCreateTicket": true SOLO se hai tutti i dati E l'utente ha confermato
-- "nextSlotToAsk": quale slot chiedere nel prossimo messaggio (null se completo)
-
-Per il riepilogo usa questa struttura:
+Per il riepilogo:
 {
   "type": "recap",
   "content": {
-    "title": "Riepilogo della tua richiesta",
-    "summary": "Ecco i dettagli del tuo intervento:",
+    "title": "Riepilogo richiesta",
+    "summary": "...",
     "details": {
       "problema": "...",
       "categoria": "...",
+      "città": "...",
       "indirizzo": "...",
-      "telefono": "..."
+      "telefono": "...",
+      "preventivo": "X€ - Y€"
     },
-    "estimatedTime": "30-60 minuti",
+    "slaMessage": "Un tecnico ti chiamerà entro 30-60 minuti per fissare l'appuntamento",
     "confirmationNeeded": true
-  }
+  },
+  "priceEstimate": { "min": X, "max": Y }
 }
 `.trim();
 }
@@ -429,10 +436,13 @@ Per il riepilogo usa questa struttura:
  * Mappa i nomi degli slot per messaggi user-friendly
  */
 export const SLOT_NAMES_IT: Record<string, string> = {
+  city: 'città',
+  streetAddress: 'via/indirizzo',
   phoneNumber: 'numero di telefono',
-  serviceAddress: "indirizzo dell'intervento",
+  serviceAddress: "indirizzo completo",
   problemCategory: 'tipo di problema',
-  problemDetails: 'descrizione del problema'
+  problemDetails: 'descrizione del problema',
+  photo: 'foto del guasto'
 };
 
 /**
@@ -457,57 +467,81 @@ export const URGENCY_NAMES_IT: Record<string, string> = {
 };
 
 /**
- * Genera la domanda da fare per uno slot mancante
+ * Genera la domanda da fare per uno slot mancante - ORDINE AGGIORNATO
  */
 export function getQuestionForSlot(slotName: string): string {
   const questions: Record<string, string[]> = {
-    phoneNumber: [
-      'Per permettere al tecnico di contattarti, qual è il tuo numero di cellulare?',
-      'A che numero posso far chiamare il tecnico?',
-      'Mi lasci un recapito telefonico per il tecnico?'
-    ],
-    serviceAddress: [
-      "A che indirizzo devo mandare il tecnico? (Via, numero civico, e città)",
-      "Dove si trova l'immobile? Dammi via, numero e città.",
-      "In che indirizzo serve l'intervento?"
+    city: [
+      'Per aiutarti, di quale **città** parliamo? (Rimini, Riccione, Cattolica...)',
+      'In quale città ti trovi? Serviamo Rimini, Riccione, Cattolica e zone limitrofe.',
+      'Dimmi la città dell\'intervento così posso indirizzarti al tecnico più vicino.'
     ],
     problemCategory: [
-      'Che tipo di problema hai? Idraulico (perdite, tubi), elettrico (luci, prese), fabbro (serrature), o clima (caldaia, condizionatore)?',
-      "Di che tipo di intervento hai bisogno? Idraulico, elettrico, fabbro, o climatizzazione?",
+      'Che tipo di problema hai? Idraulico, elettrico, serrature, o clima/riscaldamento?',
+      'Di che intervento hai bisogno? 🔧 Idraulico, ⚡ Elettricista, 🔑 Fabbro, o ❄️ Clima?',
       'È un problema idraulico, elettrico, di serrature, o di riscaldamento/clima?'
     ],
+    photo: [
+      'Per darti un preventivo preciso, riesci a **caricarmi una foto** del guasto? Clicca l\'icona 📷',
+      'Una foto del problema mi aiuterebbe a stimare meglio i costi. Puoi scattarla?',
+      'Se possibile, mandami una foto così il tecnico sa già cosa aspettarsi.'
+    ],
     problemDetails: [
-      'Puoi descrivermi meglio cosa sta succedendo? Più dettagli mi dai, meglio possiamo aiutarti.',
-      'Raccontami cosa è successo e cosa vedi. Questo aiuta il tecnico a prepararsi.',
-      'Cosa sta succedendo esattamente? Da quanto tempo?'
+      'Se non puoi fare una foto, descrivimi nel dettaglio cosa succede. Cosa vedi esattamente?',
+      'Raccontami cosa sta succedendo. Più dettagli mi dai, più preciso sarà il preventivo.',
+      'Descrivi il problema: cosa è rotto/non funziona? Da quanto tempo?'
+    ],
+    phoneNumber: [
+      'Perfetto! A che numero può **chiamarti il tecnico** per confermare l\'appuntamento?',
+      'Per procedere, lasciami un numero di cellulare per la chiamata di conferma.',
+      'Qual è il tuo numero? Il tecnico ti chiamerà entro 30-60 minuti.'
+    ],
+    streetAddress: [
+      'Qual è l\'indirizzo esatto? (Via, numero civico)',
+      'A che via devo mandare il tecnico? Dammi anche il numero civico.',
+      'Indirizzo dell\'intervento? (Es. Via Roma 25)'
     ]
   };
   
   const questionList = questions[slotName] || ['Puoi darmi qualche informazione in più?'];
-  // Rotazione casuale per variare le domande
   return questionList[Math.floor(Math.random() * questionList.length)];
+}
+
+/**
+ * Genera messaggio con preventivo
+ */
+export function generatePriceEstimateMessage(slots: ConversationSlots): string {
+  const range = calculatePriceRange(slots);
+  
+  return `
+Basandomi su quello che mi hai descritto, **l'intervento si aggira tra ${range.min}€ e ${range.max}€**.
+
+⚠️ *Questo è un range indicativo. Il prezzo finale sarà confermato dal tecnico una volta sul posto, dopo aver valutato la situazione di persona.*
+
+Ti va bene questo range? Se confermi, un tecnico della zona ti **chiamerà entro 30-60 minuti** per fissare l'orario dell'intervento.
+`.trim();
 }
 
 /**
  * Genera un riepilogo formattato per l'utente
  */
 export function generateRecapMessage(slots: ConversationSlots): string {
-  const urgencyText = slots.urgencyLevel === 'emergency' 
-    ? '🚨 **EMERGENZA** - Intervento entro 30-60 minuti'
-    : slots.urgencyLevel === 'today'
-    ? '📅 **Oggi** - Intervento entro 2-4 ore'
-    : '📆 **Standard** - Intervento entro 24-48 ore';
+  const range = calculatePriceRange(slots);
 
   return `
 ✅ **Riepilogo della tua richiesta:**
 
 🔧 **Problema:** ${slots.problemDetails || 'Non specificato'}
-📍 **Indirizzo:** ${slots.serviceAddress || 'Non specificato'}
+🏷️ **Categoria:** ${CATEGORY_NAMES_IT[slots.problemCategory || 'generic']}
+📍 **Città:** ${slots.city || 'Non specificata'}
+${slots.streetAddress ? `🏠 **Indirizzo:** ${slots.streetAddress}` : ''}
 📞 **Telefono:** ${slots.phoneNumber || 'Non specificato'}
-${slots.problemCategory ? `🏷️ **Categoria:** ${CATEGORY_NAMES_IT[slots.problemCategory]}` : ''}
-${urgencyText}
+💰 **Preventivo:** ${range.min}€ - ${range.max}€ (da confermare in loco)
 
-**È tutto corretto? Rispondi "sì" o "confermo" per procedere, oppure dimmi cosa correggere.**
+⏱️ **Prossimi passi:**
+Un tecnico ti **chiamerà entro 30-60 minuti** per confermare l'appuntamento e concordare l'orario dell'intervento.
+
+**È tutto corretto? Rispondi "sì" o "confermo" per procedere.**
 `.trim();
 }
 
@@ -520,19 +554,20 @@ Analizza questo messaggio del cliente:
 "${message}"
 
 DATI GIÀ RACCOLTI:
+- Città: ${slots.city || 'MANCANTE'}
 - Telefono: ${slots.phoneNumber || 'MANCANTE'}
-- Indirizzo: ${slots.serviceAddress || 'MANCANTE'}
 - Categoria: ${slots.problemCategory || 'NON IDENTIFICATA'}
 - Dettagli: ${slots.problemDetails || 'INSUFFICIENTI'}
 
 ESTRAI dal messaggio:
-1. Eventuali NUOVI dati (telefono, indirizzo, dettagli problema)
+1. Eventuali NUOVI dati (città, telefono, indirizzo, dettagli)
 2. La categoria del problema se identificabile
 3. Il livello di urgenza
 4. Se l'utente sta confermando o correggendo dati
 
 Rispondi in JSON:
 {
+  "extractedCity": "nome città o null",
   "extractedPhone": "numero o null",
   "extractedAddress": "indirizzo o null",
   "extractedCategory": "plumbing|electric|locksmith|climate|generic|null",

@@ -90,12 +90,37 @@ export default function ChatPage() {
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [showMagicLinkModal, setShowMagicLinkModal] = useState(false);
   
+  // User auth state
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userInitials, setUserInitials] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Handle Magic Link auth redirect - exchange code for session
+  // Check auth status and handle Magic Link redirect
   useEffect(() => {
     const supabase = createBrowserClient();
+    
+    // Check current session
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setIsAuthenticated(true);
+        setUserEmail(session.user.email || null);
+        // Generate initials from email
+        const email = session.user.email || '';
+        const name = session.user.user_metadata?.full_name || email.split('@')[0];
+        const initials = name.split(' ')
+          .map((n: string) => n[0])
+          .slice(0, 2)
+          .join('')
+          .toUpperCase();
+        setUserInitials(initials || email[0]?.toUpperCase() || 'U');
+      }
+    };
+    
+    checkSession();
     
     // Check if we have auth params in URL (from Magic Link redirect)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -111,11 +136,43 @@ export default function ChatPage() {
           console.error('Auth session error:', error);
         } else if (data.session) {
           console.log('✅ Session established:', data.session.user.email);
+          setIsAuthenticated(true);
+          setUserEmail(data.session.user.email || null);
+          const email = data.session.user.email || '';
+          const name = data.session.user.user_metadata?.full_name || email.split('@')[0];
+          const initials = name.split(' ')
+            .map((n: string) => n[0])
+            .slice(0, 2)
+            .join('')
+            .toUpperCase();
+          setUserInitials(initials || email[0]?.toUpperCase() || 'U');
           // Clean up URL
           window.history.replaceState({}, '', '/chat');
         }
       });
     }
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setIsAuthenticated(true);
+        setUserEmail(session.user.email || null);
+        const email = session.user.email || '';
+        const name = session.user.user_metadata?.full_name || email.split('@')[0];
+        const initials = name.split(' ')
+          .map((n: string) => n[0])
+          .slice(0, 2)
+          .join('')
+          .toUpperCase();
+        setUserInitials(initials || email[0]?.toUpperCase() || 'U');
+      } else {
+        setIsAuthenticated(false);
+        setUserEmail(null);
+        setUserInitials(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // Auto-scroll to bottom
@@ -351,8 +408,26 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* Right - New Chat + Emergency Call */}
+          {/* Right - User Avatar + New Chat + Emergency Call */}
           <div className="flex items-center gap-2">
+            {/* User Avatar - show when logged in */}
+            {isAuthenticated && userInitials && (
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 group"
+                title={userEmail || 'Il tuo profilo'}
+              >
+                <div className="relative w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform">
+                  {userInitials}
+                  {/* Online indicator */}
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                </div>
+                <span className="hidden lg:block text-xs text-slate-600 max-w-[100px] truncate">
+                  {userEmail?.split('@')[0]}
+                </span>
+              </Link>
+            )}
+
             {/* New Chat Button - only show if there are messages */}
             {messages.length > 0 && (
               <button
@@ -559,9 +634,9 @@ export default function ChatPage() {
         </div>
       </main>
 
-      {/* Input Area - NO GLASSMORPHISM */}
-      <div className="sticky bottom-0 w-full bg-white border-t border-slate-200 shadow-lg shadow-slate-200/20">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+      {/* Input Area - Mobile Optimized with safe-area-inset */}
+      <div className="sticky bottom-0 w-full bg-white border-t border-slate-200 shadow-lg shadow-slate-200/20 pb-[env(safe-area-inset-bottom)]">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           
           {/* Image Preview - shown when image is uploaded */}
           {uploadedImageUrl && (
@@ -573,16 +648,26 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* Input Row */}
-          <div className="flex items-end gap-3">
+          {/* Upload in progress indicator */}
+          {isUploading && (
+            <div className="mb-2 flex items-center gap-2 text-sm text-blue-600">
+              <LoadingSpinner size="sm" />
+              <span>Caricamento foto...</span>
+            </div>
+          )}
+
+          {/* Input Row - Thumb-zone optimized */}
+          <div className="flex items-end gap-2 sm:gap-3">
             
-            {/* Image Upload Button with Progress */}
-            <ImageUpload
-              onUploadComplete={handleImageUploaded}
-              onUploadStart={handleUploadStart}
-              onError={handleUploadError}
-              disabled={isLoading}
-            />
+            {/* Image Upload Button - Larger tap target on mobile */}
+            <div className="flex-shrink-0">
+              <ImageUpload
+                onUploadComplete={handleImageUploaded}
+                onUploadStart={handleUploadStart}
+                onError={handleUploadError}
+                disabled={isLoading}
+              />
+            </div>
 
             {/* Text Input */}
             <div className="flex-1 relative">
@@ -594,14 +679,15 @@ export default function ChatPage() {
                 placeholder="Descrivi il problema..."
                 rows={1}
                 disabled={isLoading}
-                className="w-full px-4 py-3 pr-14 bg-slate-100 border-0 rounded-2xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all resize-none min-h-[48px] max-h-[120px]"
+                className="w-full px-4 py-3.5 pr-14 bg-slate-100 border-0 rounded-2xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all resize-none min-h-[52px] max-h-[120px]"
+                style={{ fontSize: '16px' }} // Prevents zoom on iOS
               />
               
-              {/* Send Button (inside input) */}
+              {/* Send Button - Larger tap target (44x44 min for mobile) */}
               <button
                 onClick={handleSend}
                 disabled={(!input.trim() && !uploadedImageUrl) || isLoading || isUploading}
-                className="absolute right-2 bottom-2 w-10 h-10 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:from-blue-700 hover:to-blue-600 transition-all shadow-lg shadow-blue-500/25 hover:shadow-xl hover:scale-105 active:scale-95"
+                className="absolute right-1.5 bottom-1.5 w-11 h-11 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:from-blue-700 hover:to-blue-600 transition-all shadow-lg shadow-blue-500/25 active:scale-95"
               >
                 {isLoading ? (
                   <LoadingSpinner size="sm" className="text-white" />
@@ -612,8 +698,8 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* Helper Text */}
-          <p className="text-xs text-slate-400 text-center mt-3">
+          {/* Helper Text - hidden on mobile for cleaner UX */}
+          <p className="hidden sm:block text-xs text-slate-400 text-center mt-3">
             Premi Invio per inviare • Shift+Invio per andare a capo
           </p>
         </div>
