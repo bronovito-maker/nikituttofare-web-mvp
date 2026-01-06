@@ -11,10 +11,10 @@ export async function GET(request: NextRequest) {
 
     const supabase = createServerClient();
 
-    const { data: tickets, error } = await supabase
+    const { data: tickets, error } = await (supabase as any)
       .from('tickets')
       .select('*')
-      .eq('user_id', user.id as string)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {

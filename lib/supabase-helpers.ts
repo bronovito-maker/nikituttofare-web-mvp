@@ -48,10 +48,10 @@ export async function getOrCreateProfile(userId: string, email: string): Promise
     const supabase = createServerClient();
 
     // Prova a recuperare il profilo esistente
-    const { data: existingProfile, error: fetchError } = await supabase
+    const { data: existingProfile, error: fetchError } = await (supabase as any)
       .from('profiles')
       .select('*')
-      .eq('id', userId as string)
+      .eq('id', userId)
       .single();
 
     if (existingProfile && !fetchError) {
@@ -231,10 +231,10 @@ export async function getTicketMessages(ticketId: string): Promise<TicketMessage
   try {
     const supabase = createServerClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('messages')
       .select('*')
-      .eq('ticket_id', ticketId as string)
+      .eq('ticket_id', ticketId)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -262,10 +262,10 @@ export async function getUserTickets(userId: string): Promise<Ticket[]> {
   try {
     const supabase = createServerClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('tickets')
       .select('*')
-      .eq('user_id', userId as string)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
     if (error) {
