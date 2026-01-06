@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Build query with admin client
-    let query = adminClient
+    let query = (adminClient as any)
       .from('tickets')
       .select(`
         *,
@@ -131,7 +131,7 @@ export async function PATCH(request: NextRequest) {
     // Use admin client to bypass RLS
     const adminClient = createAdminClient();
 
-    const { data, error } = await adminClient
+    const { data, error } = await (adminClient as any)
       .from('tickets')
       .update(updateData)
       .eq('id', ticketId)
