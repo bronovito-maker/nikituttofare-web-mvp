@@ -2,19 +2,9 @@
 // Server-side only Supabase clients - DO NOT import in 'use client' components
 
 import { cookies } from 'next/headers';
+import { createServerClient as createSupabaseServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
-
-// Cookie options type (compatible with Next.js cookies)
-interface CookieOptions {
-  path?: string;
-  maxAge?: number;
-  expires?: Date;
-  httpOnly?: boolean;
-  secure?: boolean;
-  sameSite?: 'strict' | 'lax' | 'none';
-  domain?: string;
-}
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_anon_key';
@@ -22,52 +12,25 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholde
 /**
  * Server-side Supabase client that persists/reads auth via Next.js cookies.
  * Use in: Route handlers, Server Components, Server Actions, Middleware
- * 
+ *
  * ⚠️ DO NOT import this in Client Components ('use client')
  */
 export function createServerClient() {
-  const cookieStore = cookies();
-
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      flowType: 'pkce',
-      autoRefreshToken: true,
-      detectSessionInUrl: false,
-      persistSession: true,
-    },
-    global: {
-      headers: {
-        'x-client-info': 'nikituttofare-web',
-      },
-    },
+  return createSupabaseServerClient<Database>(supabaseUrl, supabaseAnonKey, {
     cookies: {
-      get(name: string) {
-        const store = cookieStore as any;
-        if (typeof store.get === 'function') {
-          const cookie = store.get(name);
-          return cookie?.value;
-        }
-        return undefined;
+      getAll() {
+        return cookies().then(store => store.getAll());
       },
-      set(name: string, value: string, options: CookieOptions) {
-        try {
-          const store = cookieStore as any;
-          if (typeof store.set === 'function') {
-            store.set(name, value, { path: '/', ...options });
+      setAll(cookiesToSet) {
+        cookies().then(store => {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              store.set(name, value, options)
+            );
+          } catch (error) {
+            console.warn('Could not set cookies:', error);
           }
-        } catch (error) {
-          console.warn('Could not set cookie:', name);
-        }
-      },
-      remove(name: string, options: CookieOptions) {
-        try {
-          const store = cookieStore as any;
-          if (typeof store.set === 'function') {
-            store.set(name, '', { path: '/', maxAge: 0, ...options });
-          }
-        } catch (error) {
-          console.warn('Could not remove cookie:', name);
-        }
+        });
       },
     },
   });

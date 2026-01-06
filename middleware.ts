@@ -36,13 +36,18 @@ export async function middleware(req: NextRequest) {
   }
 
   if (isAdminRoute) {
+    if (!userData?.user?.id) {
+      const loginUrl = new URL('/login', req.url);
+      return NextResponse.redirect(loginUrl);
+    }
+
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', userData?.user?.id)
+      .eq('id', userData.user.id)
       .single();
 
-    if (profile?.role !== 'admin') {
+    if (!profile || (profile as any)?.role !== 'admin') {
       const homeUrl = new URL('/dashboard', req.url);
       return NextResponse.redirect(homeUrl);
     }
