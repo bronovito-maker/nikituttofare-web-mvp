@@ -51,7 +51,7 @@ export async function getOrCreateProfile(userId: string, email: string): Promise
     const { data: existingProfile, error: fetchError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('id', userId as string)
       .single();
 
     if (existingProfile && !fetchError) {
@@ -234,7 +234,7 @@ export async function getTicketMessages(ticketId: string): Promise<TicketMessage
     const { data, error } = await supabase
       .from('messages')
       .select('*')
-      .eq('ticket_id', ticketId)
+      .eq('ticket_id', ticketId as string)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -265,7 +265,7 @@ export async function getUserTickets(userId: string): Promise<Ticket[]> {
     const { data, error } = await supabase
       .from('tickets')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', userId as string)
       .order('created_at', { ascending: false });
 
     if (error) {

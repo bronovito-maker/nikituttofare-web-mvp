@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const { data: tickets, error } = await supabase
       .from('tickets')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', user.id as string)
       .order('created_at', { ascending: false });
 
     if (error) {
