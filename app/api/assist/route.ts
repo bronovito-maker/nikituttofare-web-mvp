@@ -173,22 +173,6 @@ function generateFallbackResponse(
   }
   
 
-  // Se abbiamo tutti i dati necessari MA manca l'email, chiedi l'email
-  const hasAllDataExceptEmail = missingSlots.length === 0 || (missingSlots.length === 1 && missingSlots.includes('phoneNumber'));
-  if (hasAllDataExceptEmail && !slots.userEmail && !authenticatedUserEmail) {
-    return {
-      type: 'text',
-      content: 'Perfetto! Ora ho tutte le informazioni necessarie per l\'intervento.\n\n**Per completare la richiesta**, inserisci il tuo indirizzo email. Ti invierò un link sicuro per confermare l\'intervento e attivare le notifiche al tecnico.'
-    } as AIResponseType;
-  }
-
-  // Se abbiamo tutti i dati E l'email (da sessione o inserita), il ticket dovrebbe essere già stato creato dal backend
-  if (hasAllDataExceptEmail && (slots.userEmail || authenticatedUserEmail) && !userConfirmed) {
-    return {
-      type: 'text',
-      content: 'Perfetto! Ho tutte le informazioni necessarie. Ti ho appena inviato una mail di conferma all\'indirizzo ' + (slots.userEmail || authenticatedUserEmail) + '.\n\n**IMPORTANTE:** Clicca sul link nella mail per attivare la richiesta. Il tecnico non riceverà nulla finché non confermi.'
-    } as AIResponseType;
-  }
 
   // Se abbiamo tutti i dati E l'utente ha confermato, il ticket dovrebbe essere stato creato
   if (missingSlots.length === 0 && userConfirmed && ticketId) {
@@ -201,8 +185,8 @@ function generateFallbackResponse(
     } as AIResponseType;
   }
 
-  // Se abbiamo tutti i dati ma NON c'è ancora conferma, mostra il riepilogo (solo se abbiamo anche l'email)
-  if (missingSlots.length === 0 && !userConfirmed && (slots.userEmail || userEmail)) {
+  // Se abbiamo tutti i dati ma NON c'è ancora conferma, mostra il riepilogo
+  if (missingSlots.length === 0 && !userConfirmed) {
     const priority = determinePriority(slots);
     const timeEstimate = priority === 'emergency' ? '30-60 minuti' : 
                          priority === 'high' ? '2-4 ore' : '24-48 ore';
@@ -257,8 +241,7 @@ async function generateAIResponse(
   slots: ConversationSlots,
   ticketId: string | null,
   isFirstMessage: boolean,
-  userConfirmed: boolean = false,
-  authenticatedUserEmail?: string
+  userConfirmed: boolean = false
 ): Promise<AIResponseType> {
   // Fallback se Gemini non è disponibile
   if (!genAI) {
@@ -428,10 +411,16 @@ export async function POST(request: NextRequest) {
     
     // Crea ticket se:
     // 1. Non esiste già un ticket
-    // 2. Abbiamo email E almeno città, categoria, descrizione (telefono può venire dopo)
+    // 2. Abbiamo TUTTI i dati necessari: email, città, indirizzo completo, categoria, descrizione dettagliata, telefono
     // 3. L'utente ha un ID
-    const hasMinimumDataForTicket = slots.city && slots.problemCategory && (slots.problemDetails || slots.hasPhoto);
-    const shouldCreateNewTicket = !ticketId && slots.userEmail && hasMinimumDataForTicket && user?.id;
+    const hasAllDataForTicketCreation = slots.userEmail &&
+                                        slots.city &&
+                                        slots.serviceAddress && // Indirizzo completo, non solo città
+                                        slots.problemCategory &&
+                                        (slots.problemDetails || slots.hasPhoto) &&
+                                        slots.phoneNumber; // Telefono obbligatorio
+
+    const shouldCreateNewTicket = !ticketId && hasAllDataForTicketCreation && user?.id;
 
     if (shouldCreateNewTicket) {
 
@@ -469,8 +458,15 @@ export async function POST(request: NextRequest) {
 
         // Restituisci messaggio che informa dell'invio mail (NON conferma ancora)
         return NextResponse.json({
-          type: 'text',
-          content: `Perfetto! Ho ricevuto tutti i tuoi dati. Ti ho appena inviato una mail di conferma all'indirizzo ${slots.userEmail}.\n\n**IMPORTANTE:** Clicca sul link nella mail per attivare la richiesta. Il tecnico non riceverà nulla finché non confermi.`
+          type: 'auth_required',
+          content: `Perfetto! Ho raccolto tutte le informazioni necessarie per la tua richiesta di intervento **${CATEGORY_NAMES_IT[slots.problemCategory || 'generic']}**.\n\n**Per completare la richiesta e attivare le notifiche al tecnico, devi accedere al tuo account.**\n\nClicca sul pulsante di login qui sotto per procedere in sicurezza.`,
+          ticketData: {
+            category: slots.problemCategory,
+            city: slots.city,
+            address: slots.serviceAddress,
+            description: slots.problemDetails,
+            phone: slots.phoneNumber
+          }
         });
       }
     } else if (!ticketId && hasAllRequiredData && !userConfirmed) {
@@ -485,8 +481,7 @@ export async function POST(request: NextRequest) {
       slots,
       ticketId,
       isFirstMessage,
-      userConfirmed,
-      userEmail
+      userConfirmed
     );
 
     // Salva la risposta AI se abbiamo un ticket

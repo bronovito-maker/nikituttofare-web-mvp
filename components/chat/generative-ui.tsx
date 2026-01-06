@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { AIResponseType, FormType } from '@/lib/ai-structures';
+import { CATEGORY_NAMES_IT } from '@/lib/system-prompt';
 
 // ============================================
 // GENERATIVE UI COMPONENTS
@@ -48,7 +49,10 @@ export function GenerativeUI({ response, onFormSubmit, onConfirm }: GenerativeUI
     
     case 'confirmation':
       return <ConfirmationResponse content={response.content} />;
-    
+
+    case 'auth_required':
+      return <AuthRequiredResponse content={response.content as AuthRequiredContent} />;
+
     default:
       return <TextResponse content={typeof response.content === 'string' ? response.content : JSON.stringify(response.content)} />;
   }
@@ -171,6 +175,17 @@ interface RecapContent {
   estimatedTime?: string;
   ticketId?: string;
   confirmationNeeded?: boolean;
+}
+
+interface AuthRequiredContent {
+  content?: string;
+  ticketData: {
+    category: string;
+    city: string;
+    address: string;
+    description: string;
+    phone: string;
+  };
 }
 
 function RecapResponse({ content, onConfirm }: { content: string | Record<string, unknown>; onConfirm?: () => void }) {
@@ -436,6 +451,48 @@ function ConfirmationResponse({ content }: { content: string | Record<string, un
             Intervento e pagamento a fine lavoro
           </li>
         </ul>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// AUTH REQUIRED RESPONSE - Login Request
+// ============================================
+function AuthRequiredResponse({ content }: { content: AuthRequiredContent }) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+        <div className="p-2 rounded-full bg-blue-100">
+          <Shield className="w-6 h-6 text-blue-600" />
+        </div>
+        <div>
+          <p className="font-bold text-blue-800">Autenticazione Richiesta</p>
+          <p className="text-sm text-blue-700">Per completare la tua richiesta in sicurezza</p>
+        </div>
+      </div>
+
+      <div className="text-sm text-slate-700 space-y-2">
+        <p>{content.content || 'Devi accedere al tuo account per procedere con la richiesta.'}</p>
+      </div>
+
+      <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Riepilogo richiesta:</p>
+        <div className="space-y-1 text-sm">
+          <p><strong>Categoria:</strong> {CATEGORY_NAMES_IT[content.ticketData.category] || content.ticketData.category}</p>
+          <p><strong>Città:</strong> {content.ticketData.city}</p>
+          <p><strong>Indirizzo:</strong> {content.ticketData.address}</p>
+          <p><strong>Telefono:</strong> {content.ticketData.phone}</p>
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <a
+          href="/login"
+          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors duration-200 text-center"
+        >
+          Accedi per Confermare
+        </a>
       </div>
     </div>
   );

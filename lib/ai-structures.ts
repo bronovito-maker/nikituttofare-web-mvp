@@ -16,7 +16,7 @@ export const FormSchema = z.object({
 
 // Definiamo lo schema generale della risposta AI
 export const AIResponseSchema = z.object({
-  type: z.enum(['text', 'form', 'recap', 'booking_summary', 'confirmation']),
+  type: z.enum(['text', 'form', 'recap', 'booking_summary', 'confirmation', 'auth_required']),
   content: z.union([z.string(), FormSchema, z.record(z.any())]),
 });
 

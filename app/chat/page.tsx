@@ -283,6 +283,18 @@ export default function ChatPage() {
         setConfirmationPending(true);
       }
 
+      // Handle authentication required
+      if (aiResponse.type === 'auth_required') {
+        // Save ticket data for after authentication
+        const ticketData = (aiResponse as any).ticketData;
+        if (ticketData) {
+          localStorage.setItem('pendingTicketData', JSON.stringify(ticketData));
+        }
+        // Redirect to login
+        window.location.href = '/login?callbackUrl=' + encodeURIComponent(window.location.pathname);
+        return;
+      }
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore sconosciuto');
     } finally {
