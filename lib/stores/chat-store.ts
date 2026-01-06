@@ -1,5 +1,5 @@
 // lib/stores/chat-store.ts
-// Zustand store for chat state management
+// Zustand store for chat state management with Slot Filling
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
@@ -12,6 +12,15 @@ export interface ChatMessage {
   content: string | AIResponseType;
   createdAt: Date;
   photo?: string;
+}
+
+// Slot status per UI feedback
+export interface ConversationSlots {
+  phoneNumber?: string;
+  serviceAddress?: string;
+  problemCategory?: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'generic';
+  problemDetails?: string;
+  urgencyLevel?: 'emergency' | 'today' | 'this_week' | 'flexible';
 }
 
 // Ticket data extracted from conversation
@@ -33,6 +42,8 @@ interface ChatState {
   extractedData: ExtractedTicketData | null;
   isConfirmationPending: boolean;
   sessionId: string;
+  collectedSlots: ConversationSlots;
+  missingSlots: string[];
   
   // Actions
   addMessage: (message: Omit<ChatMessage, 'id' | 'createdAt'>) => void;
@@ -42,6 +53,7 @@ interface ChatState {
   setCurrentTicketId: (id: string | null) => void;
   setExtractedData: (data: ExtractedTicketData | null) => void;
   setConfirmationPending: (pending: boolean) => void;
+  updateSlots: (slots: Partial<ConversationSlots>, missing: string[]) => void;
   clearChat: () => void;
   generateSessionId: () => string;
 }
@@ -59,6 +71,8 @@ export const useChatStore = create<ChatState>()(
       extractedData: null,
       isConfirmationPending: false,
       sessionId: generateId(),
+      collectedSlots: {},
+      missingSlots: ['phoneNumber', 'serviceAddress', 'problemCategory', 'problemDetails'],
 
       // Actions
       addMessage: (message) => {
@@ -84,6 +98,11 @@ export const useChatStore = create<ChatState>()(
 
       setConfirmationPending: (pending) => set({ isConfirmationPending: pending }),
 
+      updateSlots: (slots, missing) => set((state) => ({
+        collectedSlots: { ...state.collectedSlots, ...slots },
+        missingSlots: missing,
+      })),
+
       clearChat: () => set({
         messages: [],
         error: null,
@@ -91,6 +110,8 @@ export const useChatStore = create<ChatState>()(
         extractedData: null,
         isConfirmationPending: false,
         sessionId: generateId(),
+        collectedSlots: {},
+        missingSlots: ['phoneNumber', 'serviceAddress', 'problemCategory', 'problemDetails'],
       }),
 
       generateSessionId: () => {
@@ -106,6 +127,7 @@ export const useChatStore = create<ChatState>()(
         currentTicketId: state.currentTicketId,
         extractedData: state.extractedData,
         sessionId: state.sessionId,
+        collectedSlots: state.collectedSlots,
       }),
     }
   )

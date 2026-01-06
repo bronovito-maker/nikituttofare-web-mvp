@@ -10,11 +10,13 @@ import {
   Zap, 
   Key, 
   Thermometer,
-  X,
   CheckCircle2,
   Clock,
   Shield,
-  Plus
+  Plus,
+  MapPin,
+  FileText,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NikiBotAvatar, Avatar } from '@/components/ui/avatar';
@@ -76,7 +78,10 @@ export default function ChatPage() {
     setConfirmationPending,
     currentTicketId,
     setCurrentTicketId,
-    clearChat
+    clearChat,
+    collectedSlots,
+    missingSlots,
+    updateSlots
   } = useChatStore();
   
   const [input, setInput] = useState('');
@@ -150,30 +155,9 @@ export default function ChatPage() {
     });
 
     try {
-      // Detect category from message
-      const category = detectCategory(trimmedContent);
-
-      // Create ticket if first message
-      let ticketId = currentTicketId;
-      if (!ticketId && messages.length === 0) {
-        const ticketRes = await fetch('/api/tickets', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            category,
-            description: trimmedContent,
-            priority: 'medium',
-            address: null,
-            imageUrl: photo,
-          }),
-        });
-
-        if (ticketRes.ok) {
-          const data = await ticketRes.json();
-          ticketId = data.ticketId;
-          setCurrentTicketId(ticketId);
-        }
-      }
+      // NON creare ticket qui - lascia che sia l'API /api/assist a gestire
+      // il ticket creation SOLO quando tutti i dati sono raccolti
+      const ticketId = currentTicketId;
 
       // Call AI assist
       const allMessages = [...messages, { role: 'user', content: trimmedContent, photo }];
@@ -194,7 +178,33 @@ export default function ChatPage() {
         throw new Error('Errore nella risposta AI');
       }
 
-      const aiResponse: AIResponseType = await res.json();
+      const responseData = await res.json();
+      
+      // Estrai la risposta AI e i dati di debug
+      const aiResponse: AIResponseType = {
+        type: responseData.type,
+        content: responseData.content
+      };
+      
+      // Aggiorna lo stato degli slot se presente nei dati di debug
+      if (responseData._debug) {
+        const { slotsCollected, missingSlots: newMissing, ticketId: newTicketId, ticketCreated } = responseData._debug;
+        
+        // Aggiorna gli slot raccolti in base ai booleani dal server
+        if (slotsCollected) {
+          updateSlots({
+            phoneNumber: slotsCollected.phone ? 'collected' : undefined,
+            serviceAddress: slotsCollected.address ? 'collected' : undefined,
+            problemCategory: slotsCollected.category ? 'plumbing' : undefined, // placeholder, actual category from server
+            problemDetails: slotsCollected.details ? 'collected' : undefined,
+          }, newMissing || []);
+        }
+        
+        // Aggiorna ticket ID se creato
+        if (ticketCreated && newTicketId && !ticketId) {
+          setCurrentTicketId(newTicketId);
+        }
+      }
 
       // Add AI response to store
       addMessage({
@@ -212,7 +222,7 @@ export default function ChatPage() {
     } finally {
       setLoading(false);
     }
-  }, [messages, isLoading, currentTicketId, addMessage, setLoading, setError, setCurrentTicketId, setConfirmationPending]);
+  }, [messages, isLoading, currentTicketId, addMessage, setLoading, setError, setCurrentTicketId, setConfirmationPending, updateSlots]);
 
   const handleSend = useCallback(async () => {
     if ((!input.trim() && !uploadedImageUrl) || isLoading || isUploading) return;
@@ -371,6 +381,72 @@ export default function ChatPage() {
           </div>
         </div>
       </header>
+
+      {/* Progress Indicator - shows when collecting data */}
+      {messages.length > 0 && missingSlots.length > 0 && !currentTicketId && (
+        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-blue-200/50 px-4 py-3">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-blue-800">
+                <div className="relative">
+                  <AlertCircle className="w-4 h-4" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blue-500 rounded-full animate-ping" />
+                </div>
+                <span>Raccolta informazioni</span>
+                <span className="text-blue-600/70">
+                  ({4 - missingSlots.length}/4)
+                </span>
+              </div>
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <SlotIndicator 
+                  icon={<Phone className="w-3.5 h-3.5" />}
+                  label="Telefono"
+                  filled={!missingSlots.includes('numero di telefono')}
+                />
+                <SlotIndicator 
+                  icon={<MapPin className="w-3.5 h-3.5" />}
+                  label="Indirizzo"
+                  filled={!missingSlots.includes("indirizzo dell'intervento")}
+                />
+                <SlotIndicator 
+                  icon={<Wrench className="w-3.5 h-3.5" />}
+                  label="Tipo"
+                  filled={!missingSlots.includes('tipo di problema')}
+                />
+                <SlotIndicator 
+                  icon={<FileText className="w-3.5 h-3.5" />}
+                  label="Dettagli"
+                  filled={!missingSlots.includes('descrizione del problema')}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* All data collected indicator */}
+      {messages.length > 0 && missingSlots.length === 0 && !currentTicketId && (
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200/50 px-4 py-3">
+          <div className="max-w-4xl mx-auto flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-green-600" />
+            <span className="text-sm font-medium text-green-800">
+              Tutti i dati raccolti! Conferma per procedere con la richiesta.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Ticket Created Success Banner */}
+      {currentTicketId && (
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200/50 px-4 py-3">
+          <div className="max-w-4xl mx-auto flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-green-600" />
+            <span className="text-sm font-medium text-green-800">
+              Ticket #{currentTicketId.slice(-8).toUpperCase()} creato! Un tecnico ti contatterà a breve.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Chat Messages Area */}
       <main className="flex-1 overflow-y-auto scrollbar-thin">
@@ -608,6 +684,35 @@ function MessageBubble({
           />
         )}
       </div>
+    </div>
+  );
+}
+
+// Slot Indicator Component for progress display
+function SlotIndicator({ 
+  icon, 
+  label, 
+  filled 
+}: { 
+  icon: React.ReactNode; 
+  label: string; 
+  filled: boolean;
+}) {
+  return (
+    <div 
+      className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+        filled 
+          ? 'bg-green-100 text-green-700 border border-green-200' 
+          : 'bg-slate-100 text-slate-400 border border-slate-200'
+      }`}
+      title={filled ? `${label}: ✓` : `${label}: da raccogliere`}
+    >
+      {filled ? (
+        <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+      ) : (
+        icon
+      )}
+      <span className="hidden sm:inline">{label}</span>
     </div>
   );
 }

@@ -1,15 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AIResponseSchema, type AIResponseType } from '@/lib/ai-structures';
-import { createTicket, saveMessage, getOrCreateProfile, getCurrentUser } from '@/lib/supabase-helpers';
+import { createTicket, saveMessage, getCurrentUser } from '@/lib/supabase-helpers';
 import { notifyNewTicket } from '@/lib/notifications';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitExceededResponse } from '@/lib/rate-limit';
+import { 
+  type ConversationSlots,
+  extractSlotsFromConversation, 
+  getMissingSlots, 
+  canCreateTicket,
+  isReadyForRecap,
+  buildNikiSystemPrompt,
+  getQuestionForSlot,
+  generateRecapMessage,
+  SLOT_NAMES_IT,
+  CATEGORY_NAMES_IT
+} from '@/lib/system-prompt';
 
-// Normalizza testo (typos, dialetti, etc.)
+// ============================================
+// NORMALIZZAZIONE TESTO (typos, dialetti, etc.)
+// ============================================
 function normalizeText(text: string): string {
   let normalized = text.toLowerCase();
   
-  // Typos comuni
   const typoMap: Record<string, string> = {
     'alagamento': 'allagamento', 'alagato': 'allagato', 'allagametno': 'allagamento',
     'ovuneuqe': 'ovunque', 'solpito': 'scoppiato', 'sepozzata': 'spezzata',
@@ -22,168 +35,95 @@ function normalizeText(text: string): string {
     normalized = normalized.replace(new RegExp(typo, 'gi'), correct);
   }
   
-  // Rimuovi ripetizioni di lettere
   normalized = normalized.replace(/(.)\1{2,}/g, '$1$1');
   
   return normalized;
 }
 
-// Funzione di fallback per l'analisi dei messaggi quando Gemini non è disponibile
-function fallbackMessageAnalysis(message: string) {
-  const lowerMessage = normalizeText(message);
-
-  // Keywords per categoria (IT + EN)
-  const categoryKeywords: Record<string, { keywords: string[]; weight: number }> = {
-    gas: {
-      keywords: ['gas', 'odore di uova', 'uova marce', 'puzza di gas', 'bombola', 'metano', 'gas smell'],
-      weight: 10
-    },
-    plumbing: {
-      keywords: [
-        'idraulico', 'acqua', 'tubo', 'perdita', 'scarico', 'rubinetto', 'lavandino', 
-        'doccia', 'wc', 'water', 'bidet', 'allagamento', 'allagato', 'goccia', 
-        'sifone', 'lavastoviglie', 'lavatrice', 'trabocca', 'spurgo', 'otturato',
-        'leak', 'plumber', 'pipe', 'drain', 'flooding', 'toilet', 'sink'
-      ],
-      weight: 5
-    },
-    electric: {
-      keywords: [
-        'elettric', 'luce', 'presa', 'corrente', 'interruttore', 'scintill', 
-        'salvavita', 'magnetotermico', 'quadro', 'fili', 'cavi', 'lampadina',
-        'forno', 'televisore', 'tv', 'inverter', 'blackout', 'buio', 'salta',
-        'sfarfalla', 'contatore', 'elettrogeno', 'ascensore', 'insegna',
-        'electric', 'power', 'light', 'socket', 'spark', 'charger'
-      ],
-      weight: 5
-    },
-    locksmith: {
-      keywords: [
-        'fabbro', 'serratura', 'chiave', 'chiavi', 'porta', 'bloccato', 'bloccata', 
-        'chiuso fuori', 'cassaforte', 'cancello', 'blindata', 'cilindro', 'maniglia',
-        'chiuso dentro', 'non esco', 'perso le chiavi', 'spezzata', 'serranda',
-        'key', 'keys', 'lock', 'locked', 'door', 'locksmith', 'stuck', 'cant enter'
-      ],
-      weight: 5
-    },
-    climate: {
-      keywords: [
-        'clima', 'condizionatore', 'caldaia', 'riscaldamento', 'termosifone', 'split',
-        'aria condizionata', 'frigorifero', 'cella', 'fan-coil', 'deumidificatore',
-        'ventilazione', 'radiatore', 'calorifero', 'termostato', 'errore caldaia',
-        'acqua calda', 'cappa', 'aspirazione', 'climatizzatore', 'pompa di calore',
-        'air conditioning', 'heater', 'heating', 'cooling', 'thermostat'
-      ],
-      weight: 5
-    },
-  };
-
-  // Calcola score per ogni categoria
-  let category = 'generic';
-  let maxScore = 0;
+// ============================================
+// ESTRAZIONE DATI DAL MESSAGGIO (fallback)
+// ============================================
+function extractDataFromMessage(message: string): Partial<ConversationSlots> {
+  const text = normalizeText(message);
+  const extracted: Partial<ConversationSlots> = {};
   
-  for (const [cat, config] of Object.entries(categoryKeywords)) {
-    let score = 0;
-    for (const keyword of config.keywords) {
-      if (lowerMessage.includes(keyword)) {
-        score += config.weight;
-      }
-    }
-    if (score > maxScore) {
-      maxScore = score;
-      category = cat === 'gas' ? 'climate' : cat;
-    }
-  }
-
-  // Keywords EMERGENCY - pericolo vita/incendio immediato
-  const emergencyKeywords = [
-    'fuoco', 'incendio', 'fiamme', 'scoppia', 'esplos', 'gas', 'uova marce',
-    'bambino dentro', 'bambino chiuso', 'bloccato dentro', 'non riesco a uscire',
-    'chiuso dentro', 'medicinali salvavita', 'scottato', 'soffocando',
-    'allagamento totale', 'acqua ovunque', 'scintille', 'fumo dalla presa',
-    'cavi scoperti', 'fumo nero', 'fire', 'explosion', 'trapped', 'emergency', 'help me'
+  // Estrai telefono
+  const phonePatterns = [
+    /(\+39\s?)?\d{3}[\s.-]?\d{3}[\s.-]?\d{4}/,
+    /(\+39\s?)?\d{3}[\s.-]?\d{6,7}/,
+    /3\d{2}[\s.-]?\d{3}[\s.-]?\d{4}/,
+    /0\d{2,4}[\s.-]?\d{5,8}/
   ];
   
-  // Keywords HIGH - urgente ma non pericolo vita
-  const highKeywords = [
-    'rotto', 'non funziona', 'guasto', 'saltato', 'bloccata', 'bloccato',
-    'non risponde', 'non si accende', 'non parte', 'non scalda',
-    'perdita', 'gocciola', 'allaga', 'riflusso', 'trabocca', 'perde acqua',
-    'hotel', 'ristorante', 'bar', 'clienti', 'ospiti', 'camera', 'suite',
-    'cella frigorifera', 'sala server', 'furto', 'ladri', 'chiuso fuori',
-    'chiave spezzata', 'freddissimo', 'caldissimo',
-    'broken', 'not working', 'flooding', 'urgent', 'locked out'
-  ];
-
-  // Keywords LOW - manutenzione programmabile
-  const lowKeywords = [
-    'preventivo', 'vorrei', 'quanto costa', 'programmare', 'manutenzione',
-    'sanificazione', 'pulizia', 'lucidatura', 'installare', 'montare',
-    'regolazione', 'certificazione', 'quote', 'price', 'schedule'
-  ];
-
-  // Calcola priorità
-  let priority: 'low' | 'medium' | 'high' | 'emergency' = 'medium';
-  let emergencyScore = 0;
-  let highScore = 0;
-
-  for (const keyword of emergencyKeywords) {
-    if (lowerMessage.includes(keyword)) emergencyScore += 3;
-  }
-  for (const keyword of highKeywords) {
-    if (lowerMessage.includes(keyword)) highScore += 2;
-  }
-
-  // Check CAPS LOCK
-  const capsChars = (message.match(/[A-Z]/g) || []).length;
-  const letterChars = (message.match(/[a-zA-Z]/g) || []).length;
-  if (letterChars > 20 && capsChars / letterChars > 0.6) {
-    emergencyScore += 5;
-  }
-
-  // Check punti esclamativi multipli
-  const exclamations = (message.match(/!{2,}/g) || []).length;
-  if (exclamations >= 2) {
-    emergencyScore += 2;
-  }
-
-  // Check LOW priority prima
-  let isLowPriority = false;
-  for (const keyword of lowKeywords) {
-    if (lowerMessage.includes(keyword)) {
-      isLowPriority = true;
+  for (const pattern of phonePatterns) {
+    const match = message.match(pattern);
+    if (match) {
+      extracted.phoneNumber = match[0].replace(/[\s.-]/g, '');
       break;
     }
   }
-
-  // Determina priorità finale
-  if (isLowPriority && emergencyScore < 3 && highScore < 4) {
-    priority = 'low';
-  } else if (emergencyScore >= 3) {
-    priority = 'emergency';
-  } else if (highScore >= 2 || emergencyScore >= 1) {
-    priority = 'high';
-  }
-
+  
   // Estrai indirizzo
-  let address: string | null = null;
-  const addressMatch = message.match(/(?:via|corso|piazza|viale)\s+[^,\.!?]+/i);
+  const addressMatch = message.match(/(?:via|corso|piazza|viale|vicolo|largo)\s+[a-zàèéìòùáéíóú\s]+[\s,]*\d+[a-z]?/i);
   if (addressMatch) {
-    address = addressMatch[0].trim();
+    extracted.serviceAddress = addressMatch[0].trim();
   }
-
-  return {
-    category,
-    priority,
-    shouldCreateTicket: true,
-    address,
-    emergency: priority === 'emergency',
-    needsMoreInfo: [] as string[],
-    responseType: 'text'
+  
+  // Estrai categoria
+  const categoryKeywords: Record<string, string[]> = {
+    plumbing: ['idraulico', 'acqua', 'tubo', 'perdita', 'scarico', 'rubinetto', 'allagamento', 'wc', 'bagno'],
+    electric: ['elettric', 'luce', 'presa', 'corrente', 'salvavita', 'blackout', 'scintill'],
+    locksmith: ['fabbro', 'serratura', 'chiave', 'porta', 'bloccato', 'chiuso fuori'],
+    climate: ['condizionatore', 'caldaia', 'riscaldamento', 'termosifone', 'clima', 'aria condizionata']
   };
+  
+  for (const [category, keywords] of Object.entries(categoryKeywords)) {
+    if (keywords.some(kw => text.includes(kw))) {
+      extracted.problemCategory = category as ConversationSlots['problemCategory'];
+      break;
+    }
+  }
+  
+  // Estrai urgenza
+  const emergencyKeywords = ['urgente', 'emergenza', 'subito', 'allagamento', 'bloccato fuori', 'senza luce'];
+  if (emergencyKeywords.some(kw => text.includes(kw))) {
+    extracted.urgencyLevel = 'emergency';
+  }
+  
+  // Dettagli problema
+  if (message.length > 15) {
+    extracted.problemDetails = message.slice(0, 200);
+  }
+  
+  return extracted;
 }
 
-// Inizializza Gemini AI con fallback
+// ============================================
+// ANALISI PRIORITÀ
+// ============================================
+function determinePriority(slots: ConversationSlots): 'low' | 'medium' | 'high' | 'emergency' {
+  if (slots.urgencyLevel === 'emergency') return 'emergency';
+  
+  const details = (slots.problemDetails || '').toLowerCase();
+  
+  // Emergency keywords
+  const emergencyKeywords = ['allagamento', 'bloccato fuori', 'senza corrente', 'gas', 'incendio', 'pericolo'];
+  if (emergencyKeywords.some(kw => details.includes(kw))) {
+    return 'emergency';
+  }
+  
+  // High priority
+  const highKeywords = ['perdita', 'urgente', 'oggi', 'subito'];
+  if (highKeywords.some(kw => details.includes(kw))) {
+    return 'high';
+  }
+  
+  return 'medium';
+}
+
+// ============================================
+// GEMINI AI SETUP
+// ============================================
 const geminiApiKey = process.env.GOOGLE_GEMINI_API_KEY;
 let genAI: GoogleGenerativeAI | null = null;
 
@@ -191,7 +131,7 @@ if (geminiApiKey && geminiApiKey !== 'placeholder_gemini_api_key') {
   genAI = new GoogleGenerativeAI(geminiApiKey);
 }
 
-function stringifyContent(content: unknown) {
+function stringifyContent(content: unknown): string {
   if (typeof content === 'string') return content;
   try {
     return JSON.stringify(content);
@@ -200,9 +140,196 @@ function stringifyContent(content: unknown) {
   }
 }
 
+// ============================================
+// FALLBACK RESPONSE (quando Gemini non è disponibile)
+// ============================================
+function generateFallbackResponse(
+  slots: ConversationSlots,
+  ticketId: string | null,
+  isFirstMessage: boolean,
+  userConfirmed: boolean = false
+): AIResponseType {
+  const missingSlots = getMissingSlots(slots);
+  
+  // Se è il primo messaggio, saluta e inizia a raccogliere dati
+  if (isFirstMessage) {
+    let greeting = "Ciao! Sono Niki, il tuo assistente per emergenze domestiche 🔧\n\n";
+    
+    if (slots.problemCategory && slots.problemCategory !== 'generic') {
+      greeting += `Ho capito che hai un problema di tipo **${CATEGORY_NAMES_IT[slots.problemCategory] || slots.problemCategory}**. `;
+    }
+    
+    if (slots.urgencyLevel === 'emergency') {
+      greeting += "🚨 **Capisco che è un'emergenza!** Ti aiuto subito.\n\n";
+    }
+    
+    // Chiedi il primo dato mancante
+    if (missingSlots.length > 0) {
+      greeting += getQuestionForSlot(missingSlots[0]);
+    } else {
+      greeting += "Ho bisogno di alcune informazioni per inviarti un tecnico.";
+    }
+    
+    return { type: 'text', content: greeting };
+  }
+  
+  // Se abbiamo tutti i dati E l'utente ha confermato, il ticket dovrebbe essere stato creato
+  if (missingSlots.length === 0 && userConfirmed && ticketId) {
+    return {
+      type: 'confirmation',
+      content: {
+        message: `La tua richiesta è stata confermata! Un tecnico ${CATEGORY_NAMES_IT[slots.problemCategory || 'generic'] || ''} ti contatterà al numero ${slots.phoneNumber} il prima possibile.`,
+        ticketId: ticketId
+      }
+    } as AIResponseType;
+  }
+  
+  // Se abbiamo tutti i dati ma NON c'è ancora conferma, mostra il riepilogo
+  if (missingSlots.length === 0 && !userConfirmed) {
+    const priority = determinePriority(slots);
+    const timeEstimate = priority === 'emergency' ? '30-60 minuti' : 
+                         priority === 'high' ? '2-4 ore' : '24-48 ore';
+    
+    return {
+      type: 'recap',
+      content: {
+        title: "Riepilogo della tua richiesta",
+        summary: "Ho raccolto tutte le informazioni necessarie. Ecco il riepilogo:",
+        details: {
+          problema: slots.problemDetails || 'Non specificato',
+          categoria: CATEGORY_NAMES_IT[slots.problemCategory || 'generic'] || slots.problemCategory || 'Generico',
+          indirizzo: slots.serviceAddress || 'Non specificato',
+          telefono: slots.phoneNumber || 'Non specificato'
+        },
+        estimatedTime: timeEstimate,
+        ticketId: ticketId || undefined,
+        confirmationNeeded: true
+      }
+    } as AIResponseType;
+  }
+  
+  // Chiedi il prossimo dato mancante
+  const nextSlot = missingSlots[0];
+  let response = "";
+  
+  // Conferma i dati già raccolti (se ce ne sono) - max ogni 2 slot
+  const collectedCount = 4 - missingSlots.length;
+  if (collectedCount > 0 && collectedCount % 2 === 0) {
+    const collectedData: string[] = [];
+    if (slots.phoneNumber) collectedData.push(`📞 ${slots.phoneNumber}`);
+    if (slots.serviceAddress) collectedData.push(`📍 ${slots.serviceAddress}`);
+    if (slots.problemCategory && slots.problemCategory !== 'generic') {
+      collectedData.push(`🔧 ${CATEGORY_NAMES_IT[slots.problemCategory]}`);
+    }
+    
+    if (collectedData.length > 0) {
+      response += "✅ Registrato: " + collectedData.join(" • ") + "\n\n";
+    }
+  }
+  
+  response += getQuestionForSlot(nextSlot);
+  
+  return { type: 'text', content: response };
+}
+
+// ============================================
+// GENERAZIONE RISPOSTA AI (con Gemini)
+// ============================================
+async function generateAIResponse(
+  messages: Array<{ role: string; content: unknown; photo?: string }>,
+  slots: ConversationSlots,
+  ticketId: string | null,
+  isFirstMessage: boolean,
+  userConfirmed: boolean = false
+): Promise<AIResponseType> {
+  // Fallback se Gemini non è disponibile
+  if (!genAI) {
+    return generateFallbackResponse(slots, ticketId, isFirstMessage, userConfirmed);
+  }
+  
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  
+  // Costruisci il prompt di sistema con awareness degli slot
+  const systemPrompt = buildNikiSystemPrompt(slots, ticketId);
+  
+  // Costruisci lo storico conversazione
+  const conversationHistory = messages
+    .map(m => `${m.role.toUpperCase()}: ${stringifyContent(m.content)}`)
+    .join('\n');
+  
+  const fullPrompt = `
+${systemPrompt}
+
+# STORICO CONVERSAZIONE
+${conversationHistory}
+
+# ISTRUZIONI FINALI
+Basandoti sullo storico e sui dati raccolti, genera la prossima risposta seguendo il flusso di slot-filling.
+Ricorda: NON creare ticket finché non hai TUTTI i dati (telefono, indirizzo, categoria, dettagli).
+
+Rispondi SOLO con un JSON valido nel formato specificato.
+`;
+
+  try {
+    const result = await model.generateContent(fullPrompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    // Parse e valida la risposta JSON
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]);
+        
+        // Se l'AI dice di creare ticket ma non abbiamo tutti i dati, override
+        if (parsed.shouldCreateTicket && !canCreateTicket(slots)) {
+          parsed.shouldCreateTicket = false;
+        }
+        
+        // Valida con Zod
+        const validated = AIResponseSchema.safeParse(parsed);
+        if (validated.success) {
+          return validated.data;
+        }
+        
+        // Se la validazione fallisce ma abbiamo content, usa quello
+        if (parsed.content) {
+          return {
+            type: parsed.type || 'text',
+            content: parsed.content
+          };
+        }
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+      }
+    }
+    
+    // Fallback: estrai testo semplice dalla risposta
+    const cleanText = text
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .replace(/\{[\s\S]*\}/g, '')
+      .trim();
+    
+    if (cleanText) {
+      return { type: 'text', content: cleanText };
+    }
+    
+    // Ultimo fallback
+    return generateFallbackResponse(slots, ticketId, isFirstMessage, slots.userConfirmed || false);
+    
+  } catch (error) {
+    console.error('Errore Gemini:', error);
+    return generateFallbackResponse(slots, ticketId, isFirstMessage, slots.userConfirmed || false);
+  }
+}
+
+// ============================================
+// MAIN API HANDLER
+// ============================================
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting - protegge da abusi e risparmia quota Gemini
+    // Rate limiting
     const clientId = getClientIdentifier(request);
     const rateLimitResult = checkRateLimit(`assist:${clientId}`, RATE_LIMITS.assist);
     
@@ -210,278 +337,163 @@ export async function POST(request: NextRequest) {
       return rateLimitExceededResponse(rateLimitResult);
     }
 
-    const { messages, ticketId: existingTicketId } = await request.json();
+    const body = await request.json();
+    const { messages, ticketId: existingTicketId } = body;
+    
+    // Ottieni utente (può essere null per ospiti)
     const user = await getCurrentUser();
-    if (!user?.id) {
-      return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
-    }
+    const userEmail = user?.email || undefined;
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: 'Messaggi non validi' }, { status: 400 });
     }
 
-    // Estrai l'ultimo messaggio dell'utente
+    // Estrai l'ultimo messaggio utente
     const lastUserMessage = messages
-      .filter(m => m.role === 'user')
+      .filter((m: { role: string }) => m.role === 'user')
       .pop();
 
     if (!lastUserMessage) {
-      return NextResponse.json({ error: 'Nessun messaggio utente trovato' }, { status: 400 });
+      return NextResponse.json({ error: 'Nessun messaggio utente' }, { status: 400 });
     }
 
-    // Analizza il messaggio e determina se creare un ticket
-    const analysis = await analyzeMessage(stringifyContent(lastUserMessage.content), messages);
+    const isFirstMessage = messages.filter((m: { role: string }) => m.role === 'user').length === 1;
 
+    // ========================================
+    // SLOT FILLING: Estrai dati dalla conversazione
+    // ========================================
+    const conversationMessages = messages.map((m: { role: string; content: unknown }) => ({
+      role: m.role,
+      content: stringifyContent(m.content)
+    }));
+    
+    // Estrai slot già presenti nella conversazione
+    const slots = extractSlotsFromConversation(conversationMessages, userEmail);
+    
+    // Aggiorna con eventuali nuovi dati dall'ultimo messaggio
+    const newData = extractDataFromMessage(stringifyContent(lastUserMessage.content));
+    Object.assign(slots, {
+      ...slots,
+      ...Object.fromEntries(
+        Object.entries(newData).filter(([_, v]) => v !== undefined && v !== null)
+      )
+    });
+
+    // ========================================
+    // LOGICA DI CREAZIONE TICKET
+    // ========================================
     let ticketId = existingTicketId;
-
-    // Se non c'è un ticket esistente e dobbiamo crearne uno, fallo
-    if (!ticketId && analysis.shouldCreateTicket) {
+    let shouldCreateTicket = false;
+    
+    // Determina se possiamo creare il ticket
+    const hasAllRequiredData = canCreateTicket(slots);
+    const missingSlots = getMissingSlots(slots);
+    const userConfirmed = slots.userConfirmed || false;
+    
+    // Log per debug
+    console.log('📊 Slot Status:', {
+      hasAllData: hasAllRequiredData,
+      userConfirmed,
+      missing: missingSlots,
+      slots: {
+        phone: slots.phoneNumber ? '✅' : '❌',
+        address: slots.serviceAddress ? '✅' : '❌',
+        category: slots.problemCategory ? '✅' : '❌',
+        details: slots.problemDetails ? '✅' : '❌'
+      }
+    });
+    
+    // Crea ticket SOLO se:
+    // 1. Non esiste già un ticket
+    // 2. Abbiamo TUTTI i dati necessari
+    // 3. L'utente ha CONFERMATO esplicitamente
+    // 4. L'utente ha un ID (anche ospite può avere profilo temporaneo)
+    if (!ticketId && hasAllRequiredData && userConfirmed && user?.id) {
+      shouldCreateTicket = true;
+      
+      const priority = determinePriority(slots);
+      
+      console.log('🎫 Creazione ticket con:', {
+        userId: user.id,
+        category: slots.problemCategory,
+        address: slots.serviceAddress,
+        phone: slots.phoneNumber,
+        priority
+      });
+      
       const ticket = await createTicket(
         user.id,
-        analysis.category,
-        stringifyContent(lastUserMessage.content),
-        analysis.priority,
-        analysis.address
+        slots.problemCategory || 'generic',
+        slots.problemDetails || stringifyContent(lastUserMessage.content),
+        priority,
+        slots.serviceAddress || undefined
       );
 
       if (ticket) {
         ticketId = ticket.id;
-
-        // Salva il messaggio iniziale
+        
+        // Salva il messaggio e notifica
         await saveMessage(ticketId, 'user', lastUserMessage.content, lastUserMessage.photo);
+        await notifyNewTicket({
+          ...ticket,
+          phone: slots.phoneNumber,
+          address: slots.serviceAddress
+        });
+        
+        console.log('✅ Ticket creato:', ticketId);
+      }
+    } else if (!ticketId && hasAllRequiredData && !userConfirmed) {
+      console.log('⏳ Tutti i dati raccolti, in attesa di conferma utente');
+    }
 
-        // Notifica Telegram per il nuovo ticket
-        await notifyNewTicket(ticket);
+    // ========================================
+    // GENERA RISPOSTA AI
+    // ========================================
+    const aiResponse = await generateAIResponse(
+      messages,
+      slots,
+      ticketId,
+      isFirstMessage,
+      userConfirmed
+    );
+
+    // Se abbiamo appena creato il ticket, aggiungi l'ID alla risposta
+    if (shouldCreateTicket && ticketId && aiResponse.type !== 'recap') {
+      // Modifica la risposta per includere conferma ticket
+      if (typeof aiResponse.content === 'string') {
+        aiResponse.content += `\n\n✅ **Ticket #${ticketId.slice(-8).toUpperCase()} creato!**\nUn tecnico ti contatterà presto al numero ${slots.phoneNumber}.`;
       }
     }
 
-    // Genera risposta AI basata sull'analisi
-    const aiResponse = await generateAIResponse(messages, analysis, ticketId);
-
     // Salva la risposta AI se abbiamo un ticket
-    if (ticketId && typeof aiResponse === 'object' && aiResponse.type === 'text') {
-      await saveMessage(ticketId, 'assistant', aiResponse.content as string);
+    if (ticketId && typeof aiResponse.content === 'string') {
+      await saveMessage(ticketId, 'assistant', aiResponse.content);
     }
 
-    return NextResponse.json(aiResponse);
+    // Includi info sui dati raccolti nella risposta (per debug/UI)
+    return NextResponse.json({
+      ...aiResponse,
+      _debug: {
+        ticketCreated: shouldCreateTicket,
+        ticketId,
+        slotsCollected: {
+          phone: !!slots.phoneNumber,
+          address: !!slots.serviceAddress,
+          category: !!slots.problemCategory,
+          details: !!slots.problemDetails
+        },
+        missingSlots: missingSlots.map(s => SLOT_NAMES_IT[s] || s)
+      }
+    });
 
   } catch (error) {
     console.error('Errore nell\'AI assist:', error);
     return NextResponse.json(
-      { error: 'Errore interno del server' },
+      { 
+        type: 'text',
+        content: 'Mi scusi, ho avuto un problema tecnico. Può ripetere la sua richiesta? Se è un\'emergenza, chiami direttamente il numero 0541 123456.'
+      },
       { status: 500 }
     );
-  }
-}
-
-async function analyzeMessage(message: string, conversationHistory: any[]) {
-  if (!genAI) {
-    // Fallback senza AI - analisi base del messaggio
-    return fallbackMessageAnalysis(message);
-  }
-
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-  const analysisPrompt = `
-Sei Niki, l'assistente virtuale di NikiTuttoFare, servizio di pronto intervento H24 per emergenze domestiche e HORECA.
-
-ANALIZZA QUESTO MESSAGGIO DELL'UTENTE:
-"${message}"
-
-STORICO CONVERSAZIONE:
-${conversationHistory.map(m => `${m.role}: ${stringifyContent(m.content)}`).join('\n')}
-
-DEVI RESTITUIRE UN JSON con questa struttura:
-{
-  "category": "plumbing|electric|locksmith|climate|generic",
-  "priority": "low|medium|high|emergency",
-  "shouldCreateTicket": true|false,
-  "address": "indirizzo estratto o null",
-  "emergency": true|false,
-  "needsMoreInfo": ["array di info mancanti"],
-  "responseType": "text|form|recap"
-}
-
-LOGICA DI CLASSIFICAZIONE:
-- plumbing: perdite acqua, tubi, scarichi, rubinetti
-- electric: problemi elettrici, luci, prese, interruttori
-- locksmith: serrature, chiavi perse, porte bloccate
-- climate: condizionatori, caldaie, riscaldamento
-- generic: tutto il resto
-
-PRIORITY:
-- emergency: pericolo immediato, inondazioni, incendi, persone bloccate
-- high: forti perdite, mancanza corrente, impossibilità accesso casa
-- medium: problemi minori, manutenzione
-- low: richieste generiche senza urgenza
-
-CRITERI PER CREARE TICKET:
-- Se è un problema chiaro e specifico → true
-- Se chiede informazioni generali → false
-- Se è solo saluto → false
-
-Se trovi un indirizzo nel messaggio, estrailo nel campo "address".
-`;
-
-  try {
-    const result = await model.generateContent(analysisPrompt);
-    const response = await result.response;
-    const text = response.text();
-
-    // Parse del JSON dalla risposta
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-
-    // Fallback se il parsing fallisce
-    return {
-      category: 'generic',
-      priority: 'medium',
-      shouldCreateTicket: true,
-      address: null,
-      emergency: false,
-      needsMoreInfo: [],
-      responseType: 'text'
-    };
-
-  } catch (error) {
-    console.error('Errore nell\'analisi del messaggio:', error);
-    return {
-      category: 'generic',
-      priority: 'medium',
-      shouldCreateTicket: true,
-      address: null,
-      emergency: false,
-      needsMoreInfo: [],
-      responseType: 'text'
-    };
-  }
-}
-
-// Funzione di fallback per la generazione delle risposte quando Gemini non è disponibile
-function fallbackAIResponse(analysis: Record<string, unknown>, ticketId: string | null): AIResponseType {
-  let message = "Ho ricevuto la tua richiesta";
-
-  if (ticketId) {
-    message += ` e creato un ticket con ID ${ticketId.slice(-8)}. `;
-  } else {
-    message += ". ";
-  }
-
-  const categoryNames: Record<string, string> = {
-    plumbing: "idraulico",
-    electric: "elettricista",
-    locksmith: "fabbro",
-    climate: "climatizzazione",
-    generic: "generico"
-  };
-
-  const categoryName = categoryNames[analysis.category as string] || analysis.category;
-
-  if (analysis.emergency) {
-    message += `Riconosco che si tratta di un'emergenza. Un tecnico specializzato in ${categoryName} verrà inviato immediatamente.`;
-  } else {
-    message += `Un tecnico specializzato in ${categoryName} ti contatterà entro ${
-      analysis.priority === 'high' ? '1 ora' : '24 ore'
-    } per organizzare l'intervento.`;
-  }
-
-  const needsMoreInfo = analysis.needsMoreInfo as string[] | undefined;
-  if (needsMoreInfo && needsMoreInfo.length > 0) {
-    message += `\n\nPer procedere più velocemente, potresti fornire: ${needsMoreInfo.join(', ')}.`;
-  }
-
-  return {
-    type: 'text',
-    content: message
-  };
-}
-
-async function generateAIResponse(messages: any[], analysis: any, ticketId: string | null): Promise<AIResponseType> {
-  if (!genAI) {
-    // Fallback senza AI
-    return fallbackAIResponse(analysis, ticketId);
-  }
-
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-  const contextPrompt = `
-Sei Niki, l'assistente amichevole e professionale di NikiTuttoFare.
-Servizio di pronto intervento H24 per emergenze domestiche e HORECA.
-
-CONTESTO ATTUALE:
-- Categoria rilevata: ${analysis.category}
-- Priorità: ${analysis.priority}
-- Emergenza: ${analysis.emergency}
-- Ticket creato: ${!!ticketId}
-- Info mancanti: ${analysis.needsMoreInfo.join(', ') || 'nessuna'}
-
-STORICO CONVERSAZIONE:
-${messages.map(m => `${m.role}: ${stringifyContent(m.content)}`).join('\n')}
-
-ISTRUZIONI:
-1. Sii sempre gentile, rassicurante e professionale
-2. Parla in italiano
-3. Se è un'emergenza, mostra urgenza e rassicura che interverremo presto
-4. Se abbiamo creato un ticket, conferma e dai ID ticket
-5. Se mancano info, chiedi specificamente quelle necessarie
-6. Non chiedere mai troppe cose insieme - una alla volta
-7. Se tutto è chiaro, procedi con la conferma
-
-RESPONDI CON UN JSON nella struttura:
-{
-  "type": "text|form|recap",
-  "content": "testo della risposta O oggetto form"
-}
-
-Se type="text", content è una stringa.
-Se type="form", content è un oggetto con fields.
-Se type="recap", content è il riepilogo finale.
-`;
-
-  try {
-    const result = await model.generateContent(contextPrompt);
-    const response = await result.response;
-    const text = response.text();
-
-    // Parse e valida la risposta
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      const validated = AIResponseSchema.safeParse(parsed);
-
-      if (validated.success) {
-        return validated.data;
-      }
-    }
-
-    // Fallback risposta di testo
-    let fallbackMessage = "Ho capito la tua richiesta. ";
-
-    if (ticketId) {
-      fallbackMessage += `Ho creato un ticket con ID ${ticketId}. `;
-    }
-
-    if (analysis.emergency) {
-      fallbackMessage += "Riconosco che questa è un'emergenza e un tecnico verrà inviato immediatamente.";
-    } else if (analysis.needsMoreInfo.length > 0) {
-      fallbackMessage += `Per procedere ho bisogno di: ${analysis.needsMoreInfo.join(', ')}.`;
-    } else {
-      fallbackMessage += "Un tecnico ti contatterà presto per organizzare l'intervento.";
-    }
-
-    return {
-      type: 'text',
-      content: fallbackMessage
-    };
-
-  } catch (error) {
-    console.error('Errore nella generazione della risposta AI:', error);
-
-    return {
-      type: 'text',
-      content: 'Mi scusi, ho avuto un problema tecnico. Può ripetere la sua richiesta? Un tecnico è comunque stato avvisato e la contatterà presto.'
-    };
   }
 }

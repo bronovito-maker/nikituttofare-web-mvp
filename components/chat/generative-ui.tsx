@@ -157,44 +157,166 @@ function FormResponse({ form, onSubmit }: { form: FormType; onSubmit?: (data: Re
 }
 
 // ============================================
-// RECAP RESPONSE - Ticket Summary
+// RECAP RESPONSE - Ticket Summary with Confirmation
 // ============================================
+interface RecapContent {
+  title?: string;
+  summary?: string;
+  details?: {
+    problema?: string;
+    categoria?: string;
+    indirizzo?: string;
+    telefono?: string;
+  };
+  estimatedTime?: string;
+  ticketId?: string;
+  confirmationNeeded?: boolean;
+}
+
 function RecapResponse({ content, onConfirm }: { content: string | Record<string, unknown>; onConfirm?: () => void }) {
-  const data = typeof content === 'string' ? { description: content } : content;
+  // Gestisci diversi formati di content
+  let recapData: RecapContent = {};
+  
+  if (typeof content === 'string') {
+    recapData = { summary: content };
+  } else if (content && typeof content === 'object') {
+    // Potrebbe essere il formato { title, summary, details, ... }
+    if ('details' in content) {
+      recapData = content as RecapContent;
+    } else {
+      // Formato legacy: content è direttamente un oggetto con i dati
+      recapData = {
+        title: 'Riepilogo della richiesta',
+        details: content as RecapContent['details']
+      };
+    }
+  }
+
+  const details = recapData.details || {};
+  const needsConfirmation = recapData.confirmationNeeded !== false;
+
+  // Mappa categorie a icone e colori
+  const getCategoryDisplay = (cat?: string) => {
+    const categories: Record<string, { icon: typeof Wrench; color: string; label: string }> = {
+      plumbing: { icon: Wrench, color: 'bg-blue-100 text-blue-600', label: 'Idraulico' },
+      electric: { icon: Zap, color: 'bg-yellow-100 text-yellow-600', label: 'Elettricista' },
+      locksmith: { icon: Key, color: 'bg-slate-100 text-slate-600', label: 'Fabbro' },
+      climate: { icon: Thermometer, color: 'bg-cyan-100 text-cyan-600', label: 'Climatizzazione' },
+      generic: { icon: Wrench, color: 'bg-purple-100 text-purple-600', label: 'Generico' },
+    };
+    return categories[cat || 'generic'] || categories.generic;
+  };
+
+  const categoryInfo = getCategoryDisplay(details.categoria);
+  const CategoryIcon = categoryInfo.icon;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-blue-700 font-semibold">
-        <Clock className="w-5 h-5" />
-        <span>Riepilogo della richiesta</span>
-      </div>
-      
-      <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200/50 space-y-3">
-        {Object.entries(data).map(([key, value]) => {
-          if (!value) return null;
-          const label = formatLabel(key);
-          const icon = getIconForField(key);
-          
-          return (
-            <div key={key} className="flex items-start gap-3">
-              <div className="mt-0.5 text-blue-600">{icon}</div>
-              <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{label}</p>
-                <p className="text-sm text-slate-900">{String(value as string | number | boolean)}</p>
-              </div>
-            </div>
-          );
-        })}
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className={`p-2.5 rounded-xl ${categoryInfo.color}`}>
+          <CategoryIcon className="w-5 h-5" />
+        </div>
+        <div>
+          <h3 className="font-bold text-slate-900">
+            {recapData.title || 'Riepilogo della richiesta'}
+          </h3>
+          {recapData.summary && (
+            <p className="text-sm text-slate-600">{recapData.summary}</p>
+          )}
+        </div>
       </div>
 
-      {onConfirm && (
-        <Button
-          onClick={onConfirm}
-          className="w-full h-12 rounded-xl bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white font-bold shadow-lg shadow-orange-200/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
-        >
-          Conferma e Richiedi Intervento
-          <ChevronRight className="w-5 h-5 ml-2" />
-        </Button>
+      {/* Details Card */}
+      <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="p-4 space-y-3">
+          {/* Problema */}
+          {details.problema && (
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-orange-500 mt-1 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Problema</p>
+                <p className="text-sm text-slate-900">{details.problema}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Indirizzo */}
+          {details.indirizzo && (
+            <div className="flex items-start gap-3">
+              <MapPin className="w-4 h-4 text-blue-500 mt-1 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Indirizzo intervento</p>
+                <p className="text-sm text-slate-900 font-medium">{details.indirizzo}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Telefono */}
+          {details.telefono && (
+            <div className="flex items-start gap-3">
+              <Phone className="w-4 h-4 text-green-500 mt-1 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Telefono</p>
+                <p className="text-sm text-slate-900 font-mono">{details.telefono}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Tempo stimato */}
+          {recapData.estimatedTime && (
+            <div className="flex items-start gap-3">
+              <Clock className="w-4 h-4 text-purple-500 mt-1 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Intervento previsto</p>
+                <p className="text-sm font-semibold text-purple-700">{recapData.estimatedTime}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer con badge sicurezza */}
+        <div className="bg-green-50 px-4 py-2.5 border-t border-green-100">
+          <div className="flex items-center gap-2 text-xs text-green-700">
+            <Shield className="w-4 h-4" />
+            <span className="font-medium">Preventivo gratuito • Nessun costo anticipato</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Ticket ID se già creato */}
+      {recapData.ticketId && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg border border-blue-200">
+          <CheckCircle2 className="w-4 h-4 text-blue-600" />
+          <span className="text-sm font-medium text-blue-800">
+            Ticket #{recapData.ticketId.slice(-8).toUpperCase()}
+          </span>
+        </div>
+      )}
+
+      {/* Confirmation Button */}
+      {needsConfirmation && onConfirm && (
+        <div className="space-y-2">
+          <Button
+            onClick={onConfirm}
+            className="w-full h-12 rounded-xl bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white font-bold shadow-lg shadow-orange-200/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <CheckCircle2 className="w-5 h-5 mr-2" />
+            Conferma e Richiedi Intervento
+          </Button>
+          <p className="text-xs text-slate-500 text-center">
+            Oppure scrivi &quot;confermo&quot; o correggi i dati se necessario
+          </p>
+        </div>
+      )}
+
+      {/* Already confirmed message */}
+      {!needsConfirmation && !recapData.ticketId && (
+        <div className="text-center py-2">
+          <p className="text-sm text-slate-600">
+            Scrivi <span className="font-semibold">&quot;confermo&quot;</span> per procedere con la richiesta
+          </p>
+        </div>
       )}
     </div>
   );
