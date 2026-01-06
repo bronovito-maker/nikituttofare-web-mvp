@@ -2,8 +2,19 @@
 // Server-side only Supabase clients - DO NOT import in 'use client' components
 
 import { cookies } from 'next/headers';
-import { createClient, type CookieOptions } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
+
+// Cookie options type (compatible with Next.js cookies)
+interface CookieOptions {
+  path?: string;
+  maxAge?: number;
+  expires?: Date;
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: 'strict' | 'lax' | 'none';
+  domain?: string;
+}
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_anon_key';
