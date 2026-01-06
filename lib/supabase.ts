@@ -1,54 +1,12 @@
 // lib/supabase.ts
-import { createClient } from '@supabase/supabase-js';
-import { Database } from './database.types';
+// Re-exports for backwards compatibility
+// 
+// ⚠️ IMPORTANT: Import from the specific files instead:
+// - Client Components: import { createBrowserClient } from '@/lib/supabase-browser'
+// - Server Components/API: import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 
-// Client per uso server-side (Server Components, Server Actions, API Routes)
-export function createServerClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Re-export browser client (safe for client components)
+export { createBrowserClient } from './supabase-browser';
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      'Missing Supabase environment variables. Please check your .env file.'
-    );
-  }
-
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: false, // Server-side non mantiene sessioni
-    },
-  });
-}
-
-// Client per uso client-side (Client Components)
-export function createBrowserClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      'Missing Supabase environment variables. Please check your .env file.'
-    );
-  }
-
-  return createClient<Database>(supabaseUrl, supabaseAnonKey);
-}
-
-// Client con autenticazione per operazioni admin (usa service role key)
-export function createAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error(
-      'Missing Supabase admin environment variables. Please check your .env file.'
-    );
-  }
-
-  return createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-}
+// Note: Server functions are NOT re-exported here to prevent accidental
+// imports in client components. Import them directly from supabase-server.ts

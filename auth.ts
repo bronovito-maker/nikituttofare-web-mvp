@@ -1,58 +1,77 @@
 // auth.ts
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
+import { createServerClient } from "@/lib/supabase-server"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
   providers: [
-    // Login semplificato per sviluppo: accetta qualsiasi email
+    // Login semplificato - accetta qualsiasi email per sviluppo
+    // In produzione: usare Supabase Auth direttamente con Magic Link
     Credentials({
-      name: "Ospite",
+      name: "Email",
       credentials: {
         email: { label: "Email", type: "email" },
       },
       authorize: async (credentials) => {
-        // Simuliamo un utente valido
-        // TODO: Quando Supabase sarà configurato, recuperare tenantId dal database
+        const email = credentials?.email as string;
+        
+        if (!email || !email.includes('@')) {
+          return null;
+        }
+
+        // In sviluppo: crea un utente mock
+        // In produzione: verificare il Magic Link token con Supabase
+        const userId = `user-${email.split('@')[0]}`;
+        
         return { 
-          id: "user-1", 
-          name: "Ospite", 
-          email: credentials.email as string,
-          tenantId: "1", // Default tenantId per sviluppo
+          id: userId, 
+          name: email.split('@')[0], 
+          email: email,
+          role: email.includes('admin') ? 'admin' : 'user',
         }
       },
     }),
   ],
-  session: { strategy: "jwt" }, // Nessun database richiesto
+  session: { 
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 giorni
+  },
   pages: {
-    signIn: "/login", // La tua pagina di login custom
+    signIn: "/login",
   },
   callbacks: {
-    // Aggiunge tenantId al JWT token
     jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.tenantId = user.tenantId;
+        token.role = (user as { role?: string }).role || 'user';
       }
       return token;
     },
-    // Aggiunge tenantId alla sessione
     session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.tenantId = token.tenantId as string;
+        session.user.role = token.role as string;
       }
       return session;
     },
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
+      const isAdmin = auth?.user?.role === 'admin';
+      
+      const isOnAdmin = nextUrl.pathname.startsWith('/admin');
       const isOnDashboard = nextUrl.pathname.startsWith('/dashboard');
-      const isOnChat = nextUrl.pathname.startsWith('/chat');
 
-      if (isOnDashboard) {
-        if (isLoggedIn) return true;
-        return false; // Reindirizza al login
+      // Admin routes require admin role
+      if (isOnAdmin) {
+        return isLoggedIn && isAdmin;
       }
+
+      // Dashboard requires login
+      if (isOnDashboard) {
+        return isLoggedIn;
+      }
+
       return true;
     },
   },

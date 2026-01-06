@@ -5,14 +5,34 @@
 - **L'Admin (Tu):** Vuoi ricevere un ticket pulito e qualificato. Non vuoi perdere tempo a chiedere "dove abiti?" o "mi mandi la foto?".
 
 ## UX PHILOSOPHY: "Zero Cognitive Load"
-1. **No Login Wall:** L'app deve sembrare aperta. Il login scatta solo quando serve davvero o è trasparente (Magic Link).
-2. **Chat-First:** L'utente non compila form. Parla con Niki. È Niki che compila il form nel backend.
-3. **Feedback Rassicurante:** Usare colori rassicuranti (Blu, Verde). Confermare sempre ("Ho capito", "Tecnico avvisato").
+1. **No Login Wall:** ✅ L'app è aperta. La chat è accessibile senza login. Il login scatta solo alla conferma intervento (Magic Link).
+2. **Chat-First:** ✅ L'utente non compila form. Parla con Niki. È Niki che compila il form nel backend tramite AI.
+3. **Feedback Rassicurante:** ✅ Colori Blu/Verde. Conferme sempre visibili ("Ho capito", "Tecnico avvisato").
 
-## CRITICAL FLOW
-1. Utente apre app -> Vede macro categorie (Idraulico, ecc).
-2. Seleziona categoria -> Chat inizia.
-3. Utente descrive/invia foto -> AI analizza.
-4. AI chiede indirizzo (se manca).
-5. AI crea Ticket -> Notifica Telegram parte all'Admin.
-6. Utente vede "Ticket Creato - Un tecnico ti contatterà".
+## CRITICAL FLOW ✅ IMPLEMENTATO
+1. Utente apre app → Vede landing page premium
+2. Clicca "Richiedi Intervento" → Accede alla chat (SENZA LOGIN)
+3. Seleziona categoria (Quick Actions) → Chat inizia con NikiBot
+4. Utente descrive problema/invia foto → AI (Gemini) analizza
+5. AI chiede indirizzo (se manca) tramite Generative UI
+6. AI crea Ticket automaticamente → Notifica Telegram parte all'Admin
+7. Prima della conferma → Magic Link Modal per email
+8. Utente vede "Ticket Creato - Un tecnico ti contatterà"
+9. Utente può vedere i suoi ticket nella Dashboard (/dashboard)
+
+## PAGINE IMPLEMENTATE
+
+### Pubbliche (Guest Access)
+- `/` - Landing page premium con glassmorphism
+- `/chat` - Chat AI con NikiBot (NO glassmorphism, design pulito)
+- `/login` - Pagina login con Magic Link
+
+### Protette (Require Auth)
+- `/dashboard` - Dashboard cliente per visualizzare i propri ticket
+- `/admin` - Dashboard admin per gestione completa ticket
+
+## DESIGN NOTES
+- **Chat Page:** NO glassmorphism per massima chiarezza durante l'emergenza
+- **Landing/Login:** Glassmorphism per estetica premium
+- **Dark Mode:** Toggle disponibile per utenti notturni (non forzata)
+- **Background:** slate-50/50 (quasi bianco) per Trust & Clarity

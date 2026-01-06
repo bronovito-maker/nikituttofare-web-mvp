@@ -10,6 +10,33 @@ const emailClient = () => {
   return new Resend(apiKey);
 };
 
+// Telegram Bot API helper
+async function sendTelegramMessage(botToken: string, chatId: string, message: string) {
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Telegram API error: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.warn('Errore invio messaggio Telegram:', error);
+    return null;
+  }
+}
+
 const formatEmailHtml = (lead: Record<string, any>) => {
   const rows = [
     ['Nome', lead.nome || '—'],
@@ -52,6 +79,53 @@ const formatSlackPayload = (lead: Record<string, any>) => ({
     `Note: ${lead.note_interne || '—'}`,
 });
 
+// Formatta messaggio Telegram per nuovo ticket
+const formatTelegramTicketMessage = (ticket: any) => {
+  const priorityEmoji: Record<string, string> = {
+    emergency: '🚨',
+    high: '🔴',
+    medium: '🟡',
+    low: '🟢'
+  };
+
+  const categoryNames: Record<string, string> = {
+    plumbing: 'Idraulico',
+    electric: 'Elettricista',
+    locksmith: 'Fabbro',
+    climate: 'Clima',
+    generic: 'Generico'
+  };
+
+  let message = `${priorityEmoji[ticket.priority]} <b>NUOVO TICKET</b> ${priorityEmoji[ticket.priority]}\n\n`;
+  message += `🆔 <b>ID:</b> ${ticket.id}\n`;
+  message += `🔧 <b>Categoria:</b> ${categoryNames[ticket.category]}\n`;
+  message += `⚡ <b>Priorità:</b> ${ticket.priority.toUpperCase()}\n`;
+  message += `📍 <b>Indirizzo:</b> ${ticket.address || 'Non specificato'}\n\n`;
+  message += `📝 <b>Descrizione:</b>\n${ticket.description}\n\n`;
+  message += `⏰ <b>Creato:</b> ${new Date(ticket.created_at).toLocaleString('it-IT')}\n\n`;
+  message += `👤 <b>Cliente:</b> Nuovo utente`;
+
+  return message;
+};
+
+export async function notifyNewTicket(ticket: any) {
+  try {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+
+    if (!botToken || !chatId) {
+      console.warn('Telegram non configurato - BOT_TOKEN o CHAT_ID mancanti');
+      return;
+    }
+
+    const message = formatTelegramTicketMessage(ticket);
+    await sendTelegramMessage(botToken, chatId, message);
+
+  } catch (error) {
+    console.warn('Errore notifica Telegram ticket:', error);
+  }
+}
+
 export async function notifyLeadChannels(tenantId: string, lead: Record<string, any>) {
   try {
     // TODO: Replace this with Supabase logic to fetch notification settings
@@ -63,8 +137,8 @@ export async function notifyLeadChannels(tenantId: string, lead: Record<string, 
 
     if (!assistant) return;
 
-    const email = assistant.notification_email as string | undefined;
-    const slackWebhook = assistant.notification_slack_webhook as string | undefined;
+    const email = assistant.notification_email || undefined;
+    const slackWebhook = assistant.notification_slack_webhook || undefined;
 
     if (email) {
       const resend = emailClient();

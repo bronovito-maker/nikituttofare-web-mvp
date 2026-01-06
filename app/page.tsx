@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { ShieldCheck, Clock, Star, ArrowRight } from 'lucide-react';
 import { RetroGrid } from '@/components/react-bits/RetroGrid';
 import { BlurText } from '@/components/react-bits/BlurText';
@@ -17,14 +18,15 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
           {/* Logo & Brand */}
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <div className="relative h-9 sm:h-11 w-9 sm:w-11 overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow flex-shrink-0">
-              <Image src="/logo_ntf.png" alt="NTF Logo" fill className="object-cover" /> 
+            <div className="relative h-9 sm:h-11 w-9 sm:w-11 overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow flex-shrink-0 bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center">
+              <span className="text-white font-bold text-lg">NTF</span>
             </div>
-            <div className="hidden sm:flex flex-col">
-              <span className="text-base sm:text-lg font-black tracking-tight text-slate-900 leading-none">
-                Niki<span className="text-blue-600">Tuttofare</span>
+            <div className="flex flex-col">
+              <span className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-slate-900 leading-none">
+                <span className="sm:hidden">NTF</span>
+                <span className="hidden sm:inline">Niki<span className="text-blue-600">Tuttofare</span></span>
               </span>
-              <span className="text-xs text-slate-500 font-medium">Pronto Intervento H24</span>
+              <span className="hidden sm:block text-xs text-slate-500 font-medium">Pronto Intervento H24</span>
             </div>
           </div>
 
@@ -37,6 +39,7 @@ export default function Home() {
               </span>
               <span className="hidden xl:inline">Tecnici disponibili ora</span>
             </div>
+            <ThemeToggle />
             <Button size="sm" className="hidden sm:flex font-semibold text-xs sm:text-sm text-slate-700 hover:text-slate-900 bg-transparent hover:bg-slate-100">
               Come Funziona
             </Button>
@@ -79,7 +82,7 @@ export default function Home() {
             <ClientAnimationWrapper delay={0.4} duration={0.8}>
               <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-slate-600 max-w-2xl mx-auto leading-relaxed font-normal tracking-tight px-2">
                 La piattaforma premium per <span className="font-semibold text-slate-900">Hotel e Privati</span>.<br className="hidden sm:block" />
-                <span className="text-slate-500">Preventivi garantiti dall'AI, intervento in 60 minuti.</span>
+                <span className="text-slate-500">Preventivi garantiti dall&apos;AI, intervento in 60 minuti.</span>
               </p>
             </ClientAnimationWrapper>
 
@@ -211,12 +214,12 @@ function PremiumFeatureCard({
   desc,
   features
 }: { 
-  icon: any, 
-  iconBg: string, 
-  number: string,
-  title: string, 
-  desc: string,
-  features: string[]
+  icon: React.ReactNode;
+  iconBg: string;
+  number: string;
+  title: string;
+  desc: string;
+  features: string[];
 }) {
   return (
     <div className="group relative p-6 sm:p-8 lg:p-10 bg-white rounded-2xl border border-slate-200/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-300/20 hover:border-slate-300 hover:-translate-y-2">

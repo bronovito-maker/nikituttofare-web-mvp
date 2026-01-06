@@ -1,37 +1,27 @@
 // types/next-auth.d.ts
-import 'next-auth';
-import { DefaultSession } from 'next-auth';
-import 'next-auth/jwt'; // Importa anche questo per estendere JWT
+import { DefaultSession, DefaultUser } from "next-auth"
+import { JWT, DefaultJWT } from "next-auth/jwt"
 
-declare module 'next-auth' {
-  /**
-   * Estende il tipo User restituito dalla funzione `authorize`
-   * e usato nel callback `jwt` al primo accesso.
-   */
-  interface User {
-    id: string;
-    tenantId?: string; // Deve corrispondere a quello aggiunto in auth.ts -> authorize
-  }
-
-  /**
-   * Estende il tipo Session per includere il tenantId nell'oggetto user,
-   * rendendolo accessibile tramite `useSession` o `auth()`.
-   */
+declare module "next-auth" {
   interface Session {
     user: {
-      id: string; // Aggiungi l'ID utente se non già presente
-      tenantId?: string; // Deve corrispondere a quello aggiunto in auth.ts -> session callback
-    } & DefaultSession['user']; // Mantiene i campi di default come name, email, image
+      id: string
+      role: string
+      tenantId?: string
+    } & DefaultSession["user"]
+  }
+
+  interface User extends DefaultUser {
+    id: string
+    role?: string
+    tenantId?: string
   }
 }
 
-// Estende anche il token JWT per includere tenantId
-declare module 'next-auth/jwt' {
-  /**
-   * Estende il token JWT per trasportare il tenantId tra le richieste.
-   */
-  interface JWT {
-    id?: string; // Aggiungi anche l'ID utente al JWT
-    tenantId?: string; // Deve corrispondere a quello aggiunto in auth.ts -> jwt callback
+declare module "next-auth/jwt" {
+  interface JWT extends DefaultJWT {
+    id?: string
+    role?: string
+    tenantId?: string
   }
 }

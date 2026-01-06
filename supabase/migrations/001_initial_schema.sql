@@ -88,16 +88,29 @@ CREATE POLICY "Users can update own profile"
   FOR UPDATE
   USING (auth.uid() = id);
 
+-- Admins and technicians can update all profiles
+-- Note: This policy is disabled to avoid recursion. Enable only when needed.
+-- CREATE POLICY "Admins and technicians can update all profiles"
+--   ON public.profiles
+--   FOR UPDATE
+--   USING (
+--     EXISTS (
+--       SELECT 1 FROM public.profiles
+--         WHERE id = auth.uid() AND role IN ('admin', 'technician')
+--     )
+--   );
+
 -- Admins and technicians can view all profiles
-CREATE POLICY "Admins and technicians can view all profiles"
-  ON public.profiles
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('admin', 'technician')
-    )
-  );
+-- Note: This policy is disabled to avoid recursion. Enable only when needed.
+-- CREATE POLICY "Admins and technicians can view all profiles"
+--   ON public.profiles
+--   FOR SELECT
+--   USING (
+--     EXISTS (
+--       SELECT 1 FROM public.profiles
+--         WHERE id = auth.uid() AND role IN ('admin', 'technician')
+--     )
+--   );
 
 -- ============================================
 -- TICKETS POLICIES
@@ -123,26 +136,27 @@ CREATE POLICY "Users can update own tickets"
   WITH CHECK (auth.uid() = user_id);
 
 -- Admins and technicians can view all tickets
-CREATE POLICY "Admins and technicians can view all tickets"
-  ON public.tickets
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('admin', 'technician')
-    )
-  );
+-- Note: These policies are disabled to avoid recursion. Enable only when needed.
+-- CREATE POLICY "Admins and technicians can view all tickets"
+--   ON public.tickets
+--   FOR SELECT
+--   USING (
+--     EXISTS (
+--       SELECT 1 FROM public.profiles
+--         WHERE id = auth.uid() AND role IN ('admin', 'technician')
+--     )
+--   );
 
 -- Admins and technicians can update all tickets
-CREATE POLICY "Admins and technicians can update all tickets"
-  ON public.tickets
-  FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('admin', 'technician')
-    )
-  );
+-- CREATE POLICY "Admins and technicians can update all tickets"
+--   ON public.tickets
+--   FOR UPDATE
+--   USING (
+--     EXISTS (
+--       SELECT 1 FROM public.profiles
+--         WHERE id = auth.uid() AND role IN ('admin', 'technician')
+--     )
+--   );
 
 -- ============================================
 -- MESSAGES POLICIES
@@ -171,26 +185,27 @@ CREATE POLICY "Users can create messages for own tickets"
   );
 
 -- Admins and technicians can view all messages
-CREATE POLICY "Admins and technicians can view all messages"
-  ON public.messages
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('admin', 'technician')
-    )
-  );
+-- Note: These policies are disabled to avoid recursion. Enable only when needed.
+-- CREATE POLICY "Admins and technicians can view all messages"
+--   ON public.messages
+--   FOR SELECT
+--   USING (
+--     EXISTS (
+--       SELECT 1 FROM public.profiles
+--         WHERE id = auth.uid() AND role IN ('admin', 'technician')
+--     )
+--   );
 
 -- Admins and technicians can create messages for any ticket
-CREATE POLICY "Admins and technicians can create messages"
-  ON public.messages
-  FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('admin', 'technician')
-    )
-  );
+-- CREATE POLICY "Admins and technicians can create messages"
+--   ON public.messages
+--   FOR INSERT
+--   WITH CHECK (
+--     EXISTS (
+--       SELECT 1 FROM public.profiles
+--         WHERE id = auth.uid() AND role IN ('admin', 'technician')
+--     )
+--   );
 
 -- ============================================
 -- FUNCTION: Auto-create profile on user signup

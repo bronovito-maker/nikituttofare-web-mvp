@@ -16,22 +16,61 @@ export interface CustomMessage {
   role: 'user' | 'assistant' | 'system';
   content: string | AIResponseType;
   createdAt?: Date;
-  photo?: string; // AGGIUNTO
+  photo?: string;
 }
 
-// ... (tutti gli altri tipi e costanti rimangono invariati)
+// Slot state type
+interface SlotState {
+  nome?: string;
+  telefono?: string;
+  persone?: string;
+  orario?: string;
+  [key: string]: string | undefined;
+}
 
-// ...
+// Lead info type
+interface LeadInfo {
+  nome?: string;
+  telefono?: string;
+  email?: string;
+  [key: string]: string | undefined;
+}
+
+// Booking data type
+interface BookingData {
+  slots: SlotState;
+  email?: string | null;
+}
 
 export const useChat = (
-  options?: any
+  options?: {
+    onMessage?: (message: CustomMessage) => void;
+    onError?: (error: string) => void;
+  }
 ) => {
   const [messages, setMessages] = useState<CustomMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentTicketId, setCurrentTicketId] = useState<string | null>(null);
   
-  // ... (stati esistenti)
+  // Additional states for booking flow
+  const [parsedData, setParsedData] = useState<ParsedChatData | null>(null);
+  const [slots, setSlots] = useState<SlotState>({});
+  const [detectedEmail, setDetectedEmail] = useState<string | null>(null);
+  const [clarifications, setClarifications] = useState<BookingClarification[]>([]);
+  const [recentlyUpdatedSlots, setRecentlyUpdatedSlots] = useState<BookingSlotKey[]>([]);
+  const [currentStep, setCurrentStep] = useState<string>('nome');
+  const [savedLeadInfo, setSavedLeadInfo] = useState<LeadInfo | null>(null);
+  const [bookingSaved, setBookingSaved] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmationError, setConfirmationError] = useState<string | null>(null);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(false);
+  const [highlightSlot, setHighlightSlot] = useState<BookingSlotKey | null>(null);
+  const latestMessagesRef = useRef<CustomMessage[]>([]);
+
+  useEffect(() => {
+    latestMessagesRef.current = messages;
+  }, [messages]);
 
   const sendMessage = async (messageContent: string, photo?: string) => {
     if (isLoading) return;
@@ -56,7 +95,7 @@ export const useChat = (
     setIsLoading(true);
 
     const userMessage: CustomMessage = {
-      id: `${Date.now()}-${Math.random().toString(36).substring(7)}`, // ID più univoco
+      id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
       role: 'user',
       content: trimmedContent || 'Foto caricata',
       createdAt: new Date(),
@@ -69,9 +108,8 @@ export const useChat = (
       // Se è il primo messaggio, crea un ticket
       let ticketId = currentTicketId;
       if (!ticketId && messages.length === 0) {
-        // Determina la categoria dal messaggio
         const category = detectCategory(messageContent);
-        
+
         const ticketRes = await fetch('/api/tickets', {
           method: 'POST',
           headers: {
@@ -81,15 +119,16 @@ export const useChat = (
             category,
             description: messageContent,
             priority: 'medium',
+            address: null,
             messageContent,
             imageUrl: photo,
           }),
         });
 
         if (ticketRes.ok) {
-          const { ticketId: newTicketId } = await ticketRes.json();
-          ticketId = newTicketId;
-          setCurrentTicketId(newTicketId);
+          const ticketData = await ticketRes.json();
+          ticketId = ticketData.ticketId as string;
+          setCurrentTicketId(ticketId);
         }
       } else if (ticketId) {
         // Salva il messaggio su Supabase
@@ -107,12 +146,15 @@ export const useChat = (
         });
       }
 
-      // Prepara il corpo della richiesta per l'AI con tutti i messaggi per il contesto
+      // Prepara il corpo della richiesta per l'AI
       const allMessages = [...messages, userMessage];
       const requestBody = {
         messages: allMessages.map(m => {
           const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
-          const messageObject: any = { role: m.role, content };
+          const messageObject: { role: string; content: string; photo?: string } = { 
+            role: m.role, 
+            content 
+          };
           if (m.photo) {
             messageObject.photo = m.photo;
           }
@@ -136,13 +178,13 @@ export const useChat = (
       const aiResponse: AIResponseType = await res.json();
 
       const assistantMessage: CustomMessage = {
-        id: `${Date.now()}-${Math.random().toString(36).substring(7)}`, // ID più univoco
+        id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
         role: 'assistant',
         content: aiResponse,
         createdAt: new Date(),
       };
       
-      // Evita duplicati: controlla se l'ultimo messaggio assistant è identico
+      // Evita duplicati
       setMessages(prevMessages => {
         const lastMsg = prevMessages[prevMessages.length - 1];
         if (lastMsg && 
@@ -157,7 +199,7 @@ export const useChat = (
           
           if (lastContent === newContent) {
             console.warn('Risposta duplicata ignorata');
-            return prevMessages; // Non aggiungere il duplicato
+            return prevMessages;
           }
         }
         return [...prevMessages, assistantMessage];
@@ -178,8 +220,17 @@ export const useChat = (
         });
       }
 
-    } catch (err: any) {
-      setError(err.message);
+      // Callback
+      if (options?.onMessage) {
+        options.onMessage(assistantMessage);
+      }
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Errore sconosciuto';
+      setError(errorMessage);
+      if (options?.onError) {
+        options.onError(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -204,25 +255,6 @@ export const useChat = (
     
     return 'generic';
   };
-  
-  // ... (resto del hook)
-  const [parsedData, setParsedData] = useState<ParsedChatData | null>(null);
-  const [slots, setSlots] = useState<any>(() => ({})); // createInitialSlotState());
-  const [detectedEmail, setDetectedEmail] = useState<string | null>(null);
-  const [clarifications, setClarifications] = useState<BookingClarification[]>([]);
-  const [recentlyUpdatedSlots, setRecentlyUpdatedSlots] = useState<BookingSlotKey[]>([]);
-  const [currentStep, setCurrentStep] = useState<any>('nome');
-  const [savedLeadInfo, setSavedLeadInfo] = useState<any | null>(null);
-  const [bookingSaved, setBookingSaved] = useState(false);
-  const [isConfirming, setIsConfirming] = useState(false);
-  const [confirmationError, setConfirmationError] = useState<string | null>(null);
-  const [isLoadingConfig, setIsLoadingConfig] = useState(false);
-  const [highlightSlot, setHighlightSlot] = useState<BookingSlotKey | null>(null);
-  const latestMessagesRef = useRef<CustomMessage[]>([]);
-
-  useEffect(() => {
-    latestMessagesRef.current = messages;
-  }, [messages]);
 
   const missingSteps = useMemo<BookingSlotKey[]>(() => {
     return [];
@@ -234,15 +266,31 @@ export const useChat = (
     setMessages(prev => [...prev, message]);
   };
   
-  const bookingData = useMemo<any>(() => {
-    return {};
+  const bookingData = useMemo<BookingData>(() => {
+    return {
+      slots,
+      email: detectedEmail,
+    };
   }, [slots, detectedEmail]);
 
   const summaryData = null;
-  const handleConfirmBooking = useCallback(async () => {}, []);
-  const handlePillBarUpdate = (slot: BookingSlotKey, value: string) => {};
-  const handlePillBarClear = (slot: BookingSlotKey) => {};
+  const handleConfirmBooking = useCallback(async () => {
+    setIsConfirming(true);
+    // TODO: Implement booking confirmation
+    setIsConfirming(false);
+  }, []);
 
+  const handlePillBarUpdate = (slot: BookingSlotKey, value: string) => {
+    setSlots(prev => ({ ...prev, [slot]: value }));
+  };
+
+  const handlePillBarClear = (slot: BookingSlotKey) => {
+    setSlots(prev => {
+      const newSlots = { ...prev };
+      delete newSlots[slot];
+      return newSlots;
+    });
+  };
 
   return {
     messages,
@@ -273,4 +321,3 @@ export const useChat = (
     handlePillBarClear,
   };
 };
-
