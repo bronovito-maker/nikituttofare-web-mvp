@@ -8,7 +8,7 @@ const config = {
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
-	],
+  ],
   prefix: "",
   theme: {
     container: {
@@ -76,18 +76,29 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        // --- NUOVA ANIMAZIONE "WAVE" ---
         "wave": {
           '0%, 100%': { height: '4px' },
           '50%': { height: '16px' },
         },
-        // --- FINE NUOVA ANIMAZIONE ---
+        // --- NUOVE ANIMAZIONI AGGIUNTE ---
+        "grid": {
+          "0%": { transform: "translateY(-50%)" },
+          "100%": { transform: "translateY(0)" },
+        },
+        "shimmer": {
+          "100%": {
+            "transform": "translateX(100%)",
+          },
+        },
+        // --- FINE NUOVE ANIMAZIONI ---
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        // --- AGGIUNTA CHIAVE PER USARE L'ANIMAZIONE ---
         "wave": "wave 1.2s cubic-bezier(0.45, 0, 0.55, 1) infinite",
+        // --- NUOVE ANIMAZIONI COLLEGATE ---
+        "grid": "grid 15s linear infinite",
+        "shimmer": "shimmer 2s infinite",
       },
     },
   },
