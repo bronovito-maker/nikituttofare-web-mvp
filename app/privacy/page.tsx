@@ -151,7 +151,7 @@ export default function PrivacyPage() {
           <p className="text-sm text-slate-500">
             Per qualsiasi domanda, contattaci:<br />
             📧 <a href="mailto:privacy@nikituttofare.com">privacy@nikituttofare.com</a><br />
-            📞 +39 0541 123456
+            📞 +39 346 102 7447
           </p>
         </article>
       </main>

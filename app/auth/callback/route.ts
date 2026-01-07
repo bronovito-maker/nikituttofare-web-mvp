@@ -77,13 +77,28 @@ export async function GET(request: NextRequest) {
               id: ticket.id,
               category: ticket.category,
               priority: ticket.priority,
+              city: ticket.city,
+              price_range_min: ticket.price_range_min,
+              price_range_max: ticket.price_range_max,
               description: ticket.description,
               address: ticket.address,
               created_at: ticket.created_at,
-              phone: undefined, // Recupereremo dopo se necessario
             });
 
             console.log('📤 Telegram notification sent for confirmed ticket');
+            
+            // Redirect to confirmation success page instead of chat
+            const forwardedHost = request.headers.get('x-forwarded-host');
+            const isLocalEnv = process.env.NODE_ENV === 'development';
+            const successUrl = `/chat?confirmed=true&ticket=${ticket.id.slice(-8)}`;
+            
+            if (isLocalEnv) {
+              return NextResponse.redirect(`${origin}${successUrl}`);
+            } else if (forwardedHost) {
+              return NextResponse.redirect(`https://${forwardedHost}${successUrl}`);
+            } else {
+              return NextResponse.redirect(`${origin}${successUrl}`);
+            }
           }
         }
       } catch (confirmError) {

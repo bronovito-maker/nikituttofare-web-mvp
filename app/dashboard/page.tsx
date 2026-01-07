@@ -208,7 +208,7 @@ export default function ClientDashboard() {
                 </Link>
               </Button>
               <Button asChild variant="outline" className="rounded-full">
-                <a href="tel:+390541123456" className="flex items-center gap-2">
+                <a href="tel:+393461027447" className="flex items-center gap-2">
                   <Phone className="w-4 h-4" />
                   Chiama Ora
                 </a>

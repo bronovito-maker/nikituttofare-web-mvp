@@ -65,16 +65,16 @@ export default function Home() {
               </span>
             </div>
             
-            {/* Main Title con BlurText - Mobile optimized */}
-            <div className="space-y-3 sm:space-y-6">
+            {/* Main Title con BlurText - Mobile optimized with LARGER font */}
+            <div className="space-y-2 sm:space-y-6">
               <BlurText 
                 text="Manutenzione d'Emergenza" 
-                className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-black tracking-tighter text-slate-900 leading-[0.95] px-2"
+                className="text-[2.25rem] xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter text-slate-900 leading-[1.05] sm:leading-[0.95] px-2"
                 delay={0.05}
               />
               <BlurText 
                 text="Semplice e Sicura." 
-                className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 leading-[0.95] px-2"
+                className="text-[2.25rem] xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 leading-[1.05] sm:leading-[0.95] px-2"
                 delay={0.25}
               />
             </div>
@@ -194,6 +194,12 @@ export default function Home() {
             <p className="text-lg sm:text-xl lg:text-2xl font-semibold text-slate-900 px-2">
               Chat 24/7 • Email • Telefono 
             </p>
+            <a 
+              href="tel:+393461027447" 
+              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-bold text-lg sm:text-xl transition-colors"
+            >
+              📞 +39 346 102 7447
+            </a>
           </div>
           <div className="pt-6 sm:pt-8 border-t border-slate-200/50 text-slate-500 text-xs sm:text-sm space-y-1 sm:space-y-2">
             <p>© 2024 NikiTuttofare • Pronto Intervento Professionale</p>

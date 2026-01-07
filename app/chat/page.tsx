@@ -10,7 +10,6 @@ import {
   Zap,
   Key,
   Thermometer,
-  Settings,
   CheckCircle2,
   Clock,
   Shield,
@@ -30,7 +29,7 @@ import { useChatStore, type ChatMessage } from '@/lib/stores/chat-store';
 import type { AIResponseType } from '@/lib/ai-structures';
 import { createBrowserClient } from '@/lib/supabase-browser';
 
-// Quick action categories
+// Quick action categories (Tuttofare/generic nascosto dalla grid per estetica mobile)
 const QUICK_ACTIONS = [
   {
     id: 'plumbing',
@@ -64,14 +63,7 @@ const QUICK_ACTIONS = [
     shadowColor: 'shadow-cyan-500/25',
     message: 'Vorrei un preventivo per un intervento di climatizzazione'
   },
-  {
-    id: 'generic',
-    label: 'Tuttofare',
-    icon: Settings,
-    color: 'from-purple-600 to-purple-500',
-    shadowColor: 'shadow-purple-500/25',
-    message: 'Vorrei un preventivo per un intervento generico'
-  },
+  // Tuttofare rimosso dalla grid ma la categoria 'generic' rimane gestita dal backend
 ];
 
 export default function ChatPage() {
@@ -103,6 +95,8 @@ export default function ChatPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userInitials, setUserInitials] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showConfirmationSuccess, setShowConfirmationSuccess] = useState(false);
+  const [confirmedTicketId, setConfirmedTicketId] = useState<string | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -134,6 +128,17 @@ export default function ChatPage() {
     // Check if we have auth params in URL (from Magic Link redirect)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const queryParams = new URLSearchParams(window.location.search);
+    
+    // Check for confirmation success (from email link click)
+    const isConfirmed = queryParams.get('confirmed') === 'true';
+    const ticketId = queryParams.get('ticket');
+    
+    if (isConfirmed && ticketId) {
+      setShowConfirmationSuccess(true);
+      setConfirmedTicketId(ticketId);
+      // Clean up URL
+      window.history.replaceState({}, '', '/chat');
+    }
     
     const accessToken = hashParams.get('access_token');
     const code = queryParams.get('code');
@@ -395,45 +400,19 @@ export default function ChatPage() {
   };
 
   const handleMagicLinkSuccess = async (email: string) => {
-    try {
-      // Conferma il ticket e invia notifiche Telegram
-      if (currentTicketId) {
-        await fetch('/api/tickets/confirm', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ticketId: currentTicketId }),
-        });
+    // DO NOT confirm the ticket here - user must click email link first!
+    // Just show a "waiting for email confirmation" message
+    
+    addMessage({
+      role: 'assistant',
+      content: {
+        type: 'text',
+        content: `⚠️ **Richiesta in Attesa!**\n\nTi ho inviato una mail a **${email}**.\n\n🚨 **IMPORTANTE:** Devi cliccare il link nella mail per attivare la richiesta e inviarla ai tecnici.\n\nSenza questo passaggio, il tuo ticket **non sarà inviato** e nessun tecnico ti contatterà.\n\n📩 Controlla la tua casella email (anche la cartella SPAM).`,
       }
-
-      // Add confirmation message
-      addMessage({
-        role: 'assistant',
-        content: {
-          type: 'confirmation',
-          content: {
-            message: `Perfetto! La tua richiesta è stata confermata e inviata ai nostri tecnici. Un tecnico ti contatterà a breve all'indirizzo ${email}.`,
-          ticketId: currentTicketId,
-        }
-      }
-      });
-      setConfirmationPending(false);
-      setShowMagicLinkModal(false);
-    } catch (error) {
-      console.error('Errore conferma ticket:', error);
-      // Fallback: mostra comunque il messaggio di conferma
-      addMessage({
-        role: 'assistant',
-        content: {
-          type: 'confirmation',
-          content: {
-            message: `La tua richiesta è stata registrata. Un tecnico ti contatterà a breve all'indirizzo ${email}.`,
-            ticketId: currentTicketId,
-          }
-        }
-      });
-      setConfirmationPending(false);
-      setShowMagicLinkModal(false);
-    }
+    });
+    
+    setConfirmationPending(false);
+    setShowMagicLinkModal(false);
   };
 
   return (
@@ -507,7 +486,7 @@ export default function ChatPage() {
               size="sm"
               className="bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white rounded-full px-4 py-2 shadow-lg shadow-orange-200/50 font-semibold text-sm"
             >
-              <a href="tel:+390541123456" className="flex items-center gap-2">
+              <a href="tel:+393461027447" className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />
                 <span className="hidden sm:inline">Emergenza</span>
               </a>
@@ -570,8 +549,43 @@ export default function ChatPage() {
         </div>
       )}
 
+      {/* EMAIL CONFIRMATION SUCCESS BANNER - Shows only after email link click */}
+      {showConfirmationSuccess && (
+        <div className="bg-gradient-to-r from-green-500 to-emerald-500 border-b border-green-600 px-4 py-6 text-white">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-white/20 rounded-xl flex-shrink-0">
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold mb-1">
+                  ✅ Preventivo Confermato!
+                </h3>
+                <p className="text-green-100 text-sm">
+                  La tua richiesta è stata inviata ai tecnici. Un tecnico ti <strong>chiamerà entro 30-60 minuti</strong> per confermare l&apos;appuntamento.
+                </p>
+                {confirmedTicketId && (
+                  <p className="text-green-200 text-xs mt-2">
+                    Ticket #{confirmedTicketId.toUpperCase()}
+                  </p>
+                )}
+              </div>
+              <button 
+                onClick={() => setShowConfirmationSuccess(false)}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
+              >
+                <span className="sr-only">Chiudi</span>
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Ticket Created Success Banner */}
-      {currentTicketId && (
+      {currentTicketId && !showConfirmationSuccess && (
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200/50 px-4 py-3">
           <div className="max-w-4xl mx-auto flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -629,11 +643,11 @@ export default function ChatPage() {
           {/* Quick Actions */}
           {showQuickActions && messages.length === 0 && (
             <ClientAnimationWrapper delay={0.3} duration={0.5}>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <p className="text-sm font-semibold text-slate-600 text-center">
                   Seleziona il tipo di emergenza:
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {QUICK_ACTIONS.map((action) => {
                     const Icon = action.icon;
                     return (
@@ -652,6 +666,14 @@ export default function ChatPage() {
                     );
                   })}
                 </div>
+                
+                {/* Hint per altri servizi */}
+                <div className="text-center pt-4">
+                  <p className="text-sm text-slate-500 italic flex items-center justify-center gap-2">
+                    <span>Per altri servizi o richieste specifiche, scrivi direttamente qui sotto</span>
+                    <span className="text-lg">👇</span>
+                  </p>
+                </div>
               </div>
             </ClientAnimationWrapper>
           )}
@@ -664,6 +686,8 @@ export default function ChatPage() {
               isLast={index === messages.length - 1}
               onConfirm={isConfirmationPending && index === messages.length - 1 ? handleConfirmRequest : undefined}
               onFormSubmit={handleFormSubmit}
+              onAcceptQuote={index === messages.length - 1 ? () => sendMessage('Sì, accetto il preventivo. Procediamo!') : undefined}
+              onRejectQuote={index === messages.length - 1 ? () => sendMessage('No grazie, il preventivo non mi va bene.') : undefined}
             />
           ))}
 
@@ -779,12 +803,16 @@ function MessageBubble({
   message, 
   isLast,
   onConfirm,
-  onFormSubmit
+  onFormSubmit,
+  onAcceptQuote,
+  onRejectQuote
 }: { 
   message: ChatMessage; 
   isLast: boolean;
   onConfirm?: () => void;
   onFormSubmit?: (data: Record<string, string>) => void;
+  onAcceptQuote?: () => void;
+  onRejectQuote?: () => void;
 }) {
   const isUser = message.role === 'user';
   const content = message.content;
@@ -826,6 +854,8 @@ function MessageBubble({
             response={content} 
             onConfirm={onConfirm}
             onFormSubmit={onFormSubmit}
+            onAcceptQuote={onAcceptQuote}
+            onRejectQuote={onRejectQuote}
           />
         )}
       </div>

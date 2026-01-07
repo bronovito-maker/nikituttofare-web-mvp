@@ -560,7 +560,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         type: 'text',
-        content: 'Mi scusi, ho avuto un problema tecnico. Può ripetere la sua richiesta? Se è un\'emergenza, chiami direttamente il numero 0541 123456.'
+        content: 'Mi scusi, ho avuto un problema tecnico. Può ripetere la sua richiesta? Se è un\'emergenza, chiami direttamente il numero +39 346 102 7447.'
       },
       { status: 500 }
     );

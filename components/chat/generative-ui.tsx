@@ -16,10 +16,11 @@ import {
   CreditCard,
   Shield,
   ChevronRight,
-  Loader2
+  Loader2,
+  Euro
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { AIResponseType, FormType } from '@/lib/ai-structures';
+import type { AIResponseType, FormType, PriceEstimateType } from '@/lib/ai-structures';
 import { CATEGORY_NAMES_IT } from '@/lib/system-prompt';
 
 // ============================================
@@ -31,9 +32,11 @@ interface GenerativeUIProps {
   response: AIResponseType;
   onFormSubmit?: (data: Record<string, string>) => void;
   onConfirm?: () => void;
+  onAcceptQuote?: () => void;
+  onRejectQuote?: () => void;
 }
 
-export function GenerativeUI({ response, onFormSubmit, onConfirm }: GenerativeUIProps) {
+export function GenerativeUI({ response, onFormSubmit, onConfirm, onAcceptQuote, onRejectQuote }: GenerativeUIProps) {
   switch (response.type) {
     case 'text':
       return <TextResponse content={response.content as string} />;
@@ -52,6 +55,9 @@ export function GenerativeUI({ response, onFormSubmit, onConfirm }: GenerativeUI
 
     case 'auth_required':
       return <AuthRequiredResponse content={response.content as AuthRequiredContent} />;
+
+    case 'price_estimate':
+      return <PriceEstimateResponse content={response.content as PriceEstimateType} onAccept={onAcceptQuote} onReject={onRejectQuote} />;
 
     default:
       return <TextResponse content={typeof response.content === 'string' ? response.content : JSON.stringify(response.content)} />;
@@ -508,6 +514,132 @@ function AuthRequiredResponse({ content }: { content: AuthRequiredContent }) {
           Accedi per Confermare
         </a>
       </div>
+    </div>
+  );
+}
+
+// ============================================
+// PRICE ESTIMATE RESPONSE - Quote with Accept/Reject Buttons
+// ============================================
+interface PriceEstimateContent {
+  message?: string;
+  priceMin?: number;
+  priceMax?: number;
+  category?: string;
+  needsConfirmation?: boolean;
+}
+
+function PriceEstimateResponse({ 
+  content, 
+  onAccept, 
+  onReject 
+}: { 
+  content: PriceEstimateContent; 
+  onAccept?: () => void; 
+  onReject?: () => void;
+}) {
+  const [hasResponded, setHasResponded] = useState(false);
+  const [response, setResponse] = useState<'accepted' | 'rejected' | null>(null);
+
+  const handleAccept = () => {
+    setHasResponded(true);
+    setResponse('accepted');
+    onAccept?.();
+  };
+
+  const handleReject = () => {
+    setHasResponded(true);
+    setResponse('rejected');
+    onReject?.();
+  };
+
+  const showButtons = content.needsConfirmation !== false && !hasResponded && (onAccept || onReject);
+
+  return (
+    <div className="space-y-4">
+      {/* Price Card */}
+      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200 overflow-hidden">
+        <div className="p-4 sm:p-5">
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2.5 rounded-xl bg-green-100">
+              <CreditCard className="w-5 h-5 text-green-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-green-900">Preventivo Stimato</h3>
+              {content.category && (
+                <p className="text-sm text-green-700">
+                  {CATEGORY_NAMES_IT[content.category] || content.category}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Price Range */}
+          {content.priceMin !== undefined && content.priceMax !== undefined && (
+            <div className="flex items-center justify-center gap-2 bg-white/80 rounded-xl p-4 mb-4 border border-green-200/50">
+              <span className="text-3xl sm:text-4xl font-black text-green-700">
+                {content.priceMin}€ - {content.priceMax}€
+              </span>
+            </div>
+          )}
+
+          {/* Message */}
+          {content.message && (
+            <p className="text-sm text-green-800 leading-relaxed">
+              {content.message}
+            </p>
+          )}
+
+          {/* Disclaimer */}
+          <div className="mt-4 pt-4 border-t border-green-200/50">
+            <p className="text-xs text-green-700/80">
+              ⚠️ Prezzo indicativo. Il costo finale sarà confermato dal tecnico dopo aver visto il problema di persona.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Response Status */}
+      {hasResponded && response === 'accepted' && (
+        <div className="flex items-center gap-2 p-3 bg-green-100 rounded-xl border border-green-200">
+          <CheckCircle2 className="w-5 h-5 text-green-600" />
+          <span className="text-sm font-medium text-green-800">Preventivo accettato! Proseguiamo...</span>
+        </div>
+      )}
+
+      {hasResponded && response === 'rejected' && (
+        <div className="flex items-center gap-2 p-3 bg-slate-100 rounded-xl border border-slate-200">
+          <AlertTriangle className="w-5 h-5 text-slate-500" />
+          <span className="text-sm text-slate-700">Capisco. Se hai altre domande, sono qui!</span>
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      {showButtons && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-slate-700 text-center">
+            Ti va bene questo preventivo?
+          </p>
+          <div className="flex gap-3">
+            <Button
+              onClick={handleAccept}
+              className="flex-1 h-12 sm:h-14 rounded-xl bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white font-bold shadow-lg shadow-green-200/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <CheckCircle2 className="w-5 h-5 mr-2" />
+              Accetta Preventivo
+            </Button>
+            <Button
+              onClick={handleReject}
+              variant="outline"
+              className="flex-1 h-12 sm:h-14 rounded-xl border-2 border-slate-300 hover:border-slate-400 text-slate-700 font-semibold transition-all"
+            >
+              <AlertTriangle className="w-5 h-5 mr-2" />
+              Rifiuta
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

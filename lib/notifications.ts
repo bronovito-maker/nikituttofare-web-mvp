@@ -128,6 +128,8 @@ async function generateAssignmentToken(ticketId: string): Promise<string | null>
 /**
  * Format the PRIVACY-FIRST message for the technicians' Telegram group
  * NO personal data: no name, no phone, no full address
+ * 
+ * TEMPLATE REFACTORED: Clean layout with clear sections
  */
 function formatPrivacyFirstTelegramMessage(
   ticket: TicketNotificationData,
@@ -136,7 +138,38 @@ function formatPrivacyFirstTelegramMessage(
   const priority = priorityEmoji[ticket.priority] || ticket.priority.toUpperCase();
   const category = categoryNames[ticket.category] || ticket.category;
   
-  // Build message WITHOUT sensitive data
+  // Format date nicely
+  const requestDate = new Date(ticket.created_at || Date.now());
+  const formattedDate = requestDate.toLocaleDateString('it-IT', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+  const formattedTime = requestDate.toLocaleTimeString('it-IT', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+  
+  // Clean description: remove city/address duplications, phone numbers
+  let cleanDescription = '';
+  if (ticket.description) {
+    cleanDescription = ticket.description
+      .replace(/\d{10,}/g, '') // Remove phone numbers
+      .replace(/(?:via|corso|piazza|viale)\s+[a-zàèéìòùáéíóú\s]+[\s,]*\d*[a-z]?/gi, '') // Remove addresses
+      .replace(new RegExp(ticket.city || '', 'gi'), '') // Remove city mentions
+      .replace(/,\s*,/g, ',') // Clean up double commas
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim()
+      .slice(0, 120);
+    
+    // Ensure we have something to show
+    if (cleanDescription.length < 10 && ticket.description.length > 10) {
+      cleanDescription = ticket.description.slice(0, 120);
+    }
+  }
+  
+  // Build clean message
   let text = `${priority}\n`;
   text += `━━━━━━━━━━━━━━━━━━\n\n`;
   
@@ -151,16 +184,12 @@ function formatPrivacyFirstTelegramMessage(
   
   text += `\n`;
   
-  // Brief problem description (truncated, no personal info)
-  if (ticket.description) {
-    const cleanDesc = ticket.description
-      .slice(0, 100)
-      .replace(/\d{10,}/g, '***') // Hide phone numbers
-      .replace(/via .+?\d+/gi, '[indirizzo]'); // Hide addresses
-    text += `📝 <b>Problema:</b> ${cleanDesc}${ticket.description.length > 100 ? '...' : ''}\n\n`;
+  // Clean problem description
+  if (cleanDescription) {
+    text += `📝 <b>Problema:</b> ${cleanDescription}${ticket.description && ticket.description.length > 120 ? '...' : ''}\n\n`;
   }
   
-  text += `⏰ <b>Richiesta:</b> ${new Date(ticket.created_at || Date.now()).toLocaleString('it-IT')}\n\n`;
+  text += `⏰ <b>Richiesta:</b> ${formattedDate}, ${formattedTime}\n\n`;
   
   text += `━━━━━━━━━━━━━━━━━━\n`;
   text += `<i>Clicca il pulsante per accettare l'intervento.\nIl primo tecnico che accetta riceverà i dati completi.</i>`;
@@ -201,8 +230,8 @@ export async function notifyNewTicket(ticket: TicketNotificationData) {
       return { success: false, reason: 'token_generation_failed' };
     }
 
-    // Build the accept URL
-    const acceptUrl = `${baseUrl}/technician/accept?token=${token}`;
+    // Build the accept URL - use the new frictionless claim page
+    const acceptUrl = `${baseUrl}/technician/claim?token=${token}`;
 
     // Format privacy-first message
     const message = formatPrivacyFirstTelegramMessage(ticket, acceptUrl);
