@@ -1,4 +1,7 @@
 // lib/system-prompt.ts
+import { getTasksKnowledgeString } from '@/lib/task-definitions';
+import { DOMAIN_KNOWLEDGE, buildTechnicianContextPrompt } from '@/lib/domain-knowledge';
+import { buildExamplesContext } from '@/lib/training-examples';
 /**
  * Sistema di prompt per l'agente AI "Niki" - NikiTuttoFare
  * 
@@ -139,58 +142,12 @@ export function extractSlotsFromConversation(
   // NON impostare serviceAddress se abbiamo solo la città - serve indirizzo completo
   
   // ============================================
-  // ESTRAZIONE CATEGORIA PROBLEMA
+  // ESTRAZIONE CATEGORIA PROBLEMA (usando DOMAIN_KNOWLEDGE)
   // ============================================
-  const categoryKeywords: Record<string, string[]> = {
-    plumbing: [
-      'idraulica', 'idraulico', // FIX: keyword base
-      'acqua', 'tubo', 'tubi', 'perdita', 'perde', 'scarico', 
-      'rubinetto', 'wc', 'bagno', 'lavandino', 'doccia', 'allagamento', 
-      'infiltrazione', 'goccia', 'gocciola', 'lavello', 'bidet', 'vasca',
-      'sifone', 'sanitari', 'cisterna', 'sciacquone', 'otturato', 'intasato',
-      'plumber', 'water', 'leak', 'pipe', 'toilet', 'bathroom', 'sink', 'flood'
-    ],
-    electric: [
-      'elettricità', 'elettricista', 'elettrico', 'elettrica', // FIX: keyword base
-      'luce', 'luci', 'presa', 'corrente', 'salvavita', 'interruttore', 
-      'blackout', 'cortocircuito', 'fusibile', 'quadro elettrico', 
-      'lampadina', 'neon', 'faretti', 'presa bruciata', 'scintille', 
-      'contatore', 'voltaggio',
-      'electrician', 'power', 'electricity', 'light', 'outlet', 'switch', 'fuse'
-    ],
-    locksmith: [
-      'fabbro', 'serratura', 'serraturista', // FIX: keyword base
-      'chiave', 'chiavi', 'porta', 'bloccato', 
-      'chiuso fuori', 'lucchetto', 'cilindro', 'maniglia', 'blindata',
-      'scassinato', 'rotta', 'non si apre', 'inceppata', 'portone',
-      'locksmith', 'key', 'keys', 'locked out', 'door', 'lock'
-    ],
-    climate: [
-      'clima', 'climatizzazione', // FIX: aggiunte keyword base mancanti
-      'condizionatore', 'climatizzatore', 'aria condizionata', 'caldaia',
-      'riscaldamento', 'termosifone', 'radiatore', 'split', 'pompa di calore',
-      'gas', 'metano', 'scaldabagno', 'boiler', 'termostato', 'valvola',
-      'spurgo', 'pressione', 'non scalda', 'non raffresca',
-      'ac', 'air conditioning', 'heating', 'heater', 'boiler', 'radiator'
-    ],
-    handyman: [
-      'montare', 'montaggio', 'assemblare', 'assemblaggio', 'mobile', 'mobili',
-      'ikea', 'componibile', 'armadio', 'libreria', 'tavolo', 'sedia', 'letto',
-      'cucina', 'bagno', 'soggiorno', 'camera', 'ufficio', 'montaggio mobili',
-      'tuttofare', 'piccole riparazioni', 'lavori di casa', 'bricolage',
-      'appendere', 'appendere', 'quadro', 'shelf', 'mensola', 'tenda', 'tende',
-      'installare', 'installazione', 'sostituire', 'sostituzione', 'riparare',
-      'riparazione', 'aggiustare', 'sistemare', 'piccola riparazione',
-      'assemble', 'assembly', 'furniture', 'handyman', 'fix', 'repair', 'install'
-    ]
-  };
-  
-  for (const [category, keywords] of Object.entries(categoryKeywords)) {
-    if (keywords.some(kw => text.includes(kw))) {
+  for (const [category, data] of Object.entries(DOMAIN_KNOWLEDGE)) {
+    const bag = [...data.keywords, ...(data.user_phrases || [])].map(k => k.toLowerCase());
+    if (bag.some(kw => text.includes(kw))) {
       slots.problemCategory = category as ConversationSlots['problemCategory'];
-
-      // Se riconosciamo una categoria dal testo, e non abbiamo ancora dettagli del problema,
-      // usa il testo come descrizione del problema
       if (!slots.problemDetails && text.length > 10) {
         slots.problemDetails = text.slice(0, 300);
       }
@@ -290,6 +247,7 @@ export function extractSlotsFromConversation(
         /\byes\b/i,
         /\baccetto\b/i,
         /\bd'accordo\b/i,
+        /s[iì],?\s*accetto il preventivo\.?\s*procediamo!?/i,
       ];
 
       if (acceptPatterns.some((re) => re.test(lastText)) && lastText.length < 80) {
@@ -408,8 +366,15 @@ export function checkProblemDetailsValid(slots: ConversationSlots): boolean {
     return false;
   }
   
+  // Normalizza testo e rimuove lettere duplicate (rubinettto -> rubinetto)
   let details = slots.problemDetails.toLowerCase().trim();
-  const wordCount = slots.problemDetails.split(/\s+/).filter(w => w.length > 0).length;
+  details = details.replace(/(.)\1{2,}/g, '$1$1');
+  details = details
+    .replace(/\brubinett[oa]\b/g, 'rubinetto')
+    .replace(/\bmiscelator[ei]\b/g, 'miscelatore')
+    .replace(/\bsifon[ei]\b/g, 'sifone')
+    .replace(/\bflessibil[ei]\b/g, 'flessibile');
+  const wordCount = details.split(/\s+/).filter(w => w.length > 0).length;
 
   // Normalizza typo comuni per match keyword
   details = details
@@ -445,9 +410,9 @@ export function checkProblemDetailsValid(slots: ConversationSlots): boolean {
     // Fabbro - problemi specifici
     locksmith: /\b(chiave.{0,10}(spezzata|rotta|bloccata|incastrata|persa|non gira)|cilindro|serratura.{0,10}(rotta|bloccata)|chiuso fuori|non si apre|gira a vuoto|scassinata)\b/i,
     // Idraulico - sintomi concreti
-    plumbing: /\b(perde|perdita|goccia|allagamento|intasato|otturato|non scarica|scarico.{0,10}(lento|bloccato)|rubinetto.{0,10}(rotto|perde)|wc|lavandino|bidet|doccia.{0,10}(perde|rotta)|pressione.{0,10}(bassa|alta)|acqua calda.{0,10}(non|manca))\b/i,
+    plumbing: /\b(perde|perdita|goccia|allagamento|intasato|otturato|non scarica|scarico.{0,10}(lento|bloccato)|rubinetto.{0,12}(rotto|perde|cambiare|sostituire)|miscelatore.{0,10}(rotto|perde|cambiare|sostituire)|wc|lavandino|bidet|doccia.{0,10}(perde|rotta)|pressione.{0,10}(bassa|alta)|acqua calda.{0,10}(non|manca))\b/i,
     // Elettricista - sintomi concreti
-    electric: /\b(scatta|salvavita.{0,10}scatta|blackout|cortocircuito|presa.{0,10}(bruciata|non funziona)|interruttore|lampadina.{0,10}non|scintille|bruciato|quadro|contatore|senza corrente|senza luce)\b/i,
+    electric: /\b(scatta|salvavita.{0,10}scatta|blackout|cortocircuito|presa.{0,12}(bruciata|non funziona|da aggiungere|da spostare)|interruttore|lampadina.{0,10}non|scintille|bruciato|quadro|contatore|senza corrente|senza luce|installare.{0,8}lampadario|montare.{0,8}lampadario|punto luce.{0,10}(aggiungere|spostare|nuovo))\b/i,
     // Clima - sintomi concreti
     climate: /\b(non scalda|non raffresca|non raffredda|non parte|rumore.{0,10}(strano|forte)|perde acqua|condensa|gocciola|gas|ricarica|manutenzione|caldaia.{0,10}(non|errore|blocca)|termostato.{0,10}non|split.{0,10}non)\b/i,
     // Generico - azioni concrete con oggetto
@@ -546,7 +511,7 @@ export function buildNikiSystemPrompt(
   
   const missingSlots = getMissingSlots(slots);
   const hasAllData = missingSlots.length === 0;
-  const canEstimate = canGivePriceEstimate(slots);
+  const canEstimate = canGivePriceEstimate(slots) && !slots.userConfirmed;
   const priceRange = canEstimate ? calculatePriceRange(slots) : null;
   
   // Verifica se i dettagli sono validi
@@ -579,6 +544,21 @@ ${ticketId ? `- Ticket: #${ticketId.slice(-8).toUpperCase()}` : '- Nessun ticket
 
 ${slotStatus}
 
+# 🧠 ESPERTO TECNICO
+Usa la knowledge base tecnica per capire se il lavoro è domestico (prezzo base) o Horeca/Commerciale (impianti complessi, sopralluogo/range "a partire da"). Se emergono termini di hotel/ristoranti/impianti industriali, adotta tono professionale, evita prezzi fissi e proponi sopralluogo o range alto.
+
+${buildTechnicianContextPrompt()}
+
+# 🧪 CASI DI RIFERIMENTO (SEED + SIMULATED)
+Usa questi esempi reali per orientare tono e priorità. Non copiarli, ma riconosci pattern di categoria/urgenza e expected_action simili.
+
+${buildExamplesContext(18)}
+
+# 🧠 CLASSIFICAZIONE INTERVENTI
+Usa questa knowledge base per capire se il lavoro è Residenziale (standard) o Commerciale/Horeca (complesso). Se l'utente menziona attrezzature di hotel/ristoranti (celle frigo, degrassatori, maniglioni antipanico, VRF/VRV, abbattitori, cappe industriali), chiedi sempre se è un'attività commerciale e adatta il tono: più professionale, proponi sopralluogo se il lavoro è complesso, evita preventivi bassi "da casa".
+
+${getTasksKnowledgeString()}
+
 # 🎯 FLUSSO CONVERSAZIONALE STRICT (NON SALTARE STEP!)
 
 ## ⚠️ REGOLA CRITICA: ORDINE BLOCCANTE
@@ -610,12 +590,17 @@ Questo è il passaggio PIÙ IMPORTANTE. NON puoi chiedere indirizzo o telefono s
 
 ## STEP 4: PREVENTIVO 💰
 **SOLO quando hai:** città ✅ + categoria ✅ + problema specifico ✅
-${canEstimate && priceRange ? `
+${slots.userConfirmed ? `
+✅ **PREVENTIVO GIÀ ACCETTATO**
+L'utente ha confermato il preventivo.
+⛔ NON mostrare più il preventivo.
+⏭️ PASSA SUBITO ALLO STEP 5 (Indirizzo).
+` : (canEstimate && priceRange ? `
 🟢 ORA puoi dare il preventivo!
 → "Basandomi su [problema specifico], l'intervento si aggira tra **${priceRange.min}€ e ${priceRange.max}€**."
 ` : `
 🔴 NON puoi ancora dare preventivo! Torna agli step precedenti.
-`}
+`)}
 
 ## STEP 5: INDIRIZZO 🏠
 Solo DOPO che l'utente ha **ACCETTATO** il preventivo (userConfirmed = true):

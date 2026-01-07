@@ -222,6 +222,18 @@ export default function ChatPage() {
   const sendMessage = useCallback(async (messageContent: string, photo?: string) => {
     if (isLoading) return;
     
+    // Usa sempre lo stato più recente dello store per evitare valori stale dopo click sulle CTA
+    const { collectedSlots: latestSlots } = useChatStore.getState();
+    const {
+      problemCategory: lockedCategory,
+      problemDetails: lockedDetails,
+      priceEstimateGiven: lockedPriceEstimateGiven,
+      priceRangeMin: lockedPriceRangeMin,
+      priceRangeMax: lockedPriceRangeMax,
+      userConfirmed: lockedUserConfirmed,
+      quoteRejected: lockedQuoteRejected,
+    } = latestSlots;
+
     const trimmedContent = messageContent.trim();
     if (!trimmedContent && !photo) return;
 
@@ -248,31 +260,31 @@ export default function ChatPage() {
       const safeLockedSlots: Partial<ConversationSlots> = {};
       
       // Lock categoria se presente
-      if (problemCategory) {
-        safeLockedSlots.problemCategory = problemCategory;
+      if (lockedCategory) {
+        safeLockedSlots.problemCategory = lockedCategory;
       }
       
       // FIX: Lock problemDetails se già validato (evita "amnesia" dei dettagli)
       // Questo previene il loop "chiedi di nuovo i dettagli"
-      if (problemDetails && problemDetails !== 'collected') {
-        safeLockedSlots.problemDetails = problemDetails;
+      if (lockedDetails && lockedDetails !== 'collected') {
+        safeLockedSlots.problemDetails = lockedDetails;
       }
 
       // Persistenza Preventivo Gate (evita che il backend riparta chiedendo via/telefono)
-      if (typeof priceEstimateGiven === 'boolean') {
-        safeLockedSlots.priceEstimateGiven = priceEstimateGiven;
+      if (typeof lockedPriceEstimateGiven === 'boolean') {
+        safeLockedSlots.priceEstimateGiven = lockedPriceEstimateGiven;
       }
-      if (typeof priceRangeMin === 'number') {
-        safeLockedSlots.priceRangeMin = priceRangeMin;
+      if (typeof lockedPriceRangeMin === 'number') {
+        safeLockedSlots.priceRangeMin = lockedPriceRangeMin;
       }
-      if (typeof priceRangeMax === 'number') {
-        safeLockedSlots.priceRangeMax = priceRangeMax;
+      if (typeof lockedPriceRangeMax === 'number') {
+        safeLockedSlots.priceRangeMax = lockedPriceRangeMax;
       }
-      if (typeof userConfirmed === 'boolean') {
-        safeLockedSlots.userConfirmed = userConfirmed;
+      if (typeof lockedUserConfirmed === 'boolean') {
+        safeLockedSlots.userConfirmed = lockedUserConfirmed;
       }
-      if (typeof quoteRejected === 'boolean') {
-        safeLockedSlots.quoteRejected = quoteRejected;
+      if (typeof lockedQuoteRejected === 'boolean') {
+        safeLockedSlots.quoteRejected = lockedQuoteRejected;
       }
       
       const res = await fetch('/api/assist', {
