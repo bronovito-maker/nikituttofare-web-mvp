@@ -25,7 +25,7 @@ import { ClientAnimationWrapper } from '@/components/ui/client-animation-wrapper
 import { GenerativeUI } from '@/components/chat/generative-ui';
 import { MagicLinkModal } from '@/components/chat/magic-link-modal';
 import { ImageUpload, ImagePreview } from '@/components/ui/image-upload';
-import { useChatStore, type ChatMessage } from '@/lib/stores/chat-store';
+import { useChatStore, type ChatMessage, type ConversationSlots } from '@/lib/stores/chat-store';
 import type { AIResponseType } from '@/lib/ai-structures';
 import { createBrowserClient } from '@/lib/supabase-browser';
 
@@ -209,6 +209,16 @@ export default function ChatPage() {
     }
   }, [input]);
 
+  const {
+    problemCategory,
+    problemDetails,
+    priceEstimateGiven,
+    priceRangeMin,
+    priceRangeMax,
+    userConfirmed,
+    quoteRejected,
+  } = collectedSlots;
+
   const sendMessage = useCallback(async (messageContent: string, photo?: string) => {
     if (isLoading) return;
     
@@ -232,6 +242,39 @@ export default function ChatPage() {
 
       // Call AI assist
       const allMessages = [...messages, { role: 'user', content: trimmedContent, photo }];
+      
+      // FIX: Passa gli slot "lockati" che NON devono essere ricalcolati
+      // Questo include: categoria (da UI click) e dettagli (una volta validati)
+      const safeLockedSlots: Partial<ConversationSlots> = {};
+      
+      // Lock categoria se presente
+      if (problemCategory) {
+        safeLockedSlots.problemCategory = problemCategory;
+      }
+      
+      // FIX: Lock problemDetails se già validato (evita "amnesia" dei dettagli)
+      // Questo previene il loop "chiedi di nuovo i dettagli"
+      if (problemDetails && problemDetails !== 'collected') {
+        safeLockedSlots.problemDetails = problemDetails;
+      }
+
+      // Persistenza Preventivo Gate (evita che il backend riparta chiedendo via/telefono)
+      if (typeof priceEstimateGiven === 'boolean') {
+        safeLockedSlots.priceEstimateGiven = priceEstimateGiven;
+      }
+      if (typeof priceRangeMin === 'number') {
+        safeLockedSlots.priceRangeMin = priceRangeMin;
+      }
+      if (typeof priceRangeMax === 'number') {
+        safeLockedSlots.priceRangeMax = priceRangeMax;
+      }
+      if (typeof userConfirmed === 'boolean') {
+        safeLockedSlots.userConfirmed = userConfirmed;
+      }
+      if (typeof quoteRejected === 'boolean') {
+        safeLockedSlots.quoteRejected = quoteRejected;
+      }
+      
       const res = await fetch('/api/assist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -242,6 +285,8 @@ export default function ChatPage() {
             photo: m.photo,
           })),
           ticketId,
+          // Passa categoria e dettagli validati come locked
+          lockedSlots: safeLockedSlots,
         }),
       });
 
@@ -261,14 +306,55 @@ export default function ChatPage() {
       if (responseData._debug) {
         const { slotsCollected, missingSlots: newMissing, ticketId: newTicketId, ticketCreated } = responseData._debug;
         
-        // Aggiorna gli slot raccolti in base ai booleani dal server
+        // FIX: Aggiorna SOLO gli slot che hanno valori reali dal server
+        // NON sovrascrivere con placeholder 'collected' - causa loop infinito!
         if (slotsCollected) {
-          updateSlots({
-            phoneNumber: slotsCollected.phone ? 'collected' : undefined,
-            serviceAddress: slotsCollected.address ? 'collected' : undefined,
-            problemCategory: slotsCollected.category ? 'plumbing' : undefined, // placeholder, actual category from server
-            problemDetails: slotsCollected.details ? 'collected' : undefined,
-          }, newMissing || []);
+          const slotsToUpdate: Partial<ConversationSlots> = {};
+          
+          // Aggiorna categoria SOLO se abbiamo il valore reale
+          if (responseData._debug.slots?.category) {
+            slotsToUpdate.problemCategory = responseData._debug.slots.category as ConversationSlots['problemCategory'];
+          }
+          
+          // Per phone e address usiamo i valori reali se disponibili
+          if (responseData._debug.slots?.phone && slotsCollected.phone) {
+            slotsToUpdate.phoneNumber = responseData._debug.slots.phone;
+          }
+          if (responseData._debug.slots?.address && slotsCollected.address) {
+            slotsToUpdate.serviceAddress = responseData._debug.slots.address;
+          }
+
+          // Salva city se presente (utile per persistenza e UI)
+          if (responseData._debug.slots?.city) {
+            slotsToUpdate.city = responseData._debug.slots.city;
+          }
+          
+          // FIX: Salva problemDetails SOLO se validati (evita loop "chiedi di nuovo")
+          // Quando details è validato, lo "locchiamo" per non perderlo nei turni successivi
+          if (responseData._debug.slots?.details && slotsCollected.details) {
+            slotsToUpdate.problemDetails = responseData._debug.slots.details;
+          }
+
+          // Persistenza Preventivo Gate
+          if (typeof responseData._debug.slots?.priceEstimateGiven === 'boolean') {
+            slotsToUpdate.priceEstimateGiven = responseData._debug.slots.priceEstimateGiven;
+          }
+          if (typeof responseData._debug.slots?.priceRangeMin === 'number') {
+            slotsToUpdate.priceRangeMin = responseData._debug.slots.priceRangeMin;
+          }
+          if (typeof responseData._debug.slots?.priceRangeMax === 'number') {
+            slotsToUpdate.priceRangeMax = responseData._debug.slots.priceRangeMax;
+          }
+          if (typeof responseData._debug.slots?.userConfirmed === 'boolean') {
+            slotsToUpdate.userConfirmed = responseData._debug.slots.userConfirmed;
+          }
+          if (typeof responseData._debug.slots?.quoteRejected === 'boolean') {
+            slotsToUpdate.quoteRejected = responseData._debug.slots.quoteRejected;
+          }
+          
+          if (Object.keys(slotsToUpdate).length > 0) {
+            updateSlots(slotsToUpdate, newMissing || []);
+          }
         }
         
         // Aggiorna ticket ID se creato
@@ -317,7 +403,24 @@ export default function ChatPage() {
     } finally {
       setLoading(false);
     }
-  }, [messages, isLoading, currentTicketId, addMessage, setLoading, setError, setCurrentTicketId, setConfirmationPending, updateSlots]);
+  }, [
+    messages,
+    isLoading,
+    currentTicketId,
+    addMessage,
+    setLoading,
+    setError,
+    setCurrentTicketId,
+    setConfirmationPending,
+    updateSlots,
+    problemCategory,
+    problemDetails,
+    priceEstimateGiven,
+    priceRangeMin,
+    priceRangeMax,
+    userConfirmed,
+    quoteRejected,
+  ]);
 
   const handleSend = useCallback(async () => {
     if ((!input.trim() && !uploadedImageUrl) || isLoading || isUploading) return;
@@ -332,6 +435,12 @@ export default function ChatPage() {
 
   const handleQuickAction = async (action: typeof QUICK_ACTIONS[0]) => {
     setShowQuickActions(false);
+    // FIX: Salva la categoria come "locked slot" PRIMA di inviare il messaggio
+    // Questo garantisce che non venga persa nei turni successivi
+    updateSlots(
+      { problemCategory: action.id as ConversationSlots['problemCategory'] },
+      missingSlots.filter(s => s !== 'problemCategory')
+    );
     await sendMessage(action.message);
   };
 
@@ -686,8 +795,36 @@ export default function ChatPage() {
               isLast={index === messages.length - 1}
               onConfirm={isConfirmationPending && index === messages.length - 1 ? handleConfirmRequest : undefined}
               onFormSubmit={handleFormSubmit}
-              onAcceptQuote={index === messages.length - 1 ? () => sendMessage('Sì, accetto il preventivo. Procediamo!') : undefined}
-              onRejectQuote={index === messages.length - 1 ? () => sendMessage('No grazie, il preventivo non mi va bene.') : undefined}
+              onAcceptQuote={
+                index === messages.length - 1
+                  ? () => {
+                      // Persisti subito l'accettazione per evitare loop (il backend lo riceve in lockedSlots)
+                      updateSlots(
+                        {
+                          userConfirmed: true,
+                          quoteRejected: false,
+                        },
+                        missingSlots
+                      );
+                      return sendMessage('Sì, accetto il preventivo. Procediamo!');
+                    }
+                  : undefined
+              }
+              onRejectQuote={
+                index === messages.length - 1
+                  ? () => {
+                      // Persisti subito il rifiuto per evitare riproposta infinita
+                      updateSlots(
+                        {
+                          userConfirmed: false,
+                          quoteRejected: true,
+                        },
+                        missingSlots
+                      );
+                      return sendMessage('No grazie, il preventivo non mi va bene.');
+                    }
+                  : undefined
+              }
             />
           ))}
 
@@ -781,10 +918,8 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* Helper Text - hidden on mobile for cleaner UX */}
-          <p className="hidden sm:block text-xs text-slate-400 text-center mt-3">
-            Premi Invio per inviare • Shift+Invio per andare a capo
-          </p>
+          {/* Character Counter & Detail Indicator - shows when typing longer messages */}
+          <DescriptionQualityIndicator text={input} />
         </div>
       </div>
 
@@ -910,4 +1045,65 @@ function detectCategory(message: string): 'plumbing' | 'electric' | 'locksmith' 
   }
   
   return 'generic';
+}
+
+// Description Quality Indicator Component
+function DescriptionQualityIndicator({ text }: { text: string }) {
+  const trimmedText = text.trim();
+  const charCount = trimmedText.length;
+  const wordCount = trimmedText.split(/\s+/).filter(w => w.length > 0).length;
+  
+  // Only show when user has started typing something meaningful (more than 10 chars)
+  if (charCount < 10) {
+    return null;
+  }
+  
+  // Check for specific keywords that indicate a good description
+  const hasSpecificKeywords = /\b(chiave|spezzata|rotta|bloccata|persa|blindata|perde|perdita|intasato|allagamento|scatta|salvavita|blackout|non funziona|non parte|non scalda|non gira|bruciato|rotto)\b/i.test(trimmedText);
+  
+  // Determine quality level
+  const isGood = hasSpecificKeywords || charCount >= 50 || wordCount >= 8;
+  const isAlmostGood = charCount >= 30 || wordCount >= 5;
+  
+  // Calculate progress percentage (target: 50 chars)
+  const progress = Math.min(100, Math.round((charCount / 50) * 100));
+  
+  return (
+    <div className="mt-2 flex items-center justify-between text-xs">
+      {/* Left side: Quality indicator */}
+      <div className="flex items-center gap-2">
+        {isGood ? (
+          <div className="flex items-center gap-1.5 text-green-600">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span className="font-medium">Descrizione completa</span>
+          </div>
+        ) : isAlmostGood ? (
+          <div className="flex items-center gap-1.5 text-amber-600">
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span>Aggiungi qualche dettaglio in più</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-slate-400">
+            <FileText className="w-3.5 h-3.5" />
+            <span>Descrivi cosa è successo...</span>
+          </div>
+        )}
+      </div>
+      
+      {/* Right side: Character count with progress bar */}
+      <div className="flex items-center gap-2">
+        <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+          <div 
+            className={`h-full transition-all duration-300 ${
+              isGood ? 'bg-green-500' : isAlmostGood ? 'bg-amber-500' : 'bg-slate-400'
+            }`}
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <span className={`font-mono tabular-nums ${isGood ? 'text-green-600' : 'text-slate-400'}`}>
+          {charCount}
+        </span>
+      </div>
+    </div>
+  );
 }

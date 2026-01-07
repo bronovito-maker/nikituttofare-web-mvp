@@ -26,15 +26,31 @@ interface TelegramMessage {
   };
 }
 
+function getTelegramMessageId(payload: unknown): number | undefined {
+  if (typeof payload !== 'object' || payload === null) return undefined;
+  const result = (payload as { result?: unknown }).result;
+  if (typeof result !== 'object' || result === null) return undefined;
+  const messageId = (result as { message_id?: unknown }).message_id;
+  return typeof messageId === 'number' ? messageId : undefined;
+}
+
 /**
- * Send a message to Telegram
+ * Send a message to Telegram with proper timeout handling
+ * FIX: Added AbortController with 15s timeout to prevent ETIMEDOUT errors
  */
 async function sendTelegramMessage(
   botToken: string, 
   chatId: string, 
   message: TelegramMessage
-) {
+): Promise<{ ok: boolean; result?: unknown; error?: string }> {
+  // Timeout di 15 secondi per evitare ETIMEDOUT
+  const TELEGRAM_TIMEOUT_MS = 15000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TELEGRAM_TIMEOUT_MS);
+  
   try {
+    console.log('📤 Sending Telegram message to chat:', chatId);
+    
     const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: {
@@ -47,18 +63,44 @@ async function sendTelegramMessage(
         disable_web_page_preview: true,
         reply_markup: message.reply_markup,
       }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(`Telegram API error: ${response.status} - ${JSON.stringify(errorData)}`);
+      const errorMsg = `Telegram API error: ${response.status} - ${JSON.stringify(errorData)}`;
+      console.error('❌ Telegram API error:', errorMsg);
+      return { ok: false, error: errorMsg };
     }
 
     const result = await response.json();
-    return result;
-  } catch (error) {
-    console.warn('Errore invio messaggio Telegram:', error);
-    return null;
+    console.log('✅ Telegram message sent successfully');
+    return { ok: true, result };
+  } catch (error: unknown) {
+    clearTimeout(timeoutId);
+    
+    // Gestione specifica per diversi tipi di errore
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        console.error('⏱️ Telegram request timeout after', TELEGRAM_TIMEOUT_MS, 'ms');
+        return { ok: false, error: `Timeout after ${TELEGRAM_TIMEOUT_MS}ms` };
+      }
+      
+      // ETIMEDOUT o altri errori di rete
+      const cause = (error as Error & { cause?: { code?: string } }).cause;
+      if (cause?.code === 'ETIMEDOUT') {
+        console.error('🌐 Network timeout (ETIMEDOUT) - possibly IPv6/DNS issue');
+        return { ok: false, error: 'Network timeout - ETIMEDOUT' };
+      }
+      
+      console.error('❌ Telegram fetch error:', error.message);
+      return { ok: false, error: error.message };
+    }
+    
+    console.error('❌ Telegram unknown error:', error);
+    return { ok: false, error: 'Unknown error' };
   }
 }
 
@@ -239,10 +281,12 @@ export async function notifyNewTicket(ticket: TicketNotificationData) {
     // Send to Telegram group
     const result = await sendTelegramMessage(botToken, chatId, message);
 
-    if (result) {
+    if (result.ok) {
       // Log the notification (optional: save to DB)
       console.log('✅ Telegram notification sent for ticket:', ticket.id);
       
+      const messageId = getTelegramMessageId(result.result);
+
       // Save notification record
       try {
         const adminClient = createAdminClient();
@@ -251,14 +295,14 @@ export async function notifyNewTicket(ticket: TicketNotificationData) {
           .insert({
             ticket_id: ticket.id,
             notification_type: 'telegram',
-            telegram_message_id: result.result?.message_id?.toString(),
+            telegram_message_id: messageId ? messageId.toString() : null,
             status: 'sent'
           });
       } catch (dbError) {
         console.warn('Could not save notification record:', dbError);
       }
 
-      return { success: true, messageId: result.result?.message_id };
+      return { success: true, messageId };
     }
 
     return { success: false, reason: 'telegram_send_failed' };

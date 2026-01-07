@@ -40,6 +40,9 @@ export interface ConversationSlots {
   
   // Flag di conferma utente
   userConfirmed?: boolean;
+
+  // Flag rifiuto preventivo (per non riproporre all'infinito dopo un "no")
+  quoteRejected?: boolean;
 }
 
 // Slot richiesti prima di creare un ticket
@@ -140,26 +143,30 @@ export function extractSlotsFromConversation(
   // ============================================
   const categoryKeywords: Record<string, string[]> = {
     plumbing: [
-      'idraulico', 'acqua', 'tubo', 'tubi', 'perdita', 'perde', 'scarico', 
+      'idraulica', 'idraulico', // FIX: keyword base
+      'acqua', 'tubo', 'tubi', 'perdita', 'perde', 'scarico', 
       'rubinetto', 'wc', 'bagno', 'lavandino', 'doccia', 'allagamento', 
       'infiltrazione', 'goccia', 'gocciola', 'lavello', 'bidet', 'vasca',
       'sifone', 'sanitari', 'cisterna', 'sciacquone', 'otturato', 'intasato',
       'plumber', 'water', 'leak', 'pipe', 'toilet', 'bathroom', 'sink', 'flood'
     ],
     electric: [
-      'elettricista', 'elettrico', 'elettrica', 'luce', 'luci', 'presa', 
-      'corrente', 'salvavita', 'interruttore', 'blackout', 'cortocircuito',
-      'fusibile', 'quadro elettrico', 'lampadina', 'neon', 'faretti',
-      'presa bruciata', 'scintille', 'contatore', 'voltaggio',
+      'elettricità', 'elettricista', 'elettrico', 'elettrica', // FIX: keyword base
+      'luce', 'luci', 'presa', 'corrente', 'salvavita', 'interruttore', 
+      'blackout', 'cortocircuito', 'fusibile', 'quadro elettrico', 
+      'lampadina', 'neon', 'faretti', 'presa bruciata', 'scintille', 
+      'contatore', 'voltaggio',
       'electrician', 'power', 'electricity', 'light', 'outlet', 'switch', 'fuse'
     ],
     locksmith: [
-      'fabbro', 'serratura', 'chiave', 'chiavi', 'porta', 'bloccato', 
+      'fabbro', 'serratura', 'serraturista', // FIX: keyword base
+      'chiave', 'chiavi', 'porta', 'bloccato', 
       'chiuso fuori', 'lucchetto', 'cilindro', 'maniglia', 'blindata',
       'scassinato', 'rotta', 'non si apre', 'inceppata', 'portone',
       'locksmith', 'key', 'keys', 'locked out', 'door', 'lock'
     ],
     climate: [
+      'clima', 'climatizzazione', // FIX: aggiunte keyword base mancanti
       'condizionatore', 'climatizzatore', 'aria condizionata', 'caldaia',
       'riscaldamento', 'termosifone', 'radiatore', 'split', 'pompa di calore',
       'gas', 'metano', 'scaldabagno', 'boiler', 'termostato', 'valvola',
@@ -219,7 +226,17 @@ export function extractSlotsFromConversation(
   let foundCategoryQuestion = false;
 
   for (const msg of messages.slice().reverse()) { // Dalla fine all'inizio
-    if (msg.role === 'assistant' && msg.content.includes('Raccontami') || msg.content.includes('descrivi')) {
+    const assistantContent = (msg.content || '').toLowerCase();
+    if (
+      msg.role === 'assistant' &&
+      (
+        assistantContent.includes('raccontami') ||
+        assistantContent.includes('descrivi') ||
+        assistantContent.includes('per il preventivo') ||
+        assistantContent.includes('dimmi cosa succede') ||
+        assistantContent.includes('cosa succede')
+      )
+    ) {
       foundCategoryQuestion = true;
       continue;
     }
@@ -239,17 +256,72 @@ export function extractSlotsFromConversation(
   // ============================================
   // RILEVAMENTO CONFERMA UTENTE
   // ============================================
-  const confirmKeywords = [
-    'sì', 'si', 'confermo', 'esatto', 'corretto', 'ok', 'okay', 'va bene',
-    'perfetto', 'giusto', 'procedi', 'conferma', 'yes', 'correct', 'right',
-    'accetto', 'd\'accordo', 'confermato'
-  ];
-  
   const lastUserMessage = messages.filter(m => m.role === 'user').pop();
   if (lastUserMessage) {
-    const lastText = lastUserMessage.content.toLowerCase();
-    if (confirmKeywords.some(kw => lastText.includes(kw)) && lastText.length < 40) {
-      slots.userConfirmed = true;
+    const lastText = (lastUserMessage.content || '').toLowerCase().trim();
+
+    // Rifiuto ha priorità (evita "non mi va bene" -> match su "va bene")
+    const rejectPatterns: RegExp[] = [
+      /^no\b/i,
+      /\bno grazie\b/i,
+      /\brifiuto\b/i,
+      /\bnon accetto\b/i,
+      /\bnon mi va bene\b/i,
+      /\bnon va bene\b/i,
+      /\bnon procedere\b/i,
+    ];
+
+    if (rejectPatterns.some((re) => re.test(lastText))) {
+      slots.userConfirmed = false;
+      slots.quoteRejected = true;
+    } else {
+      const acceptPatterns: RegExp[] = [
+        /\bsì\b/i,
+        /\bsi\b/i,
+        /\bconfermo\b/i,
+        /\besatto\b/i,
+        /\bcorretto\b/i,
+        /\bok\b/i,
+        /\bokay\b/i,
+        /\bva bene\b/i,
+        /\bperfetto\b/i,
+        /\bprocedi\b/i,
+        /\bconferma\b/i,
+        /\byes\b/i,
+        /\baccetto\b/i,
+        /\bd'accordo\b/i,
+      ];
+
+      if (acceptPatterns.some((re) => re.test(lastText)) && lastText.length < 80) {
+        slots.userConfirmed = true;
+      }
+    }
+  }
+
+  // ============================================
+  // Persistenza preventivo: se l'assistente ha già inviato un price_estimate
+  // (il frontend lo manda come JSON stringify)
+  // ============================================
+  for (const msg of messages) {
+    if (msg.role !== 'assistant') continue;
+    const raw = msg.content;
+    if (!raw) continue;
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (typeof parsed !== 'object' || parsed === null) continue;
+      const t = (parsed as { type?: unknown }).type;
+      if (t !== 'price_estimate') continue;
+      const c = (parsed as { content?: unknown }).content;
+      if (typeof c !== 'object' || c === null) continue;
+      const priceMin = (c as { priceMin?: unknown }).priceMin;
+      const priceMax = (c as { priceMax?: unknown }).priceMax;
+      if (typeof priceMin === 'number' && typeof priceMax === 'number') {
+        slots.priceEstimateGiven = true;
+        slots.priceRangeMin = priceMin;
+        slots.priceRangeMax = priceMax;
+      }
+    } catch {
+      // ignore
     }
   }
   
@@ -257,50 +329,158 @@ export function extractSlotsFromConversation(
 }
 
 /**
- * Determina quali slot mancano ancora
+ * Determina quali slot mancano ancora.
+ * 
+ * ORDINE STRICT OBBLIGATORIO (non saltare!):
+ * 1. CITTÀ - Dove sei?
+ * 2. CATEGORIA - Che tipo di intervento? (se non già chiaro)
+ * 3. DETTAGLI PROBLEMA - Cosa succede esattamente? (BLOCCANTE!)
+ * 4. [Preventivo dato qui]
+ * 5. INDIRIZZO COMPLETO - Via e civico
+ * 6. TELEFONO - Per la chiamata del tecnico
  */
 export function getMissingSlots(slots: ConversationSlots): string[] {
   const missing: string[] = [];
   
-  // 1. Indirizzo completo (città + via/civico, O città limitrofa accettata)
-  if (!slots.serviceAddress) {
-    if (!slots.city) {
-      missing.push('city');
-    } else if (!slots.streetAddress) {
-      // Ha la città ma non l'indirizzo completo
-      missing.push('streetAddress');
-    }
+  // ============================================
+  // STEP 1: CITTÀ (obbligatoria per prima)
+  // ============================================
+  if (!slots.city) {
+    missing.push('city');
+    return missing; // BLOCCO: non procedere senza città
   }
   
-  // 2. Categoria problema
+  // ============================================
+  // STEP 2: CATEGORIA (se non già identificata)
+  // ============================================
   if (!slots.problemCategory || slots.problemCategory === 'generic') {
     missing.push('problemCategory');
+    return missing; // BLOCCO: non procedere senza categoria
   }
   
-  // 3. Dettagli problema OBBLIGATORI (foto O descrizione dettagliata)
-  // REGOLA: Serve FOTO oppure descrizione significativa
-  const wordCount = slots.problemDetails ? slots.problemDetails.split(/\s+/).filter(w => w.length > 0).length : 0;
+  // ============================================
+  // STEP 3: DETTAGLI PROBLEMA (BLOCCANTE!)
+  // Questo è il FIX principale: NON si può andare avanti
+  // senza sapere COSA è successo
+  // ============================================
+  const hasValidProblemDetails = checkProblemDetailsValid(slots);
   
-  // Pattern keywords emergenza idraulica/elettrica
-  const emergencyKeywords = /\b(perde|perdita|allagamento|acqua|scarico|intasato|bruciato|scintille|cortocircuito|bloccato|rotto)\b/i;
-  
-  const hasDetailedDescription = slots.problemDetails && (
-    wordCount >= 12 ||  // Almeno 12 parole (ridotto da 20)
-    slots.problemDetails.length >= 60 || // Oppure 60+ caratteri
-    emergencyKeywords.test(slots.problemDetails) || // Keywords emergenza
-    /\b(montare|installare|sistemare|riparare|aggiustare|pulire|smontare|sostituire|verificare|controllare)\b/i.test(slots.problemDetails)
-  );
-
-  if (!slots.hasPhoto && !hasDetailedDescription) {
+  if (!hasValidProblemDetails) {
     missing.push('problemDetails');
+    return missing; // BLOCCO CRITICO: non procedere senza diagnosi
   }
   
-  // 4. Telefono (ultimo, dopo aver dato il preventivo)
+  // ============================================
+  // STEP 4: A questo punto possiamo dare il preventivo
+  // ============================================
+  
+  // ============================================
+  // STEP 5: INDIRIZZO COMPLETO (via + civico)
+  // Solo DOPO aver dato il preventivo
+  // ============================================
+  if (!slots.streetAddress) {
+    missing.push('streetAddress');
+    return missing; // BLOCCO: serve indirizzo per mandare il tecnico
+  }
+  
+  // ============================================
+  // STEP 6: TELEFONO (ultimo step)
+  // ============================================
   if (!slots.phoneNumber) {
     missing.push('phoneNumber');
   }
   
   return missing;
+}
+
+/**
+ * Verifica se i dettagli del problema sono sufficienti.
+ * Richiede descrizione specifica o foto.
+ */
+export function checkProblemDetailsValid(slots: ConversationSlots): boolean {
+  // Se c'è una foto, è sufficiente
+  if (slots.hasPhoto) {
+    return true;
+  }
+  
+  // Se non c'è descrizione, non valido
+  if (!slots.problemDetails) {
+    return false;
+  }
+  
+  let details = slots.problemDetails.toLowerCase().trim();
+  const wordCount = slots.problemDetails.split(/\s+/).filter(w => w.length > 0).length;
+
+  // Normalizza typo comuni per match keyword
+  details = details
+    .replace(/\bintatast[oa]\b/g, 'intasato')
+    .replace(/\bintassat[oa]\b/g, 'intasato')
+    .replace(/\bintasat[oa]\b/g, 'intasato');
+  
+  // ============================================
+  // FIX VALIDAZIONE: Blacklist frasi generiche che NON sono dettagli
+  // ============================================
+  const genericPhrases = [
+    // Richieste generiche di preventivo
+    /^(vorrei|ho bisogno|cerco|serve|mi serve).{0,30}(preventivo|intervento|aiuto|tecnico|assistenza)/i,
+    // Solo categoria menzionata
+    /^(problema|guasto|emergenza).{0,15}(idraulico|elettrico|fabbro|clima|condizionatore|caldaia)$/i,
+    // Risposte monosillabiche
+    /^(si|sì|no|ok|certo|va bene|perfetto)\.?$/i,
+    // Solo città o indirizzo
+    /^(via|corso|piazza|rimini|riccione|cattolica)/i,
+  ];
+  
+  // Se il testo è troppo generico, NON è valido
+  for (const genericPattern of genericPhrases) {
+    if (genericPattern.test(details)) {
+      return false;
+    }
+  }
+  
+  // ============================================
+  // Keywords specifiche per categoria che indicano un problema CONCRETO
+  // ============================================
+  const specificKeywords = {
+    // Fabbro - problemi specifici
+    locksmith: /\b(chiave.{0,10}(spezzata|rotta|bloccata|incastrata|persa|non gira)|cilindro|serratura.{0,10}(rotta|bloccata)|chiuso fuori|non si apre|gira a vuoto|scassinata)\b/i,
+    // Idraulico - sintomi concreti
+    plumbing: /\b(perde|perdita|goccia|allagamento|intasato|otturato|non scarica|scarico.{0,10}(lento|bloccato)|rubinetto.{0,10}(rotto|perde)|wc|lavandino|bidet|doccia.{0,10}(perde|rotta)|pressione.{0,10}(bassa|alta)|acqua calda.{0,10}(non|manca))\b/i,
+    // Elettricista - sintomi concreti
+    electric: /\b(scatta|salvavita.{0,10}scatta|blackout|cortocircuito|presa.{0,10}(bruciata|non funziona)|interruttore|lampadina.{0,10}non|scintille|bruciato|quadro|contatore|senza corrente|senza luce)\b/i,
+    // Clima - sintomi concreti
+    climate: /\b(non scalda|non raffresca|non raffredda|non parte|rumore.{0,10}(strano|forte)|perde acqua|condensa|gocciola|gas|ricarica|manutenzione|caldaia.{0,10}(non|errore|blocca)|termostato.{0,10}non|split.{0,10}non)\b/i,
+    // Generico - azioni concrete con oggetto
+    generic: /\b(montare.{0,15}\w+|smontare.{0,15}\w+|installare.{0,15}\w+|sostituire.{0,15}\w+|riparare.{0,15}\w+|appendere.{0,15}\w+|fissare.{0,15}\w+)\b/i
+  };
+  
+  // Controlla se contiene keywords specifiche per la categoria
+  const categoryKeywords = specificKeywords[slots.problemCategory as keyof typeof specificKeywords] || specificKeywords.generic;
+  const hasSpecificKeyword = categoryKeywords.test(details);
+  
+  // Se ha keyword specifica del problema, è valido
+  if (hasSpecificKeyword) {
+    return true;
+  }
+  
+  // ============================================
+  // Fallback: lunghezza minima PIÙ alta
+  // Richiede una descrizione SOSTANZIOSA se non ci sono keywords
+  // ============================================
+  // Almeno 15 parole O 80 caratteri per essere considerato "dettaglio"
+  const hasSubstantialLength = wordCount >= 15 || details.length >= 80;
+  
+  // Debug log per capire perché i dettagli sono invalidi
+  if (!hasSubstantialLength) {
+    console.log('⚠️ Details validation failed:', {
+      details: details.slice(0, 50) + '...',
+      wordCount,
+      length: details.length,
+      hasKeyword: hasSpecificKeyword
+    });
+  }
+  
+  return hasSubstantialLength;
 }
 
 /**
@@ -369,19 +549,21 @@ export function buildNikiSystemPrompt(
   const canEstimate = canGivePriceEstimate(slots);
   const priceRange = canEstimate ? calculatePriceRange(slots) : null;
   
+  // Verifica se i dettagli sono validi
+  const detailsValid = slots.hasPhoto || (slots.problemDetails && slots.problemDetails.length >= 20);
+  
   const slotStatus = `
-📊 **STATO RACCOLTA DATI:**
-${slots.city ? `✅ Città: ${slots.city}` : '❌ Città: **MANCANTE** (chiedi prima di tutto!)'}
-${slots.streetAddress ? `✅ Via: ${slots.streetAddress}` : '⚪ Via: opzionale dopo la città'}
+📊 **STATO RACCOLTA DATI (in ordine):**
+${slots.city ? `✅ 1. Città: ${slots.city}` : '❌ 1. Città: **MANCANTE** → CHIEDI PRIMA!'}
 ${slots.problemCategory && slots.problemCategory !== 'generic' 
-    ? `✅ Categoria: ${CATEGORY_NAMES_IT[slots.problemCategory] || slots.problemCategory}` 
-    : '❌ Categoria: **NON IDENTIFICATA**'}
-${slots.hasPhoto ? '✅ Foto: ricevuta' : '⚪ Foto: non ricevuta (chiedi se possibile)'}
-${slots.problemDetails && slots.problemDetails.length >= 15 
-    ? `✅ Dettagli: "${slots.problemDetails.slice(0, 40)}..."` 
-    : '❌ Dettagli: **INSUFFICIENTI**'}
-${slots.priceEstimateGiven ? `✅ Preventivo dato: ${slots.priceRangeMin}€ - ${slots.priceRangeMax}€` : '⚪ Preventivo: da comunicare'}
-${slots.phoneNumber ? `✅ Telefono: ${slots.phoneNumber}` : '❌ Telefono: **MANCANTE**'}
+    ? `✅ 2. Categoria: ${CATEGORY_NAMES_IT[slots.problemCategory] || slots.problemCategory}` 
+    : '❌ 2. Categoria: **NON IDENTIFICATA** → CHIEDI!'}
+${detailsValid
+    ? `✅ 3. Diagnosi: "${(slots.problemDetails || 'foto ricevuta').slice(0, 35)}..."` 
+    : '🔴 3. Diagnosi: **MANCANTE** → CHIEDI COSA È SUCCESSO!'}
+${slots.priceEstimateGiven ? `✅ 4. Preventivo: ${slots.priceRangeMin}€ - ${slots.priceRangeMax}€` : '⚪ 4. Preventivo: da dare dopo diagnosi'}
+${slots.streetAddress ? `✅ 5. Via: ${slots.streetAddress}` : '⚪ 5. Via: da chiedere dopo preventivo'}
+${slots.phoneNumber ? `✅ 6. Telefono: ${slots.phoneNumber}` : '⚪ 6. Telefono: da chiedere per ultimo'}
 ${slots.userConfirmed ? '✅ **CONFERMATO**' : '⚪ Conferma: in attesa'}
 `;
 
@@ -397,32 +579,56 @@ ${ticketId ? `- Ticket: #${ticketId.slice(-8).toUpperCase()}` : '- Nessun ticket
 
 ${slotStatus}
 
-# 🎯 FLUSSO CONVERSAZIONALE OBBLIGATORIO
+# 🎯 FLUSSO CONVERSAZIONALE STRICT (NON SALTARE STEP!)
 
-## FASE 1: GEOLOCALIZZAZIONE (Prima di tutto!)
+## ⚠️ REGOLA CRITICA: ORDINE BLOCCANTE
+Devi seguire quest'ordine ESATTO. NON puoi passare allo step successivo senza completare il precedente!
+
+## STEP 1: CITTÀ 📍
 Se NON hai la città:
-→ "Ciao! Per aiutarti, di quale città parliamo? (es. Rimini, Riccione, Cattolica...)"
+→ "Per aiutarti, di quale città parliamo? (Rimini, Riccione, Cattolica...)"
+**BLOCCO:** Non procedere senza città.
 
-## FASE 2: DIAGNOSI
-Quando hai la città:
-→ Chiedi il TIPO di problema se non chiaro
-→ **CHIEDI UNA FOTO**: "Per darti un preventivo preciso, riesci a caricarmi una foto del guasto?"
-→ Se l'utente non può: "Nessun problema, descrivimi nel dettaglio cosa vedi"
+## STEP 2: CATEGORIA 🔧
+Se hai la città ma NON la categoria:
+→ "Che tipo di intervento ti serve? Idraulico, elettricista, fabbro, o clima?"
+**BLOCCO:** Non procedere senza sapere il tipo.
 
-## FASE 3: PREVENTIVO (Solo quando hai: città + categoria + foto/descrizione)
+## STEP 3: DIAGNOSI DEL PROBLEMA 🔍 (CRITICO!)
+Questo è il passaggio PIÙ IMPORTANTE. NON puoi chiedere indirizzo o telefono se non sai COSA è successo!
+
+**Domande specifiche per categoria:**
+- 🔑 **Fabbro:** "Sei chiuso fuori? La chiave si è spezzata? La serratura non gira?"
+- 🔧 **Idraulico:** "Da dove perde? Lo scarico è intasato? C'è allagamento?"
+- ⚡ **Elettricista:** "Salta il salvavita? Blackout? Presa bruciata?"
+- ❄️ **Clima:** "Non scalda/raffresca? Non parte? Fa rumore?"
+
+**Se l'utente è vago ("non funziona", "è rotto"):**
+→ INSISTI: "Capisco, ma per darti il prezzo giusto devo sapere cosa vedi. Puoi descrivermi meglio o mandarmi una foto?"
+
+**BLOCCO ASSOLUTO:** Senza descrizione specifica, NON procedere!
+
+## STEP 4: PREVENTIVO 💰
+**SOLO quando hai:** città ✅ + categoria ✅ + problema specifico ✅
 ${canEstimate && priceRange ? `
-🟢 Puoi dare il preventivo!
-→ "Basandomi su questo, l'intervento si aggira tra **${priceRange.min}€ e ${priceRange.max}€**. Il tecnico confermerà l'importo esatto una volta sul posto."
+🟢 ORA puoi dare il preventivo!
+→ "Basandomi su [problema specifico], l'intervento si aggira tra **${priceRange.min}€ e ${priceRange.max}€**."
 ` : `
-🔴 Non puoi ancora dare preventivo. Raccogli: città, tipo problema, foto/descrizione.
+🔴 NON puoi ancora dare preventivo! Torna agli step precedenti.
 `}
 
-## FASE 4: RACCOLTA TELEFONO (Dopo il preventivo)
-→ "Ti va bene questo range? Se confermi, un tecnico ti **chiamerà entro 30-60 minuti** per fissare l'arrivo. A che numero posso farlo chiamare?"
+## STEP 5: INDIRIZZO 🏠
+Solo DOPO che l'utente ha **ACCETTATO** il preventivo (userConfirmed = true):
+→ "Perfetto. Dimmi l'indirizzo esatto (via e numero civico)"
 
-## FASE 5: RIEPILOGO E CONFERMA
-Quando hai TUTTI i dati:
-→ Mostra riepilogo completo
+**REGOLA ANTI-LOOP:** se userConfirmed = true, NON ripetere il preventivo: passa subito a indirizzo/telefono.
+
+## STEP 6: TELEFONO 📞
+Ultimo step:
+→ "A che numero può chiamarti il tecnico per confermare?"
+
+## STEP 7: RIEPILOGO E CONFERMA ✅
+→ Mostra tutti i dati raccolti
 → "Confermi per procedere?"
 
 # ⚠️ SLA - REGOLE FONDAMENTALI
@@ -448,17 +654,32 @@ Quando hai TUTTI i dati:
 
 **Maggiorazione emergenza:** +30-50%
 
-# 📸 FOTO E DESCRIZIONI OBBLIGATORIE - REGOLA CRITICA
+# 📸 DIAGNOSI OBBLIGATORIA - REGOLA CRITICA
 
-**STOP IMMEDIATO - NON PROCEDERE MAI SENZA:**
-- ❌ **BLOCCO ASSOLUTO:** Se non hai una FOTO del problema E la descrizione è troppo vaga (meno di 12 parole significative)
-- ⚠️ **AZIONE OBBLIGATORIA:** Quando ricevi una categoria, chiedi: "Puoi mandarmi una foto del problema? Oppure descrivimi in dettaglio: cosa vedi esattamente, da dove perde/cosa non funziona?"
-- 🚫 **NON ACCETTARE:** Risposte troppo vaghe come "è rotto", "non funziona" (senza contesto)
-- ✅ **ACCETTA COME VALIDO:** Descrizioni con keywords specifiche (es: "perde acqua", "tubo rotto", "scarico intasato", "presa bruciata") ANCHE se brevi
-- ✅ **SOLO DOPO:** Foto ricevuta OPPURE descrizione con dettagli concreti (dove, cosa, come)
-- 🔄 **INSISTI UNA SOLA VOLTA:** Se troppo vago, chiedi una volta di più. Se l'utente ripete descrizione simile, accettala e procedi.
+**IL PROBLEMA PIÙ COMUNE:**
+L'utente dice "Vorrei un fabbro" o "Ho bisogno di un idraulico" → NON SAI ANCORA NULLA!
+Non sai se deve aprire una porta blindata (80€) o cambiare tutto il cilindro (200€).
 
-**Importante:** Una descrizione breve ma specifica ("perde tubo lavandino, acqua in terra") è MEGLIO di una lunga generica.
+**SEQUENZA OBBLIGATORIA:**
+1. ✅ Utente: "Vorrei un fabbro"
+2. ✅ Tu: "Certo! Per darti il prezzo giusto, dimmi cosa è successo: sei chiuso fuori? La chiave si è spezzata? La serratura non gira?"
+3. ✅ Utente: "La chiave si è rotta dentro"
+4. ✅ Tu: "Capito, estrazione chiave spezzata. Il costo è tra 80€ e 120€. Se ti va bene, dammi l'indirizzo."
+
+**RISPOSTE VALIDE (accetta e procedi):**
+- "chiave spezzata dentro" ✅
+- "porta blindata bloccata" ✅  
+- "serratura gira a vuoto" ✅
+- "chiuso fuori casa" ✅
+- "perde acqua dal tubo sotto il lavandino" ✅
+- "salvavita che scatta ogni volta" ✅
+
+**RISPOSTE VAGHE (chiedi di più):**
+- "non funziona" ❌ → Chiedi: "Cosa non funziona esattamente?"
+- "è rotto" ❌ → Chiedi: "Cosa vedi? Cosa succede quando provi ad usarlo?"
+- "ho un problema" ❌ → Chiedi: "Descrivimi il problema: cosa vedi/senti?"
+
+**DOPO 2 TENTATIVI:** Se l'utente rimane vago, accetta e procedi con preventivo generico.
 
 # ❌ COSA NON FARE MAI
 - NON creare ticket senza indirizzo completo, categoria, telefono, email
@@ -564,9 +785,10 @@ export const URGENCY_NAMES_IT: Record<string, string> = {
 };
 
 /**
- * Genera la domanda da fare per uno slot mancante - ORDINE AGGIORNATO
+ * Genera la domanda da fare per uno slot mancante.
+ * Le domande per problemDetails sono specifiche per categoria.
  */
-export function getQuestionForSlot(slotName: string): string {
+export function getQuestionForSlot(slotName: string, category?: string): string {
   const questions: Record<string, string[]> = {
     city: [
       'Per aiutarti, di quale **città** parliamo? (Rimini, Riccione, Cattolica...)',
@@ -583,22 +805,52 @@ export function getQuestionForSlot(slotName: string): string {
       'Una foto del problema mi aiuterebbe a stimare meglio i costi. Puoi scattarla?',
       'Se possibile, mandami una foto così il tecnico sa già cosa aspettarsi.'
     ],
-    problemDetails: [
-      'Descrivimi il problema: da dove perde? Cosa non funziona? Cosa vedi?',
-      'Raccontami cosa succede: dove si trova il guasto? Quando è iniziato?',
-      'Dammi qualche dettaglio in più: quale parte è rotta? C\'è acqua/fumo/altro?'
-    ],
     phoneNumber: [
       'Perfetto! A che numero può **chiamarti il tecnico** per confermare l\'appuntamento?',
       'Per procedere, lasciami un numero di cellulare per la chiamata di conferma.',
       'Qual è il tuo numero? Il tecnico ti chiamerà entro 30-60 minuti.'
     ],
     streetAddress: [
-      'Qual è l\'indirizzo esatto? (Via, numero civico)',
-      'A che via devo mandare il tecnico? Dammi anche il numero civico.',
-      'Indirizzo dell\'intervento? (Es. Via Roma 25)'
+      'Ora mi serve l\'**indirizzo esatto** per mandare il tecnico. Via e numero civico?',
+      'A che via ti trovo? Dammi anche il numero civico.',
+      'Indirizzo completo dell\'intervento? (Es. Via Roma 25)'
     ]
   };
+
+  // Domande specifiche per problemDetails in base alla categoria
+  const categorySpecificQuestions: Record<string, string[]> = {
+    locksmith: [
+      '🔑 Per darti il preventivo giusto, dimmi cosa è successo:\n• Sei rimasto **chiuso fuori**?\n• La **chiave si è spezzata** nella serratura?\n• La serratura **non gira** o gira a vuoto?\n• Devi **cambiare il cilindro** o la maniglia?',
+      '🔑 Descrivimi il problema con la serratura. È una porta blindata? La chiave funziona? Sei chiuso fuori o riesci ad aprire?',
+      '🔑 Cosa succede esattamente? Porta bloccata, chiave rotta dentro, serratura che non gira?'
+    ],
+    plumbing: [
+      '🔧 Per il preventivo, dimmi cosa vedi:\n• Da **dove perde** l\'acqua?\n• Lo **scarico è intasato**?\n• C\'è un **allagamento** in corso?\n• Il rubinetto/WC non funziona?',
+      '🔧 Descrivimi il problema idraulico: perde da un tubo? Lo scarico è bloccato? C\'è acqua per terra?',
+      '🔧 Cosa succede? Perdita d\'acqua, scarico otturato, rubinetto rotto? Da dove viene il problema?'
+    ],
+    electric: [
+      '⚡ Per il preventivo, dimmi cosa succede:\n• Salta il **salvavita**?\n• C\'è un **blackout** in casa?\n• Qualche **presa non funziona**?\n• Vedi **scintille** o senti odore di bruciato?',
+      '⚡ Descrivimi il problema elettrico: scatta il salvavita? Hai perso corrente? Una presa non funziona?',
+      '⚡ Cosa è successo? Blackout totale, salvavita che scatta, prese bruciate?'
+    ],
+    climate: [
+      '❄️ Per il preventivo, dimmi cosa succede:\n• Il condizionatore/caldaia **non si accende**?\n• **Non scalda** o **non raffresca**?\n• Fa **rumori strani**?\n• Serve una **manutenzione** o ricarica gas?',
+      '❄️ Descrivimi il problema: non parte? Non raffresca/scalda abbastanza? Fa rumore?',
+      '❄️ Cosa non funziona? Condizionatore, caldaia, termosifoni? Descrivi il problema.'
+    ],
+    generic: [
+      '🔨 Per darti un preventivo preciso, descrivimi **cosa devi fare**:\n• Cosa va **montato/installato**?\n• Cosa è **rotto** e va riparato?\n• Di che tipo di lavoro si tratta?',
+      '🔨 Dimmi di più sul lavoro da fare: cosa devo montare, riparare o sistemare?',
+      '🔨 Descrivimi nel dettaglio cosa serve: montaggio, riparazione, installazione?'
+    ]
+  };
+
+  // Se è problemDetails, usa le domande specifiche per categoria
+  if (slotName === 'problemDetails') {
+    const categoryQuestions = categorySpecificQuestions[category || 'generic'] || categorySpecificQuestions.generic;
+    return categoryQuestions[Math.floor(Math.random() * categoryQuestions.length)];
+  }
   
   const questionList = questions[slotName] || ['Puoi darmi qualche informazione in più?'];
   return questionList[Math.floor(Math.random() * questionList.length)];

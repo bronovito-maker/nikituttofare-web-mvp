@@ -15,7 +15,10 @@ import {
   generateRecapMessage,
   SLOT_NAMES_IT,
   CATEGORY_NAMES_IT,
-  calculatePriceRange
+  calculatePriceRange,
+  canGivePriceEstimate,
+  generatePriceEstimateMessage,
+  checkProblemDetailsValid
 } from '@/lib/system-prompt';
 
 // ============================================
@@ -26,6 +29,8 @@ function normalizeText(text: string): string {
   
   const typoMap: Record<string, string> = {
     'alagamento': 'allagamento', 'alagato': 'allagato', 'allagametno': 'allagamento',
+    'intatasto': 'intasato', 'intatasta': 'intasato', 'intatasti': 'intasato',
+    'intassato': 'intasato', 'intassata': 'intasato',
     'ovuneuqe': 'ovunque', 'solpito': 'scoppiato', 'sepozzata': 'spezzata',
     'chisua': 'chiusa', 'blocataaa': 'bloccata', 'presaaaa': 'presa',
     'brucoato': 'bruciato', 'preseee': 'prese', 'bgano': 'bagno',
@@ -72,7 +77,7 @@ function extractDataFromMessage(message: string): Partial<ConversationSlots> {
   
   // Estrai categoria
   const categoryKeywords: Record<string, string[]> = {
-    plumbing: ['idraulico', 'acqua', 'tubo', 'perdita', 'scarico', 'rubinetto', 'allagamento', 'wc', 'bagno'],
+    plumbing: ['idraulico', 'acqua', 'tubo', 'perdita', 'scarico', 'rubinetto', 'allagamento', 'wc', 'bagno', 'bidet', 'intasato', 'otturato'],
     electric: ['elettric', 'luce', 'presa', 'corrente', 'salvavita', 'blackout', 'scintill'],
     locksmith: ['fabbro', 'serratura', 'chiave', 'porta', 'bloccato', 'chiuso fuori'],
     climate: ['condizionatore', 'caldaia', 'riscaldamento', 'termosifone', 'clima', 'aria condizionata']
@@ -164,9 +169,9 @@ function generateFallbackResponse(
       greeting += "🚨 **Capisco che è un'emergenza!** Ti aiuto subito.\n\n";
     }
     
-    // Chiedi il primo dato mancante
+    // Chiedi il primo dato mancante (passa la categoria per domande specifiche)
     if (missingSlots.length > 0) {
-      greeting += getQuestionForSlot(missingSlots[0]);
+      greeting += getQuestionForSlot(missingSlots[0], slots.problemCategory);
     } else {
       greeting += "Ho bisogno di alcune informazioni per inviarti un tecnico.";
     }
@@ -230,7 +235,7 @@ function generateFallbackResponse(
     }
   }
   
-  response += getQuestionForSlot(nextSlot);
+  response += getQuestionForSlot(nextSlot, slots.problemCategory);
   
   return { type: 'text', content: response };
 }
@@ -341,7 +346,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { messages, ticketId: existingTicketId } = body;
+    const { messages, ticketId: existingTicketId, lockedSlots } = body;
+    
+    // FIX: lockedSlots sono slot confermati dal frontend (es. click su card categoria)
+    // Hanno PRIORITÀ MASSIMA e non vengono mai sovrascritti
+    const frontendLockedSlots: Partial<ConversationSlots> = lockedSlots || {};
     
     // Ottieni utente (può essere null per ospiti)
     const user = await getCurrentUser();
@@ -364,6 +373,7 @@ export async function POST(request: NextRequest) {
 
     // ========================================
     // SLOT FILLING: Estrai dati dalla conversazione
+    // FIX: Merge intelligente - NON sovrascrivere slot già raccolti con null/undefined
     // ========================================
     const conversationMessages = messages.map((m: { role: string; content: unknown }) => ({
       role: m.role,
@@ -371,21 +381,218 @@ export async function POST(request: NextRequest) {
     }));
     
     // Estrai slot già presenti nella conversazione
-    const slots = extractSlotsFromConversation(conversationMessages, userEmail);
+    const extractedSlots = extractSlotsFromConversation(conversationMessages, userEmail);
+    
+    // Estrai nuovi dati dall'ultimo messaggio
+    const newData = extractDataFromMessage(stringifyContent(lastUserMessage.content));
+    
+    // FIX AMNESIA: Merge intelligente degli slot
+    // Regola: uno slot già valorizzato NON deve essere sovrascritto con null/undefined
+    const slots: ConversationSlots = {};
+    
+    // Lista di tutti i possibili slot
+    const allSlotKeys: (keyof ConversationSlots)[] = [
+      'userEmail', 'city', 'streetAddress', 'serviceAddress',
+      'phoneNumber', 'problemCategory', 'problemDetails',
+      'hasPhoto', 'photoUrl', 'priceRangeMin', 'priceRangeMax',
+      'priceEstimateGiven', 'urgencyLevel', 'userConfirmed', 'quoteRejected'
+    ];
+    
+    // FIX PERSISTENZA: Merge con priorità corretta
+    // Priorità: frontendLockedSlots > newData > extractedSlots
+    for (const key of allSlotKeys) {
+      const lockedValue = frontendLockedSlots[key];
+      const extractedValue = extractedSlots[key];
+      const newValue = newData[key as keyof typeof newData];
+      
+      // 1. LOCKED ha priorità MASSIMA (da click su card UI)
+      if (lockedValue !== undefined && lockedValue !== null && lockedValue !== '') {
+        (slots as any)[key] = lockedValue;
+      }
+      // 2. Dati dal messaggio corrente
+      else if (newValue !== undefined && newValue !== null && newValue !== '') {
+        (slots as any)[key] = newValue;
+      }
+      // 3. Dati estratti dalla conversazione
+      else if (extractedValue !== undefined && extractedValue !== null && extractedValue !== '') {
+        (slots as any)[key] = extractedValue;
+      }
+    }
 
     // Se l'utente è loggato, imposta direttamente l'email negli slot
     if (userEmail && !slots.userEmail) {
       slots.userEmail = userEmail;
     }
     
-    // Aggiorna con eventuali nuovi dati dall'ultimo messaggio
-    const newData = extractDataFromMessage(stringifyContent(lastUserMessage.content));
-    Object.assign(slots, {
-      ...slots,
-      ...Object.fromEntries(
-        Object.entries(newData).filter(([_, v]) => v !== undefined && v !== null)
-      )
+    // Costruisci serviceAddress se abbiamo sia streetAddress che city
+    if (slots.city && slots.streetAddress && !slots.serviceAddress) {
+      slots.serviceAddress = `${slots.streetAddress}, ${slots.city}`;
+    }
+    
+    // Debug: log slot merging con info sui locked slots
+    console.log('🔄 Slot Merge:', {
+      locked: { 
+        category: frontendLockedSlots.problemCategory || '(none)',
+        city: (frontendLockedSlots as any).city || '(none)'
+      },
+      extracted: { 
+        category: extractedSlots.problemCategory || '(none)', 
+        city: extractedSlots.city || '(none)',
+        details: extractedSlots.problemDetails?.slice(0, 30) || '(none)'
+      },
+      newData: { 
+        category: newData.problemCategory || '(none)',
+        city: (newData as any).city || '(none)'
+      },
+      final: {
+        category: slots.problemCategory || '(none)',
+        city: slots.city || '(none)'
+      }
     });
+
+    // ========================================
+    // 🛑 PREVENTIVO GATE (STRICT FLOW)
+    // Dopo categoria + città + diagnosi valida → mostra preventivo e BLOCCA dati sensibili
+    // ========================================
+    const detailsValid = checkProblemDetailsValid(slots);
+    const canEstimate = canGivePriceEstimate(slots) && detailsValid;
+    const userConfirmed = slots.userConfirmed || false;
+    const quoteRejected = slots.quoteRejected || false;
+
+    if (canEstimate && !userConfirmed) {
+      // Se l'utente ha rifiutato: non chiedere mai indirizzo/telefono
+      if (quoteRejected) {
+        return NextResponse.json({
+          type: 'text',
+          content:
+            'Capisco. Nessun problema.\n\nSe vuoi, posso:\n- stimare un preventivo più preciso se mi dai 1-2 dettagli in più\n- oppure aiutarti con un altro tipo di intervento.\n\nDimmi pure come preferisci.',
+          _debug: {
+            ticketCreated: false,
+            ticketId: existingTicketId || null,
+            slots: {
+              category: slots.problemCategory || null,
+              city: slots.city || null,
+              details: detailsValid ? (slots.problemDetails || null) : null,
+              priceEstimateGiven: slots.priceEstimateGiven || false,
+              priceRangeMin: slots.priceRangeMin ?? null,
+              priceRangeMax: slots.priceRangeMax ?? null,
+              userConfirmed: false,
+              quoteRejected: true,
+            },
+            slotsCollected: {
+              category: !!slots.problemCategory,
+              city: !!slots.city,
+              details: detailsValid,
+              quoteRejected: true,
+            },
+            missingSlots: getMissingSlots(slots).map(s => SLOT_NAMES_IT[s] || s),
+          },
+        });
+      }
+
+      const range = calculatePriceRange(slots);
+      // Persistiamo preventivo lato slot per evitare amnesia (il frontend lo rimanda come lockedSlots)
+      slots.priceEstimateGiven = true;
+      slots.priceRangeMin = range.min;
+      slots.priceRangeMax = range.max;
+
+      return NextResponse.json({
+        type: 'price_estimate',
+        content: {
+          message: generatePriceEstimateMessage(slots),
+          priceMin: range.min,
+          priceMax: range.max,
+          category: slots.problemCategory,
+          needsConfirmation: true,
+        },
+        _debug: {
+          ticketCreated: false,
+          ticketId: existingTicketId || null,
+          slots: {
+            category: slots.problemCategory || null,
+            city: slots.city || null,
+            details: detailsValid ? (slots.problemDetails || null) : null,
+            priceEstimateGiven: true,
+            priceRangeMin: range.min,
+            priceRangeMax: range.max,
+            userConfirmed: false,
+            quoteRejected: false,
+          },
+          slotsCollected: {
+            category: !!slots.problemCategory,
+            city: !!slots.city,
+            details: detailsValid,
+            priceEstimateGiven: true,
+          },
+          missingSlots: ['Preventivo (in attesa di accettazione)'],
+        },
+      });
+    }
+
+    // ========================================
+    // ✅ POST-ACCEPT OVERRIDE (anti-loop)
+    // Se l'utente ha accettato il preventivo, NON riproporre il quote:
+    // procedi deterministicamente con indirizzo → telefono.
+    // ========================================
+    if (slots.userConfirmed) {
+      if (!slots.streetAddress) {
+        return NextResponse.json({
+          type: 'text',
+          content: getQuestionForSlot('streetAddress', slots.problemCategory),
+          _debug: {
+            ticketCreated: false,
+            ticketId: existingTicketId || null,
+            slots: {
+              category: slots.problemCategory || null,
+              city: slots.city || null,
+              details: detailsValid ? (slots.problemDetails || null) : null,
+              priceEstimateGiven: slots.priceEstimateGiven || false,
+              priceRangeMin: slots.priceRangeMin ?? null,
+              priceRangeMax: slots.priceRangeMax ?? null,
+              userConfirmed: true,
+              quoteRejected: slots.quoteRejected || false,
+            },
+            slotsCollected: {
+              category: !!slots.problemCategory,
+              city: !!slots.city,
+              details: detailsValid,
+              priceEstimateGiven: !!slots.priceEstimateGiven,
+              userConfirmed: true,
+            },
+            missingSlots: ['streetAddress'],
+          },
+        });
+      }
+
+      if (!slots.phoneNumber) {
+        return NextResponse.json({
+          type: 'text',
+          content: getQuestionForSlot('phoneNumber', slots.problemCategory),
+          _debug: {
+            ticketCreated: false,
+            ticketId: existingTicketId || null,
+            slots: {
+              category: slots.problemCategory || null,
+              city: slots.city || null,
+              details: detailsValid ? (slots.problemDetails || null) : null,
+              priceEstimateGiven: slots.priceEstimateGiven || false,
+              priceRangeMin: slots.priceRangeMin ?? null,
+              priceRangeMax: slots.priceRangeMax ?? null,
+              userConfirmed: true,
+              quoteRejected: slots.quoteRejected || false,
+            },
+            slotsCollected: {
+              category: !!slots.problemCategory,
+              city: !!slots.city,
+              details: detailsValid,
+              priceEstimateGiven: !!slots.priceEstimateGiven,
+              userConfirmed: true,
+            },
+            missingSlots: ['phoneNumber'],
+          },
+        });
+      }
+    }
 
     // ========================================
     // LOGICA DI CREAZIONE TICKET
@@ -394,20 +601,22 @@ export async function POST(request: NextRequest) {
     let shouldCreateTicket = false;
     
     // Determina se possiamo creare il ticket
-    const hasAllRequiredData = canCreateTicket(slots);
+    // (missingSlots calcolato 1 volta per ridurre chiamate duplicate a checkProblemDetailsValid)
     const missingSlots = getMissingSlots(slots);
-    const userConfirmed = slots.userConfirmed || false;
+    const hasAllRequiredData = missingSlots.length === 0;
+    const userConfirmedPostGate = slots.userConfirmed || false;
     
-    // Log per debug
+    // Log per debug - FIX: usa checkProblemDetailsValid per mostrare se i dettagli sono REALMENTE validi
     console.log('📊 Slot Status:', {
       hasAllData: hasAllRequiredData,
-      userConfirmed,
+      userConfirmed: userConfirmedPostGate,
       missing: missingSlots,
       slots: {
         phone: slots.phoneNumber ? '✅' : '❌',
         address: slots.serviceAddress ? '✅' : '❌',
         category: slots.problemCategory ? '✅' : '❌',
-        details: slots.problemDetails ? '✅' : '❌'
+        details: detailsValid ? '✅' : '❌', // Ora usa la validazione rigorosa
+        detailsRaw: slots.problemDetails ? `"${slots.problemDetails.slice(0, 40)}..."` : '(vuoto)'
       }
     });
     
@@ -415,11 +624,12 @@ export async function POST(request: NextRequest) {
     // 1. Non esiste già un ticket
     // 2. Abbiamo TUTTI i dati necessari: email, città, indirizzo completo, categoria, descrizione dettagliata, telefono
     // 3. L'utente ha un ID
+    // FIX: usa checkProblemDetailsValid per validazione rigorosa dei dettagli
     const hasAllDataForTicketCreation = slots.userEmail &&
                                         slots.city &&
                                         slots.serviceAddress && // Indirizzo completo, non solo città
                                         slots.problemCategory &&
-                                        (slots.problemDetails || slots.hasPhoto) &&
+                                        detailsValid && // FIX: usa validazione rigorosa
                                         slots.phoneNumber; // Telefono obbligatorio
 
     const shouldCreateNewTicket = !ticketId && hasAllDataForTicketCreation && user?.id;
@@ -442,13 +652,26 @@ export async function POST(request: NextRequest) {
 
       const ticket = await createTicket(
         user.id,
-        slots.problemCategory || 'handyman',
+        slots.problemCategory || 'generic', // Use 'generic' as fallback, not 'handyman'
         problemDescription,
         priority,
         slots.serviceAddress || undefined,
         undefined, // messageContent
         'pending_verification' // Ticket in attesa di conferma via Magic Link
       );
+
+      if (!ticket) {
+        // Ticket creation failed - return error to user
+        console.error('❌ Failed to create ticket - returning error to user');
+        return NextResponse.json({
+          type: 'text',
+          content: '⚠️ Si è verificato un errore durante la creazione della richiesta. Riprova tra qualche istante o contatta il supporto al +39 346 102 7447.',
+          _debug: {
+            ticketCreated: false,
+            error: 'ticket_creation_failed'
+          }
+        });
+      }
 
       if (ticket) {
         ticketId = ticket.id;
@@ -519,7 +742,7 @@ export async function POST(request: NextRequest) {
           }
         });
       }
-    } else if (!ticketId && hasAllRequiredData && !userConfirmed) {
+    } else if (!ticketId && hasAllRequiredData && !userConfirmedPostGate) {
       console.log('⏳ Tutti i dati raccolti, in attesa di conferma utente');
     }
 
@@ -531,7 +754,7 @@ export async function POST(request: NextRequest) {
       slots,
       ticketId,
       isFirstMessage,
-      userConfirmed
+      userConfirmedPostGate
     );
 
     // Salva la risposta AI se abbiamo un ticket
@@ -545,11 +768,31 @@ export async function POST(request: NextRequest) {
       _debug: {
         ticketCreated: shouldCreateTicket,
         ticketId,
+        // FIX: Passa i valori REALI degli slot, non solo booleani
+        // Questo permette al frontend di memorizzare i valori corretti
+        slots: {
+          category: slots.problemCategory || null,
+          phone: slots.phoneNumber || null,
+          address: slots.serviceAddress || null,
+          city: slots.city || null,
+          // FIX: Passa problemDetails SOLO se validati (per evitare loop)
+          details: detailsValid ? (slots.problemDetails || null) : null,
+          // Persistenza Preventivo Gate
+          priceEstimateGiven: slots.priceEstimateGiven || false,
+          priceRangeMin: slots.priceRangeMin ?? null,
+          priceRangeMax: slots.priceRangeMax ?? null,
+          userConfirmed: slots.userConfirmed || false,
+          quoteRejected: slots.quoteRejected || false,
+        },
         slotsCollected: {
+          city: !!slots.city,
           phone: !!slots.phoneNumber,
           address: !!slots.serviceAddress,
           category: !!slots.problemCategory,
-          details: !!slots.problemDetails
+          details: detailsValid, // Usa la validazione rigorosa
+          priceEstimateGiven: !!slots.priceEstimateGiven,
+          userConfirmed: !!slots.userConfirmed,
+          quoteRejected: !!slots.quoteRejected,
         },
         missingSlots: missingSlots.map(s => SLOT_NAMES_IT[s] || s)
       }

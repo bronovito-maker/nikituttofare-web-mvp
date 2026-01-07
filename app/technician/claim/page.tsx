@@ -99,11 +99,14 @@ function TechnicianClaimContent() {
       
       if (session?.user) {
         // User is logged in, check if they're a technician
-        const { data: profile } = await supabase
+        type ProfileRole = 'user' | 'admin' | 'technician';
+        const { data: profileRaw } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', session.user.id)
-          .single();
+          .maybeSingle();
+        
+        const profile = profileRaw as { role: ProfileRole } | null;
         
         if (profile?.role === 'technician' || profile?.role === 'admin') {
           setIsAuthenticated(true);

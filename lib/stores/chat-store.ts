@@ -16,11 +16,20 @@ export interface ChatMessage {
 
 // Slot status per UI feedback
 export interface ConversationSlots {
+  city?: string;
+  streetAddress?: string;
   phoneNumber?: string;
   serviceAddress?: string;
   problemCategory?: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'handyman' | 'generic';
   problemDetails?: string;
   urgencyLevel?: 'emergency' | 'today' | 'this_week' | 'flexible';
+
+  // Preventivo Gate
+  priceEstimateGiven?: boolean;
+  priceRangeMin?: number;
+  priceRangeMax?: number;
+  userConfirmed?: boolean;
+  quoteRejected?: boolean;
 }
 
 // Ticket data extracted from conversation
@@ -141,7 +150,7 @@ export const useChatStore = create<ChatState>()(
     }),
     {
       name: 'ntf-chat-storage',
-      version: 2, // Incrementa versione per forzare migrazione
+      version: 3, // v3: Pulisce slot corrotti con placeholder 'collected'
       partialize: (state) => ({
         messages: state.messages,
         currentTicketId: state.currentTicketId,
@@ -155,6 +164,24 @@ export const useChatStore = create<ChatState>()(
           console.log('🔄 Migrazione chat store v1 → v2: pulizia messaggi corrotti');
           persistedState.messages = migrateMessages(persistedState.messages);
         }
+        
+        // Migrazione v2 → v3: Pulisci slot corrotti con placeholder
+        if (version < 3 && persistedState.collectedSlots) {
+          console.log('🔄 Migrazione chat store v2 → v3: pulizia slot corrotti');
+          const slots = persistedState.collectedSlots;
+          // Rimuovi valori placeholder che causano loop infiniti
+          if (slots.problemDetails === 'collected' || slots.problemDetails === 'collected...') {
+            delete slots.problemDetails;
+          }
+          if (slots.phoneNumber === 'collected') {
+            delete slots.phoneNumber;
+          }
+          if (slots.serviceAddress === 'collected') {
+            delete slots.serviceAddress;
+          }
+          persistedState.collectedSlots = slots;
+        }
+        
         return persistedState;
       },
     }

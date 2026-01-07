@@ -104,6 +104,32 @@ export async function getOrCreateProfile(userId: string, email: string): Promise
 }
 
 /**
+ * Normalizza la categoria per compatibilità con il database.
+ */
+function normalizeCategory(
+  category: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'handyman' | 'generic'
+): 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'handyman' | 'generic' {
+  // Lista delle categorie accettate dal database
+  const validCategories: Array<'plumbing' | 'electric' | 'locksmith' | 'climate' | 'handyman' | 'generic'> = [
+    'plumbing',
+    'electric',
+    'locksmith',
+    'climate',
+    'handyman',
+    'generic',
+  ];
+  
+  // Se la categoria è valida, usala
+  if (validCategories.includes(category)) {
+    return category;
+  }
+  
+  // Fallback a generic per qualsiasi valore non riconosciuto
+  console.log(`📝 Unknown category "${category}" → generic`);
+  return 'generic';
+}
+
+/**
  * Crea un nuovo ticket
  */
 export async function createTicket(
@@ -116,14 +142,16 @@ export async function createTicket(
   status: 'new' | 'pending_verification' | 'confirmed' = 'pending_verification',
   imageUrl?: string
 ): Promise<Ticket | null> {
+  // Normalizza la categoria per il database
+  const dbCategory = normalizeCategory(category);
+  
   if (!isSupabaseConfigured()) {
     // Restituisci ticket mock se Supabase non è configurato
     const mockTicket: Ticket = {
       id: `ticket-${Date.now()}`,
       user_id: userId,
       status: status,
-      // @ts-ignore - handyman category not in generated types yet
-      category,
+      category: dbCategory,
       priority,
       description,
       address: address || null,
@@ -141,7 +169,7 @@ export async function createTicket(
       .from('tickets')
       .insert({
         user_id: userId,
-        category, // @ts-ignore
+        category: dbCategory, // Usa la categoria normalizzata
         description,
         priority,
         address: address || null,
@@ -163,7 +191,7 @@ export async function createTicket(
       id: `ticket-${Date.now()}`,
       user_id: userId,
       status: status,
-      category,
+      category: dbCategory,
       priority,
       description,
       address: address || null,

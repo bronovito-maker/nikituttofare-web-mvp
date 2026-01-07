@@ -1,80 +1,38 @@
-# 🗄️ SUPABASE SCHEMA DEFINITION
+# Database Schema & Rules
 
-Use this structure for all database operations.
+## Tables
 
-## STATUS: ✅ COMPLETAMENTE IMPLEMENTATO
+### `users` (Supabase Auth sync)
+- `id`: UUID (PK)
+- `email`: String (Unique)
+- `phone`: String (Nullable initially)
+- `role`: ENUM ('customer', 'technician', 'admin')
 
-## TABLES
+### `tickets`
+- `id`: UUID (PK)
+- `user_id`: UUID (FK -> users.id)
+- `status`: ENUM
+    - `PENDING_VERIFICATION`: Creato ma email non confermata (NON inviare a Telegram).
+    - `CONFIRMED`: Email verificata, inviato ai tecnici.
+    - `ASSIGNED`: Un tecnico ha accettato.
+    - `COMPLETED`: Lavoro finito.
+    - `CANCELLED`: Annullato.
+- `category`: ENUM ('plumbing', 'electric', 'locksmith', 'climate', 'handyman')
+    - *Nota:* Mappare 'Tuttofare' -> 'handyman'.
+- `problem_description`: Text (Input utente grezzo + riassunto AI).
+- `address_city`: String (Rimini, Riccione, etc.).
+- `address_street`: String.
+- `price_range_min`: Int.
+- `price_range_max`: Int.
+- `created_at`: Timestamptz.
 
-### 1. `profiles` (extends auth.users)
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | uuid, PK | References auth.users |
-| `email` | text | Required |
-| `full_name` | text | Nullable |
-| `phone` | text | Nullable |
-| `role` | text | 'user' \| 'admin' \| 'technician' |
-| `created_at` | timestamptz | Auto-generated |
+### `technicians`
+- `id`: UUID (PK)
+- `phone_number`: String (Unique, usato per il "Fast Login").
+- `telegram_chat_id`: String (Optional).
+- `skills`: Array['plumbing', ...].
 
-### 2. `tickets`
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | uuid, PK | Auto-generated |
-| `user_id` | uuid, FK | References profiles.id |
-| `status` | text | 'new' \| 'assigned' \| 'in_progress' \| 'resolved' \| 'cancelled' |
-| `category` | text | 'plumbing' \| 'electric' \| 'locksmith' \| 'climate' \| 'generic' |
-| `priority` | text | 'low' \| 'medium' \| 'high' \| 'emergency' |
-| `description` | text | Required |
-| `address` | text | Nullable |
-| `payment_status` | text | 'pending' \| 'paid' \| 'waived' |
-| `created_at` | timestamptz | Auto-generated |
-
-### 3. `messages`
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | uuid, PK | Auto-generated |
-| `ticket_id` | uuid, FK | References tickets.id |
-| `role` | text | 'user' \| 'assistant' \| 'system' |
-| `content` | text | Required |
-| `image_url` | text | Nullable - For chat photos |
-| `meta_data` | jsonb | Nullable - For form data/tech details |
-| `created_at` | timestamptz | Auto-generated |
-
-## STORAGE BUCKETS
-- **`ticket-photos`**: Public or Authenticated
-  - RLS: Users can upload their own photos
-  - RLS: Admins can read all photos
-
-## RLS POLICIES ✅ IMPLEMENTED
-- Users can view/update own profile
-- Users can create tickets for themselves
-- Users can view own tickets and messages
-- Admins/Technicians can view all (when enabled)
-
-## DATABASE TYPES
-TypeScript types are defined in:
-- `lib/database.types.ts` - Supabase generated types
-- `lib/types.ts` - Application types (Profile, Ticket, TicketMessage)
-
-## MIGRATIONS
-SQL migrations are in `supabase/migrations/`:
-- `001_initial_schema.sql` - Tables, indexes, RLS policies, triggers
-
-## API ENDPOINTS
-
-### Tickets
-- `POST /api/tickets` - Create ticket
-- `GET /api/tickets` - Get user's tickets
-- `GET /api/admin/tickets` - Get all tickets (admin)
-- `PATCH /api/admin/tickets` - Update ticket status (admin)
-- `GET /api/user/tickets` - Get current user's tickets
-
-### Messages
-- `POST /api/messages` - Save message
-- `GET /api/messages?ticketId=xxx` - Get ticket messages
-
-### AI
-- `POST /api/assist` - AI chat endpoint (Gemini)
-
-### Upload
-- `POST /api/upload-image` - Upload photo to Supabase Storage
+## Security Policies (RLS)
+- Gli utenti vedono solo i propri ticket.
+- I tecnici vedono i ticket solo dopo aver fatto "Claim".
+- Le funzioni server-side usano `service_role` per inviare notifiche.
