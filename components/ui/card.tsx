@@ -16,3 +16,7 @@ export function CardTitle({ className, children }: { className?: string; childre
 export function CardContent({ className, children }: { className?: string; children: ReactNode }) {
   return <div className={cn("", className)}>{children}</div>;
 }
+
+export function CardDescription({ className, children }: { className?: string; children: ReactNode }) {
+  return <p className={cn("text-sm text-muted-foreground", className)}>{children}</p>;
+}

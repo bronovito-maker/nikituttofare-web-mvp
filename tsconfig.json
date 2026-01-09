@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    // Adding a comment to force reload
     "target": "ES2020",
     "lib": [
       "dom",

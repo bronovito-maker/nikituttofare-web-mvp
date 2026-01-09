@@ -103,6 +103,38 @@ export interface Database {
           created_at?: string;
         };
       };
+      technicians: {
+        Row: {
+          id: string; // uuid
+          created_at: string; // timestamptz
+          name: string;
+          phone: string;
+          cities: string[] | null;
+          skills: string[] | null;
+          user_id: string | null; // uuid (references auth.users)
+          is_active: boolean;
+        };
+        Insert: {
+          id?: string; // uuid (auto-generated)
+          created_at?: string; // timestamptz
+          name: string;
+          phone: string;
+          cities?: string[] | null;
+          skills?: string[] | null;
+          user_id?: string | null;
+          is_active?: boolean;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          name?: string;
+          phone?: string;
+          cities?: string[] | null;
+          skills?: string[] | null;
+          user_id?: string | null;
+          is_active?: boolean;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
