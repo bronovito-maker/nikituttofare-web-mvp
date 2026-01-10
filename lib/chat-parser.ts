@@ -140,11 +140,51 @@ function extractBookingDate(text: string, now: Date): { date: Date, confidence: 
     return null;
 }
 
+function extractIntent(fullText: string): ParsedChatData['intent'] {
+    if (/prenotare|riservare|tavolo/.test(fullText)) return 'prenotazione';
+    if (/ordina|asporto|delivery/.test(fullText)) return 'ordine';
+    if (/info|orari|menu/.test(fullText)) return 'info';
+    return 'altro';
+}
+
+function extractNotes(fullText: string): string | undefined {
+    const notes = [];
+    if (/allerg|intolleran/.test(fullText)) notes.push('Possibili allergie/intolleranze.');
+    const notesMatch = fullText.match(/(?:note:|nota:)\s*(.+)/i);
+    if (notesMatch?.[1]) notes.push(notesMatch[1].trim());
+    return notes.length ? notes.join(' | ') : undefined;
+}
+
+function findClarifications(fullText: string): BookingClarification[] {
+    const clarifications: BookingClarification[] = [];
+    const AMBIGUOUS_PATTERNS: {slot: BookingSlotKey, patterns: {regex: RegExp, reason: string}[]}[] = [
+      { slot: 'orario', patterns: [
+          { regex: /\b(verso|intorno|dopo|prima)(?:\s+le)?\s+\d{1,2}\b/i, reason: 'Orario approssimativo.' },
+          { regex: /\b(stasera|in\s+serata|più\s+tardi)\b/i, reason: 'Orario generico.' },
+          { regex: /\b(a|per)\s+(pranzo|cena)\b/i, reason: 'Fascia oraria generica.' },
+      ]},
+      { slot: 'data', patterns: [
+          { regex: /\b(questo\s+weekend|prossimi\s+giorni|in\s+settimana)\b/i, reason: 'Data generica.' },
+      ]}
+    ];
+  
+    AMBIGUOUS_PATTERNS.forEach(({slot, patterns}) => {
+        patterns.forEach(({regex, reason}) => {
+            const match = fullText.match(regex);
+            if (match && !clarifications.some(c => c.slot === slot)) {
+                clarifications.push({ slot, reason, phrase: match[0] });
+            }
+        });
+    });
+    return clarifications;
+}
+
+
 function parseWithHeuristics(messages: Message[]): { data: ParsedChatData; confidence: ConfidenceMap } {
   const fullText = messages.map((m) => `${m.role}: ${m.content}`).join('\n');
   const data: ParsedChatData = {};
   const confidence: ConfidenceMap = {};
-  const clarifications: BookingClarification[] = [];
+  let clarifications: BookingClarification[] = [];
   const now = new Date();
 
   // --- Extraction ---
@@ -183,40 +223,14 @@ function parseWithHeuristics(messages: Message[]): { data: ParsedChatData; confi
     }
   }
 
-  // --- Intent & Notes ---
-  if (/prenotare|riservare|tavolo/.test(fullText)) data.intent = 'prenotazione';
-  else if (/ordina|asporto|delivery/.test(fullText)) data.intent = 'ordine';
-  else if (/orari|menu|info/.test(fullText)) data.intent = 'info';
-  else data.intent = 'altro';
-  
-  const notes = [];
-  if (/allerg|intolleran/.test(fullText)) notes.push('Possibili allergie/intolleranze.');
-  const notesMatch = fullText.match(/(?:note:|nota:)\s*(.+)/i);
-  if (notesMatch?.[1]) notes.push(notesMatch[1].trim());
-  if (notes.length) data.notes = notes.join(' | ');
+  // --- Intent, Notes, Clarifications ---
+  data.intent = extractIntent(fullText);
+  data.notes = extractNotes(fullText);
+  clarifications = [...clarifications, ...findClarifications(fullText)];
 
-  // --- Clarifications ---
-  const AMBIGUOUS_PATTERNS: {slot: BookingSlotKey, patterns: {regex: RegExp, reason: string}[]}[] = [
-      { slot: 'orario', patterns: [
-          { regex: /\b(verso|intorno|dopo|prima)(?:\s+le)?\s+\d{1,2}\b/i, reason: 'Orario approssimativo.' },
-          { regex: /\b(stasera|in\s+serata|più\s+tardi)\b/i, reason: 'Orario generico.' },
-          { regex: /\b(a|per)\s+(pranzo|cena)\b/i, reason: 'Fascia oraria generica.' },
-      ]},
-      { slot: 'data', patterns: [
-          { regex: /\b(questo\s+weekend|prossimi\s+giorni|in\s+settimana)\b/i, reason: 'Data generica.' },
-      ]}
-  ];
-  
-  AMBIGUOUS_PATTERNS.forEach(({slot, patterns}) => {
-      patterns.forEach(({regex, reason}) => {
-          const match = fullText.match(regex);
-          if (match && !clarifications.some(c => c.slot === slot)) {
-              clarifications.push({ slot, reason, phrase: match[0] });
-          }
-      });
-  });
-
-  if (clarifications.length) data.clarifications = clarifications;
+  if (clarifications.length) {
+    data.clarifications = clarifications.filter((c, i, self) => i === self.findIndex(s => s.slot === c.slot));
+  }
 
   return { data, confidence };
 }
@@ -303,35 +317,51 @@ const mergeParsedData = (heuristic: ParsedChatData, heuristicConfidence: Confide
 
 // --- Main Exported Functions ---
 
+async function getNluData(messages: Message[]): Promise<NluParsedData | null> {
+    try {
+        const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+        if (!lastUserMessage) return null;
+        return await callNluService([lastUserMessage]);
+    } catch (error) {
+        console.warn('[parseChatData] NLU non disponibile, uso parser heuristico:', error);
+        return null;
+    }
+}
+
 export async function parseChatData(messages: Message[]): Promise<ParsedChatData> {
   const { data: heuristic, confidence } = parseWithHeuristics(messages);
-  try {
-    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
-    if (!lastUserMessage) return heuristic;
-    
-    const nlu = await callNluService([lastUserMessage]);
-    return mergeParsedData(heuristic, confidence, nlu);
-  } catch (error) {
-    console.warn('[parseChatData] NLU non disponibile, uso parser heuristico:', error);
-    return heuristic;
-  }
+  const nlu = await getNluData(messages);
+  if (!nlu) return heuristic;
+  return mergeParsedData(heuristic, confidence, nlu);
+}
+
+function updateLeadFields(next: LeadDraft, parsed: ParsedChatData) {
+    const fieldsToUpdate: (keyof ParsedChatData)[] = [ 'nome', 'telefono', 'email', 'persone', 'orario', 'intent', 'party_size', 'booking_date_time', 'notes' ];
+
+    fieldsToUpdate.forEach(field => {
+        if (parsed[field] !== undefined) {
+            (next as any)[field] = parsed[field];
+        }
+    });
+}
+
+function updateSpecialNotes(next: LeadDraft, parsedNotes: string | undefined) {
+    if (!parsedNotes) return;
+
+    const notesToAdd = parsedNotes.split('|').map(n => n.trim()).filter(Boolean);
+    notesToAdd.forEach(note => {
+        if (!next.specialNotes.includes(note)) {
+            next.specialNotes.push(note);
+        }
+    });
 }
 
 export function parseLeadDraft(current: LeadDraft, message: string): LeadDraft {
   const { data: parsed } = parseWithHeuristics([{ id: `msg-${Date.now()}`, role: 'user', content: message }]);
   const next = { ...current, specialNotes: [...current.specialNotes] };
   
-  const fieldsToUpdate: (keyof ParsedChatData)[] = [ 'nome', 'telefono', 'email', 'persone', 'orario', 'intent', 'party_size', 'booking_date_time', 'notes' ];
-
-  fieldsToUpdate.forEach(field => {
-    if (parsed[field] !== undefined) (next as any)[field] = parsed[field];
-  });
-  
-  if (parsed.notes) {
-    parsed.notes.split('|').map(n => n.trim()).filter(Boolean).forEach(note => {
-      if (!next.specialNotes.includes(note)) next.specialNotes.push(note);
-    });
-  }
+  updateLeadFields(next, parsed);
+  updateSpecialNotes(next, parsed.notes);
 
   return next;
 }

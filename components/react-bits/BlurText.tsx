@@ -10,8 +10,6 @@ interface BlurTextProps {
   delay?: number;
   duration?: number;
 }
-  readonly text: string;
-  readonly blur?: boolean;
 
 export function BlurText({
   text,

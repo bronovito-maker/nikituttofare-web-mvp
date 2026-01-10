@@ -60,6 +60,69 @@ const compressImage = (file: File): Promise<Blob> => {
   });
 };
 
+const UploadContent = ({
+  state,
+  progress,
+  errorMessage,
+}: {
+  state: UploadState;
+  progress: number;
+  errorMessage: string | null;
+}) => {
+  switch (state) {
+    case 'idle':
+      return <Camera className="w-5 h-5 text-slate-500 group-hover:text-slate-700 transition-colors" />;
+    case 'selecting':
+    case 'compressing':
+      return (
+        <div className="flex flex-col items-center gap-1">
+          <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+          <span className="text-[10px] text-slate-500">Preparazione...</span>
+        </div>
+      );
+    case 'uploading':
+      return (
+        <div className="relative w-8 h-8">
+          <svg className="w-8 h-8 transform -rotate-90">
+            <circle cx="16" cy="16" r="14" fill="none" stroke="#e2e8f0" strokeWidth="3" />
+            <circle
+              cx="16"
+              cy="16"
+              r="14"
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeDasharray={`${2 * Math.PI * 14}`}
+              strokeDashoffset={`${2 * Math.PI * 14 * (1 - progress / 100)}`}
+              className="transition-all duration-300"
+            />
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-blue-600">
+            {progress}%
+          </span>
+        </div>
+      );
+    case 'success':
+      return (
+        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center animate-in zoom-in-50 duration-300">
+          <Check className="w-4 h-4 text-green-600" />
+        </div>
+      );
+    case 'error':
+      return (
+        <div className="flex flex-col items-center gap-1">
+          <AlertCircle className="w-5 h-5 text-red-500" />
+          <span className="text-[10px] text-red-500 text-center leading-tight max-w-[60px]">
+            {errorMessage || 'Errore'}
+          </span>
+        </div>
+      );
+    default:
+      return null;
+  }
+};
+
 
 export function ImageUpload({ 
   onUploadComplete, 
@@ -82,7 +145,7 @@ export function ImageUpload({
     setErrorMessage(null);
   }, [previewUrl]);
 
-  const uploadFile = async (file: File) => {
+  const uploadFile = useCallback(async (file: File) => {
     try {
       setState('compressing');
       setProgress(10);
@@ -129,62 +192,19 @@ export function ImageUpload({
       setErrorMessage(message);
       onError?.(message);
     }
-  };
+  }, [onUploadComplete, onUploadStart, onError]);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) uploadFile(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
-  };
+  }, [uploadFile]);
 
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     if (disabled || state === 'compressing' || state === 'uploading') return;
     if (state === 'error') return resetState();
     fileInputRef.current?.click();
-  };
-
-  const renderContent = () => {
-    switch (state) {
-      case 'idle': return <Camera className="w-5 h-5 text-slate-500 group-hover:text-slate-700 transition-colors" />;
-      case 'selecting':
-      case 'compressing':
-        return (
-          <div className="flex flex-col items-center gap-1">
-            <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
-            <span className="text-[10px] text-slate-500">Preparazione...</span>
-          </div>
-        );
-      case 'uploading':
-        return (
-            <div className="relative w-8 h-8">
-              <svg className="w-8 h-8 transform -rotate-90">
-                <circle cx="16" cy="16" r="14" fill="none" stroke="#e2e8f0" strokeWidth="3" />
-                <circle
-                  cx="16" cy="16" r="14" fill="none" stroke="#3b82f6" strokeWidth="3"
-                  strokeLinecap="round" strokeDasharray={`${2 * Math.PI * 14}`}
-                  strokeDashoffset={`${2 * Math.PI * 14 * (1 - progress / 100)}`}
-                  className="transition-all duration-300"
-                />
-              </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-blue-600">{progress}%</span>
-            </div>
-        );
-      case 'success':
-        return (
-            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center animate-in zoom-in-50 duration-300">
-              <Check className="w-4 h-4 text-green-600" />
-            </div>
-        );
-      case 'error':
-        return (
-          <div className="flex flex-col items-center gap-1">
-            <AlertCircle className="w-5 h-5 text-red-500" />
-            <span className="text-[10px] text-red-500 text-center leading-tight max-w-[60px]">{errorMessage || 'Errore'}</span>
-          </div>
-        );
-      default: return null;
-    }
-  };
+  }, [disabled, state, resetState]);
 
   return (
     <div className={`relative ${className}`}>
@@ -194,7 +214,7 @@ export function ImageUpload({
         disabled={disabled || state === 'compressing' || state === 'uploading'}
         className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all group ${state === 'error' ? 'bg-red-50 hover:bg-red-100' : state === 'success' ? 'bg-green-50' : 'bg-slate-100 hover:bg-slate-200'} ${(disabled || state === 'compressing' || state === 'uploading') ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
       >
-        {renderContent()}
+        <UploadContent state={state} progress={progress} errorMessage={errorMessage} />
       </button>
 
       <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleFileSelect} className="hidden" disabled={disabled} />

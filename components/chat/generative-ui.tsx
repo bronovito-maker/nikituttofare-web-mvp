@@ -90,7 +90,7 @@ function FormResponse({ form, onSubmit }: { form: FormType; onSubmit?: (data: Re
     if (!onSubmit) return;
     setIsSubmitting(true);
     try {
-      await onSubmit(formData);
+      await Promise.resolve(onSubmit(formData));
     } finally {
       setIsSubmitting(false);
     }

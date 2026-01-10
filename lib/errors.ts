@@ -31,6 +31,37 @@ export const ERROR_MESSAGES: Record<ErrorCode, UserFriendlyError> = {
 
 // --- Error Parsers ---
 
+const httpStatusMap: Record<number, ErrorCode> = {
+    401: 'AUTH_REQUIRED',
+    403: 'AUTH_EXPIRED',
+    404: 'NOT_FOUND',
+    429: 'RATE_LIMITED',
+    400: 'VALIDATION_ERROR',
+    500: 'SERVER_ERROR',
+    502: 'SERVER_ERROR',
+    503: 'SERVER_ERROR',
+};
+
+const keywordMap: Record<string, ErrorCode> = {
+    'network': 'NETWORK_ERROR',
+    'timeout': 'NETWORK_ERROR',
+    'connection': 'NETWORK_ERROR',
+    'auth': 'AUTH_REQUIRED',
+    'token': 'AUTH_REQUIRED',
+    'unauthorized': 'AUTH_REQUIRED',
+    'rate': 'RATE_LIMITED',
+    'limit': 'RATE_LIMITED',
+    'too many': 'RATE_LIMITED',
+    'storage': 'STORAGE_ERROR',
+    'upload': 'STORAGE_ERROR',
+    'file': 'STORAGE_ERROR',
+    'database': 'DATABASE_ERROR',
+    'supabase': 'DATABASE_ERROR',
+    'gemini': 'AI_UNAVAILABLE',
+    'ai': 'AI_UNAVAILABLE',
+    'model': 'AI_UNAVAILABLE',
+};
+
 function fromPreformattedError(error: unknown): UserFriendlyError | null {
   if (error && typeof error === 'object' && 'code' in error && typeof (error as any).code === 'string') {
     const code = (error as { code: string }).code as ErrorCode;
@@ -42,13 +73,9 @@ function fromPreformattedError(error: unknown): UserFriendlyError | null {
 function fromHttpError(error: unknown): UserFriendlyError | null {
   if (error && typeof error === 'object' && 'status' in error && typeof (error as any).status === 'number') {
     const status = (error as { status: number }).status;
-    switch (status) {
-      case 401: return ERROR_MESSAGES.AUTH_REQUIRED;
-      case 403: return ERROR_MESSAGES.AUTH_EXPIRED;
-      case 404: return ERROR_MESSAGES.NOT_FOUND;
-      case 429: return ERROR_MESSAGES.RATE_LIMITED;
-      case 400: return ERROR_MESSAGES.VALIDATION_ERROR;
-      case 500: case 502: case 503: return ERROR_MESSAGES.SERVER_ERROR;
+    const errorCode = httpStatusMap[status];
+    if (errorCode) {
+        return ERROR_MESSAGES[errorCode];
     }
   }
   return null;
@@ -62,19 +89,9 @@ function fromGenericError(error: unknown): UserFriendlyError | null {
   }
 
   const msg = error.message.toLowerCase();
-  const errorMap: [string[], ErrorCode][] = [
-    [['network', 'timeout', 'connection'], 'NETWORK_ERROR'],
-    [['auth', 'token', 'unauthorized'], 'AUTH_REQUIRED'],
-    [['rate', 'limit', 'too many'], 'RATE_LIMITED'],
-    [['storage', 'upload', 'file'], 'STORAGE_ERROR'],
-    [['database', 'supabase'], 'DATABASE_ERROR'],
-    [['gemini', 'ai', 'model'], 'AI_UNAVAILABLE'],
-  ];
-
-  for (const [keywords, code] of errorMap) {
-    if (keywords.some(kw => msg.includes(kw))) {
-      return ERROR_MESSAGES[code];
-    }
+  const keyword = Object.keys(keywordMap).find(kw => msg.includes(kw));
+  if (keyword) {
+      return ERROR_MESSAGES[keywordMap[keyword]];
   }
   
   return null;

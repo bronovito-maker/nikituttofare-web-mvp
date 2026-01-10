@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
 interface AvatarProps {
-  src?: string | null;
   readonly src?: string | null;
   readonly alt?: string;
   readonly fallback?: string;

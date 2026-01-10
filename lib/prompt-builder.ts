@@ -56,28 +56,43 @@ const buildBookingRules = (): string => `
 - Quando hai tutti i dati, genera un riepilogo e attendi la conferma esplicita del cliente.
 - Se il cliente chiede di modificare, aggiorna lo slot, comunica la variazione e ricapitola.`;
 
+function formatLastBooking(lastBooking: CustomerPersonalization['lastBooking']): string {
+    if (!lastBooking?.bookingDateTime) return '';
+    
+    const lastDate = new Date(lastBooking.bookingDateTime);
+    if (isNaN(lastDate.getTime())) return '';
+
+    return `- Ultima prenotazione: ${lastDate.toLocaleDateString('it-IT')} alle ${lastDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} per ${lastBooking.partySize ?? '?'} persone.`;
+}
+
+function buildProfileHints(profile: CustomerPersonalization): string {
+    const hints: string[] = [];
+    if (profile.favoritePartySize) hints.push(`Numero persone più frequente: ${profile.favoritePartySize}.`);
+    if (profile.preferredTimes?.length) hints.push(`Orari preferiti: ${profile.preferredTimes.join(', ')}.`);
+    if (profile.lastBooking?.notes) hints.push(`Ultime note: ${profile.lastBooking.notes}.`);
+    
+    return hints.length ? `- Insight: ${hints.join(' ')}` : '';
+}
+
 const buildCustomerProfileSection = (profile?: CustomerPersonalization | null): string => {
   if (!profile) return '';
 
-  const { fullName, phoneNumber, lastBooking, totalBookings, favoritePartySize, preferredTimes } = profile;
+  const { fullName, phoneNumber, totalBookings, lastBooking } = profile;
   const parts: string[] = ['\n\n### Dati Cliente Autenticato ###'];
+  
   if (fullName) parts.push(`- Nome riconosciuto: ${fullName}.`);
   if (phoneNumber) parts.push(`- Telefono in archivio: ${phoneNumber}.`);
-  if (lastBooking?.bookingDateTime) {
-    const lastDate = new Date(lastBooking.bookingDateTime);
-    if (!isNaN(lastDate.getTime())) {
-      parts.push(`- Ultima prenotazione: ${lastDate.toLocaleDateString('it-IT')} alle ${lastDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} per ${lastBooking.partySize ?? '?'} persone.`);
-    }
-  }
+  
+  const lastBookingInfo = formatLastBooking(lastBooking);
+  if (lastBookingInfo) parts.push(lastBookingInfo);
+
   parts.push(`- Prenotazioni totali: ${totalBookings}.`);
   
-  const hints: string[] = [];
-  if (favoritePartySize) hints.push(`Numero persone più frequente: ${favoritePartySize}.`);
-  if (preferredTimes?.length) hints.push(`Orari preferiti: ${preferredTimes.join(', ')}.`);
-  if (lastBooking?.notes) hints.push(`Ultime note: ${lastBooking.notes}.`);
-  if (hints.length) parts.push(`- Insight: ${hints.join(' ')}`);
+  const hints = buildProfileHints(profile);
+  if (hints) parts.push(hints);
 
   parts.push(`- Usa questi dati per accogliere il cliente in modo proattivo, ma chiedi SEMPRE conferma esplicita.`);
+  
   return parts.join('\n');
 };
 

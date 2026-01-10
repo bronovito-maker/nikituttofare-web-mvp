@@ -35,68 +35,101 @@ export const URGENCY_NAMES_IT: Record<string, string> = { emergency: '🚨 EMERG
 
 // --- SLOT EXTRACTION & VALIDATION ---
 
+function extractCity(userText: string): string | undefined {
+    for (const city of SERVED_CITIES) {
+        if (userText.includes(city)) {
+            const mappedCity = CITY_MAPPING[city] || city;
+            return mappedCity.charAt(0).toUpperCase() + mappedCity.slice(1);
+        }
+    }
+    return undefined;
+}
+
+function extractPhone(originalText: string): string | undefined {
+    const phoneMatch = originalText.match(/(\+39\s?)?(3\d{2}[\s.-]?\d{7}|\d{9,10})/);
+    return phoneMatch ? phoneMatch[0].replace(/[\s.-]/g, '') : undefined;
+}
+
+function extractAddress(originalText: string): { streetAddress?: string } {
+    const addressMatch = originalText.match(/(?:via|corso|piazza|viale)\s+[a-zàèéìòù\s]+[\s,]+\d+/i);
+    const streetAddress = addressMatch ? addressMatch[0].trim() : undefined;
+    return { streetAddress };
+}
+
+function extractCategoryAndDetails(userText: string): { problemCategory?: ConversationSlots['problemCategory'], problemDetails?: string } {
+    for (const [category, data] of Object.entries(DOMAIN_KNOWLEDGE)) {
+        if (data.keywords.some(kw => userText.includes(kw))) {
+            const problemDetails = userText.length > 10 ? userText.slice(0, 300) : undefined;
+            return { problemCategory: category as ConversationSlots['problemCategory'], problemDetails };
+        }
+    }
+    return {};
+}
+
+function extractUrgency(userText: string): ConversationSlots['urgencyLevel'] | undefined {
+    if (['urgente', 'emergenza', 'subito', 'allagamento', 'bloccato fuori'].some(kw => userText.includes(kw))) return 'emergency';
+    if (['oggi', 'stasera'].some(kw => userText.includes(kw))) return 'today';
+    return undefined;
+}
+
+function extractConfirmation(lastUserMessage: string): { userConfirmed?: boolean, quoteRejected?: boolean } {
+    if (!lastUserMessage) return {};
+    
+    const isReject = /^no\b|\brifiuto\b|\bnon (va bene|accetto)\b/.test(lastUserMessage);
+    const isAccept = /\bs(i|ì)\b|\b(ok|confermo|esatto|corretto|va bene|procedi|accetto)\b/.test(lastUserMessage);
+      
+    if (isReject) {
+      return { userConfirmed: false, quoteRejected: true };
+    } else if (isAccept && lastUserMessage.length < 80) {
+      return { userConfirmed: true };
+    }
+    return {};
+}
+
+function extractPriceEstimate(messages: Array<{ role: string; content: string }>): { priceEstimateGiven?: boolean, priceRangeMin?: number, priceRangeMax?: number } {
+    const result: { priceEstimateGiven?: boolean, priceRangeMin?: number, priceRangeMax?: number } = {};
+    messages.forEach(msg => {
+        if (msg.role === 'assistant' && typeof msg.content === 'string') {
+            try {
+                const parsed = JSON.parse(msg.content);
+                if (parsed.type === 'price_estimate' && parsed.content.priceMin && parsed.content.priceMax) {
+                    result.priceEstimateGiven = true;
+                    result.priceRangeMin = parsed.content.priceMin;
+                    result.priceRangeMax = parsed.content.priceMax;
+                }
+            } catch {}
+        }
+    });
+    return result;
+}
+
 export function extractSlotsFromConversation(messages: Array<{ role: string; content: string }>, userEmail?: string): ConversationSlots {
   const slots: ConversationSlots = { userEmail };
   const userText = messages.filter(m => m.role === 'user').map(m => String(m.content)).join(' ').toLowerCase();
   const originalText = messages.filter(m => m.role === 'user').map(m => String(m.content)).join(' ');
 
-  // City
-  for (const city of SERVED_CITIES) {
-    if (userText.includes(city)) {
-      const mappedCity = CITY_MAPPING[city] || city;
-      slots.city = mappedCity.charAt(0).toUpperCase() + mappedCity.slice(1);
-      break;
-    }
-  }
-
-  // Phone
-  const phoneMatch = originalText.match(/(\+39\s?)?(3\d{2}[\s.-]?\d{7}|\d{9,10})/);
-  if (phoneMatch) slots.phoneNumber = phoneMatch[0].replace(/[\s.-]/g, '');
-
-  // Address
-  const addressMatch = originalText.match(/(?:via|corso|piazza|viale)\s+[a-zàèéìòù\s]+[\s,]+\d+/i);
-  if (addressMatch) slots.streetAddress = addressMatch[0].trim();
-  if (slots.city && slots.streetAddress) slots.serviceAddress = `${slots.streetAddress}, ${slots.city}`;
-
-  // Category & Details
-  for (const [category, data] of Object.entries(DOMAIN_KNOWLEDGE)) {
-    if (data.keywords.some(kw => userText.includes(kw))) {
-      slots.problemCategory = category as ConversationSlots['problemCategory'];
-      if (!slots.problemDetails && userText.length > 10) slots.problemDetails = userText.slice(0, 300);
-      break;
-    }
-  }
+  slots.city = extractCity(userText);
+  slots.phoneNumber = extractPhone(originalText);
   
-  // Urgency
-  if (['urgente', 'emergenza', 'subito', 'allagamento', 'bloccato fuori'].some(kw => userText.includes(kw))) slots.urgencyLevel = 'emergency';
-  else if (['oggi', 'stasera'].some(kw => userText.includes(kw))) slots.urgencyLevel = 'today';
+  const { streetAddress } = extractAddress(originalText);
+  slots.streetAddress = streetAddress;
+  if (slots.city && slots.streetAddress) slots.serviceAddress = `${slots.streetAddress}, ${slots.city}`;
+  
+  const { problemCategory, problemDetails } = extractCategoryAndDetails(userText);
+  slots.problemCategory = problemCategory;
+  if (!slots.problemDetails) slots.problemDetails = problemDetails;
 
-  // Confirmation
+  slots.urgencyLevel = extractUrgency(userText);
+  
   const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content?.toString().toLowerCase().trim() ?? '';
-  if (lastUserMessage) {
-      const isReject = /^no\b|\brifiuto\b|\bnon (va bene|accetto)\b/.test(lastUserMessage);
-      const isAccept = /\bs(i|ì)\b|\b(ok|confermo|esatto|corretto|va bene|procedi|accetto)\b/.test(lastUserMessage);
-      if (isReject) {
-          slots.userConfirmed = false;
-          slots.quoteRejected = true;
-      } else if (isAccept && lastUserMessage.length < 80) {
-          slots.userConfirmed = true;
-      }
-  }
+  const confirmation = extractConfirmation(lastUserMessage);
+  slots.userConfirmed = confirmation.userConfirmed;
+  slots.quoteRejected = confirmation.quoteRejected;
 
-  // Price estimate persistence
-  messages.forEach(msg => {
-      if (msg.role === 'assistant' && typeof msg.content === 'string') {
-          try {
-              const parsed = JSON.parse(msg.content);
-              if (parsed.type === 'price_estimate' && parsed.content.priceMin && parsed.content.priceMax) {
-                  slots.priceEstimateGiven = true;
-                  slots.priceRangeMin = parsed.content.priceMin;
-                  slots.priceRangeMax = parsed.content.priceMax;
-              }
-          } catch {}
-      }
-  });
+  const priceEstimate = extractPriceEstimate(messages);
+  slots.priceEstimateGiven = priceEstimate.priceEstimateGiven;
+  slots.priceRangeMin = priceEstimate.priceRangeMin;
+  slots.priceRangeMax = priceEstimate.priceRangeMax;
 
   return slots;
 }
@@ -141,7 +174,7 @@ export function checkProblemDetailsValid(slots: ConversationSlots): boolean {
     return wordCount >= 10 || normalized.length >= 60;
 }
 
-export function getMissingSlots(slots: ConversationSlots): string[] {
+export function getMissingSlots(slots: ConversationSlots): (keyof ConversationSlots)[] {
   if (!slots.city) return ['city'];
   if (!slots.problemCategory || slots.problemCategory === 'generic') return ['problemCategory'];
   if (!checkProblemDetailsValid(slots)) return ['problemDetails'];
@@ -214,15 +247,7 @@ export function buildNikiSystemPrompt(slots: ConversationSlots, ticketId?: strin
 
 // --- QUESTION & MESSAGE GENERATORS ---
 
-export function getQuestionForSlot(slotName: string, category?: string): string {
-  const questions: Record<string, string> = {
-    city: 'Per aiutarti, di quale **città** parliamo? (Rimini, Riccione, Cattolica...)' ,
-    problemCategory: 'Che tipo di problema hai? Idraulico, elettrico, serrature, o clima/riscaldamento?',
-    phoneNumber: 'Perfetto! A che numero può **chiamarti il tecnico** per confermare l\'appuntamento?',
-    streetAddress: 'Ora mi serve l\'**indirizzo esatto** per mandare il tecnico. Via e numero civico?',
-  };
-
-  if (slotName === 'problemDetails') {
+function getProblemDetailsQuestion(category?: string): string {
     const categorySpecific: Record<string, string> = {
       locksmith: '🔑 Per darti il preventivo giusto, dimmi cosa è successo: Sei rimasto **chiuso fuori**? La **chiave si è spezzata**? La serratura **non gira**?',
       plumbing: '🔧 Per il preventivo, dimmi cosa vedi: Da **dove perde** \'acqua? Lo **scarico è intasato**? C\'è un **allagamento**?',
@@ -231,7 +256,19 @@ export function getQuestionForSlot(slotName: string, category?: string): string 
       generic: '🔨 Per darti un preventivo preciso, descrivimi **cosa devi fare**: montare, riparare o installare qualcosa?',
     };
     return categorySpecific[category || 'generic'] || categorySpecific.generic;
+}
+
+export function getQuestionForSlot(slotName: string, category?: string): string {
+  if (slotName === 'problemDetails') {
+    return getProblemDetailsQuestion(category);
   }
+  
+  const questions: Record<string, string> = {
+    city: 'Per aiutarti, di quale **città** parliamo? (Rimini, Riccione, Cattolica...)' ,
+    problemCategory: 'Che tipo di problema hai? Idraulico, elettrico, serrature, o clima/riscaldamento?',
+    phoneNumber: 'Perfetto! A che numero può **chiamarti il tecnico** per confermare l\'appuntamento?',
+    streetAddress: 'Ora mi serve l\'**indirizzo esatto** per mandare il tecnico. Via e numero civico?',
+  };
   
   return questions[slotName] || 'Puoi darmi qualche informazione in più?';
 }

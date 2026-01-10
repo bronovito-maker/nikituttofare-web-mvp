@@ -61,20 +61,33 @@ function determineCategory(text) {
     return { category: bestCat === 'gas' ? 'climate' : bestCat, score: maxScore };
 }
 
-function determinePriority(text, originalMessage) {
-    let emergencyScore = KEYWORDS.urgency.emergency.filter(kw => text.includes(kw)).length * 3;
-    let highScore = KEYWORDS.urgency.high.filter(kw => text.includes(kw)).length * 2;
+function calculateEmergencyScore(text, originalMessage) {
+    let score = KEYWORDS.urgency.emergency.filter(kw => text.includes(kw)).length * 3;
 
     const letterChars = (originalMessage.match(/[a-zA-Z]/g) || []).length;
     if (letterChars > 20) {
         const capsRatio = (originalMessage.match(/[A-Z]/g) || []).length / letterChars;
-        if (capsRatio > 0.6) emergencyScore += 5;
+        if (capsRatio > 0.6) score += 5;
     }
-    if ((originalMessage.match(/!{2,}/g) || []).length >= 2) emergencyScore += 2;
-
-    const isLow = KEYWORDS.urgency.low.some(kw => text.includes(kw));
+    if ((originalMessage.match(/!{2,}/g) || []).length >= 2) score += 2;
     
-    if (isLow && emergencyScore < 3 && highScore < 4) return 'low';
+    return score;
+}
+
+function calculateHighScore(text) {
+    return KEYWORDS.urgency.high.filter(kw => text.includes(kw)).length * 2;
+}
+
+function isLowPriority(text) {
+    return KEYWORDS.urgency.low.some(kw => text.includes(kw));
+}
+
+function determinePriority(text, originalMessage) {
+    const emergencyScore = calculateEmergencyScore(text, originalMessage);
+    const highScore = calculateHighScore(text);
+    const lowPriority = isLowPriority(text);
+    
+    if (lowPriority && emergencyScore < 3 && highScore < 4) return 'low';
     if (emergencyScore >= 3) return 'emergency';
     if (highScore >= 2 || emergencyScore >= 1) return 'high';
     return 'medium';
@@ -166,54 +179,79 @@ function printSection(title, data, keyOrder) {
     console.log('');
 }
 
-function printReport(report) {
+function printHeader() {
   console.log('\n╔═══════════════════════════════════════╗');
   console.log('║      🤖 NIKITUTTOFARE - AI TEST REPORT      ║');
   console.log('╚═══════════════════════════════════════╝\n');
-  
+}
+
+function printSummary(report) {
   console.log('📊 RIEPILOGO GENERALE');
   console.log('─'.repeat(50));
   console.log(`   Test totali: ${report.totalTests}`);
   console.log(`   ✅ Passati:   ${report.passed} (${((report.passed / report.totalTests) * 100).toFixed(1)}%)`);
   console.log(`   ❌ Falliti:   ${report.failed}\n`);
-  
+}
+
+function printMetrics(report) {
   console.log('🎯 ACCURACY PER METRICA');
   console.log('─'.repeat(50));
   console.log(`   Categoria:  ${report.categoryAccuracy.toFixed(1)}% ${getAccuracyBar(report.categoryAccuracy)}`);
   console.log(`   Urgenza:    ${report.urgencyAccuracy.toFixed(1)}% ${getAccuracyBar(report.urgencyAccuracy)}\n`);
+}
+
+function printFailedCases(failedCases) {
+    if (failedCases.length === 0) return;
+
+    console.log('❌ ESEMPI DI CASI FALLITI (max 10)');
+    console.log('─'.repeat(50));
+    failedCases.slice(0, 10).forEach(fc => {
+      console.log(`\n   [${fc.input.category}/${fc.input.urgency}] "${fc.input.text.slice(0, 60)}..."
+`);
+      console.log(`   Rilevato: ${fc.analysis.category}/${fc.analysis.priority} (Cat: ${fc.categoryMatch ? '✅' : '❌'} | Urg: ${fc.urgencyMatch ? '✅' : '❌'})`);
+    });
+}
+
+function printVerdict(report) {
+    const overallAccuracy = (report.categoryAccuracy + report.urgencyAccuracy) / 2;
+    const verdict = overallAccuracy >= 90 ? '🏆 ECCELLENTE!' : overallAccuracy >= 75 ? '✅ BUONO' : '⚠️ SUFFICIENTE';
+    console.log(`\n\n═`.repeat(60));
+    console.log(`${verdict} L'accuracy generale è del ${overallAccuracy.toFixed(1)}%`);
+    console.log('═'.repeat(60));
+}
+
+function printReport(report) {
+  printHeader();
+  printSummary(report);
+  printMetrics(report);
 
   printSection('📁 ACCURACY PER CATEGORIA', report.byCategory);
   printSection('🚨 ACCURACY PER URGENZA', report.byUrgency, ['emergency', 'high', 'medium', 'low']);
   printSection('👤 ACCURACY PER TIPO UTENTE', report.byUserType);
 
-  if (report.failedCases.length > 0) {
-    console.log('❌ ESEMPI DI CASI FALLITI (max 10)');
-    console.log('─'.repeat(50));
-    report.failedCases.slice(0, 10).forEach(fc => {
-      console.log(`\n   [${fc.input.category}/${fc.input.urgency}] "${fc.input.text.slice(0, 60)}..."
-`);
-      console.log(`   Rilevato: ${fc.analysis.category}/${fc.analysis.priority} (Cat: ${fc.categoryMatch ? '✅' : '❌'} | Urg: ${fc.urgencyMatch ? '✅' : '❌'})`);
-    });
-  }
-
-  const overallAccuracy = (report.categoryAccuracy + report.urgencyAccuracy) / 2;
-  const verdict = overallAccuracy >= 90 ? '🏆 ECCELLENTE!' : overallAccuracy >= 75 ? '✅ BUONO' : '⚠️ SUFFICIENTE';
-  console.log(`\n\n═`.repeat(60));
-  console.log(`${verdict} L'accuracy generale è del ${overallAccuracy.toFixed(1)}%`);
-  console.log('═'.repeat(60));
+  printFailedCases(report.failedCases);
+  printVerdict(report);
 }
 
 // --- MAIN ---
 
+function parseCliOptions(args) {
+    return args.reduce((acc, arg) => {
+        const [key, value] = arg.replace('--', '').split('=');
+        if (key && value) {
+            acc[key] = key === 'limit' ? parseInt(value, 10) : value;
+        }
+        return acc;
+    }, {});
+}
+
 function main() {
-  const options = process.argv.slice(2).reduce((acc, arg) => {
-    const [key, value] = arg.replace('--', '').split('=');
-    if (key && value) acc[key] = key === 'limit' ? parseInt(value, 10) : value;
-    return acc;
-  }, {});
+  const options = parseCliOptions(process.argv.slice(2));
 
   console.log('\n🚀 NikiTuttoFare AI Test Suite');
-  if (Object.keys(options).length > 0) console.log('Filtri applicati:', options);
+  if (Object.keys(options).length > 0) {
+      console.log('Filtri applicati:', options);
+  }
   
   const report = runTests(options);
   printReport(report);

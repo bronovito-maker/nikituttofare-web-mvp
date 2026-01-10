@@ -79,6 +79,44 @@ export type Database = {
         }
         Relationships: []
       }
+      technicians: {
+        Row: {
+          id: string
+          name: string
+          phone: string
+          skills: string[]
+          is_active: boolean
+          user_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          phone: string
+          skills: string[]
+          is_active?: boolean
+          user_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          phone?: string
+          skills?: string[]
+          is_active?: boolean
+          user_id?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technicians_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       technician_assignment_tokens: {
         Row: {
           created_at: string

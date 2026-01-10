@@ -91,6 +91,91 @@ const fetchAiResponse = async (messages: CustomMessage[], lockedSlots?: any): Pr
   return res.json();
 };
 
+const preSendMessageChecks = (
+  isLoading: boolean,
+  messageContent: string,
+  photo: string | undefined,
+  messages: CustomMessage[],
+): { pass: boolean; trimmedContent: string } => {
+  if (isLoading) return { pass: false, trimmedContent: '' };
+
+  const trimmedContent = messageContent.trim();
+  if (!trimmedContent && !photo) return { pass: false, trimmedContent: '' };
+
+  const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+  if (lastUserMessage?.content === trimmedContent && !photo) {
+    console.warn('Duplicate message ignored');
+    return { pass: false, trimmedContent: '' };
+  }
+  return { pass: true, trimmedContent };
+};
+
+const handleTicketLogic = async (
+  currentTicketId: string | null,
+  content: string,
+  photo: string | undefined,
+): Promise<string | null> => {
+  if (currentTicketId) {
+    return currentTicketId;
+  }
+  return createNewTicket(content, photo);
+};
+
+const appendUserMessage = (
+  content: string,
+  photo: string | undefined,
+  appendMessage: (message: CustomMessage) => void,
+): CustomMessage => {
+  const userMessage: CustomMessage = {
+    id: `${Date.now()}`,
+    role: 'user',
+    content: content || 'Foto caricata',
+    createdAt: new Date(),
+    photo,
+  };
+  appendMessage(userMessage);
+  return userMessage;
+};
+
+const processAndAppendAiResponse = async (
+  messages: CustomMessage[],
+  lockedSlots: any,
+  ticketId: string | null,
+  appendMessage: (message: CustomMessage) => void,
+  onMessage: ((message: CustomMessage) => void) | undefined,
+) => {
+  const aiResponse = await fetchAiResponse(messages, lockedSlots);
+
+  const assistantMessage: CustomMessage = {
+    id: `${Date.now()}-ai`,
+    role: 'assistant',
+    content: aiResponse,
+    createdAt: new Date(),
+  };
+  appendMessage(assistantMessage);
+
+  if (ticketId && aiResponse.type === 'text') {
+    await saveMessage(ticketId, assistantMessage);
+  }
+
+  onMessage?.(assistantMessage);
+};
+
+const handleError = (
+  error: any,
+  onError: ((error: string) => void) | undefined,
+  appendMessage: (message: CustomMessage) => void,
+) => {
+  const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+  onError?.(errorMessage);
+  appendMessage({
+    id: `${Date.now()}-error`,
+    role: 'assistant',
+    content: { type: 'text', content: `Si è verificato un errore: ${errorMessage}` },
+    createdAt: new Date(),
+  });
+};
+
 export const useChat = (options?: { onMessage?: (message: CustomMessage) => void; onError?: (error: string) => void; }) => {
   const [messages, setMessages] = useState<CustomMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -103,67 +188,29 @@ export const useChat = (options?: { onMessage?: (message: CustomMessage) => void
   }, []);
 
   const handleSendMessage = async (messageContent: string, photo?: string) => {
-    if (isLoading) return;
-
-    const trimmedContent = messageContent.trim();
-    if (!trimmedContent && !photo) return;
-    
-    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
-    if (lastUserMessage?.content === trimmedContent && !photo) {
-      console.warn('Duplicate message ignored');
-      return;
-    }
+    const checks = preSendMessageChecks(isLoading, messageContent, photo, messages);
+    if (!checks.pass) return;
 
     setIsLoading(true);
     setError(null);
 
-    const userMessage: CustomMessage = {
-      id: `${Date.now()}`,
-      role: 'user',
-      content: trimmedContent || 'Foto caricata',
-      createdAt: new Date(),
-      photo,
-    };
-    appendMessage(userMessage);
+    const userMessage = appendUserMessage(checks.trimmedContent, photo, appendMessage);
+    const updatedMessages = [...messages, userMessage];
 
     try {
-      let ticketId = currentTicketId;
-      if (!ticketId) {
-        const newTicketId = await createNewTicket(trimmedContent, photo);
-        if (newTicketId) {
-          ticketId = newTicketId;
-          setCurrentTicketId(newTicketId);
-        }
-      } else {
+      const ticketId = await handleTicketLogic(currentTicketId, checks.trimmedContent, photo);
+      if (ticketId && ticketId !== currentTicketId) {
+        setCurrentTicketId(ticketId);
+      }
+
+      if (ticketId) {
         await saveMessage(ticketId, userMessage);
       }
 
-      const aiResponse = await fetchAiResponse([...messages, userMessage], lockedSlots);
-      
-      const assistantMessage: CustomMessage = {
-        id: `${Date.now()}-ai`,
-        role: 'assistant',
-        content: aiResponse,
-        createdAt: new Date(),
-      };
-      appendMessage(assistantMessage);
-
-      if (ticketId && aiResponse.type === 'text') {
-        await saveMessage(ticketId, assistantMessage);
-      }
-      
-      options?.onMessage?.(assistantMessage);
-
+      await processAndAppendAiResponse(updatedMessages, lockedSlots, ticketId, appendMessage, options?.onMessage);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(errorMessage);
-      options?.onError?.(errorMessage);
-      appendMessage({
-        id: `${Date.now()}-error`,
-        role: 'assistant',
-        content: { type: 'text', content: `Si è verificato un errore: ${errorMessage}`},
-        createdAt: new Date(),
-      });
+      handleError(err, options?.onError, appendMessage);
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
     }
