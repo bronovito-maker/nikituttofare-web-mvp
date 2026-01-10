@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createServerClient();
 
-    const { data: tickets, error } = await (supabase as any)
+    const { data: tickets, error } = await supabase
       .from('tickets')
       .select('*')
       .eq('user_id', user.id)

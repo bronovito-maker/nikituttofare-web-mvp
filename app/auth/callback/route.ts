@@ -4,6 +4,80 @@ import { notifyNewTicket } from '@/lib/notifications';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
+function getRedirectUrl(request: NextRequest, path: string): string {
+    const { origin } = new URL(request.url);
+    const forwardedHost = request.headers.get('x-forwarded-host');
+    const isLocalEnv = process.env.NODE_ENV === 'development';
+
+    if (isLocalEnv) {
+        return `${origin}${path}`;
+    }
+    if (forwardedHost) {
+        return `https://${forwardedHost}${path}`;
+    }
+    return `${origin}${path}`;
+}
+
+async function confirmPendingTicket(ticket: any, request: NextRequest): Promise<NextResponse | null> {
+    const adminSupabase = createAdminClient();
+    console.log('🔍 Found pending ticket to confirm:', ticket.id);
+
+    const { error: updateError } = await adminSupabase
+        .from('tickets')
+        .update({ status: 'confirmed' })
+        .eq('id', ticket.id);
+
+    if (updateError) {
+        console.error('Error updating ticket status:', updateError);
+        return null;
+    }
+
+    console.log('✅ Ticket confirmed:', ticket.id);
+
+    await notifyNewTicket({
+        id: ticket.id,
+        category: ticket.category,
+        priority: ticket.priority,
+        city: ticket.city,
+        price_range_min: ticket.price_range_min,
+        price_range_max: ticket.price_range_max,
+        description: ticket.description,
+        address: ticket.address,
+        created_at: ticket.created_at,
+    });
+    console.log('📤 Telegram notification sent for confirmed ticket');
+
+    const successUrl = `/chat?confirmed=true&ticket=${ticket.id.slice(-8)}`;
+    return NextResponse.redirect(getRedirectUrl(request, successUrl));
+}
+
+async function handleSuccessfulAuth(user: any, request: NextRequest, next: string): Promise<NextResponse> {
+    try {
+        const adminSupabase = createAdminClient();
+        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+
+        const { data: pendingTicket } = await adminSupabase
+            .from('tickets')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('status', 'pending_verification')
+            .gte('created_at', thirtyMinutesAgo)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+        if (pendingTicket) {
+            const redirectResponse = await confirmPendingTicket(pendingTicket, request);
+            if (redirectResponse) return redirectResponse;
+        }
+    } catch (confirmError) {
+        console.error('❌ Error confirming ticket:', confirmError);
+        // Non bloccare il redirect anche se la conferma fallisce
+    }
+
+    return NextResponse.redirect(getRedirectUrl(request, next));
+}
+
 /**
  * Auth Callback Route
  * Handles the Magic Link redirect from Supabase Auth.
@@ -11,22 +85,18 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
-
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/chat';
 
   if (code) {
-    const cookieStore = await cookies();
-
+    const cookieStore = cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
+          getAll: () => cookieStore.getAll(),
+          setAll: (cookiesToSet) => {
             try {
               cookiesToSet.forEach(({ name, value, options }) => {
                 cookieStore.set(name, value, options);
@@ -41,86 +111,12 @@ export async function GET(request: NextRequest) {
     
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error && data?.user) {
-      // Dopo l'autenticazione riuscita, cerca e conferma eventuali ticket in pending
-      try {
-        const adminSupabase = createAdminClient();
-
-        // Cerca l'ultimo ticket "pending_verification" dell'utente creato di recente (ultimi 30 minuti)
-        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-        const { data: pendingTicket } = await adminSupabase
-          .from('tickets')
-          .select('*')
-          .eq('user_id', data.user.id)
-          .eq('status', 'pending_verification')
-          .gte('created_at', thirtyMinutesAgo)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (pendingTicket) {
-          const ticket = pendingTicket as any;
-          console.log('🔍 Found pending ticket to confirm:', ticket.id);
-
-          // Aggiorna lo status a "confirmed" (verificato via Magic Link)
-          const { error: updateError } = await adminSupabase
-            .from('tickets')
-            // @ts-ignore - Type system constraints
-            .update({ status: 'confirmed' })
-            .eq('id', ticket.id);
-
-          if (!updateError) {
-            console.log('✅ Ticket confirmed:', ticket.id);
-
-            // Invia notifica Telegram ora che il ticket è confermato
-            await notifyNewTicket({
-              id: ticket.id,
-              category: ticket.category,
-              priority: ticket.priority,
-              city: ticket.city,
-              price_range_min: ticket.price_range_min,
-              price_range_max: ticket.price_range_max,
-              description: ticket.description,
-              address: ticket.address,
-              created_at: ticket.created_at,
-            });
-
-            console.log('📤 Telegram notification sent for confirmed ticket');
-            
-            // Redirect to confirmation success page instead of chat
-            const forwardedHost = request.headers.get('x-forwarded-host');
-            const isLocalEnv = process.env.NODE_ENV === 'development';
-            const successUrl = `/chat?confirmed=true&ticket=${ticket.id.slice(-8)}`;
-            
-            if (isLocalEnv) {
-              return NextResponse.redirect(`${origin}${successUrl}`);
-            } else if (forwardedHost) {
-              return NextResponse.redirect(`https://${forwardedHost}${successUrl}`);
-            } else {
-              return NextResponse.redirect(`${origin}${successUrl}`);
-            }
-          }
-        }
-      } catch (confirmError) {
-        console.error('❌ Error confirming ticket:', confirmError);
-        // Non bloccare il redirect anche se la conferma fallisce
-      }
-
-      const forwardedHost = request.headers.get('x-forwarded-host');
-      const isLocalEnv = process.env.NODE_ENV === 'development';
-
-      if (isLocalEnv) {
-        return NextResponse.redirect(`${origin}${next}`);
-      } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`);
-      } else {
-        return NextResponse.redirect(`${origin}${next}`);
-      }
+    if (data?.user && !error) {
+        return handleSuccessfulAuth(data.user, request, next);
     }
     
-    console.error('Auth callback error:', error);
+    if (error) console.error('Auth callback error:', error.message);
   }
   
-  // Auth failed - redirect to login with error
   return NextResponse.redirect(`${origin}/login?error=auth_callback_error`);
 }

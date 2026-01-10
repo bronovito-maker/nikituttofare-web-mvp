@@ -98,6 +98,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
+CREATE OR REPLACE FUNCTION public.get_ticket_photos_bucket_id()
+RETURNS TEXT AS $$
+BEGIN
+    RETURN 'ticket-photos';
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
 -- ============================================
 -- STEP 4: Create PROFILES policies
 -- ============================================
@@ -205,8 +212,8 @@ CREATE POLICY "messages_insert_policy"
 -- Create bucket if not exists
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
-  'ticket-photos',
-  'ticket-photos',
+  public.get_ticket_photos_bucket_id(),
+  public.get_ticket_photos_bucket_id(),
   true,  -- Public URLs (but access controlled by policies)
   10485760, -- 10MB limit
   ARRAY['image/jpeg', 'image/png', 'image/gif', 'image/webp']::text[]
@@ -222,29 +229,29 @@ CREATE POLICY "storage_insert_policy"
   ON storage.objects
   FOR INSERT
   TO authenticated
-  WITH CHECK (bucket_id = 'ticket-photos');
+  WITH CHECK (bucket_id = public.get_ticket_photos_bucket_id());
 
 -- Storage SELECT: Authenticated users can view images in ticket-photos
 CREATE POLICY "storage_select_policy"
   ON storage.objects
   FOR SELECT
   TO authenticated
-  USING (bucket_id = 'ticket-photos');
+  USING (bucket_id = public.get_ticket_photos_bucket_id());
 
 -- Storage UPDATE: Authenticated users can update their uploads
 CREATE POLICY "storage_update_policy"
   ON storage.objects
   FOR UPDATE
   TO authenticated
-  USING (bucket_id = 'ticket-photos')
-  WITH CHECK (bucket_id = 'ticket-photos');
+  USING (bucket_id = public.get_ticket_photos_bucket_id())
+  WITH CHECK (bucket_id = public.get_ticket_photos_bucket_id());
 
 -- Storage DELETE: Users can delete images in ticket-photos
 CREATE POLICY "storage_delete_policy"
   ON storage.objects
   FOR DELETE
   TO authenticated
-  USING (bucket_id = 'ticket-photos');
+  USING (bucket_id = public.get_ticket_photos_bucket_id());
 
 -- ============================================
 -- STEP 8: Create useful indexes

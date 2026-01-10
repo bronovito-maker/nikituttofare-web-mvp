@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { Camera, X, Check, AlertCircle, Loader2, ImagePlus } from 'lucide-react';
+import { Camera, X, Check, AlertCircle, Loader2 } from 'lucide-react';
 
 interface ImageUploadProps {
   onUploadComplete: (url: string) => void;
@@ -12,6 +12,54 @@ interface ImageUploadProps {
 }
 
 type UploadState = 'idle' | 'selecting' | 'compressing' | 'uploading' | 'success' | 'error';
+
+// Helper functions moved outside the component to reduce nesting
+const handleImageLoadForCompression = (
+  img: HTMLImageElement,
+  canvas: HTMLCanvasElement,
+  resolve: (value: Blob) => void,
+  reject: (reason?: any) => void
+) => {
+  const MAX_WIDTH = 1920;
+  const MAX_HEIGHT = 1080;
+  let { width, height } = img;
+
+  if (width > MAX_WIDTH) {
+    height = (height * MAX_WIDTH) / width;
+    width = MAX_WIDTH;
+  }
+  if (height > MAX_HEIGHT) {
+    width = (width * MAX_HEIGHT) / height;
+    height = MAX_HEIGHT;
+  }
+
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return reject(new Error('Failed to get canvas context'));
+  
+  ctx.drawImage(img, 0, 0, width, height);
+
+  canvas.toBlob(
+    (blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error('Compressione fallita'));
+    },
+    'image/jpeg',
+    0.85
+  );
+};
+
+const compressImage = (file: File): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const canvas = document.createElement('canvas');
+    img.onload = () => handleImageLoadForCompression(img, canvas, resolve, reject);
+    img.onerror = (err) => reject(new Error(`Caricamento immagine fallito: ${err}`));
+    img.src = URL.createObjectURL(file);
+  });
+};
+
 
 export function ImageUpload({ 
   onUploadComplete, 
@@ -29,55 +77,10 @@ export function ImageUpload({
   const resetState = useCallback(() => {
     setState('idle');
     setProgress(0);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setErrorMessage(null);
-  }, []);
-
-  const compressImage = async (file: File): Promise<Blob> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-
-      img.onload = () => {
-        // Max dimensions
-        const MAX_WIDTH = 1920;
-        const MAX_HEIGHT = 1080;
-
-        let { width, height } = img;
-
-        // Calculate new dimensions maintaining aspect ratio
-        if (width > MAX_WIDTH) {
-          height = (height * MAX_WIDTH) / width;
-          width = MAX_WIDTH;
-        }
-        if (height > MAX_HEIGHT) {
-          width = (width * MAX_HEIGHT) / height;
-          height = MAX_HEIGHT;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        ctx?.drawImage(img, 0, 0, width, height);
-
-        // Convert to blob with quality compression
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve(blob);
-            } else {
-              reject(new Error('Compressione fallita'));
-            }
-          },
-          'image/jpeg',
-          0.85 // Quality
-        );
-      };
-
-      img.onerror = () => reject(new Error('Caricamento immagine fallito'));
-      img.src = URL.createObjectURL(file);
-    });
-  };
+  }, [previewUrl]);
 
   const uploadFile = async (file: File) => {
     try {
@@ -85,22 +88,13 @@ export function ImageUpload({
       setProgress(10);
       onUploadStart?.();
 
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        throw new Error('Solo immagini sono permesse');
-      }
+      if (!file.type.startsWith('image/')) throw new Error('Solo immagini sono permesse');
+      if (file.size > 10 * 1024 * 1024) throw new Error('File troppo grande (max 10MB)');
 
-      // Validate file size (10MB max)
-      if (file.size > 10 * 1024 * 1024) {
-        throw new Error('File troppo grande (max 10MB)');
-      }
-
-      // Create preview
       const previewDataUrl = URL.createObjectURL(file);
       setPreviewUrl(previewDataUrl);
       setProgress(20);
 
-      // Compress if needed (> 2MB)
       let processedFile: Blob = file;
       if (file.size > 2 * 1024 * 1024) {
         processedFile = await compressImage(file);
@@ -109,27 +103,13 @@ export function ImageUpload({
         setProgress(40);
       }
 
-      // Upload to server
       setState('uploading');
       const formData = new FormData();
       formData.append('file', processedFile, file.name);
 
-      // Simulate progress during upload
-      const progressInterval = setInterval(() => {
-        setProgress((p) => {
-          if (p >= 90) {
-            clearInterval(progressInterval);
-            return p;
-          }
-          return p + 10;
-        });
-      }, 200);
+      const progressInterval = setInterval(() => setProgress(p => Math.min(p + 10, 90)), 200);
 
-      const response = await fetch('/api/upload-image', {
-        method: 'POST',
-        body: formData,
-      });
-
+      const response = await fetch('/api/upload-image', { method: 'POST', body: formData });
       clearInterval(progressInterval);
 
       if (!response.ok) {
@@ -141,10 +121,7 @@ export function ImageUpload({
       setProgress(100);
       setState('success');
 
-      // Notify parent after brief success animation
-      setTimeout(() => {
-        onUploadComplete(data.url);
-      }, 500);
+      setTimeout(() => onUploadComplete(data.url), 500);
 
     } catch (err) {
       setState('error');
@@ -156,30 +133,19 @@ export function ImageUpload({
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      uploadFile(file);
-    }
-    // Reset input for re-selection
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (file) uploadFile(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleClick = () => {
     if (disabled || state === 'compressing' || state === 'uploading') return;
+    if (state === 'error') return resetState();
     fileInputRef.current?.click();
   };
 
-  // Render different states
   const renderContent = () => {
     switch (state) {
-      case 'idle':
-        return (
-          <div className="flex items-center justify-center">
-            <Camera className="w-5 h-5 text-slate-500 group-hover:text-slate-700 transition-colors" />
-          </div>
-        );
-
+      case 'idle': return <Camera className="w-5 h-5 text-slate-500 group-hover:text-slate-700 transition-colors" />;
       case 'selecting':
       case 'compressing':
         return (
@@ -188,61 +154,35 @@ export function ImageUpload({
             <span className="text-[10px] text-slate-500">Preparazione...</span>
           </div>
         );
-
       case 'uploading':
         return (
-          <div className="flex flex-col items-center gap-1 w-full">
             <div className="relative w-8 h-8">
               <svg className="w-8 h-8 transform -rotate-90">
+                <circle cx="16" cy="16" r="14" fill="none" stroke="#e2e8f0" strokeWidth="3" />
                 <circle
-                  cx="16"
-                  cy="16"
-                  r="14"
-                  fill="none"
-                  stroke="#e2e8f0"
-                  strokeWidth="3"
-                />
-                <circle
-                  cx="16"
-                  cy="16"
-                  r="14"
-                  fill="none"
-                  stroke="#3b82f6"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeDasharray={`${2 * Math.PI * 14}`}
+                  cx="16" cy="16" r="14" fill="none" stroke="#3b82f6" strokeWidth="3"
+                  strokeLinecap="round" strokeDasharray={`${2 * Math.PI * 14}`}
                   strokeDashoffset={`${2 * Math.PI * 14 * (1 - progress / 100)}`}
                   className="transition-all duration-300"
                 />
               </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-blue-600">
-                {progress}%
-              </span>
+              <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-blue-600">{progress}%</span>
             </div>
-          </div>
         );
-
       case 'success':
         return (
-          <div className="flex items-center justify-center">
             <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center animate-in zoom-in-50 duration-300">
               <Check className="w-4 h-4 text-green-600" />
             </div>
-          </div>
         );
-
       case 'error':
         return (
           <div className="flex flex-col items-center gap-1">
             <AlertCircle className="w-5 h-5 text-red-500" />
-            <span className="text-[10px] text-red-500 text-center leading-tight max-w-[60px]">
-              {errorMessage || 'Errore'}
-            </span>
+            <span className="text-[10px] text-red-500 text-center leading-tight max-w-[60px]">{errorMessage || 'Errore'}</span>
           </div>
         );
-
-      default:
-        return null;
+      default: return null;
     }
   };
 
@@ -252,52 +192,22 @@ export function ImageUpload({
         type="button"
         onClick={handleClick}
         disabled={disabled || state === 'compressing' || state === 'uploading'}
-        className={`
-          flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all group
-          ${state === 'error' 
-            ? 'bg-red-50 hover:bg-red-100 cursor-pointer' 
-            : state === 'success'
-            ? 'bg-green-50'
-            : 'bg-slate-100 hover:bg-slate-200'
-          }
-          ${(disabled || state === 'compressing' || state === 'uploading') ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
-        `}
+        className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all group ${state === 'error' ? 'bg-red-50 hover:bg-red-100' : state === 'success' ? 'bg-green-50' : 'bg-slate-100 hover:bg-slate-200'} ${(disabled || state === 'compressing' || state === 'uploading') ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
       >
         {renderContent()}
       </button>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleFileSelect}
-        className="hidden"
-        disabled={disabled}
-      />
+      <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleFileSelect} className="hidden" disabled={disabled} />
 
-      {/* Preview tooltip on success */}
       {state === 'success' && previewUrl && (
         <div className="absolute bottom-full left-0 mb-2 p-1 bg-white rounded-lg shadow-xl border border-slate-200 animate-in slide-in-from-bottom-2 duration-300">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img 
-            src={previewUrl} 
-            alt="Preview" 
-            className="h-16 w-auto rounded-md object-cover"
-          />
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              resetState();
-            }}
-            className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-slate-700 transition-colors shadow-lg"
-          >
+          <img src={previewUrl} alt="Preview" className="h-16 w-auto rounded-md object-cover" />
+          <button onClick={(e) => { e.stopPropagation(); resetState(); }} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-slate-700 transition-colors shadow-lg">
             <X className="w-3 h-3" />
           </button>
         </div>
       )}
 
-      {/* Error retry hint */}
       {state === 'error' && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-xs rounded-lg whitespace-nowrap animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
           Tap per riprovare
@@ -308,9 +218,6 @@ export function ImageUpload({
   );
 }
 
-/**
- * Componente semplificato per preview immagine già caricata
- */
 export function ImagePreview({ 
   url, 
   onRemove,
@@ -322,17 +229,9 @@ export function ImagePreview({
 }) {
   return (
     <div className={`relative inline-block ${className}`}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img 
-        src={url} 
-        alt="Preview" 
-        className="h-20 w-auto rounded-xl border border-slate-200 shadow-sm object-cover"
-      />
+      <img src={url} alt="Preview" className="h-20 w-auto rounded-xl border border-slate-200 shadow-sm object-cover" />
       {onRemove && (
-        <button
-          onClick={onRemove}
-          className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-slate-700 transition-colors shadow-lg"
-        >
+        <button onClick={onRemove} className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-slate-700 transition-colors shadow-lg">
           <X className="w-4 h-4" />
         </button>
       )}

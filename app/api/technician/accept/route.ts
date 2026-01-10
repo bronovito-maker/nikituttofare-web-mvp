@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createServerClient, createAdminClient } from '@/lib/supabase-server';
 import { getCurrentUser } from '@/lib/supabase-helpers';
+
+const acceptSchema = z.object({
+  token: z.string().min(1, { message: "Token mancante" }),
+});
 
 /**
  * POST /api/technician/accept
@@ -12,14 +17,13 @@ import { getCurrentUser } from '@/lib/supabase-helpers';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { token } = body;
+    const validation = acceptSchema.safeParse(body);
 
-    if (!token) {
-      return NextResponse.json(
-        { success: false, error: 'Token mancante' },
-        { status: 400 }
-      );
+    if (!validation.success) {
+      return NextResponse.json({ success: false, error: validation.error.flatten().fieldErrors.token?.[0] || 'Dati non validi' }, { status: 400 });
     }
+    
+    const { token } = validation.data;
 
     // Get current user (must be authenticated technician)
     const user = await getCurrentUser();
@@ -31,8 +35,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user is a technician
-    const supabase = createServerClient();
-    const { data: profile } = await (supabase as any)
+    const supabase = await createServerClient();
+    const { data: profile } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -49,7 +53,7 @@ export async function POST(request: NextRequest) {
     const adminClient = createAdminClient();
     
     // Call the anti-collision function
-    const { data, error } = await (adminClient as any).rpc('accept_technician_assignment', {
+    const { data, error } = await adminClient.rpc('accept_technician_assignment', {
       p_token: token,
       p_technician_id: user.id
     });
@@ -88,6 +92,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Technician accept error:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Dati non validi', details: error.flatten() }, { status: 400 });
+    }
     return NextResponse.json(
       { success: false, error: 'Errore interno del server' },
       { status: 500 }

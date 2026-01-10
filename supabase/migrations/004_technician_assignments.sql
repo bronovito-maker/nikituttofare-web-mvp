@@ -117,7 +117,11 @@ RETURNS JSONB AS $$
 DECLARE
   v_token_record RECORD;
   v_ticket_record RECORD;
-  v_result JSONB;
+  v_success_key CONSTANT TEXT := 'success';
+  v_error_key CONSTANT TEXT := 'error';
+  v_message_key CONSTANT TEXT := 'message';
+  v_success CONSTANT BOOLEAN := true;
+  v_failure CONSTANT BOOLEAN := false;
 BEGIN
   -- Get token with row lock to prevent race conditions
   SELECT * INTO v_token_record
@@ -128,27 +132,27 @@ BEGIN
   -- Check if token exists
   IF v_token_record IS NULL THEN
     RETURN jsonb_build_object(
-      'success', false,
-      'error', 'invalid_token',
-      'message', 'Token non valido o scaduto'
+      v_success_key, v_failure,
+      v_error_key, 'invalid_token',
+      v_message_key, 'Token non valido o scaduto'
     );
   END IF;
   
   -- Check if token expired
   IF v_token_record.expires_at < NOW() THEN
     RETURN jsonb_build_object(
-      'success', false,
-      'error', 'token_expired',
-      'message', 'Il link è scaduto. Contatta l''amministrazione.'
+      v_success_key, v_failure,
+      v_error_key, 'token_expired',
+      v_message_key, 'Il link è scaduto. Contatta l''amministrazione.'
     );
   END IF;
   
   -- Check if token already used (ANTI-COLLISION)
   IF v_token_record.used_at IS NOT NULL THEN
     RETURN jsonb_build_object(
-      'success', false,
-      'error', 'already_assigned',
-      'message', 'Intervento già assegnato a un altro tecnico.'
+      v_success_key, v_failure,
+      v_error_key, 'already_assigned',
+      v_message_key, 'Intervento già assegnato a un altro tecnico.'
     );
   END IF;
   
@@ -160,9 +164,9 @@ BEGIN
   -- Double check ticket isn't already assigned
   IF v_ticket_record.assigned_technician_id IS NOT NULL THEN
     RETURN jsonb_build_object(
-      'success', false,
-      'error', 'already_assigned',
-      'message', 'Intervento già assegnato a un altro tecnico.'
+      v_success_key, v_failure,
+      v_error_key, 'already_assigned',
+      v_message_key, 'Intervento già assegnato a un altro tecnico.'
     );
   END IF;
   
@@ -181,8 +185,8 @@ BEGIN
   
   -- Return success with full ticket details (only for assigned technician)
   RETURN jsonb_build_object(
-    'success', true,
-    'message', 'Intervento assegnato con successo!',
+    v_success_key, v_success,
+    v_message_key, 'Intervento assegnato con successo!',
     'ticket', jsonb_build_object(
       'id', v_ticket_record.id,
       'category', v_ticket_record.category,

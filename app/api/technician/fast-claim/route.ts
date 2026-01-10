@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase-server';
+
+const fastClaimSchema = z.object({
+  phone: z.string().min(1, { message: "Numero di telefono richiesto" }),
+  token: z.string().min(1, { message: "Token richiesto" }),
+});
 
 /**
  * POST /api/technician/fast-claim
@@ -17,14 +23,16 @@ import { createAdminClient } from '@/lib/supabase-server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { phone, token } = body;
+    const validation = fastClaimSchema.safeParse(body);
 
-    if (!phone || !token) {
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, message: 'Numero di telefono e token richiesti' },
+        { success: false, message: validation.error.flatten().fieldErrors.phone?.[0] || validation.error.flatten().fieldErrors.token?.[0] || 'Dati non validi' },
         { status: 400 }
       );
     }
+    
+    const { phone, token } = validation.data;
 
     // Normalize phone number (remove spaces, dashes, and ensure consistent format)
     const normalizedPhone = phone
@@ -39,7 +47,7 @@ export async function POST(request: NextRequest) {
     const adminClient = createAdminClient();
 
     // Find technician by phone number
-    const { data: technician, error: techError } = await (adminClient as any)
+    const { data: technician, error: techError } = await adminClient
       .from('profiles')
       .select('id, full_name, phone, role, email')
       .in('role', ['technician', 'admin'])
@@ -65,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Technician found! Now try to accept the assignment
-    const { data: assignmentResult, error: assignError } = await (adminClient as any).rpc(
+    const { data: assignmentResult, error: assignError } = await adminClient.rpc(
       'accept_technician_assignment',
       {
         p_token: token,
@@ -112,6 +120,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Fast claim error:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Dati non validi', details: error.flatten() }, { status: 400 });
+    }
     return NextResponse.json(
       { success: false, message: 'Errore interno del server' },
       { status: 500 }

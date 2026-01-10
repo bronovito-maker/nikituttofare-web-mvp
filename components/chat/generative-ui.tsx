@@ -30,7 +30,7 @@ import { CATEGORY_NAMES_IT } from '@/lib/system-prompt';
 
 interface GenerativeUIProps {
   response: AIResponseType;
-  onFormSubmit?: (data: Record<string, string>) => void;
+  onFormSubmit?: (data: Record<string, string>) => Promise<void> | void;
   onConfirm?: () => void;
   onAcceptQuote?: () => void;
   onRejectQuote?: () => void;
@@ -78,7 +78,7 @@ function TextResponse({ content }: { content: string }) {
 // ============================================
 // FORM RESPONSE - Invisible Form (Chat-First)
 // ============================================
-function FormResponse({ form, onSubmit }: { form: FormType; onSubmit?: (data: Record<string, string>) => void }) {
+function FormResponse({ form, onSubmit }: { form: FormType; onSubmit?: (data: Record<string, string>) => Promise<void> | void }) {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 

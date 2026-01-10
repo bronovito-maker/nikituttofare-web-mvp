@@ -1,12 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  parseChatData,
-  type ParsedChatData,
-  type BookingClarification,
-  type BookingSlotKey,
-} from '@/lib/chat-parser';
 import type { Message as ParserMessage } from '@/lib/types';
 import { AIResponseType, FormType } from '@/lib/ai-structures';
 
@@ -19,305 +13,191 @@ export interface CustomMessage {
   photo?: string;
 }
 
-// Slot state type
-interface SlotState {
-  nome?: string;
-  telefono?: string;
-  persone?: string;
-  orario?: string;
-  [key: string]: string | undefined;
-}
+// --- HELPER FUNCTIONS ---
 
-// Lead info type
-interface LeadInfo {
-  nome?: string;
-  telefono?: string;
-  email?: string;
-  [key: string]: string | undefined;
-}
+const detectCategory = (message: string): 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'generic' => {
+  const lowerMessage = message.toLowerCase();
+  const plumbingKeywords = ['idraulico', 'acqua', 'tubo', 'perdita', 'scarico'];
+  const electricKeywords = ['elettric', 'luce', 'presa', 'salvavita'];
+  const locksmithKeywords = ['fabbro', 'serratura', 'chiave', 'porta'];
+  const climateKeywords = ['clima', 'condizionatore', 'caldaia', 'riscaldamento'];
 
-// Booking data type
-interface BookingData {
-  slots: SlotState;
-  email?: string | null;
-}
+  if (plumbingKeywords.some(kw => lowerMessage.includes(kw))) return 'plumbing';
+  if (electricKeywords.some(kw => lowerMessage.includes(kw))) return 'electric';
+  if (locksmithKeywords.some(kw => lowerMessage.includes(kw))) return 'locksmith';
+  if (climateKeywords.some(kw => lowerMessage.includes(kw))) return 'climate';
+  
+  return 'generic';
+};
 
-export const useChat = (
-  options?: {
-    onMessage?: (message: CustomMessage) => void;
-    onError?: (error: string) => void;
+const createNewTicket = async (content: string, photo?: string): Promise<string | null> => {
+  try {
+    const res = await fetch('/api/tickets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        category: detectCategory(content),
+        description: content,
+        priority: 'medium',
+        messageContent: content,
+        imageUrl: photo,
+      }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.ticketId as string;
+  } catch {
+    return null;
   }
-) => {
+};
+
+const saveMessage = async (ticketId: string, message: CustomMessage): Promise<void> => {
+  try {
+    await fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ticketId,
+        role: message.role,
+        content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content),
+        imageUrl: message.photo,
+      }),
+    });
+  } catch (error) {
+    console.error("Failed to save message:", error);
+  }
+};
+
+const fetchAiResponse = async (messages: CustomMessage[], lockedSlots?: any): Promise<AIResponseType> => {
+  const body = {
+    messages: messages.map(m => ({
+      role: m.role,
+      content: m.content,
+      photo: m.photo,
+    })),
+    lockedSlots,
+  };
+
+  const res = await fetch('/api/assist', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ error: 'API request failed' }));
+    throw new Error(errorData.error);
+  }
+  return res.json();
+};
+
+export const useChat = (options?: { onMessage?: (message: CustomMessage) => void; onError?: (error: string) => void; }) => {
   const [messages, setMessages] = useState<CustomMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentTicketId, setCurrentTicketId] = useState<string | null>(null);
-  
-  // Additional states for booking flow
-  const [parsedData, setParsedData] = useState<ParsedChatData | null>(null);
-  const [slots, setSlots] = useState<SlotState>({});
-  const [detectedEmail, setDetectedEmail] = useState<string | null>(null);
-  const [clarifications, setClarifications] = useState<BookingClarification[]>([]);
-  const [recentlyUpdatedSlots, setRecentlyUpdatedSlots] = useState<BookingSlotKey[]>([]);
-  const [currentStep, setCurrentStep] = useState<string>('nome');
-  const [savedLeadInfo, setSavedLeadInfo] = useState<LeadInfo | null>(null);
-  const [bookingSaved, setBookingSaved] = useState(false);
-  const [isConfirming, setIsConfirming] = useState(false);
-  const [confirmationError, setConfirmationError] = useState<string | null>(null);
-  const [isLoadingConfig, setIsLoadingConfig] = useState(false);
-  const [highlightSlot, setHighlightSlot] = useState<BookingSlotKey | null>(null);
-  const latestMessagesRef = useRef<CustomMessage[]>([]);
+  const [lockedSlots, setLockedSlots] = useState({});
 
-  useEffect(() => {
-    latestMessagesRef.current = messages;
-  }, [messages]);
+  const appendMessage = useCallback((message: CustomMessage) => {
+    setMessages(prev => [...prev, message]);
+  }, []);
 
-  const sendMessage = async (messageContent: string, photo?: string) => {
+  const handleSendMessage = async (messageContent: string, photo?: string) => {
     if (isLoading) return;
-    
-    // Evita messaggi vuoti o duplicati consecutivi
+
     const trimmedContent = messageContent.trim();
     if (!trimmedContent && !photo) return;
     
-    // Controlla se l'ultimo messaggio è identico (evita duplicati)
-    if (messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage.role === 'user' && 
-          typeof lastMessage.content === 'string' && 
-          lastMessage.content.trim() === trimmedContent &&
-          !photo) {
-        console.warn('Messaggio duplicato ignorato');
-        return;
-      }
+    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+    if (lastUserMessage?.content === trimmedContent && !photo) {
+      console.warn('Duplicate message ignored');
+      return;
     }
 
-    setError(null);
     setIsLoading(true);
+    setError(null);
 
     const userMessage: CustomMessage = {
-      id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      id: `${Date.now()}`,
       role: 'user',
       content: trimmedContent || 'Foto caricata',
       createdAt: new Date(),
       photo,
     };
-
-    setMessages(prevMessages => [...prevMessages, userMessage]);
+    appendMessage(userMessage);
 
     try {
-      // Se è il primo messaggio, crea un ticket
       let ticketId = currentTicketId;
-      if (!ticketId && messages.length === 0) {
-        const category = detectCategory(messageContent);
-
-        const ticketRes = await fetch('/api/tickets', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            category,
-            description: messageContent,
-            priority: 'medium',
-            address: null,
-            messageContent,
-            imageUrl: photo,
-          }),
-        });
-
-        if (ticketRes.ok) {
-          const ticketData = await ticketRes.json();
-          ticketId = ticketData.ticketId as string;
-          setCurrentTicketId(ticketId);
+      if (!ticketId) {
+        const newTicketId = await createNewTicket(trimmedContent, photo);
+        if (newTicketId) {
+          ticketId = newTicketId;
+          setCurrentTicketId(newTicketId);
         }
-      } else if (ticketId) {
-        // Salva il messaggio su Supabase
-        await fetch('/api/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ticketId,
-            role: 'user',
-            content: messageContent,
-            imageUrl: photo,
-          }),
-        });
+      } else {
+        await saveMessage(ticketId, userMessage);
       }
 
-      // Prepara il corpo della richiesta per l'AI
-      const allMessages = [...messages, userMessage];
-      const requestBody = {
-        messages: allMessages.map(m => {
-          const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
-          const messageObject: { role: string; content: string; photo?: string } = { 
-            role: m.role, 
-            content 
-          };
-          if (m.photo) {
-            messageObject.photo = m.photo;
-          }
-          return messageObject;
-        })
-      };
-
-      const res = await fetch('/api/assist', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'API request failed');
-      }
-
-      const aiResponse: AIResponseType = await res.json();
-
+      const aiResponse = await fetchAiResponse([...messages, userMessage], lockedSlots);
+      
       const assistantMessage: CustomMessage = {
-        id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
+        id: `${Date.now()}-ai`,
         role: 'assistant',
         content: aiResponse,
         createdAt: new Date(),
       };
+      appendMessage(assistantMessage);
+
+      if (ticketId && aiResponse.type === 'text') {
+        await saveMessage(ticketId, assistantMessage);
+      }
       
-      // Evita duplicati
-      setMessages(prevMessages => {
-        const lastMsg = prevMessages[prevMessages.length - 1];
-        if (lastMsg && 
-            lastMsg.role === 'assistant' && 
-            typeof lastMsg.content === typeof assistantMessage.content) {
-          const lastContent = typeof lastMsg.content === 'string' 
-            ? lastMsg.content 
-            : JSON.stringify(lastMsg.content);
-          const newContent = typeof assistantMessage.content === 'string'
-            ? assistantMessage.content
-            : JSON.stringify(assistantMessage.content);
-          
-          if (lastContent === newContent) {
-            console.warn('Risposta duplicata ignorata');
-            return prevMessages;
-          }
-        }
-        return [...prevMessages, assistantMessage];
-      });
-
-      // Salva anche la risposta dell'AI se c'è un ticket
-      if (ticketId && typeof aiResponse === 'object' && aiResponse.type === 'text') {
-        await fetch('/api/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ticketId,
-            role: 'assistant',
-            content: aiResponse.content as string,
-          }),
-        });
-      }
-
-      // Callback
-      if (options?.onMessage) {
-        options.onMessage(assistantMessage);
-      }
+      options?.onMessage?.(assistantMessage);
 
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Errore sconosciuto';
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
-      if (options?.onError) {
-        options.onError(errorMessage);
-      }
+      options?.onError?.(errorMessage);
+      appendMessage({
+        id: `${Date.now()}-error`,
+        role: 'assistant',
+        content: { type: 'text', content: `Si è verificato un errore: ${errorMessage}`},
+        createdAt: new Date(),
+      });
     } finally {
       setIsLoading(false);
     }
   };
-
-  // Funzione helper per rilevare la categoria dal messaggio
-  const detectCategory = (message: string): 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'generic' => {
-    const lowerMessage = message.toLowerCase();
-    
-    if (lowerMessage.includes('idraulico') || lowerMessage.includes('acqua') || lowerMessage.includes('tubo') || lowerMessage.includes('perdita') || lowerMessage.includes('scarico')) {
-      return 'plumbing';
-    }
-    if (lowerMessage.includes('elettric') || lowerMessage.includes('luce') || lowerMessage.includes('presa') || lowerMessage.includes('salvavita')) {
-      return 'electric';
-    }
-    if (lowerMessage.includes('fabbro') || lowerMessage.includes('serratura') || lowerMessage.includes('chiave') || lowerMessage.includes('porta')) {
-      return 'locksmith';
-    }
-    if (lowerMessage.includes('clima') || lowerMessage.includes('condizionatore') || lowerMessage.includes('caldaia') || lowerMessage.includes('riscaldamento')) {
-      return 'climate';
-    }
-    
-    return 'generic';
-  };
-
-  const missingSteps = useMemo<BookingSlotKey[]>(() => {
-    return [];
-  }, [slots]);
-
-  const summaryReady = missingSteps.length === 0;
-
-  const append = async (message: CustomMessage) => {
-    setMessages(prev => [...prev, message]);
-  };
   
-  const bookingData = useMemo<BookingData>(() => {
-    return {
-      slots,
-      email: detectedEmail,
-    };
-  }, [slots, detectedEmail]);
-
-  const summaryData = null;
-  const handleConfirmBooking = useCallback(async () => {
-    setIsConfirming(true);
-    // TODO: Implement booking confirmation
-    setIsConfirming(false);
-  }, []);
-
-  const handlePillBarUpdate = (slot: BookingSlotKey, value: string) => {
-    setSlots(prev => ({ ...prev, [slot]: value }));
+  const onConfirm = (type: string, data?: any) => {
+    if (type === 'quote') {
+      setLockedSlots(prev => ({ ...prev, userConfirmed: true, quoteRejected: false }));
+      handleSendMessage("Ok, accetto il preventivo, procediamo.");
+    }
   };
 
-  const handlePillBarClear = (slot: BookingSlotKey) => {
-    setSlots(prev => {
-      const newSlots = { ...prev };
-      delete newSlots[slot];
-      return newSlots;
-    });
+  const onReject = (type: string, data?: any) => {
+    if (type === 'quote') {
+      setLockedSlots(prev => ({ ...prev, userConfirmed: false, quoteRejected: true }));
+      handleSendMessage("No, non accetto il preventivo per ora.");
+    }
   };
+
 
   return {
     messages,
-    input: '',
-    setInput: () => {},
-    sendMessage,
-    reload: () => {},
-    stop: () => {},
-    isLoading: isLoading || isLoadingConfig,
+    isLoading,
     error,
-    parsedData,
-    bookingData,
-    currentStep,
-    missingSteps,
-    summaryReady,
-    summaryData,
-    bookingSaved,
-    savedLeadInfo,
-    slotState: slots,
-    clarifications,
-    recentlyUpdatedSlots,
-    confirmBooking: handleConfirmBooking,
-    isConfirming,
-    confirmationError,
-    resetConfirmationError: () => setConfirmationError(null),
-    highlightSlot,
-    handlePillBarUpdate,
-    handlePillBarClear,
+    sendMessage: handleSendMessage,
+    onConfirm,
+    onReject,
+    // Keep other exports for compatibility if they are used elsewhere
+    input: '', setInput: () => {}, reload: () => {}, stop: () => {},
+    parsedData: null, bookingData: null, currentStep: '', missingSteps: [],
+    summaryReady: false, summaryData: null, bookingSaved: false, savedLeadInfo: null,
+    slotState: {}, clarifications: [], recentlyUpdatedSlots: [],
+    confirmBooking: async () => {}, isConfirming: false, confirmationError: null,
+    resetConfirmationError: () => {}, highlightSlot: null,
+    handlePillBarUpdate: () => {}, handlePillBarClear: () => {},
   };
 };

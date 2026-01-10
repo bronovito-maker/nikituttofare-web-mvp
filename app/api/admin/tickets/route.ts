@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createServerClient, createAdminClient } from '@/lib/supabase-server';
 import { getCurrentUser } from '@/lib/supabase-helpers';
+import { Database } from '@/lib/database.types';
 
-// Types
-interface TicketFilters {
+// Define a type for our filters for clarity
+type TicketFilters = {
   status?: string;
   category?: string;
   priority?: string;
   search?: string;
-}
+};
+
+// Zod schema for validating PATCH request body
+const patchTicketSchema = z.object({
+  ticketId: z.string().uuid(),
+  status: z.enum(['new', 'pending_verification', 'confirmed', 'assigned', 'in_progress', 'resolved', 'cancelled']).optional(),
+  priority: z.enum(['low', 'medium', 'high', 'emergency']).optional(),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,9 +26,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
     }
 
-    // Use server client for auth check
     const supabase = await createServerClient();
-    const { data: profile, error: profileError } = await (supabase as any)
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -29,10 +37,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 });
     }
 
-    // Use admin client for fetching all tickets (bypasses RLS)
     const adminClient = createAdminClient();
 
-    // Get query parameters
     const { searchParams } = new URL(request.url);
     const filters: TicketFilters = {
       status: searchParams.get('status') || undefined,
@@ -41,8 +47,7 @@ export async function GET(request: NextRequest) {
       search: searchParams.get('search') || undefined,
     };
 
-    // Build query with admin client
-    let query = (adminClient as any)
+    let query = adminClient
       .from('tickets')
       .select(`
         *,
@@ -54,7 +59,6 @@ export async function GET(request: NextRequest) {
       `)
       .order('created_at', { ascending: false });
 
-    // Apply filters
     if (filters.status && filters.status !== 'all') {
       query = query.eq('status', filters.status);
     }
@@ -97,9 +101,8 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
     }
 
-    // Verify admin role
     const supabase = await createServerClient();
-    const { data: profile, error: profileError } = await (supabase as any)
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -110,28 +113,17 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { ticketId, status, priority } = body;
+    const validation = patchTicketSchema.safeParse(body);
 
-    if (!ticketId) {
-      return NextResponse.json(
-        { error: 'Ticket ID richiesto' },
-        { status: 400 }
-      );
+    if (!validation.success) {
+      return NextResponse.json({ error: 'Dati non validi', details: validation.error.flatten() }, { status: 400 });
     }
 
-    // Build update object
-    const updateData: {
-      status?: 'new' | 'pending_verification' | 'confirmed' | 'assigned' | 'in_progress' | 'resolved' | 'cancelled';
-      priority?: 'low' | 'medium' | 'high' | 'emergency';
-    } = {};
-    
-    if (status) updateData.status = status;
-    if (priority) updateData.priority = priority;
+    const { ticketId, ...updateData } = validation.data;
 
-    // Use admin client to bypass RLS
     const adminClient = createAdminClient();
 
-    const { data, error } = await (adminClient as any)
+    const { data, error } = await adminClient
       .from('tickets')
       .update(updateData)
       .eq('id', ticketId)
@@ -153,6 +145,9 @@ export async function PATCH(request: NextRequest) {
 
   } catch (error) {
     console.error('Errore API admin tickets PATCH:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Dati non validi', details: error.flatten() }, { status: 400 });
+    }
     return NextResponse.json(
       { error: 'Errore interno del server' },
       { status: 500 }

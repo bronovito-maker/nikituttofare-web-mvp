@@ -1,5 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { saveMessage, getTicketMessages, getCurrentUser } from '@/lib/supabase-helpers';
+
+// Zod schema for POST request body
+const postMessageSchema = z.object({
+  ticketId: z.string().uuid(),
+  role: z.enum(['user', 'assistant', 'system']),
+  content: z.string().min(1),
+  imageUrl: z.string().url().optional().nullable(),
+  metaData: z.record(z.unknown()).optional().nullable(),
+});
+
+// Zod schema for GET request query
+const getMessagesSchema = z.object({
+  ticketId: z.string().uuid(),
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,28 +24,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { ticketId, role, content, imageUrl, metaData } = body;
+    const validation = postMessageSchema.safeParse(body);
 
-    // Validazione input
-    if (!ticketId || !role || !content) {
-      return NextResponse.json(
-        { error: 'Ticket ID, role e content sono obbligatori' },
-        { status: 400 }
-      );
+    if (!validation.success) {
+      return NextResponse.json({ error: 'Dati non validi', details: validation.error.flatten() }, { status: 400 });
     }
 
-    // Valida il role
-    if (!['user', 'assistant', 'system'].includes(role)) {
-      return NextResponse.json(
-        { error: 'Role deve essere user, assistant o system' },
-        { status: 400 }
-      );
-    }
+    const { ticketId, role, content, imageUrl, metaData } = validation.data;
 
-    // Salva il messaggio
     const message = await saveMessage(
       ticketId,
-      role as 'user' | 'assistant' | 'system',
+      role,
       content,
       imageUrl,
       metaData
@@ -50,6 +54,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Errore nel salvataggio del messaggio:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Dati non validi', details: error.flatten() }, { status: 400 });
+    }
     return NextResponse.json(
       { error: 'Errore interno del server' },
       { status: 500 }
@@ -65,14 +72,15 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const ticketId = searchParams.get('ticketId');
+    const validation = getMessagesSchema.safeParse({
+      ticketId: searchParams.get('ticketId'),
+    });
 
-    if (!ticketId) {
-      return NextResponse.json(
-        { error: 'Ticket ID è obbligatorio' },
-        { status: 400 }
-      );
+    if (!validation.success) {
+      return NextResponse.json({ error: 'Dati non validi', details: validation.error.flatten() }, { status: 400 });
     }
+
+    const { ticketId } = validation.data;
 
     const messages = await getTicketMessages(ticketId);
 
@@ -83,6 +91,9 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Errore nel recupero dei messaggi:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Dati non validi', details: error.flatten() }, { status: 400 });
+    }
     return NextResponse.json(
       { error: 'Errore interno del server' },
       { status: 500 }

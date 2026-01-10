@@ -5,9 +5,10 @@ import Image from 'next/image';
 
 interface AvatarProps {
   src?: string | null;
-  alt?: string;
-  fallback?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  readonly src?: string | null;
+  readonly alt?: string;
+  readonly fallback?: string;
+  readonly size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
   status?: 'online' | 'offline' | 'busy';
 }

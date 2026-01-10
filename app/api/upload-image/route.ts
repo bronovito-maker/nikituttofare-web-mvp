@@ -1,7 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase-server';
 import { getCurrentUser } from '@/lib/supabase-helpers';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitExceededResponse } from '@/lib/rate-limit';
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+const fileSchema = z.instanceof(File)
+  .refine((file) => file.size > 0, "Nessun file fornito")
+  .refine(
+    (file) => file.size <= MAX_FILE_SIZE,
+    `File troppo grande. Massimo 10MB`
+  )
+  .refine(
+    (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
+    "Solo file immagine sono permessi (.jpg, .jpeg, .png, .webp)"
+  );
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,43 +34,29 @@ export async function POST(request: NextRequest) {
     }
 
     const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const file = formData.get('file');
 
-    if (!file) {
+    const validation = fileSchema.safeParse(file);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Nessun file fornito' },
+        { error: validation.error.flatten().formErrors[0] },
         { status: 400 }
       );
     }
-
-    // Valida il tipo di file
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json(
-        { error: 'Solo file immagine sono permessi' },
-        { status: 400 }
-      );
-    }
-
-    // Valida la dimensione (max 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      return NextResponse.json(
-        { error: 'File troppo grande. Massimo 10MB' },
-        { status: 400 }
-      );
-    }
+    
+    const validatedFile = validation.data;
 
     // Use admin client to bypass storage RLS policies
     const supabase = createAdminClient();
 
     // Genera un nome file univoco - include user ID for organization
-    const fileExt = file.name.split('.').pop();
+    const fileExt = validatedFile.name.split('.').pop();
     const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
     // Carica il file su Supabase Storage (bucket: ticket-photos, path: userId/filename)
     const { data, error } = await supabase.storage
       .from('ticket-photos')
-      .upload(fileName, file, {
+      .upload(fileName, validatedFile, {
         cacheControl: '3600',
         upsert: false
       });
@@ -105,6 +106,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Errore nell\'upload dell\'immagine:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Dati non validi', details: error.flatten() }, { status: 400 });
+    }
     return NextResponse.json(
       { error: 'Errore interno del server' },
       { status: 500 }

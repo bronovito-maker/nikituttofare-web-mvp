@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase-server';
+import { createServerClient } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import { addTechnician, deleteTechnician, toggleTechnicianStatus } from '@/app/actions/admin-actions';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
-  const supabase = createClient();
+  const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   // 🔒 PROTEZIONE PAGINA
@@ -29,7 +29,7 @@ export default async function AdminDashboard() {
           <h1 className="text-3xl font-bold text-slate-900">Admin Control Panel 🛡️</h1>
           <p className="text-slate-500">Loggato come: {user.email}</p>
         </div>
-        <form action={async () => { 'use server'; const sb = createClient(); await sb.auth.signOut(); redirect('/'); }}>
+        <form action={async () => { 'use server'; const sb = await createServerClient(); await sb.auth.signOut(); redirect('/'); }}>
            <Button variant="outline">Esci</Button>
         </form>
       </header>

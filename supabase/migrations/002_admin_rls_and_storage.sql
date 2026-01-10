@@ -42,10 +42,7 @@ CREATE POLICY "Admins can view all images"
   TO authenticated
   USING (
     bucket_id = 'ticket-photos'
-    AND EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
+    AND public.is_admin()
   );
 
 -- Deny anonymous access to images
