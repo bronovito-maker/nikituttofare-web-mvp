@@ -40,11 +40,11 @@ function MessageBubble({ message }: { message: ChatMessageData }) {
           className={`px-4 py-3 rounded-2xl ${
             isUser
               ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-br-md'
-              : 'bg-white border border-slate-200 rounded-tl-md shadow-sm'
+              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-tl-md shadow-sm'
           }`}
         >
           {/* Message Content */}
-          <div className={`text-sm leading-relaxed ${isUser ? 'text-white' : 'text-slate-900'}`}>
+          <div className={`text-sm leading-relaxed ${isUser ? 'text-white' : 'text-slate-900 dark:text-slate-50'}`}>
             {typeof message.content === 'string' ? (
               <div className="whitespace-pre-wrap">{message.content}</div>
             ) : (
@@ -58,8 +58,6 @@ function MessageBubble({ message }: { message: ChatMessageData }) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={message.photo}
-                alt="Uploaded photo"
-                className="max-w-full h-auto rounded-lg border border-slate-200"
                 loading="lazy"
               />
             </div>
@@ -166,7 +164,7 @@ interface ChatMessagesProps {
   isLoading: boolean;
 }
 
-export default function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
+export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -228,3 +226,6 @@ export default function ChatMessages({ messages, isLoading }: ChatMessagesProps)
     </div>
   );
 }
+
+export default ChatMessages;
+

@@ -58,16 +58,16 @@ export default async function AdminDashboard() {
                   });
                 }} className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium">Nome</label>
-                    <Input name="name" placeholder="Mario Rossi" required />
+                    <label htmlFor="name" className="text-sm font-medium">Nome</label>
+                    <Input id="name" name="name" placeholder="Mario Rossi" required />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Telefono (con +39)</label>
-                    <Input name="phone" placeholder="+393331234567" required />
+                    <label htmlFor="phone" className="text-sm font-medium">Telefono (con +39)</label>
+                    <Input id="phone" name="phone" placeholder="+393331234567" required />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Competenze (virgola)</label>
-                    <Input name="skills" placeholder="idraulico, caldaie" />
+                    <label htmlFor="skills" className="text-sm font-medium">Competenze (virgola)</label>
+                    <Input id="skills" name="skills" placeholder="idraulico, caldaie" />
                   </div>
                   <Button type="submit" className="w-full">Registra Tecnico</Button>
                 </form>
@@ -126,7 +126,7 @@ export default async function AdminDashboard() {
                  {tickets?.map((t) => (
                    <div key={t.id} className="p-3 border rounded flex justify-between items-center hover:bg-slate-50">
                      <div>
-                       <div className="font-medium text-sm">#{t.id.slice(0,8)} - {t.title || 'Richiesta'}</div>
+                       <div className="font-medium text-sm">#{t.id.slice(0,8)} - {t.category || 'Richiesta'}</div>
                        <div className="text-xs text-slate-500">{new Date(t.created_at).toLocaleString()}</div>
                      </div>
                      <Badge variant={t.status === 'open' ? 'default' : 'secondary'}>

@@ -6,7 +6,12 @@ import { type Message } from '../../lib/types';
 import { LoadingSpinner } from '../ui/loading-dots';
 
 // Lazy load dei messaggi per performance
-const ChatMessages = dynamic(() => import('./chat-messages'), {
+interface ChatMessagesProps {
+  messages: Message[];
+  isLoading: boolean;
+}
+
+const ChatMessages = dynamic<ChatMessagesProps>(() => import('./chat-messages').then(mod => mod.default), {
   loading: () => (
     <div className="flex-1 flex items-center justify-center">
       <div className="text-center space-y-2">
@@ -55,7 +60,7 @@ export function ChatInterface({ messages, isLoading }: ChatInterfaceProps) {
       </div>
     }>
       {/* Passiamo i messaggi puliti invece di quelli grezzi */}
-      <ChatMessages messages={cleanMessages} isLoading={isLoading} />
+  <ChatMessages messages={cleanMessages} isLoading={isLoading} />
     </Suspense>
   );
 }

@@ -39,7 +39,7 @@ export default function RootLayout({
       <body className={`${dmSans.className} antialiased`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
