@@ -94,12 +94,7 @@ function TechnicianAcceptContent() {
       const supabase = createBrowserClient();
       const { data: { session } } = await supabase.auth.getSession();
       setIsAuthenticated(!!session);
-      
-      if (!session) {
-        setState('ready');
-      } else {
-        setState('ready');
-      }
+      setState('ready');
     };
     
     checkAuth();
@@ -181,6 +176,7 @@ function TechnicianAcceptContent() {
       <main className="max-w-2xl mx-auto px-4 py-8">
         
         {/* Loading State */}
+
         {state === 'loading' && (
           <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
             <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
@@ -188,8 +184,7 @@ function TechnicianAcceptContent() {
           </div>
         )}
 
-        {/* Ready to Accept State */}
-        {(state === 'ready' || state === 'accepting') && (
+        {state === 'ready' && (
           <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
               <div className="text-center mb-6">
@@ -207,7 +202,6 @@ function TechnicianAcceptContent() {
                   </span>
                 </p>
               </div>
-
               {!isAuthenticated && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
                   <p className="text-sm text-yellow-800">
@@ -216,25 +210,22 @@ function TechnicianAcceptContent() {
                   </p>
                 </div>
               )}
-
               <Button
                 onClick={handleAccept}
-                disabled={state === 'accepting'}
                 className="w-full h-14 text-lg bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white font-bold rounded-xl shadow-lg"
               >
-                {state === 'accepting' ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Accettazione in corso...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-5 h-5 mr-2" />
-                    Accetta Intervento
-                  </>
-                )}
+                <CheckCircle2 className="w-5 h-5 mr-2" />
+                Accetta Intervento
               </Button>
             </div>
+          </div>
+        )}
+
+        {state === 'accepting' && (
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <Loader2 className="w-12 h-12 text-green-600 animate-spin mx-auto mb-4" />
+            <p className="text-slate-700 font-semibold">Accettazione in corso...</p>
+            <p className="text-slate-500 mt-2">Attendi qualche secondo mentre processiamo la tua richiesta.</p>
           </div>
         )}
 

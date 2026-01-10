@@ -75,8 +75,8 @@ function extractUrgency(userText: string): ConversationSlots['urgencyLevel'] | u
 function extractConfirmation(lastUserMessage: string): { userConfirmed?: boolean, quoteRejected?: boolean } {
     if (!lastUserMessage) return {};
     
-    const isReject = /^no\b|\brifiuto\b|\bnon (va bene|accetto)\b/.test(lastUserMessage);
-    const isAccept = /\bs(i|ì)\b|\b(ok|confermo|esatto|corretto|va bene|procedi|accetto)\b/.test(lastUserMessage);
+  const isReject = /((^no\b)|(\brifiuto\b)|(\bnon (va bene|accetto)\b))/.test(lastUserMessage);
+  const isAccept = /(\b(si|sì|ok|confermo|esatto|corretto|va bene|procedi|accetto)\b)/.test(lastUserMessage);
       
     if (isReject) {
       return { userConfirmed: false, quoteRejected: true };
