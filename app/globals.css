@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -92,9 +93,7 @@
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  /* Rimosso: @apply border-border; non è una classe Tailwind valida */
   
   body {
     @apply bg-background text-foreground antialiased;
@@ -109,6 +108,88 @@
   /* Selection color */
   ::selection {
     @apply bg-blue-100 text-blue-900;
+  }
+}
+
+/* ========================================
+   COMPONENT OVERRIDES
+   ======================================== */
+
+@layer components {
+  /* Premium Input */
+  .input-premium {
+    @apply w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400;
+    @apply transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500;
+    @apply hover:border-slate-300;
+  }
+  
+  /* Premium Button */
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-full font-semibold;
+    @apply bg-slate-900 text-white;
+    @apply hover:bg-slate-800 active:scale-[0.98];
+    @apply transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-urgent {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-full font-bold;
+    @apply bg-gradient-to-r from-orange-600 to-orange-500 text-white;
+    @apply shadow-lg shadow-orange-200/50;
+    @apply hover:from-orange-700 hover:to-orange-600 hover:shadow-xl hover:scale-105;
+    @apply active:scale-100;
+    @apply transition-all duration-300;
+    @apply focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100;
+  }
+  
+  .btn-ghost {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium;
+    @apply text-slate-600 bg-transparent;
+    @apply hover:bg-slate-100 hover:text-slate-900;
+    @apply transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-slate-500/20;
+  }
+  
+  /* Chat Message Bubbles */
+  .chat-bubble-user {
+    @apply bg-gradient-to-br from-blue-600 to-blue-500 text-white;
+    @apply rounded-2xl rounded-br-md;
+    @apply shadow-lg shadow-blue-500/20;
+    @apply dark:from-blue-700 dark:to-violet-700;
+  }
+  
+  .chat-bubble-assistant {
+    @apply bg-white text-slate-900 border border-slate-100;
+    @apply rounded-2xl rounded-bl-md;
+    @apply shadow-sm;
+    @apply dark:bg-slate-800 dark:text-slate-50 dark:border-slate-700;
+  }
+  
+  /* Card Premium */
+  .card-premium {
+    @apply bg-white rounded-2xl border border-slate-200/50;
+    @apply shadow-sm hover:shadow-lg;
+    @apply transition-all duration-300;
+  }
+  
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+  }
+  
+  .badge-success {
+    @apply badge bg-emerald-50 text-emerald-700 border border-emerald-200/50;
+  }
+  
+  .badge-urgent {
+    @apply badge bg-orange-50 text-orange-700 border border-orange-200/50;
+  }
+  
+  .badge-info {
+    @apply badge bg-blue-50 text-blue-700 border border-blue-200/50;
   }
 }
 
@@ -133,6 +214,32 @@
     scrollbar-color: hsl(var(--slate-300)) transparent;
   }
   
+  /* Custom Color Utilities for CSS Variables */
+  .bg-background { background-color: hsl(var(--background)); }
+  .bg-card { background-color: hsl(var(--card)); }
+  .bg-popover { background-color: hsl(var(--popover)); }
+  .bg-primary { background-color: hsl(var(--primary)); }
+  .bg-secondary { background-color: hsl(var(--secondary)); }
+  .bg-muted { background-color: hsl(var(--muted)); }
+  .bg-accent { background-color: hsl(var(--accent)); }
+  .bg-destructive { background-color: hsl(var(--destructive)); }
+  .bg-border { background-color: hsl(var(--border)); }
+  .bg-input { background-color: hsl(var(--input)); }
+  .bg-ring { background-color: hsl(var(--ring)); }
+
+  .text-foreground { color: hsl(var(--foreground)); }
+  .text-card-foreground { color: hsl(var(--card-foreground)); }
+  .text-popover-foreground { color: hsl(var(--popover-foreground)); }
+  .text-primary-foreground { color: hsl(var(--primary-foreground)); }
+  .text-secondary-foreground { color: hsl(var(--secondary-foreground)); }
+  .text-muted-foreground { color: hsl(var(--muted-foreground)); }
+  .text-accent-foreground { color: hsl(var(--accent-foreground)); }
+  .text-destructive-foreground { color: hsl(var(--destructive-foreground)); }
+
+  .border-border { border-color: hsl(var(--border)); }
+  .border-input { border-color: hsl(var(--input)); }
+  .ring-ring { box-shadow: 0 0 0 2px hsl(var(--ring)); }
+
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
   }
@@ -243,84 +350,3 @@
   }
 }
 
-/* ========================================
-   COMPONENT OVERRIDES
-   ======================================== */
-
-@layer components {
-  /* Premium Input */
-  .input-premium {
-    @apply w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400;
-    @apply transition-all duration-200;
-    @apply focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500;
-    @apply hover:border-slate-300;
-  }
-  
-  /* Premium Button */
-  .btn-primary {
-    @apply inline-flex items-center justify-center px-6 py-3 rounded-full font-semibold;
-    @apply bg-slate-900 text-white;
-    @apply hover:bg-slate-800 active:scale-[0.98];
-    @apply transition-all duration-200;
-    @apply focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2;
-    @apply disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-  
-  .btn-urgent {
-    @apply inline-flex items-center justify-center px-6 py-3 rounded-full font-bold;
-    @apply bg-gradient-to-r from-orange-600 to-orange-500 text-white;
-    @apply shadow-lg shadow-orange-200/50;
-    @apply hover:from-orange-700 hover:to-orange-600 hover:shadow-xl hover:scale-105;
-    @apply active:scale-100;
-    @apply transition-all duration-300;
-    @apply focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2;
-    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100;
-  }
-  
-  .btn-ghost {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium;
-    @apply text-slate-600 bg-transparent;
-    @apply hover:bg-slate-100 hover:text-slate-900;
-    @apply transition-all duration-200;
-    @apply focus:outline-none focus:ring-2 focus:ring-slate-500/20;
-  }
-  
-  /* Chat Message Bubbles */
-  .chat-bubble-user {
-    @apply bg-gradient-to-br from-blue-600 to-blue-500 text-white;
-    @apply rounded-2xl rounded-br-md;
-    @apply shadow-lg shadow-blue-500/20;
-    @apply dark:from-blue-700 dark:to-violet-700;
-  }
-  
-  .chat-bubble-assistant {
-    @apply bg-white text-slate-900 border border-slate-100;
-    @apply rounded-2xl rounded-bl-md;
-    @apply shadow-sm;
-    @apply dark:bg-slate-800 dark:text-slate-50 dark:border-slate-700;
-  }
-  
-  /* Card Premium */
-  .card-premium {
-    @apply bg-white rounded-2xl border border-slate-200/50;
-    @apply shadow-sm hover:shadow-lg;
-    @apply transition-all duration-300;
-  }
-  
-  /* Badge */
-  .badge {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
-  }
-  
-  .badge-success {
-    @apply badge bg-emerald-50 text-emerald-700 border border-emerald-200/50;
-  }
-  
-  .badge-urgent {
-    @apply badge bg-orange-50 text-orange-700 border border-orange-200/50;
-  }
-  
-  .badge-info {
-    @apply badge bg-blue-50 text-blue-700 border border-blue-200/50;
-  }
-}
