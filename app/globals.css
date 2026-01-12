@@ -71,25 +71,19 @@
 }
 
 .dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 217.2 91.2% 59.8%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20% 65%;
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 63% 31%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 217.2 91.2% 59.8%;
+  --background: 240 3.7% 7.6%;            /* Dark Charcoal #131314 */
+  --foreground: 0 0% 93%;                  /* Soft White #EDEDED */
+  --card: 240 3.7% 12%;                    /* Slightly lighter surface */
+  --card-foreground: 0 0% 93%;
+  --popover: 240 3.7% 12%;
+  --popover-foreground: 0 0% 93%;
+  --primary: 212 100% 80%;                  /* Pastel Blue #A8C7FA */
+  --primary-foreground: 212 100% 20%;       /* Dark Blue for text */
+  --muted: 240 3.7% 18%;                    /* Soft dark gray */
+  --muted-foreground: 240 5% 65%;           /* Medium gray text */
+  --border: 240 3.7% 22%;                   /* Subtle border */
+  --input: 240 3.7% 22%;
+  /* ...existing code... */
 }
 
 @layer base {
