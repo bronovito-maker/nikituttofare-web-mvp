@@ -1,11 +1,17 @@
 // hooks/useN8NChat.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export const useN8NChat = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   // Un ID a caso per far funzionare la memoria di n8n
-  const [chatId] = useState(() => Math.random().toString(36).substring(7));
+  const [chatId, setChatId] = useState('');
+
+  useEffect(() => {
+    const array = new Uint32Array(1);
+    window.crypto.getRandomValues(array);
+    setChatId(array[0].toString(36));
+  }, []);
 
   const sendMessage = async (userMessage: string) => {
     // 1. Mostra subito il messaggio dell'utente
@@ -19,8 +25,8 @@ export const useN8NChat = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            message: userMessage,
-            chatId: chatId, 
+          message: userMessage,
+          chatId: chatId,
         }),
       });
 
@@ -29,7 +35,7 @@ export const useN8NChat = () => {
       // 3. Mostra la risposta di n8n
       // Nota: n8n deve rispondere con un JSON che contiene "text" o "output"
       const aiText = data.text || data.output || "Risposta ricevuta";
-      
+
       const newAiMsg = { role: 'assistant', content: aiText, id: (Date.now() + 1).toString() };
       setMessages((prev) => [...prev, newAiMsg]);
 

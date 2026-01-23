@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomBytes } from 'crypto';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase-server';
 import { getCurrentUser } from '@/lib/supabase-helpers';
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     // Genera un nome file univoco - include user ID for organization OR clientId for guests
     const uploaderId = user?.id || clientId || 'guest';
     const fileExt = validatedFile.name.split('.').pop();
-    const fileName = `${uploaderId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const fileName = `${uploaderId}/${Date.now()}-${randomBytes(8).toString('hex')}.${fileExt}`;
 
     // Carica il file su Supabase Storage (bucket: ticket-photos, path: userId/filename)
     const { data, error } = await supabase.storage

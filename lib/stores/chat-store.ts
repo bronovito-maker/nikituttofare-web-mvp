@@ -53,7 +53,7 @@ interface ChatState {
   sessionId: string;
   collectedSlots: ConversationSlots;
   missingSlots: string[];
-  
+
   // Actions
   addMessage: (message: Omit<ChatMessage, 'id' | 'createdAt'>) => void;
   setMessages: (messages: ChatMessage[]) => void;
@@ -67,7 +67,15 @@ interface ChatState {
   generateSessionId: () => string;
 }
 
-const generateId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+const generateId = () => {
+  const array = new Uint32Array(1);
+  const crypto = typeof window !== 'undefined' ? window.crypto : globalThis.crypto;
+  if (crypto) {
+    crypto.getRandomValues(array);
+    return `${Date.now()}-${array[0].toString(36)}`;
+  }
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+};
 
 // Funzione di migrazione per pulire messaggi corrotti
 const migrateMessages = (messages: ChatMessage[]): ChatMessage[] => {
@@ -164,7 +172,7 @@ export const useChatStore = create<ChatState>()(
           console.log('🔄 Migrazione chat store v1 → v2: pulizia messaggi corrotti');
           persistedState.messages = migrateMessages(persistedState.messages);
         }
-        
+
         // Migrazione v2 → v3: Pulisci slot corrotti con placeholder
         if (version < 3 && persistedState.collectedSlots) {
           console.log('🔄 Migrazione chat store v2 → v3: pulizia slot corrotti');
@@ -181,7 +189,7 @@ export const useChatStore = create<ChatState>()(
           }
           persistedState.collectedSlots = slots;
         }
-        
+
         return persistedState;
       },
     }

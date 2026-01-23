@@ -54,6 +54,21 @@ describe('parseChatData', () => {
     expect(result.nome).toBe('Mario Rossi');
   });
 
+  it('extracts email correctly using heuristics', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('network error'));
+
+    const messages: Message[] = [
+      {
+        id: '1',
+        role: 'user',
+        content: 'La mia mail è test.user@example.co.uk',
+      },
+    ];
+
+    const result = await parseChatData(messages);
+    expect(result.email).toBe('test.user@example.co.uk');
+  });
+
   it('keeps high confidence heuristic values when NLU result is partial', async () => {
     fetchMock.mockResolvedValueOnce(
       createResponse({

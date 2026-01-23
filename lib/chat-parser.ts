@@ -73,10 +73,22 @@ function extractName(text: string): { name?: string, confidence: ConfidenceLevel
     ?? text.match(/(?:^|\n)(?:user:\s*)?([A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ'’-]+(?:[\s]+[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ'’-]+){1,5})\b/);
 
   if (nameMatch?.[1]) {
-    const cleaned = nameMatch[1]
-      .replace(/(?:il|la)\s+mio\s+numero.*/i, '')
-      .replace(/(?:allergico|allergica|intollerante).*/i, '')
-      .replace(/[:.,]+$/g, '').trim();
+    let cleaned = nameMatch[1];
+
+    // safe truncation without using .*
+    const truncationPatterns = [
+      /(?:il|la)\s+mio\s+numero/i,
+      /(?:allergico|allergica|intollerante)/i
+    ];
+
+    for (const pattern of truncationPatterns) {
+      const match = cleaned.match(pattern);
+      if (match?.index !== undefined) {
+        cleaned = cleaned.substring(0, match.index);
+      }
+    }
+
+    cleaned = cleaned.replace(/[:.,]+$/g, '').trim();
 
     if (cleaned) {
       if (cleaned.split(/\s+/).length <= 1) {
@@ -206,7 +218,8 @@ function parseWithHeuristics(messages: Message[]): { data: ParsedChatData; confi
   confidence.party_size = partySizeResult.confidence;
   if (data.party_size) data.persone = String(data.party_size);
 
-  const emailMatch = fullText.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+  // ReDoS safe email regex
+  const emailMatch = fullText.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,})/);
   if (emailMatch) data.email = emailMatch[0].toLowerCase();
 
   const dateResult = extractBookingDate(fullText, now);

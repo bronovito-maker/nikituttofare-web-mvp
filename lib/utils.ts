@@ -10,8 +10,18 @@ export function cn(...inputs: ClassValue[]) {
  * Genera un ID di ticket formattato. Esempio: "NTF-123456".
  */
 export function generateTicketId(): string {
-  const min = 100000
-  const max = 999999
-  const num = Math.floor(Math.random() * (max - min + 1)) + min
-  return `NTF-${num}`
+  const min = 100000;
+  const max = 999999;
+  const range = max - min + 1;
+
+  const crypto = typeof window !== 'undefined' ? window.crypto : globalThis.crypto;
+  if (crypto) {
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    const num = (array[0] % range) + min;
+    return `NTF-${num}`;
+  }
+
+  const num = Math.floor(Math.random() * range) + min;
+  return `NTF-${num}`;
 }
