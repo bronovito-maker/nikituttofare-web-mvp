@@ -36,71 +36,71 @@ export const URGENCY_NAMES_IT: Record<string, string> = { emergency: '🚨 EMERG
 // --- SLOT EXTRACTION & VALIDATION ---
 
 function extractCity(userText: string): string | undefined {
-    for (const city of SERVED_CITIES) {
-        if (userText.includes(city)) {
-            const mappedCity = CITY_MAPPING[city] || city;
-            return mappedCity.charAt(0).toUpperCase() + mappedCity.slice(1);
-        }
+  for (const city of SERVED_CITIES) {
+    if (userText.includes(city)) {
+      const mappedCity = CITY_MAPPING[city] || city;
+      return mappedCity.charAt(0).toUpperCase() + mappedCity.slice(1);
     }
-    return undefined;
+  }
+  return undefined;
 }
 
 function extractPhone(originalText: string): string | undefined {
-    const phoneMatch = originalText.match(/(\+39\s?)?(3\d{2}[\s.-]?\d{7}|\d{9,10})/);
-    return phoneMatch ? phoneMatch[0].replace(/[\s.-]/g, '') : undefined;
+  const phoneMatch = originalText.match(/(\+39\s?)?(3\d{2}[\s.-]?\d{7}|\d{9,10})/);
+  return phoneMatch ? phoneMatch[0].replace(/[\s.-]/g, '') : undefined;
 }
 
 function extractAddress(originalText: string): { streetAddress?: string } {
-    const addressMatch = originalText.match(/(?:via|corso|piazza|viale)\s+[a-zàèéìòù\s]+[\s,]+\d+/i);
-    const streetAddress = addressMatch ? addressMatch[0].trim() : undefined;
-    return { streetAddress };
+  const addressMatch = originalText.match(/(?:via|corso|piazza|viale)\s+[a-zàèéìòù]+(?:[\s]+[a-zàèéìòù]+)*[\s,]+\d+/i);
+  const streetAddress = addressMatch ? addressMatch[0].trim() : undefined;
+  return { streetAddress };
 }
 
 function extractCategoryAndDetails(userText: string): { problemCategory?: ConversationSlots['problemCategory'], problemDetails?: string } {
-    for (const [category, data] of Object.entries(DOMAIN_KNOWLEDGE)) {
-        if (data.keywords.some(kw => userText.includes(kw))) {
-            const problemDetails = userText.length > 10 ? userText.slice(0, 300) : undefined;
-            return { problemCategory: category as ConversationSlots['problemCategory'], problemDetails };
-        }
+  for (const [category, data] of Object.entries(DOMAIN_KNOWLEDGE)) {
+    if (data.keywords.some(kw => userText.includes(kw))) {
+      const problemDetails = userText.length > 10 ? userText.slice(0, 300) : undefined;
+      return { problemCategory: category as ConversationSlots['problemCategory'], problemDetails };
     }
-    return {};
+  }
+  return {};
 }
 
 function extractUrgency(userText: string): ConversationSlots['urgencyLevel'] | undefined {
-    if (['urgente', 'emergenza', 'subito', 'allagamento', 'bloccato fuori'].some(kw => userText.includes(kw))) return 'emergency';
-    if (['oggi', 'stasera'].some(kw => userText.includes(kw))) return 'today';
-    return undefined;
+  if (['urgente', 'emergenza', 'subito', 'allagamento', 'bloccato fuori'].some(kw => userText.includes(kw))) return 'emergency';
+  if (['oggi', 'stasera'].some(kw => userText.includes(kw))) return 'today';
+  return undefined;
 }
 
 function extractConfirmation(lastUserMessage: string): { userConfirmed?: boolean, quoteRejected?: boolean } {
-    if (!lastUserMessage) return {};
-    
+  if (!lastUserMessage) return {};
+
   const isReject = /((^no\b)|(\brifiuto\b)|(\bnon (va bene|accetto)\b))/.test(lastUserMessage);
   const isAccept = /(\b(si|sì|ok|confermo|esatto|corretto|va bene|procedi|accetto)\b)/.test(lastUserMessage);
-      
-    if (isReject) {
-      return { userConfirmed: false, quoteRejected: true };
-    } else if (isAccept && lastUserMessage.length < 80) {
-      return { userConfirmed: true };
-    }
-    return {};
+
+  if (isReject) {
+    return { userConfirmed: false, quoteRejected: true };
+  } else if (isAccept && lastUserMessage.length < 80) {
+    return { userConfirmed: true };
+  }
+  return {};
 }
 
 function extractPriceEstimate(messages: Array<{ role: string; content: string }>): { priceEstimateGiven?: boolean, priceRangeMin?: number, priceRangeMax?: number } {
-    const result: { priceEstimateGiven?: boolean, priceRangeMin?: number, priceRangeMax?: number } = {};
-    messages.forEach(msg => {
-        if (msg.role === 'assistant' && typeof msg.content === 'string') {
-            try {
-                const parsed = JSON.parse(msg.content);
-                if (parsed.type === 'price_estimate' && parsed.content.priceMin && parsed.content.priceMax) {
-                    result.priceEstimateGiven = true;
-                    result.priceRangeMin = parsed.content.priceMin;
-                    result.priceRangeMax = parsed.content.priceMax;
-                }
-            } catch {}
+  const result: { priceEstimateGiven?: boolean, priceRangeMin?: number, priceRangeMax?: number } = {};
+  messages.forEach(msg => {
+    if (msg.role === 'assistant' && typeof msg.content === 'string') {
+      try {
+        const parsed = JSON.parse(msg.content);
+        if (parsed.type === 'price_estimate' && parsed.content.priceMin && parsed.content.priceMax) {
+          result.priceEstimateGiven = true;
+          result.priceRangeMin = parsed.content.priceMin;
+          result.priceRangeMax = parsed.content.priceMax;
         }
-    });
-    return result;
+      } catch { }
+    }
+  });
+  return result;
 }
 
 export function extractSlotsFromConversation(messages: Array<{ role: string; content: string }>, userEmail?: string): ConversationSlots {
@@ -110,17 +110,17 @@ export function extractSlotsFromConversation(messages: Array<{ role: string; con
 
   slots.city = extractCity(userText);
   slots.phoneNumber = extractPhone(originalText);
-  
+
   const { streetAddress } = extractAddress(originalText);
   slots.streetAddress = streetAddress;
   if (slots.city && slots.streetAddress) slots.serviceAddress = `${slots.streetAddress}, ${slots.city}`;
-  
+
   const { problemCategory, problemDetails } = extractCategoryAndDetails(userText);
   slots.problemCategory = problemCategory;
   if (!slots.problemDetails) slots.problemDetails = problemDetails;
 
   slots.urgencyLevel = extractUrgency(userText);
-  
+
   const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content?.toString().toLowerCase().trim() ?? '';
   const confirmation = extractConfirmation(lastUserMessage);
   slots.userConfirmed = confirmation.userConfirmed;
@@ -135,43 +135,43 @@ export function extractSlotsFromConversation(messages: Array<{ role: string; con
 }
 
 const normalizeDetails = (details: string): string => {
-    return details.toLowerCase().trim()
-      .replace(/(.)\1{2,}/g, '$1$1')
-      .replace(/\brubinett[oa]\b/g, 'rubinetto')
-      .replace(/\bintassat[oa]\b/g, 'intasato');
+  return details.toLowerCase().trim()
+    .replace(/(.)\1{2,}/g, '$1$1')
+    .replace(/\brubinett[oa]\b/g, 'rubinetto')
+    .replace(/\bintassat[oa]\b/g, 'intasato');
 }
 
 const isGenericPhrase = (details: string): boolean => {
-    const genericPhrases = [
-        /^(vorrei|ho bisogno).*(preventivo|intervento|aiuto|tecnico)/i,
-        /^(problema|guasto).*(idraulico|elettrico|fabbro|clima)/i,
-        /^(si|sì|no|ok|certo|va bene)$/i,
-    ];
-    return genericPhrases.some(pattern => pattern.test(details));
+  const genericPhrases = [
+    /^(vorrei|ho bisogno).*(preventivo|intervento|aiuto|tecnico)/i,
+    /^(problema|guasto).*(idraulico|elettrico|fabbro|clima)/i,
+    /^(si|sì|no|ok|certo|va bene)$/i,
+  ];
+  return genericPhrases.some(pattern => pattern.test(details));
 }
 
 const hasSpecificKeyword = (details: string, category?: ConversationSlots['problemCategory']): boolean => {
-    const keywords = {
-        locksmith: /\b(chiave|cilindro|serratura|chiuso fuori|non si apre)\b/i,
-        plumbing: /\b(perde|perdita|goccia|allagamento|intasato|otturato|non scarica|rubinetto|wc)\b/i,
-        electric: /\b(scatta|salvavita|blackout|cortocircuito|presa|scintille|bruciato)\b/i,
-        climate: /\b(non scalda|non raffresca|non parte|rumore|perde acqua|caldaia)\b/i,
-        generic: /\b(montare|smontare|installare|sostituire|riparare)\b/i
-    };
-    const categoryKeywords = keywords[category as keyof typeof keywords] || keywords.generic;
-    return categoryKeywords.test(details);
+  const keywords = {
+    locksmith: /\b(chiave|cilindro|serratura|chiuso fuori|non si apre)\b/i,
+    plumbing: /\b(perde|perdita|goccia|allagamento|intasato|otturato|non scarica|rubinetto|wc)\b/i,
+    electric: /\b(scatta|salvavita|blackout|cortocircuito|presa|scintille|bruciato)\b/i,
+    climate: /\b(non scalda|non raffresca|non parte|rumore|perde acqua|caldaia)\b/i,
+    generic: /\b(montare|smontare|installare|sostituire|riparare)\b/i
+  };
+  const categoryKeywords = keywords[category as keyof typeof keywords] || keywords.generic;
+  return categoryKeywords.test(details);
 }
 
 export function checkProblemDetailsValid(slots: ConversationSlots): boolean {
-    if (slots.hasPhoto) return true;
-    if (!slots.problemDetails) return false;
+  if (slots.hasPhoto) return true;
+  if (!slots.problemDetails) return false;
 
-    const normalized = normalizeDetails(slots.problemDetails);
-    if (isGenericPhrase(normalized)) return false;
-    if (hasSpecificKeyword(normalized, slots.problemCategory)) return true;
+  const normalized = normalizeDetails(slots.problemDetails);
+  if (isGenericPhrase(normalized)) return false;
+  if (hasSpecificKeyword(normalized, slots.problemCategory)) return true;
 
-    const wordCount = normalized.split(/\s+/).filter(Boolean).length;
-    return wordCount >= 10 || normalized.length >= 60;
+  const wordCount = normalized.split(/\s+/).filter(Boolean).length;
+  return wordCount >= 10 || normalized.length >= 60;
 }
 
 export function getMissingSlots(slots: ConversationSlots): (keyof ConversationSlots)[] {
@@ -212,16 +212,15 @@ const buildSlotStatus = (slots: ConversationSlots): string => `
 - Telefono: ${slots.phoneNumber || 'da chiedere'}
 - Conferma: ${slots.userConfirmed ? 'ACCETTATO' : 'in attesa'}`;
 
-const buildFlowInstructions = (slots: ConversationSlots, priceRange: {min: number, max: number} | null): string => `
+const buildFlowInstructions = (slots: ConversationSlots, priceRange: { min: number, max: number } | null): string => `
 # 🎯 FLUSSO CONVERSAZIONALE STRICT
 1.  **CITTÀ**: Se manca, chiedi "Per aiutarti, di quale città parliamo?". Non procedere senza.
 2.  **CATEGORIA**: Se manca, chiedi "Che tipo di intervento ti serve?". Non procedere senza.
 3.  **DIAGNOSI**: Fai domande specifiche per capire il problema ("Cosa vedi?", "La chiave è spezzata?"). Non puoi dare prezzi su "non funziona".
-4.  **PREVENTIVO**: SOLO se hai città, categoria E problema specifico, puoi dare il preventivo. ${ 
-    slots.userConfirmed ? 'L\'utente ha già accettato, passa a INDIRIZZO.' : 
-    priceRange ? `Ora puoi dire: "Basandomi su questo, l'intervento si aggira tra **${priceRange.min}€ e ${priceRange.max}€**."` : 
-    'Non puoi ancora dare un preventivo.' 
-}
+4.  **PREVENTIVO**: SOLO se hai città, categoria E problema specifico, puoi dare il preventivo. ${slots.userConfirmed ? 'L\'utente ha già accettato, passa a INDIRIZZO.' :
+    priceRange ? `Ora puoi dire: "Basandomi su questo, l'intervento si aggira tra **${priceRange.min}€ e ${priceRange.max}€**."` :
+      'Non puoi ancora dare un preventivo.'
+  }
 5.  **INDIRIZZO**: Solo DOPO l'accettazione del preventivo, chiedi "Perfetto. Dimmi l'indirizzo esatto (via e numero civico)".
 6.  **TELEFONO**: Ultimo step, chiedi "A che numero può chiamarti il tecnico per confermare?".
 7.  **RIEPILOGO**: Mostra i dati e chiedi conferma finale.`;
@@ -232,7 +231,7 @@ export function buildNikiSystemPrompt(slots: ConversationSlots, ticketId?: strin
 
   const sections = [
     `# 🤖 IDENTITÀ\nSei **Niki**, l'assistente AI di **NikiTuttoFare**, servizio di pronto intervento H24 in Riviera Romagnola.`,
-    `# ⏰ CONTESTO\n- Data/Ora: ${now}\n- Email utente: ${slots.userEmail || 'Ospite'}\n${ticketId ? `- Ticket: #${ticketId.slice(-8).toUpperCase()}`:''}`,
+    `# ⏰ CONTESTO\n- Data/Ora: ${now}\n- Email utente: ${slots.userEmail || 'Ospite'}\n${ticketId ? `- Ticket: #${ticketId.slice(-8).toUpperCase()}` : ''}`,
     buildSlotStatus(slots),
     `# 🧠 ESPERTO TECNICO\nUsa questa knowledge base per distinguere tra lavori domestici (prezzo base) e commerciali/Horeca (più complessi, proponi sopralluogo o range "a partire da").\n${buildTechnicianContextPrompt()}`,
     `# 🧪 CASI DI RIFERIMENTO\nUsa questi esempi per orientare tono e priorità, non per copiare.\n${buildExamplesContext(12)}`,
@@ -248,28 +247,28 @@ export function buildNikiSystemPrompt(slots: ConversationSlots, ticketId?: strin
 // --- QUESTION & MESSAGE GENERATORS ---
 
 function getProblemDetailsQuestion(category?: string): string {
-    const categorySpecific: Record<string, string> = {
-      locksmith: '🔑 Per darti il preventivo giusto, dimmi cosa è successo: Sei rimasto **chiuso fuori**? La **chiave si è spezzata**? La serratura **non gira**?',
-      plumbing: '🔧 Per il preventivo, dimmi cosa vedi: Da **dove perde** \'acqua? Lo **scarico è intasato**? C\'è un **allagamento**?',
-      electric: '⚡ Per il preventivo, dimmi cosa succede: Salta il **salvavita**? C\'è un **blackout**? Qualche **presa non funziona**?',
-      climate: '❄️ Per il preventivo, dimmi cosa succede: **Non si accende**? **Non scalda** o **non raffresca**? Fa **rumori strani**?',
-      generic: '🔨 Per darti un preventivo preciso, descrivimi **cosa devi fare**: montare, riparare o installare qualcosa?',
-    };
-    return categorySpecific[category || 'generic'] || categorySpecific.generic;
+  const categorySpecific: Record<string, string> = {
+    locksmith: '🔑 Per darti il preventivo giusto, dimmi cosa è successo: Sei rimasto **chiuso fuori**? La **chiave si è spezzata**? La serratura **non gira**?',
+    plumbing: '🔧 Per il preventivo, dimmi cosa vedi: Da **dove perde** \'acqua? Lo **scarico è intasato**? C\'è un **allagamento**?',
+    electric: '⚡ Per il preventivo, dimmi cosa succede: Salta il **salvavita**? C\'è un **blackout**? Qualche **presa non funziona**?',
+    climate: '❄️ Per il preventivo, dimmi cosa succede: **Non si accende**? **Non scalda** o **non raffresca**? Fa **rumori strani**?',
+    generic: '🔨 Per darti un preventivo preciso, descrivimi **cosa devi fare**: montare, riparare o installare qualcosa?',
+  };
+  return categorySpecific[category || 'generic'] || categorySpecific.generic;
 }
 
 export function getQuestionForSlot(slotName: string, category?: string): string {
   if (slotName === 'problemDetails') {
     return getProblemDetailsQuestion(category);
   }
-  
+
   const questions: Record<string, string> = {
-    city: 'Per aiutarti, di quale **città** parliamo? (Rimini, Riccione, Cattolica...)' ,
+    city: 'Per aiutarti, di quale **città** parliamo? (Rimini, Riccione, Cattolica...)',
     problemCategory: 'Che tipo di problema hai? Idraulico, elettrico, serrature, o clima/riscaldamento?',
     phoneNumber: 'Perfetto! A che numero può **chiamarti il tecnico** per confermare l\'appuntamento?',
     streetAddress: 'Ora mi serve l\'**indirizzo esatto** per mandare il tecnico. Via e numero civico?',
   };
-  
+
   return questions[slotName] || 'Puoi darmi qualche informazione in più?';
 }
 

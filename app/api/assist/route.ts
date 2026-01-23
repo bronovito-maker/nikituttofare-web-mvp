@@ -117,7 +117,7 @@ function extractDataFromMessage(message: string): Partial<ConversationSlots> {
   }
 
   const addressMatch = message.match(
-    /(?:via|corso|piazza|viale|vicolo|largo)\s+[a-zàèéìòùáéíóú\s]+[\s,]*\d+[a-z]?/i,
+    /(?:via|corso|piazza|viale|vicolo|largo)\s+[a-zàèéìòùáéíóú]+(?:[\s]+[a-zàèéìòùáéíóú]+)*[\s,]*\d+[a-z]?/i,
   )
   if (addressMatch) {
     extracted.serviceAddress = addressMatch[0].trim()
@@ -244,9 +244,8 @@ function createGreetingResponse(
     "Ciao! Sono Niki, il tuo assistente per emergenze domestiche 🔧\n\n"
 
   if (slots.problemCategory && slots.problemCategory !== 'generic') {
-    greeting += `Ho capito che hai un problema di tipo **${
-      CATEGORY_NAMES_IT[slots.problemCategory] || slots.problemCategory
-    }**. `
+    greeting += `Ho capito che hai un problema di tipo **${CATEGORY_NAMES_IT[slots.problemCategory] || slots.problemCategory
+      }**. `
   }
 
   if (slots.urgencyLevel === 'emergency') {
@@ -269,9 +268,8 @@ function createConfirmationResponse(
   return {
     type: 'confirmation',
     content: {
-      message: `La tua richiesta è stata confermata! Un tecnico ${
-        CATEGORY_NAMES_IT[slots.problemCategory || 'generic'] || ''
-      } ti contatterà al numero ${slots.phoneNumber} il prima possibile.`,
+      message: `La tua richiesta è stata confermata! Un tecnico ${CATEGORY_NAMES_IT[slots.problemCategory || 'generic'] || ''
+        } ti contatterà al numero ${slots.phoneNumber} il prima possibile.`,
       ticketId: ticketId,
     },
   } as AIResponseType
@@ -286,8 +284,8 @@ function createRecapResponse(
     priority === 'emergency'
       ? '30-60 minuti'
       : priority === 'high'
-      ? '2-4 ore'
-      : '24-48 ore'
+        ? '2-4 ore'
+        : '24-48 ore'
 
   return {
     type: 'recap',
@@ -380,11 +378,15 @@ function parseAndValidateAIResponse(
   text: string,
   slots: ConversationSlots,
 ): AIResponseType | null {
-  const jsonMatch = text.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) return null
+  const start = text.indexOf('{')
+  const end = text.lastIndexOf('}')
+
+  if (start === -1 || end === -1 || end <= start) return null
+
+  const jsonString = text.substring(start, end + 1)
 
   try {
-    const parsed = JSON.parse(jsonMatch[0])
+    const parsed = JSON.parse(jsonString)
     if (parsed.shouldCreateTicket && !canCreateTicket(slots)) {
       parsed.shouldCreateTicket = false
     }
@@ -404,11 +406,16 @@ function parseAndValidateAIResponse(
 }
 
 function getCleanTextFromAIResponse(text: string): string {
-  return text
-    .replace(/```json/g, '')
-    .replace(/```/g, '')
-    .replace(/\{[\s\S]*\}/g, '')
-    .trim()
+  let cleaned = text.replace(/```json/g, '').replace(/```/g, '')
+
+  const start = cleaned.indexOf('{')
+  const end = cleaned.lastIndexOf('}')
+
+  if (start !== -1 && end !== -1 && end > start) {
+    cleaned = cleaned.substring(0, start) + cleaned.substring(end + 1)
+  }
+
+  return cleaned.trim()
 }
 
 async function generateAIResponse(
@@ -480,7 +487,7 @@ function mergeSlots(
     )
 
     if (finalValue !== undefined) {
-      ;(slots as Record<keyof ConversationSlots, any>)[key] = finalValue
+      ; (slots as Record<keyof ConversationSlots, any>)[key] = finalValue
     }
   }
 
@@ -609,13 +616,10 @@ async function handleTicketCreation(
       return NextResponse.json({
         type: 'confirmation',
         content: {
-          message: `🎉 La tua richiesta è stata confermata!\n\nUn tecnico **${
-            CATEGORY_NAMES_IT[slots.problemCategory || 'generic']
-          }** ti chiamerà al numero **${
-            slots.phoneNumber
-          }** entro 30-60 minuti per confermare l\'appuntamento.\n\n📍 Intervento a: ${
-            slots.serviceAddress
-          }\n💰 Preventivo: ${priceRange.min}€ - ${priceRange.max}€`,
+          message: `🎉 La tua richiesta è stata confermata!\n\nUn tecnico **${CATEGORY_NAMES_IT[slots.problemCategory || 'generic']
+            }** ti chiamerà al numero **${slots.phoneNumber
+            }** entro 30-60 minuti per confermare l\'appuntamento.\n\n📍 Intervento a: ${slots.serviceAddress
+            }\n💰 Preventivo: ${priceRange.min}€ - ${priceRange.max}€`,
           ticketId: ticketId,
         },
       })
@@ -624,9 +628,8 @@ async function handleTicketCreation(
     return NextResponse.json({
       type: 'auth_required',
       content: {
-        content: `Perfetto! Ho raccolto tutte le informazioni necessarie per la tua richiesta di intervento **${
-          CATEGORY_NAMES_IT[slots.problemCategory || 'generic']
-        }**.\n\n📧 **Per completare la richiesta in sicurezza, accedi con la tua email.**\n\nRiceverai un link di conferma e solo dopo il click il tecnico verrà avvisato.`,
+        content: `Perfetto! Ho raccolto tutte le informazioni necessarie per la tua richiesta di intervento **${CATEGORY_NAMES_IT[slots.problemCategory || 'generic']
+          }**.\n\n📧 **Per completare la richiesta in sicurezza, accedi con la tua email.**\n\nRiceverai un link di conferma e solo dopo il click il tecnico verrà avvisato.`,
         ticketData: {
           category: slots.problemCategory,
           city: slots.city,

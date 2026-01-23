@@ -44,7 +44,7 @@ export const INITIAL_LEAD_DRAFT: LeadDraft = {
 };
 
 // --- Regex & Constants ---
-const PERSONE_REGEX = /\b(?:siamo|saremmo|saranno|vorremmo|avremmo|per)\s*(?:circa\s*)?(?:in\s*)?(\d{1,2})\s*(?:persone|pers|pax|coperti)?\b/i;
+const PERSONE_REGEX = /\b(?:siamo|saremmo|saranno|vorremmo|avremmo|per)\s+(?:circa\s+)?(?:in\s+)?(\d{1,2})\s+(?:persone|pers|pax|coperti)?\b/i;
 const PERSONE_LABEL_REGEX = /\b(?:numero|n°|num\.?)\s*(?:di)?\s*(?:persone|ospiti|coperti)[\s:]*([0-9]{1,2})\b/i;
 const ORARIO_REGEX = /(?:alle|per le|verso le|alle ore|alle h)\s*(\d{1,2})(?::(\d{2}))?/i;
 const DATE_NUMERIC_REGEX = /(?:il\s*)?(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/i;
@@ -61,7 +61,7 @@ type NluParsedData = Partial<ParsedChatData> & { ambiguities: NluAmbiguityMap };
 // --- Normalization Functions ---
 const normalizePhone = (v: string | null | undefined) => v ? v.replace(/[^\d+]/g, '') : undefined;
 const normalizeIsoDate = (v: string | null | undefined) => (v && !Number.isNaN(new Date(v).getTime())) ? new Date(v).toISOString() : undefined;
-const normalizeTime = (v: string | null | undefined) => v?.match(/(\d{1,2})(?::(\d{2}))?/) ? `${v.match(/(\d{1,2})/)?.[1].padStart(2, '0')}:${v.match(/:(\d{2})?/)?.[1] ?? '00'}`: undefined;
+const normalizeTime = (v: string | null | undefined) => v?.match(/(\d{1,2})(?::(\d{2}))?/) ? `${v.match(/(\d{1,2})/)?.[1].padStart(2, '0')}:${v.match(/:(\d{2})?/)?.[1] ?? '00'}` : undefined;
 const normalizeNotes = (v: string | null | undefined) => v?.trim() || undefined;
 
 
@@ -70,7 +70,7 @@ const normalizeNotes = (v: string | null | undefined) => v?.trim() || undefined;
 function extractName(text: string): { name?: string, confidence: ConfidenceLevel, clarification?: BookingClarification } {
   const nameMatch = text.match(/(?:mi\s+chiamo|chiamarmi|mio\s+nome\s+è|sono)\s+([A-Za-zÀ-ÖØ-öø-ÿ\s'-]+?)(?:\.|\n|,|$)/i)
     ?? text.match(/(?:a\s+nome|il\s+mio\s+nome\s+è)\s+([A-Za-zÀ-ÖØ-öø-ÿ\s'-]+?)(?:\.|\n|,|$)/i)
-    ?? text.match(/(?:^|\n)(?:user:\s*)?([A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ'’-]+(?:\s+[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ'’-]+)+)\b/);
+    ?? text.match(/(?:^|\n)(?:user:\s*)?([A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ'’-]+(?:[\s]+[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ'’-]+){1,5})\b/);
 
   if (nameMatch?.[1]) {
     const cleaned = nameMatch[1]
@@ -107,76 +107,80 @@ function extractPartySize(text: string): { partySize?: number, confidence: Confi
 }
 
 function extractBookingDate(text: string, now: Date): { date: Date, confidence: ConfidenceLevel } | null {
-    const numericMatch = text.match(DATE_NUMERIC_REGEX);
-    if (numericMatch) {
-        const day = parseInt(numericMatch[1], 10), month = parseInt(numericMatch[2], 10) - 1;
-        let year = numericMatch[3] ? parseInt(numericMatch[3], 10) : now.getFullYear();
-        if (year < 100) year += 2000;
-        const date = new Date(year, month, day);
-        if (!isNaN(date.getTime())) return { date, confidence: 'medium' };
-    }
+  const numericMatch = text.match(DATE_NUMERIC_REGEX);
+  if (numericMatch) {
+    const day = parseInt(numericMatch[1], 10), month = parseInt(numericMatch[2], 10) - 1;
+    let year = numericMatch[3] ? parseInt(numericMatch[3], 10) : now.getFullYear();
+    if (year < 100) year += 2000;
+    const date = new Date(year, month, day);
+    if (!isNaN(date.getTime())) return { date, confidence: 'medium' };
+  }
 
-    const textMatch = text.match(DATE_TEXT_REGEX);
-    if (textMatch) {
-        const day = parseInt(textMatch[1], 10), monthName = textMatch[2].toLowerCase();
-        let year = now.getFullYear();
-        const date = new Date(year, MONTH_MAP[monthName], day);
-        if (date < now) date.setFullYear(year + 1);
-        if (!isNaN(date.getTime())) return { date, confidence: 'medium' };
-    }
-    
-    const RELATIVE_DATE_RULES = [
-        { regex: /\bdopodomani\b/i, offset: 2, confidence: 'low' },
-        { regex: /\bdomani\b/i, offset: 1, confidence: 'medium' },
-        { regex: /\b(oggi|stasera)\b/i, offset: 0, confidence: 'low' },
-    ] as const;
+  const textMatch = text.match(DATE_TEXT_REGEX);
+  if (textMatch) {
+    const day = parseInt(textMatch[1], 10), monthName = textMatch[2].toLowerCase();
+    let year = now.getFullYear();
+    const date = new Date(year, MONTH_MAP[monthName], day);
+    if (date < now) date.setFullYear(year + 1);
+    if (!isNaN(date.getTime())) return { date, confidence: 'medium' };
+  }
 
-    for (const rule of RELATIVE_DATE_RULES) {
-        if (rule.regex.test(text)) {
-            return { date: addDays(startOfDay(now), rule.offset), confidence: rule.confidence };
-        }
-    }
+  const RELATIVE_DATE_RULES = [
+    { regex: /\bdopodomani\b/i, offset: 2, confidence: 'low' },
+    { regex: /\bdomani\b/i, offset: 1, confidence: 'medium' },
+    { regex: /\b(oggi|stasera)\b/i, offset: 0, confidence: 'low' },
+  ] as const;
 
-    return null;
+  for (const rule of RELATIVE_DATE_RULES) {
+    if (rule.regex.test(text)) {
+      return { date: addDays(startOfDay(now), rule.offset), confidence: rule.confidence };
+    }
+  }
+
+  return null;
 }
 
 function extractIntent(fullText: string): ParsedChatData['intent'] {
-    if (/prenotare|riservare|tavolo/.test(fullText)) return 'prenotazione';
-    if (/ordina|asporto|delivery/.test(fullText)) return 'ordine';
-    if (/info|orari|menu/.test(fullText)) return 'info';
-    return 'altro';
+  if (/prenotare|riservare|tavolo/.test(fullText)) return 'prenotazione';
+  if (/ordina|asporto|delivery/.test(fullText)) return 'ordine';
+  if (/info|orari|menu/.test(fullText)) return 'info';
+  return 'altro';
 }
 
 function extractNotes(fullText: string): string | undefined {
-    const notes = [];
-    if (/allerg|intolleran/.test(fullText)) notes.push('Possibili allergie/intolleranze.');
-    const notesMatch = fullText.match(/(?:note:|nota:)\s*(.+)/i);
-    if (notesMatch?.[1]) notes.push(notesMatch[1].trim());
-    return notes.length ? notes.join(' | ') : undefined;
+  const notes = [];
+  if (/allerg|intolleran/.test(fullText)) notes.push('Possibili allergie/intolleranze.');
+  const notesMatch = fullText.match(/(?:note:|nota:)\s*(.+)/i);
+  if (notesMatch?.[1]) notes.push(notesMatch[1].trim());
+  return notes.length ? notes.join(' | ') : undefined;
 }
 
 function findClarifications(fullText: string): BookingClarification[] {
-    const clarifications: BookingClarification[] = [];
-    const AMBIGUOUS_PATTERNS: {slot: BookingSlotKey, patterns: {regex: RegExp, reason: string}[]}[] = [
-      { slot: 'orario', patterns: [
-          { regex: /\b(verso|intorno|dopo|prima)(?:\s+le)?\s+\d{1,2}\b/i, reason: 'Orario approssimativo.' },
-          { regex: /\b(stasera|in\s+serata|più\s+tardi)\b/i, reason: 'Orario generico.' },
-          { regex: /\b(a|per)\s+(pranzo|cena)\b/i, reason: 'Fascia oraria generica.' },
-      ]},
-      { slot: 'data', patterns: [
-          { regex: /\b(questo\s+weekend|prossimi\s+giorni|in\s+settimana)\b/i, reason: 'Data generica.' },
-      ]}
-    ];
-  
-    AMBIGUOUS_PATTERNS.forEach(({slot, patterns}) => {
-        patterns.forEach(({regex, reason}) => {
-            const match = fullText.match(regex);
-            if (match && !clarifications.some(c => c.slot === slot)) {
-                clarifications.push({ slot, reason, phrase: match[0] });
-            }
-        });
+  const clarifications: BookingClarification[] = [];
+  const AMBIGUOUS_PATTERNS: { slot: BookingSlotKey, patterns: { regex: RegExp, reason: string }[] }[] = [
+    {
+      slot: 'orario', patterns: [
+        { regex: /\b(verso|intorno|dopo|prima)(?:\s+le)?\s+\d{1,2}\b/i, reason: 'Orario approssimativo.' },
+        { regex: /\b(stasera|in\s+serata|più\s+tardi)\b/i, reason: 'Orario generico.' },
+        { regex: /\b(a|per)\s+(pranzo|cena)\b/i, reason: 'Fascia oraria generica.' },
+      ]
+    },
+    {
+      slot: 'data', patterns: [
+        { regex: /\b(questo\s+weekend|prossimi\s+giorni|in\s+settimana)\b/i, reason: 'Data generica.' },
+      ]
+    }
+  ];
+
+  AMBIGUOUS_PATTERNS.forEach(({ slot, patterns }) => {
+    patterns.forEach(({ regex, reason }) => {
+      const match = fullText.match(regex);
+      if (match && !clarifications.some(c => c.slot === slot)) {
+        clarifications.push({ slot, reason, phrase: match[0] });
+      }
     });
-    return clarifications;
+  });
+  return clarifications;
 }
 
 
@@ -196,19 +200,19 @@ function parseWithHeuristics(messages: Message[]): { data: ParsedChatData; confi
   const phoneResult = extractPhone(fullText);
   data.telefono = phoneResult.phone;
   confidence.telefono = phoneResult.confidence;
-  
+
   const partySizeResult = extractPartySize(fullText);
   data.party_size = partySizeResult.partySize;
   confidence.party_size = partySizeResult.confidence;
-  if(data.party_size) data.persone = String(data.party_size);
+  if (data.party_size) data.persone = String(data.party_size);
 
-  const emailMatch = fullText.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/);
+  const emailMatch = fullText.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
   if (emailMatch) data.email = emailMatch[0].toLowerCase();
 
   const dateResult = extractBookingDate(fullText, now);
   let bookingDate = dateResult?.date;
   confidence.booking_date_time = dateResult?.confidence;
-  
+
   const orarioMatch = fullText.match(ORARIO_REGEX);
   if (orarioMatch?.[1]) {
     const hours = orarioMatch[1].padStart(2, '0');
@@ -293,7 +297,7 @@ const mergeParsedData = (heuristic: ParsedChatData, heuristicConfidence: Confide
   if (nlu.email) merged.email = nlu.email;
   if (nlu.notes) merged.notes = nlu.notes;
   if (nlu.intent) merged.intent = nlu.intent;
-  if(merged.party_size) merged.persone = String(merged.party_size);
+  if (merged.party_size) merged.persone = String(merged.party_size);
 
 
   const AMBIGUITY_REASON_MAP: Record<ConfidenceKey, { slot: BookingSlotKey; reason: string }> = {
@@ -318,13 +322,13 @@ const mergeParsedData = (heuristic: ParsedChatData, heuristicConfidence: Confide
 // --- Main Exported Functions ---
 
 async function getNluData(messages: Message[]): Promise<NluParsedData | null> {
-    try {
-        const lastUserMessage = messages.filter(m => m.role === 'user').pop();
-        if (!lastUserMessage) return null;
-        return await callNluService([lastUserMessage]);
-    } catch (error) {
-        return null;
-    }
+  try {
+    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+    if (!lastUserMessage) return null;
+    return await callNluService([lastUserMessage]);
+  } catch (error) {
+    return null;
+  }
 }
 
 export async function parseChatData(messages: Message[]): Promise<ParsedChatData> {
@@ -335,30 +339,30 @@ export async function parseChatData(messages: Message[]): Promise<ParsedChatData
 }
 
 function updateLeadFields(next: LeadDraft, parsed: ParsedChatData) {
-    const fieldsToUpdate: (keyof ParsedChatData)[] = [ 'nome', 'telefono', 'email', 'persone', 'orario', 'intent', 'party_size', 'booking_date_time', 'notes' ];
+  const fieldsToUpdate: (keyof ParsedChatData)[] = ['nome', 'telefono', 'email', 'persone', 'orario', 'intent', 'party_size', 'booking_date_time', 'notes'];
 
-    fieldsToUpdate.forEach(field => {
-        if (parsed[field] !== undefined) {
-            (next as any)[field] = parsed[field];
-        }
-    });
+  fieldsToUpdate.forEach(field => {
+    if (parsed[field] !== undefined) {
+      (next as any)[field] = parsed[field];
+    }
+  });
 }
 
 function updateSpecialNotes(next: LeadDraft, parsedNotes: string | undefined) {
-    if (!parsedNotes) return;
+  if (!parsedNotes) return;
 
-    const notesToAdd = parsedNotes.split('|').map(n => n.trim()).filter(Boolean);
-    notesToAdd.forEach(note => {
-        if (!next.specialNotes.includes(note)) {
-            next.specialNotes.push(note);
-        }
-    });
+  const notesToAdd = parsedNotes.split('|').map(n => n.trim()).filter(Boolean);
+  notesToAdd.forEach(note => {
+    if (!next.specialNotes.includes(note)) {
+      next.specialNotes.push(note);
+    }
+  });
 }
 
 export function parseLeadDraft(current: LeadDraft, message: string): LeadDraft {
   const { data: parsed } = parseWithHeuristics([{ id: `msg-${Date.now()}`, role: 'user', content: message }]);
   const next = { ...current, specialNotes: [...current.specialNotes] };
-  
+
   updateLeadFields(next, parsed);
   updateSpecialNotes(next, parsed.notes);
 
