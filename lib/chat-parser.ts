@@ -45,7 +45,7 @@ export const INITIAL_LEAD_DRAFT: LeadDraft = {
 
 // --- Regex & Constants ---
 const PERSONE_REGEX = /\b(?:siamo|saremmo|saranno|vorremmo|avremmo|per)\s+(?:circa\s+)?(?:in\s+)?(\d{1,2})\s+(?:persone|pers|pax|coperti)?\b/i;
-const PERSONE_LABEL_REGEX = /\b(?:numero|n°|num\.?)\s*(?:di)?\s*(?:persone|ospiti|coperti)[\s:]*([0-9]{1,2})\b/i;
+const PERSONE_LABEL_REGEX = /\b(?:numero|n°|num\.?)\s*(?:di\s*)?(?:persone|ospiti|coperti)[\s:]*([0-9]{1,2})\b/i;
 const ORARIO_REGEX = /(?:alle|per le|verso le|alle ore|alle h)\s*(\d{1,2})(?::(\d{2}))?/i;
 const DATE_NUMERIC_REGEX = /(?:il\s*)?(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/i;
 const DATE_TEXT_REGEX = /(?:il\s*)?(\d{1,2})\s+(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)/i;
@@ -68,8 +68,8 @@ const normalizeNotes = (v: string | null | undefined) => v?.trim() || undefined;
 // --- Heuristic Parsers ---
 
 function extractName(text: string): { name?: string, confidence: ConfidenceLevel, clarification?: BookingClarification } {
-  const nameMatch = text.match(/(?:mi\s+chiamo|chiamarmi|mio\s+nome\s+è|sono)\s+([A-Za-zÀ-ÖØ-öø-ÿ\s'-]+?)(?:\.|\n|,|$)/i)
-    ?? text.match(/(?:a\s+nome|il\s+mio\s+nome\s+è)\s+([A-Za-zÀ-ÖØ-öø-ÿ\s'-]+?)(?:\.|\n|,|$)/i)
+  const nameMatch = text.match(/(?:mi\s+chiamo|chiamarmi|mio\s+nome\s+è|sono)\s+([A-Za-zÀ-ÖØ-öø-ÿ'-]+(?:[ \t]+[A-Za-zÀ-ÖØ-öø-ÿ'-]+)*)(?:\.|\n|,|$)/i)
+    ?? text.match(/(?:a\s+nome|il\s+mio\s+nome\s+è)\s+([A-Za-zÀ-ÖØ-öø-ÿ'-]+(?:[ \t]+[A-Za-zÀ-ÖØ-öø-ÿ'-]+)*)(?:\.|\n|,|$)/i)
     ?? text.match(/(?:^|\n)(?:user:\s*)?([A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ'’-]+(?:[\s]+[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ'’-]+){1,5})\b/);
 
   if (nameMatch?.[1]) {

@@ -39,6 +39,21 @@ describe('parseChatData', () => {
     expect(result.party_size).toBeUndefined();
   });
 
+  it('extracts multi-word name correctly using heuristics', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('network error'));
+
+    const messages: Message[] = [
+      {
+        id: '1',
+        role: 'user',
+        content: 'Mi chiamo Mario Rossi',
+      },
+    ];
+
+    const result = await parseChatData(messages);
+    expect(result.nome).toBe('Mario Rossi');
+  });
+
   it('keeps high confidence heuristic values when NLU result is partial', async () => {
     fetchMock.mockResolvedValueOnce(
       createResponse({
