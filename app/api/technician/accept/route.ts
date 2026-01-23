@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     if (!validation.success) {
       return NextResponse.json({ success: false, error: validation.error.flatten().fieldErrors.token?.[0] || 'Dati non validi' }, { status: 400 });
     }
-    
+
     const { token } = validation.data;
 
     // Get current user (must be authenticated technician)
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     // Use admin client to call the assignment function
     const adminClient = createAdminClient();
-    
+
     // Call the anti-collision function
     const { data, error } = await adminClient.rpc('accept_technician_assignment', {
       p_token: token,
@@ -67,7 +67,16 @@ export async function POST(request: NextRequest) {
     }
 
     // The function returns a JSONB with success/error info
-    if (!data || !data.success) {
+    // We cast to a specific type to avoid TypeScript errors with Json type
+    const result = data as {
+      success: boolean;
+      error?: string;
+      message?: string;
+      ticket?: any;
+      client?: any;
+    } | null;
+
+    if (!result || !result.success) {
       // Map error codes to user-friendly messages
       const errorMessages: Record<string, string> = {
         'invalid_token': 'Il link non è valido. Potrebbe essere già stato usato o non esistere.',
@@ -77,8 +86,8 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: false,
-        error: data?.error,
-        message: errorMessages[data?.error as keyof typeof errorMessages] || data?.message
+        error: result?.error,
+        message: errorMessages[result?.error as keyof typeof errorMessages] || result?.message
       }, { status: 409 }); // 409 Conflict for already assigned
     }
 
@@ -86,11 +95,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: '✅ Intervento assegnato a te!',
-      ticket: data.ticket,
-      client: data.client
+      ticket: result.ticket,
+      client: result.client
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Technician accept error:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Dati non validi', details: error.flatten() }, { status: 400 });
