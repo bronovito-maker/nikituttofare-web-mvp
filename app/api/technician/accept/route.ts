@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     // The function returns a JSONB with success/error info
-    if (!data.success) {
+    if (!data || !data.success) {
       // Map error codes to user-friendly messages
       const errorMessages: Record<string, string> = {
         'invalid_token': 'Il link non è valido. Potrebbe essere già stato usato o non esistere.',
@@ -77,8 +77,8 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: false,
-        error: data.error,
-        message: errorMessages[data.error] || data.message
+        error: data?.error,
+        message: errorMessages[data?.error as keyof typeof errorMessages] || data?.message
       }, { status: 409 }); // 409 Conflict for already assigned
     }
 

@@ -58,6 +58,7 @@ function MessageBubble({ message }: { message: ChatMessageData }) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={message.photo}
+                alt="User uploaded content"
                 loading="lazy"
               />
             </div>
