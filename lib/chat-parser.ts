@@ -323,7 +323,6 @@ async function getNluData(messages: Message[]): Promise<NluParsedData | null> {
         if (!lastUserMessage) return null;
         return await callNluService([lastUserMessage]);
     } catch (error) {
-        console.warn('[parseChatData] NLU non disponibile, uso parser heuristico:', error);
         return null;
     }
 }

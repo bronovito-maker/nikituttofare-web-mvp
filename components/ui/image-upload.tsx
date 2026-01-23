@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import { Camera, X, Check, AlertCircle, Loader2 } from 'lucide-react';
 
 interface ImageUploadProps {
@@ -221,7 +222,7 @@ export function ImageUpload({
 
       {state === 'success' && previewUrl && (
         <div className="absolute bottom-full left-0 mb-2 p-1 bg-white rounded-lg shadow-xl border border-slate-200 animate-in slide-in-from-bottom-2 duration-300">
-          <img src={previewUrl} alt="Preview" className="h-16 w-auto rounded-md object-cover" />
+          <Image src={previewUrl} alt="Preview" className="h-16 w-auto rounded-md object-cover" width={64} height={64} />
           <button onClick={(e) => { e.stopPropagation(); resetState(); }} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-slate-700 transition-colors shadow-lg">
             <X className="w-3 h-3" />
           </button>
@@ -249,7 +250,7 @@ export function ImagePreview({
 }) {
   return (
     <div className={`relative inline-block ${className}`}>
-      <img src={url} alt="Preview" className="h-20 w-auto rounded-xl border border-slate-200 shadow-sm object-cover" />
+      <Image src={url} alt="Preview" className="h-20 w-auto rounded-xl border border-slate-200 shadow-sm object-cover" width={80} height={80} />
       {onRemove && (
         <button onClick={onRemove} className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-slate-700 transition-colors shadow-lg">
           <X className="w-4 h-4" />

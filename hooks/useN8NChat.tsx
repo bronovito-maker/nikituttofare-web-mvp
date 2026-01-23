@@ -34,8 +34,7 @@ export const useN8NChat = () => {
       setMessages((prev) => [...prev, newAiMsg]);
 
     } catch (error) {
-      console.error("Errore:", error);
-      setMessages((prev) => [...prev, { role: 'assistant', content: "Errore di connessione.", id: Date.now().toString() }]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: "Si è verificato un errore.", id: Date.now().toString() }]);
     } finally {
       setIsLoading(false);
     }
