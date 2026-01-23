@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     const { phone, token } = validation.data;
 
     // Normalize phone number (remove spaces, dashes, and ensure consistent format)
@@ -64,9 +64,9 @@ export async function POST(request: NextRequest) {
 
     if (!technician) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Numero non riconosciuto. Assicurati di usare il numero registrato nel tuo profilo tecnico. Contatta l\'amministrazione se il problema persiste.' 
+        {
+          success: false,
+          message: 'Numero non riconosciuto. Assicurati di usare il numero registrato nel tuo profilo tecnico. Contatta l\'amministrazione se il problema persiste.'
         },
         { status: 404 }
       );
@@ -89,8 +89,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Cast to a specific type to avoid TypeScript errors with Json type
+    const result = assignmentResult as {
+      success: boolean;
+      error?: string;
+      message?: string;
+      ticket?: any;
+      client?: any;
+    } | null;
+
     // Check the result from the database function
-    if (!assignmentResult.success) {
+    if (!result || !result.success) {
       const errorMessages: Record<string, string> = {
         'invalid_token': 'Il link non è valido. Potrebbe essere già stato usato o non esistere.',
         'token_expired': 'Il link è scaduto. Gli interventi devono essere accettati entro 24 ore.',
@@ -99,8 +108,8 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: false,
-        error: assignmentResult.error,
-        message: errorMessages[assignmentResult.error] || assignmentResult.message
+        error: result?.error,
+        message: errorMessages[result?.error as keyof typeof errorMessages] || result?.message
       }, { status: 409 });
     }
 
@@ -114,11 +123,11 @@ export async function POST(request: NextRequest) {
         name: technician.full_name,
         phone: technician.phone
       },
-      ticket: assignmentResult.ticket,
-      client: assignmentResult.client
+      ticket: result.ticket,
+      client: result.client
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Fast claim error:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Dati non validi', details: error.flatten() }, { status: 400 });
