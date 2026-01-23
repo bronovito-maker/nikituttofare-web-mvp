@@ -23,6 +23,8 @@ import { LoadingDots, LoadingSpinner } from '@/components/ui/loading-dots';
 import { ClientAnimationWrapper } from '@/components/ui/client-animation-wrapper';
 import { ImageUpload, ImagePreview } from '@/components/ui/image-upload';
 import { createBrowserClient } from '@/lib/supabase-browser';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 // ⚠️ IMPORTIAMO IL NUOVO HOOK N8N
 import { useN8NChat } from '@/hooks/useN8NChat';
@@ -66,19 +68,20 @@ const QUICK_ACTIONS = [
 export default function ChatPage() {
   // ✅ USA IL NUOVO HOOK N8N (Motore Semplice)
   const { messages, sendMessage, isLoading } = useN8NChat();
-  
+  const router = useRouter();
+
   // Stati UI locali
   const [input, setInput] = useState('');
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Auth state (Mantenuto per mostrare l'avatar utente)
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userInitials, setUserInitials] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -126,10 +129,10 @@ export default function ChatPage() {
   // Gestione Invio Messaggio
   const handleSend = useCallback(async () => {
     if ((!input.trim() && !uploadedImageUrl) || isLoading || isUploading) return;
-    
+
     const messageToSend = input.trim();
     // Nota: Per ora n8n riceve il testo. Se c'è una foto, aggiungiamo un testo che lo indica.
-    const finalMessage = uploadedImageUrl 
+    const finalMessage = uploadedImageUrl
       ? `[UTENTE HA CARICATO UNA FOTO: ${uploadedImageUrl}] ${messageToSend}`
       : messageToSend;
 
@@ -171,24 +174,24 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50/50">
-      
+    <div className="flex flex-col h-screen bg-background">
+
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white shadow-sm">
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-card shadow-sm">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Link 
-              href="/" 
-              className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors"
+            <Link
+              href="/"
+              className="flex items-center justify-center w-10 h-10 rounded-xl bg-secondary hover:bg-muted transition-colors"
             >
-              <ArrowLeft className="w-5 h-5 text-slate-600" />
+              <ArrowLeft className="w-5 h-5 text-muted-foreground" />
             </Link>
-            
+
             <div className="flex items-center gap-3">
               <NikiBotAvatar size="md" />
               <div className="hidden sm:block">
-                <h1 className="text-sm font-bold text-slate-900 leading-tight">NikiBot</h1>
-                <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+                <h1 className="text-sm font-bold text-foreground leading-tight">NikiBot</h1>
+                <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -207,7 +210,7 @@ export default function ChatPage() {
                 </div>
               </div>
             )}
-            
+
             <Button
               asChild
               size="sm"
@@ -218,6 +221,8 @@ export default function ChatPage() {
                 <span className="hidden sm:inline">Emergenza</span>
               </a>
             </Button>
+            {/* Added Theme Toggle button for easy switch inside chat */}
+            {/* <ThemeToggle />  - Optional: can be added if requested, but not strictly part of refactor */}
           </div>
         </div>
       </header>
@@ -225,7 +230,7 @@ export default function ChatPage() {
       {/* Main Chat Area */}
       <main className="flex-1 overflow-y-auto scrollbar-thin">
         <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-          
+
           {/* Welcome / Hero */}
           {messages.length === 0 && (
             <ClientAnimationWrapper delay={0.1} duration={0.5}>
@@ -234,10 +239,10 @@ export default function ChatPage() {
                   <Wrench className="w-10 h-10 text-white" />
                 </div>
                 <div className="space-y-2">
-                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
+                  <h2 className="text-2xl sm:text-3xl font-black text-foreground">
                     Ciao! Come posso aiutarti?
                   </h2>
-                  <p className="text-slate-500 text-sm sm:text-base max-w-md mx-auto">
+                  <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto">
                     Sono il nuovo cervello di Niki. Descrivi il problema e ti aiuterò subito.
                   </p>
                 </div>
@@ -255,12 +260,12 @@ export default function ChatPage() {
                     <button
                       key={action.id}
                       onClick={() => handleQuickAction(action)}
-                      className="group flex flex-col items-center gap-3 p-4 sm:p-5 bg-white rounded-2xl border border-slate-200/50 hover:border-slate-300 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                      className="group flex flex-col items-center gap-3 p-4 sm:p-5 bg-card rounded-2xl border border-border hover:border-accent shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                     >
                       <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} ${action.shadowColor} shadow-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
                         <Icon className="w-6 h-6 text-white" />
                       </div>
-                      <span className="text-sm font-semibold text-slate-700 group-hover:text-slate-900 transition-colors">
+                      <span className="text-sm font-semibold text-card-foreground group-hover:text-primary transition-colors">
                         {action.label}
                       </span>
                     </button>
@@ -272,9 +277,9 @@ export default function ChatPage() {
 
           {/* Messages List */}
           {messages.map((message, index) => (
-            <MessageBubble 
-              key={message.id || index} 
-              message={message} 
+            <MessageBubble
+              key={message.id || index}
+              message={message}
               isLast={index === messages.length - 1}
             />
           ))}
@@ -292,7 +297,7 @@ export default function ChatPage() {
           {/* Error Message */}
           {error && (
             <div className="flex justify-center">
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
+              <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-400 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
                 <AlertCircle className="w-5 h-5" />
                 {error}
               </div>
@@ -304,14 +309,14 @@ export default function ChatPage() {
       </main>
 
       {/* Input Area */}
-      <div className="sticky bottom-0 w-full bg-white border-t border-slate-200 shadow-lg shadow-slate-200/20 pb-[env(safe-area-inset-bottom)]">
+      <div className="sticky bottom-0 w-full bg-card border-t border-border shadow-lg shadow-black/5 pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
-          
+
           {uploadedImageUrl && (
             <div className="mb-3">
-              <ImagePreview 
-                url={uploadedImageUrl} 
-                onRemove={() => setUploadedImageUrl(null)} 
+              <ImagePreview
+                url={uploadedImageUrl}
+                onRemove={() => setUploadedImageUrl(null)}
               />
             </div>
           )}
@@ -330,6 +335,17 @@ export default function ChatPage() {
                 onUploadStart={handleUploadStart}
                 onError={handleUploadError}
                 disabled={isLoading}
+                isAuthenticated={isAuthenticated}
+                onAuthError={() => {
+                  toast("Serve un account per le foto", {
+                    description: "Per analizzare le tue immagini e garantirti la massima privacy, abbiamo bisogno che tu acceda. È questione di un attimo e potrai caricare tutte le foto che vuoi!",
+                    action: {
+                      label: "Accedi o Registrati",
+                      onClick: () => router.push('/login?redirect=/chat')
+                    },
+                    duration: 5000,
+                  });
+                }}
               />
             </div>
 
@@ -342,10 +358,10 @@ export default function ChatPage() {
                 placeholder="Descrivi il problema..."
                 rows={1}
                 disabled={isLoading}
-                className="w-full px-4 py-3.5 pr-14 bg-slate-100 border-0 rounded-2xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all resize-none min-h-[52px] max-h-[120px]"
+                className="w-full px-4 py-3.5 pr-14 bg-secondary/50 border-0 rounded-2xl text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-card transition-all resize-none min-h-[52px] max-h-[120px]"
                 style={{ fontSize: '16px' }}
               />
-              
+
               <button
                 onClick={handleSend}
                 disabled={(!input.trim() && !uploadedImageUrl) || isLoading || isUploading}
@@ -368,15 +384,27 @@ export default function ChatPage() {
 // 🎈 Componente Messaggio Semplificato
 function MessageBubble({ message, isLast }: { message: any; isLast: boolean }) {
   const isUser = message.role === 'user';
-  
+
   // N8N a volte restituisce oggetti, assicuriamoci di mostrare testo
   let content = message.content;
   if (typeof content === 'object') {
     content = content.text || content.output || JSON.stringify(content);
   }
 
+  // Regex per trovare l'immagine caricata
+  const imageRegex = /\[UTENTE HA CARICATO UNA FOTO: (https?:\/\/[^\]]+)\]/;
+  const match = content.match(imageRegex);
+
+  let imageUrl = null;
+  let textContent = content;
+
+  if (match) {
+    imageUrl = match[1];
+    textContent = content.replace(match[0], '').trim();
+  }
+
   return (
-    <div 
+    <div
       className={`flex items-start gap-3 ${isUser ? 'flex-row-reverse' : ''} ${isLast ? 'message-enter' : ''}`}
     >
       {isUser ? (
@@ -385,14 +413,26 @@ function MessageBubble({ message, isLast }: { message: any; isLast: boolean }) {
         <NikiBotAvatar size="sm" />
       )}
 
-      <div 
-        className={`max-w-[85%] sm:max-w-[70%] ${
-          isUser ? 'chat-bubble-user' : 'chat-bubble-assistant'
-        } px-4 py-3 space-y-2`}
+      <div
+        className={`max-w-[85%] sm:max-w-[70%] ${isUser ? 'chat-bubble-user' : 'chat-bubble-assistant'
+          } px-4 py-3 space-y-2 overflow-hidden`}
       >
-        <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap">
-          {content}
-        </p>
+        {imageUrl && (
+          <div className="relative w-full h-48 sm:h-56 mb-2 rounded-lg overflow-hidden border border-white/20">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt="Uploaded"
+              className="object-cover w-full h-full"
+            />
+          </div>
+        )}
+
+        {textContent && (
+          <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words">
+            {textContent}
+          </p>
+        )}
       </div>
     </div>
   );

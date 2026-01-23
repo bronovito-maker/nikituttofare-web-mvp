@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import { Camera, X, Check, AlertCircle, Loader2 } from 'lucide-react';
 
 interface ImageUploadProps {
@@ -10,6 +10,8 @@ interface ImageUploadProps {
   onError?: (error: string) => void;
   disabled?: boolean;
   className?: string;
+  isAuthenticated?: boolean;
+  onAuthError?: () => void;
 }
 
 type UploadState = 'idle' | 'selecting' | 'compressing' | 'uploading' | 'success' | 'error';
@@ -38,7 +40,7 @@ const handleImageLoadForCompression = (
   canvas.height = height;
   const ctx = canvas.getContext('2d');
   if (!ctx) return reject(new Error('Failed to get canvas context'));
-  
+
   ctx.drawImage(img, 0, 0, width, height);
 
   canvas.toBlob(
@@ -125,12 +127,14 @@ const UploadContent = ({
 };
 
 
-export function ImageUpload({ 
-  onUploadComplete, 
+export function ImageUpload({
+  onUploadComplete,
   onUploadStart,
   onError,
   disabled = false,
-  className = ''
+  className = '',
+  isAuthenticated = true,
+  onAuthError
 }: ImageUploadProps) {
   const [state, setState] = useState<UploadState>('idle');
   const [progress, setProgress] = useState(0);
@@ -203,9 +207,18 @@ export function ImageUpload({
 
   const handleClick = useCallback(() => {
     if (disabled || state === 'compressing' || state === 'uploading') return;
+
+    // Check authentication
+    if (!isAuthenticated) {
+      if (onAuthError) {
+        onAuthError();
+      }
+      return;
+    }
+
     if (state === 'error') return resetState();
     fileInputRef.current?.click();
-  }, [disabled, state, resetState]);
+  }, [disabled, state, resetState, isAuthenticated, onAuthError]);
 
   return (
     <div className={`relative ${className}`}>
@@ -220,14 +233,7 @@ export function ImageUpload({
 
       <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleFileSelect} className="hidden" disabled={disabled} />
 
-      {state === 'success' && previewUrl && (
-        <div className="absolute bottom-full left-0 mb-2 p-1 bg-white rounded-lg shadow-xl border border-slate-200 animate-in slide-in-from-bottom-2 duration-300">
-          <Image src={previewUrl} alt="Preview" className="h-16 w-auto rounded-md object-cover" width={64} height={64} />
-          <button onClick={(e) => { e.stopPropagation(); resetState(); }} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-slate-700 transition-colors shadow-lg">
-            <X className="w-3 h-3" />
-          </button>
-        </div>
-      )}
+
 
       {state === 'error' && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-xs rounded-lg whitespace-nowrap animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
@@ -239,18 +245,18 @@ export function ImageUpload({
   );
 }
 
-export function ImagePreview({ 
-  url, 
+export function ImagePreview({
+  url,
   onRemove,
   className = ''
-}: { 
-  url: string; 
+}: {
+  url: string;
   onRemove?: () => void;
   className?: string;
 }) {
   return (
     <div className={`relative inline-block ${className}`}>
-      <Image src={url} alt="Preview" className="h-20 w-auto rounded-xl border border-slate-200 shadow-sm object-cover" width={80} height={80} />
+      <NextImage src={url} alt="Preview" className="h-20 w-auto rounded-xl border border-slate-200 shadow-sm object-cover" width={80} height={80} />
       {onRemove && (
         <button onClick={onRemove} className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-slate-700 transition-colors shadow-lg">
           <X className="w-4 h-4" />

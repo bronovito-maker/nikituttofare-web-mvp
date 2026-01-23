@@ -23,15 +23,15 @@ export async function POST(request: NextRequest) {
     // Rate limiting - previene upload massivi
     const clientId = getClientIdentifier(request);
     const rateLimitResult = checkRateLimit(`upload:${clientId}`, RATE_LIMITS.upload);
-    
+
     if (!rateLimitResult.success) {
       return rateLimitExceededResponse(rateLimitResult);
     }
 
     const user = await getCurrentUser();
-    if (!user?.id) {
-      return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
-    }
+    // if (!user?.id) {
+    //   return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
+    // }
 
     const formData = await request.formData();
     const file = formData.get('file');
@@ -43,15 +43,16 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     const validatedFile = validation.data;
 
     // Use admin client to bypass storage RLS policies
     const supabase = createAdminClient();
 
-    // Genera un nome file univoco - include user ID for organization
+    // Genera un nome file univoco - include user ID for organization OR clientId for guests
+    const uploaderId = user?.id || clientId || 'guest';
     const fileExt = validatedFile.name.split('.').pop();
-    const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const fileName = `${uploaderId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
     // Carica il file su Supabase Storage (bucket: ticket-photos, path: userId/filename)
     const { data, error } = await supabase.storage

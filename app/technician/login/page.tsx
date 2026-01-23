@@ -8,13 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { verifyAndLinkTechnician } from '@/app/actions/admin-actions'; // Importiamo la server action
 
-export default function TechnicianLogin() {
+import { Suspense } from 'react';
+
+function TechnicianLoginForm() {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'PHONE' | 'OTP'>('PHONE');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   const supabase = createBrowserClient();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -24,7 +26,7 @@ export default function TechnicianLogin() {
   const handleSendOtp = async () => {
     setLoading(true);
     setError('');
-    
+
     // Normalizza
     const cleanPhone = phone.trim();
     if (!cleanPhone.startsWith('+39')) {
@@ -85,23 +87,23 @@ export default function TechnicianLogin() {
           </div>
           <CardTitle>Portale Tecnici</CardTitle>
           <CardDescription>
-            {step === 'PHONE' 
-              ? "Inserisci il numero di telefono per accedere agli incarichi." 
+            {step === 'PHONE'
+              ? "Inserisci il numero di telefono per accedere agli incarichi."
               : `Inserisci il codice inviato a ${phone}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {step === 'PHONE' ? (
             <div className="space-y-4">
-              <Input 
-                type="tel" 
-                placeholder="+39 333 1234567" 
+              <Input
+                type="tel"
+                placeholder="+39 333 1234567"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
               />
-              <Button 
-                onClick={handleSendOtp} 
-                disabled={loading || phone.length < 5} 
+              <Button
+                onClick={handleSendOtp}
+                disabled={loading || phone.length < 5}
                 className="w-full"
               >
                 {loading ? 'Invio in corso...' : 'Invia Codice'}
@@ -109,30 +111,30 @@ export default function TechnicianLogin() {
             </div>
           ) : (
             <div className="space-y-4">
-              <Input 
-                type="text" 
-                placeholder="123456" 
+              <Input
+                type="text"
+                placeholder="123456"
                 className="text-center text-2xl tracking-widest"
                 maxLength={6}
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
               />
-              <Button 
-                onClick={handleVerifyOtp} 
-                disabled={loading || otp.length < 6} 
+              <Button
+                onClick={handleVerifyOtp}
+                disabled={loading || otp.length < 6}
                 className="w-full bg-green-600 hover:bg-green-700"
               >
                 {loading ? 'Verifica...' : 'Accedi'}
               </Button>
-              <button 
-                onClick={() => setStep('PHONE')} 
+              <button
+                onClick={() => setStep('PHONE')}
                 className="text-sm text-slate-500 w-full text-center hover:underline"
               >
                 Cambia numero
               </button>
             </div>
           )}
-          
+
           {error && (
             <div className="mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg text-center font-medium">
               {error}
@@ -141,5 +143,13 @@ export default function TechnicianLogin() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function TechnicianLogin() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-50"><div className="animate-spin text-blue-600">Loading...</div></div>}>
+      <TechnicianLoginForm />
+    </Suspense>
   );
 }

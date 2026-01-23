@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
+import {
   ArrowLeft,
   Ticket,
   Clock,
@@ -36,19 +36,19 @@ interface UserTicket {
 }
 
 const CATEGORY_CONFIG: Record<string, { icon: typeof Wrench; color: string; bgColor: string; label: string }> = {
-  plumbing: { icon: Wrench, color: 'text-blue-600', bgColor: 'bg-blue-50', label: 'Idraulico' },
-  electric: { icon: Zap, color: 'text-yellow-600', bgColor: 'bg-yellow-50', label: 'Elettricista' },
-  locksmith: { icon: Key, color: 'text-slate-600', bgColor: 'bg-slate-100', label: 'Fabbro' },
-  climate: { icon: Thermometer, color: 'text-cyan-600', bgColor: 'bg-cyan-50', label: 'Clima' },
-  generic: { icon: Wrench, color: 'text-purple-600', bgColor: 'bg-purple-50', label: 'Generico' },
+  plumbing: { icon: Wrench, color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-950/30', label: 'Idraulico' },
+  electric: { icon: Zap, color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-50 dark:bg-yellow-950/30', label: 'Elettricista' },
+  locksmith: { icon: Key, color: 'text-slate-600 dark:text-slate-400', bgColor: 'bg-slate-100 dark:bg-slate-800', label: 'Fabbro' },
+  climate: { icon: Thermometer, color: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-50 dark:bg-cyan-950/30', label: 'Clima' },
+  generic: { icon: Wrench, color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-950/30', label: 'Generico' },
 };
 
 const STATUS_CONFIG: Record<string, { color: string; bgColor: string; label: string; icon: typeof Clock }> = {
-  new: { color: 'text-blue-700', bgColor: 'bg-blue-100', label: 'In attesa', icon: Clock },
-  assigned: { color: 'text-purple-700', bgColor: 'bg-purple-100', label: 'Tecnico assegnato', icon: CheckCircle2 },
-  in_progress: { color: 'text-yellow-700', bgColor: 'bg-yellow-100', label: 'In corso', icon: Wrench },
-  resolved: { color: 'text-green-700', bgColor: 'bg-green-100', label: 'Completato', icon: CheckCircle2 },
-  cancelled: { color: 'text-slate-500', bgColor: 'bg-slate-100', label: 'Annullato', icon: AlertCircle },
+  new: { color: 'text-blue-700 dark:text-blue-300', bgColor: 'bg-blue-100 dark:bg-blue-900/40', label: 'In attesa', icon: Clock },
+  assigned: { color: 'text-purple-700 dark:text-purple-300', bgColor: 'bg-purple-100 dark:bg-purple-900/40', label: 'Tecnico assegnato', icon: CheckCircle2 },
+  in_progress: { color: 'text-yellow-700 dark:text-yellow-300', bgColor: 'bg-yellow-100 dark:bg-yellow-900/40', label: 'In corso', icon: Wrench },
+  resolved: { color: 'text-green-700 dark:text-green-300', bgColor: 'bg-green-100 dark:bg-green-900/40', label: 'Completato', icon: CheckCircle2 },
+  cancelled: { color: 'text-slate-500 dark:text-slate-400', bgColor: 'bg-slate-100 dark:bg-slate-800', label: 'Annullato', icon: AlertCircle },
 };
 
 export default function ClientDashboard() {
@@ -82,20 +82,20 @@ export default function ClientDashboard() {
   const completedTickets = tickets.filter(t => t.status === 'resolved');
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-slate-200/30 bg-white/90 backdrop-blur-xl shadow-sm">
+      <header className="sticky top-0 z-50 w-full border-b border-border/30 bg-background/90 backdrop-blur-xl shadow-sm">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Link 
-              href="/" 
-              className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors"
+            <Link
+              href="/"
+              className="flex items-center justify-center w-10 h-10 rounded-xl bg-secondary hover:bg-muted transition-colors"
             >
-              <ArrowLeft className="w-5 h-5 text-slate-600" />
+              <ArrowLeft className="w-5 h-5 text-muted-foreground" />
             </Link>
             <div>
-              <h1 className="text-lg font-bold text-slate-900">I Miei Interventi</h1>
-              <p className="text-xs text-slate-500">Storico e stato richieste</p>
+              <h1 className="text-lg font-bold text-foreground">I Miei Interventi</h1>
+              <p className="text-xs text-muted-foreground">Storico e stato richieste</p>
             </div>
           </div>
 
@@ -115,35 +115,35 @@ export default function ClientDashboard() {
         {/* Stats Summary */}
         <ClientAnimationWrapper delay={0.1} duration={0.5}>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow">
+            <div className="bg-card rounded-2xl border border-border p-5 hover:shadow-lg transition-shadow">
               <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-xl bg-blue-50">
-                  <Clock className="w-5 h-5 text-blue-600" />
+                <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30">
+                  <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
-                <span className="text-sm font-medium text-slate-500">In Corso</span>
+                <span className="text-sm font-medium text-muted-foreground">In Corso</span>
               </div>
-              <p className="text-3xl font-black text-slate-900">{activeTickets.length}</p>
+              <p className="text-3xl font-black text-foreground">{activeTickets.length}</p>
             </div>
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow">
+            <div className="bg-card rounded-2xl border border-border p-5 hover:shadow-lg transition-shadow">
               <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-xl bg-green-50">
-                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <div className="p-2 rounded-xl bg-green-50 dark:bg-green-900/30">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
-                <span className="text-sm font-medium text-slate-500">Completati</span>
+                <span className="text-sm font-medium text-muted-foreground">Completati</span>
               </div>
-              <p className="text-3xl font-black text-slate-900">{completedTickets.length}</p>
+              <p className="text-3xl font-black text-foreground">{completedTickets.length}</p>
             </div>
           </div>
         </ClientAnimationWrapper>
 
         {error && (
-          <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+          <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
             {error}
           </div>
         )}
 
         {isLoading && (
-          <div className="p-4 rounded-xl bg-slate-100 border border-slate-200 text-sm text-slate-600">
+          <div className="p-4 rounded-xl bg-muted border border-border text-sm text-muted-foreground">
             Caricamento interventi...
           </div>
         )}
@@ -152,8 +152,8 @@ export default function ClientDashboard() {
         {activeTickets.length > 0 && (
           <ClientAnimationWrapper delay={0.2} duration={0.5}>
             <div className="space-y-4">
-              <h2 className="text-lg font-bold text-slate-900">Interventi Attivi</h2>
-              
+              <h2 className="text-lg font-bold text-foreground">Interventi Attivi</h2>
+
               {activeTickets.map((ticket) => (
                 <TicketCard key={ticket.id} ticket={ticket} isActive />
               ))}
@@ -165,8 +165,8 @@ export default function ClientDashboard() {
         {completedTickets.length > 0 && (
           <ClientAnimationWrapper delay={0.3} duration={0.5}>
             <div className="space-y-4">
-              <h2 className="text-lg font-bold text-slate-900">Storico Interventi</h2>
-              
+              <h2 className="text-lg font-bold text-foreground">Storico Interventi</h2>
+
               {completedTickets.map((ticket) => (
                 <TicketCard key={ticket.id} ticket={ticket} />
               ))}
@@ -178,11 +178,11 @@ export default function ClientDashboard() {
         {tickets.length === 0 && !isLoading && !error && (
           <ClientAnimationWrapper delay={0.2} duration={0.5}>
             <div className="text-center py-16">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-slate-100 mb-4">
-                <Ticket className="w-8 h-8 text-slate-400" />
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-muted mb-4">
+                <Ticket className="w-8 h-8 text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">Nessun intervento</h3>
-              <p className="text-slate-500 mb-6">Non hai ancora richiesto nessun intervento</p>
+              <h3 className="text-lg font-bold text-foreground mb-2">Nessun intervento</h3>
+              <p className="text-muted-foreground mb-6">Non hai ancora richiesto nessun intervento</p>
               <Button asChild className="btn-urgent rounded-full">
                 <Link href="/chat">
                   Richiedi Intervento
@@ -195,19 +195,19 @@ export default function ClientDashboard() {
 
         {/* Help Section */}
         <ClientAnimationWrapper delay={0.4} duration={0.5}>
-          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-200/50 p-6">
-            <h3 className="text-lg font-bold text-slate-900 mb-2">Hai bisogno di aiuto?</h3>
-            <p className="text-sm text-slate-600 mb-4">
+          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-2xl border border-blue-200/50 dark:border-blue-800/50 p-6">
+            <h3 className="text-lg font-bold text-foreground mb-2">Hai bisogno di aiuto?</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
               Il nostro team è disponibile 24/7 per assisterti.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button asChild variant="outline" className="rounded-full">
+              <Button asChild variant="outline" className="rounded-full bg-background hover:bg-muted dark:text-foreground">
                 <Link href="/chat" className="flex items-center gap-2">
                   <MessageCircle className="w-4 h-4" />
                   Chatta con Niki
                 </Link>
               </Button>
-              <Button asChild variant="outline" className="rounded-full">
+              <Button asChild variant="outline" className="rounded-full bg-background hover:bg-muted dark:text-foreground">
                 <a href="tel:+393461027447" className="flex items-center gap-2">
                   <Phone className="w-4 h-4" />
                   Chiama Ora
@@ -229,7 +229,7 @@ function TicketCard({ ticket, isActive = false }: { ticket: UserTicket; isActive
   const StatusIcon = statusConfig.icon;
 
   return (
-    <div className={`bg-white rounded-2xl border ${isActive ? 'border-blue-200 shadow-lg shadow-blue-100/50' : 'border-slate-200'} overflow-hidden hover:shadow-lg transition-shadow`}>
+    <div className={`bg-card rounded-2xl border ${isActive ? 'border-blue-200 dark:border-blue-800 shadow-lg shadow-blue-100/50 dark:shadow-blue-900/20' : 'border-border'} overflow-hidden hover:shadow-lg transition-shadow`}>
       {/* Status Banner for Active */}
       {isActive && ticket.status === 'in_progress' && ticket.technician_name && (
         <div className="bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-3 text-white">
@@ -265,14 +265,14 @@ function TicketCard({ ticket, isActive = false }: { ticket: UserTicket; isActive
               <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusConfig.bgColor} ${statusConfig.color}`}>
                 {statusConfig.label}
               </span>
-              <span className="text-xs text-slate-400">#{ticket.id.slice(-6)}</span>
+              <span className="text-xs text-muted-foreground">#{ticket.id.slice(-6)}</span>
             </div>
-            
-            <h4 className="text-base font-semibold text-slate-900 mb-2 line-clamp-2">
+
+            <h4 className="text-base font-semibold text-foreground mb-2 line-clamp-2">
               {ticket.description}
             </h4>
 
-            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+            <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
               {ticket.address && (
                 <div className="flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5" />
@@ -294,7 +294,7 @@ function TicketCard({ ticket, isActive = false }: { ticket: UserTicket; isActive
 
           {/* Action */}
           <Button variant="ghost" size="sm" className="rounded-full">
-            <ChevronRight className="w-5 h-5 text-slate-400" />
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </Button>
         </div>
       </div>

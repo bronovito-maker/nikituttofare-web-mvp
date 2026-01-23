@@ -91,8 +91,8 @@ async function handleSuccessfulAuth(
   return NextResponse.redirect(getRedirectUrl(request, next))
 }
 
-function createSupabaseClientWithCookies() {
-  const cookieStore = cookies()
+async function createSupabaseClientWithCookies() {
+  const cookieStore = await cookies()
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
   const next = searchParams.get('next') ?? '/chat'
 
   if (code) {
-    const supabase = createSupabaseClientWithCookies()
+    const supabase = await createSupabaseClientWithCookies()
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (data?.user && !error) {

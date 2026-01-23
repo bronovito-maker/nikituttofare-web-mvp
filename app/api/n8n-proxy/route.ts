@@ -3,13 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const n8nProxySchema = z.object({
-  // Define a schema that matches the expected n8n webhook body
-  // For now, let's assume a generic object, but this should be more specific
-  // in a real application.
-  messages: z.array(z.object({
-    role: z.string(),
-    content: z.string(),
-  })),
+  message: z.string(),
+  chatId: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -19,7 +14,7 @@ export async function POST(req: NextRequest) {
     if (authToken !== process.env.N8N_PROXY_SECRET) {
       return NextResponse.json({ error: "Non autorizzato" }, { status: 401 });
     }
-    
+
     // 2. Environment variable for URL
     const n8nUrl = process.env.N8N_WEBHOOK_URL;
     if (!n8nUrl) {
