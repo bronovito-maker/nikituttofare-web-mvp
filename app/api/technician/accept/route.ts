@@ -7,6 +7,14 @@ const acceptSchema = z.object({
   token: z.string().min(1, { message: "Token mancante" }),
 });
 
+interface AcceptAssignmentResponse {
+  success: boolean;
+  error: string;
+  message: string;
+  ticket?: any;
+  client?: any;
+}
+
 /**
  * POST /api/technician/accept
  * Accepts a technician assignment using a one-time magic link token
@@ -53,7 +61,7 @@ export async function POST(request: NextRequest) {
     const adminClient = createAdminClient();
     
     // Call the anti-collision function
-    const { data, error } = await adminClient.rpc('accept_technician_assignment', {
+    const { data: rawData, error } = await adminClient.rpc('accept_technician_assignment', {
       p_token: token,
       p_technician_id: user.id
     });
@@ -66,8 +74,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Cast data to expected shape to satisfy TypeScript
+    const data = rawData as AcceptAssignmentResponse | null;
+
     // The function returns a JSONB with success/error info
-    if (!data || !data.success) {
+    if (!data?.success) {
       // Map error codes to user-friendly messages
       const errorMessages: Record<string, string> = {
         'invalid_token': 'Il link non è valido. Potrebbe essere già stato usato o non esistere.',
@@ -75,10 +86,12 @@ export async function POST(request: NextRequest) {
         'already_assigned': '⚠️ Intervento già assegnato! Un altro tecnico è stato più veloce.'
       };
 
+      const errorCode = data?.error || 'unknown_error';
+
       return NextResponse.json({
         success: false,
-        error: data.error,
-        message: errorMessages[data.error] || data.message
+        error: errorCode,
+        message: errorMessages[errorCode] || data?.message || 'Errore sconosciuto'
       }, { status: 409 }); // 409 Conflict for already assigned
     }
 
