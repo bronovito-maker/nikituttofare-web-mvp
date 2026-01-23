@@ -19,11 +19,8 @@ const isSupabaseConfigured = () => {
  * Nota: NextAuth JWT validation è temporaneamente disabilitata per problemi di firma
  */
 export async function getCurrentUser() {
-  console.log('[getCurrentUser] Starting user retrieval...');
-
   // Per ora usiamo solo Supabase Auth dato che NextAuth ha problemi di validazione JWT
   if (!isSupabaseConfigured()) {
-    console.log('[getCurrentUser] Supabase not configured');
     return null;
   }
 
@@ -31,13 +28,10 @@ export async function getCurrentUser() {
     const supabase = await createServerClient();
     const { data, error } = await supabase.auth.getUser();
     if (error || !data?.user) {
-      console.log('[getCurrentUser] Supabase auth failed:', error?.message);
       return null;
     }
-    console.log('[getCurrentUser] Found user from Supabase:', data.user.id);
     return data.user;
   } catch (error) {
-    console.error('[getCurrentUser] Supabase error:', error);
     return null;
   }
 }
@@ -84,13 +78,11 @@ export async function getOrCreateProfile(userId: string, email: string): Promise
       .single();
 
     if (createError) {
-      console.error('Errore nella creazione del profilo:', createError);
       return null;
     }
 
     return newProfile as Profile;
   } catch (error) {
-    console.error('Errore Supabase:', error);
     // Fallback a profilo mock
     return {
       id: userId,
@@ -125,7 +117,6 @@ function normalizeCategory(
   }
   
   // Fallback a generic per qualsiasi valore non riconosciuto
-  console.log(`📝 Unknown category "${category}" → generic`);
   return 'generic';
 }
 
@@ -158,7 +149,6 @@ export async function createTicket(
       payment_status: 'pending',
       created_at: new Date().toISOString()
     };
-    console.log('Ticket mock creato:', mockTicket);
     return mockTicket;
   }
 
@@ -179,13 +169,11 @@ export async function createTicket(
       .single();
 
     if (error) {
-      console.error('Errore nella creazione del ticket:', error);
       return null;
     }
 
     return data as Ticket;
   } catch (error) {
-    console.error('Errore Supabase:', error);
     // Fallback a ticket mock
     return {
       id: `ticket-${Date.now()}`,
@@ -222,7 +210,6 @@ export async function saveMessage(
       meta_data: metaData || null,
       created_at: new Date().toISOString()
     };
-    console.log('Messaggio mock salvato:', mockMessage);
     return mockMessage;
   }
 
@@ -242,13 +229,11 @@ export async function saveMessage(
       .single();
 
     if (error) {
-      console.error('Errore nel salvataggio del messaggio:', error);
       return null;
     }
 
     return data as TicketMessage;
   } catch (error) {
-    console.error('Errore Supabase:', error);
     // Fallback a messaggio mock
     return {
       id: `msg-${Date.now()}`,
@@ -268,7 +253,6 @@ export async function saveMessage(
 export async function getTicketMessages(ticketId: string): Promise<TicketMessage[]> {
   if (!isSupabaseConfigured()) {
     // Restituisci array vuoto se Supabase non è configurato
-    console.log('Recupero messaggi mock per ticket:', ticketId);
     return [];
   }
 
@@ -282,13 +266,11 @@ export async function getTicketMessages(ticketId: string): Promise<TicketMessage
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Errore nel recupero dei messaggi:', error);
       return [];
     }
 
     return (data || []) as TicketMessage[];
   } catch (error) {
-    console.error('Errore Supabase:', error);
     return [];
   }
 }
@@ -299,7 +281,6 @@ export async function getTicketMessages(ticketId: string): Promise<TicketMessage
 export async function getUserTickets(userId: string): Promise<Ticket[]> {
   if (!isSupabaseConfigured()) {
     // Restituisci array vuoto se Supabase non è configurato
-    console.log('Recupero ticket mock per user:', userId);
     return [];
   }
 
@@ -313,13 +294,11 @@ export async function getUserTickets(userId: string): Promise<Ticket[]> {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Errore nel recupero dei ticket:', error);
       return [];
     }
 
     return (data || []) as Ticket[];
   } catch (error) {
-    console.error('Errore Supabase:', error);
     return [];
   }
 }
@@ -333,7 +312,6 @@ export async function updateTicketStatus(
 ): Promise<boolean> {
   if (!isSupabaseConfigured()) {
     // Simula successo se Supabase non è configurato
-    console.log('Aggiornamento ticket mock:', ticketId, 'status:', status);
     return true;
   }
 
@@ -346,13 +324,11 @@ export async function updateTicketStatus(
       .eq('id', ticketId);
 
     if (error) {
-      console.error('Errore nell\'aggiornamento del ticket:', error);
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Errore Supabase:', error);
     return false;
   }
 }
