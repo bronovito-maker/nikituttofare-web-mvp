@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ClientAnimationWrapper } from '@/components/ui/client-animation-wrapper';
+import { COMPANY_PHONE_LINK } from '@/lib/constants';
 
 // Types
 interface UserTicket {
@@ -208,7 +209,7 @@ export default function ClientDashboard() {
                 </Link>
               </Button>
               <Button asChild variant="outline" className="rounded-full bg-background hover:bg-muted dark:text-foreground">
-                <a href="tel:+393461027447" className="flex items-center gap-2">
+                <a href={COMPANY_PHONE_LINK} className="flex items-center gap-2">
                   <Phone className="w-4 h-4" />
                   Chiama Ora
                 </a>
@@ -222,11 +223,11 @@ export default function ClientDashboard() {
 }
 
 // Ticket Card Component
-function TicketCard({ ticket, isActive = false }: { ticket: UserTicket; isActive?: boolean }) {
+function TicketCard({ ticket, isActive = false }: { readonly ticket: UserTicket; readonly isActive?: boolean }) {
   const categoryConfig = CATEGORY_CONFIG[ticket.category];
   const statusConfig = STATUS_CONFIG[ticket.status];
   const CategoryIcon = categoryConfig.icon;
-  const StatusIcon = statusConfig.icon;
+  // StatusIcon removed as unused
 
   return (
     <div className={`bg-card rounded-2xl border ${isActive ? 'border-blue-200 dark:border-blue-800 shadow-lg shadow-blue-100/50 dark:shadow-blue-900/20' : 'border-border'} overflow-hidden hover:shadow-lg transition-shadow`}>

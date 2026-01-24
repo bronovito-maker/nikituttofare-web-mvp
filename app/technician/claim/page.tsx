@@ -1,15 +1,15 @@
 'use client';
 
 import { useEffect, useState, Suspense, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { 
-  CheckCircle2, 
-  XCircle, 
-  Loader2, 
-  MapPin, 
-  Phone, 
+import {
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  MapPin,
+  Phone,
   User,
   Wrench,
   Zap,
@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createBrowserClient } from '@/lib/supabase-browser';
+import { COMPANY_PHONE, COMPANY_PHONE_LINK } from '@/lib/constants';
 
 type ClaimState = 'loading' | 'phone_input' | 'verifying' | 'ready' | 'accepting' | 'success' | 'error' | 'already_assigned';
 
@@ -81,22 +82,23 @@ function LoadingState() {
 // Main content component
 function TechnicianClaimContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
+  // router removed - unused
   const token = searchParams.get('token');
-  
+
   const [state, setState] = useState<ClaimState>('loading');
   const [error, setError] = useState<string | null>(null);
   const [ticket, setTicket] = useState<TicketDetails | null>(null);
   const [client, setClient] = useState<ClientDetails | null>(null);
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // isAuthenticated state is used for conditional rendering after verification
+  const [, setIsAuthenticated] = useState(false);
 
   // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
       const supabase = createBrowserClient();
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (session?.user) {
         // User is logged in, check if they're a technician
         type ProfileRole = 'user' | 'admin' | 'technician';
@@ -105,9 +107,9 @@ function TechnicianClaimContent() {
           .select('role')
           .eq('id', session.user.id)
           .maybeSingle();
-        
+
         const profile = profileRaw as { role: ProfileRole } | null;
-        
+
         if (profile?.role === 'technician' || profile?.role === 'admin') {
           setIsAuthenticated(true);
           setState('ready');
@@ -121,7 +123,7 @@ function TechnicianClaimContent() {
         setState('phone_input');
       }
     };
-    
+
     checkAuth();
   }, []);
 
@@ -133,8 +135,8 @@ function TechnicianClaimContent() {
     }
 
     // Normalize phone number
-    const normalizedPhone = phoneNumber.replace(/\s|-/g, '').trim();
-    
+    const normalizedPhone = phoneNumber.replaceAll(/\s|-/g, '').trim();
+
     setState('verifying');
     setError(null);
 
@@ -143,9 +145,9 @@ function TechnicianClaimContent() {
       const response = await fetch('/api/technician/fast-claim', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           phone: normalizedPhone,
-          token 
+          token
         }),
       });
 
@@ -159,7 +161,7 @@ function TechnicianClaimContent() {
 
       // Success! Phone verified, technician auto-logged in
       setIsAuthenticated(true);
-      
+
       // If the API already assigned the ticket, show success
       if (data.ticket && data.client) {
         setTicket(data.ticket);
@@ -170,6 +172,7 @@ function TechnicianClaimContent() {
       }
 
     } catch (err) {
+      console.error('Phone verification failed:', err);
       setState('phone_input');
       setError('Errore di connessione. Riprova.');
     }
@@ -212,6 +215,7 @@ function TechnicianClaimContent() {
       setState('success');
 
     } catch (err) {
+      console.error('Ticket acceptance failed:', err);
       setState('error');
       setError('Errore di connessione. Riprova.');
     }
@@ -250,7 +254,7 @@ function TechnicianClaimContent() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8">
-        
+
         {/* Loading State */}
         {state === 'loading' && (
           <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
@@ -284,12 +288,13 @@ function TechnicianClaimContent() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label htmlFor="phone-input" className="block text-sm font-semibold text-slate-700 mb-2">
                     Numero di Telefono
                   </label>
                   <div className="relative">
                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input
+                      id="phone-input"
                       type="tel"
                       placeholder="+39 345 123 4567"
                       value={phoneNumber}
@@ -315,7 +320,7 @@ function TechnicianClaimContent() {
 
               <div className="mt-6 pt-6 border-t border-slate-200 text-center">
                 <p className="text-sm text-slate-500">
-                  Problemi? Contatta <a href="tel:+393461027447" className="text-blue-600 font-semibold hover:underline">+39 346 102 7447</a>
+                  Problemi? Contatta <a href={COMPANY_PHONE_LINK} className="text-blue-600 font-semibold hover:underline">+39 {COMPANY_PHONE}</a>
                 </p>
               </div>
             </div>
@@ -435,8 +440,8 @@ function TechnicianClaimContent() {
                   <Phone className="w-5 h-5 text-green-500" />
                   <div>
                     <p className="text-xs text-slate-500 uppercase tracking-wide">Telefono</p>
-                    <a 
-                      href={`tel:${client.phone}`} 
+                    <a
+                      href={`tel:${client.phone}`}
                       className="font-semibold text-green-600 text-lg hover:underline"
                     >
                       {client.phone || 'Non specificato'}
@@ -516,9 +521,9 @@ function TechnicianClaimContent() {
                   <div>
                     <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Foto del problema</p>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src={ticket.photo_url} 
-                      alt="Foto del guasto" 
+                    <img
+                      src={ticket.photo_url}
+                      alt="Foto del guasto"
                       className="rounded-xl border border-slate-200 max-h-64 w-full object-cover"
                     />
                   </div>

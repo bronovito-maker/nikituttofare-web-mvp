@@ -8,6 +8,7 @@ import { ShieldCheck, Clock, Star, ArrowRight } from 'lucide-react';
 import { RetroGrid } from '@/components/react-bits/RetroGrid';
 import { BlurText } from '@/components/react-bits/BlurText';
 import { ClientAnimationWrapper } from '@/components/ui/client-animation-wrapper';
+import { COMPANY_PHONE, COMPANY_PHONE_LINK } from '@/lib/constants';
 
 export default function Home() {
   return (
@@ -90,7 +91,7 @@ export default function Home() {
             {/* CTA Group - Mobile Optimized */}
             <ClientAnimationWrapper delay={0.6} duration={0.8}>
               <div className="pt-6 sm:pt-8 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-center">
-                <Button asChild className="h-12 sm:h-14 lg:h-16 px-6 sm:px-8 lg:px-10 text-base sm:text-lg rounded-full bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white font-bold shadow-lg sm:shadow-xl shadow-orange-200/50 transition-all duration-300 hover:scale-105 sm:hover:scale-110 hover:-translate-y-1 group border border-orange-400/20 w-full sm:w-auto">
+                <Button asChild className="h-12 sm:h-14 lg:h-16 px-6 sm:px-8 lg:px-10 text-base sm:text-lg rounded-full bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white font-bold shadow-lg sm:shadow-xl shadow-orange-500/50 transition-all duration-300 hover:scale-105 sm:hover:scale-110 hover:-translate-y-1 group border border-orange-400/20 w-full sm:w-auto">
                   <Link href="/chat" className="flex items-center justify-center">
                     Richiedi Intervento
                     <ArrowRight className="ml-2 sm:ml-3 h-4 sm:h-5 w-4 sm:w-5 transition-transform duration-300 group-hover:translate-x-1 sm:group-hover:translate-x-2" />
@@ -122,9 +123,9 @@ export default function Home() {
                 { emoji: '🏨', name: 'BALTIC SUITES', category: 'Design' },
                 { emoji: '🏖️', name: 'RIVIERA RESIDENCE', category: 'Beachfront' },
                 { emoji: '⭐', name: 'GRAND HOTEL', category: 'Premium' },
-              ].map((hotel, idx) => (
+              ].map((hotel) => (
                 <div
-                  key={idx}
+                  key={hotel.name}
                   className="flex-shrink-0 sm:flex-shrink group px-5 sm:px-6 py-3 sm:py-4 bg-card rounded-xl border border-border hover:border-accent hover:shadow-md transition-all duration-300 cursor-pointer grayscale hover:grayscale-0 opacity-70 hover:opacity-100"
                 >
                   <div className="flex flex-col items-center gap-1.5">
@@ -196,10 +197,10 @@ export default function Home() {
               Chat 24/7 • Email • Telefono
             </p>
             <a
-              href="tel:+393461027447"
+              href={COMPANY_PHONE_LINK}
               className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-bold text-lg sm:text-xl transition-colors"
             >
-              📞 +39 346 102 7447
+              📞 +39 {COMPANY_PHONE}
             </a>
           </div>
           <div className="pt-6 sm:pt-8 border-t border-border text-muted-foreground text-xs sm:text-sm space-y-1 sm:space-y-2">
@@ -221,12 +222,12 @@ function PremiumFeatureCard({
   desc,
   features
 }: {
-  icon: React.ReactNode;
-  iconBg: string;
-  number: string;
-  title: string;
-  desc: string;
-  features: string[];
+  readonly icon: React.ReactNode;
+  readonly iconBg: string;
+  readonly number: string;
+  readonly title: string;
+  readonly desc: string;
+  readonly features: string[];
 }) {
   return (
     <div className="group relative p-6 sm:p-8 lg:p-10 bg-card rounded-2xl border border-border transition-all duration-500 hover:shadow-2xl hover:shadow-slate-300/20 dark:hover:shadow-slate-900/30 hover:border-slate-300 dark:hover:border-slate-600 hover:-translate-y-2">
@@ -255,8 +256,8 @@ function PremiumFeatureCard({
 
       {/* Feature List */}
       <div className="space-y-1.5 sm:space-y-2 pt-4 sm:pt-6 border-t border-border group-hover:border-accent transition-colors">
-        {features.map((feature, idx) => (
-          <div key={idx} className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+        {features.map((feature) => (
+          <div key={feature} className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground group-hover:text-foreground transition-colors">
             <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground group-hover:bg-accent transition-colors flex-shrink-0" />
             {feature}
           </div>

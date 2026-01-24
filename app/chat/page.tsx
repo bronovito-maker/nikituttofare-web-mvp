@@ -10,12 +10,7 @@ import {
   Zap,
   Key,
   Thermometer,
-  CheckCircle2,
-  Clock,
-  Shield,
-  Plus,
-  AlertCircle,
-  FileText
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NikiBotAvatar, Avatar } from '@/components/ui/avatar';
@@ -28,6 +23,7 @@ import { useRouter } from 'next/navigation';
 
 // ⚠️ IMPORTIAMO IL NUOVO HOOK N8N
 import { useN8NChat } from '@/hooks/useN8NChat';
+import { COMPANY_PHONE_LINK } from '@/lib/constants';
 
 // Quick action categories
 const QUICK_ACTIONS = [
@@ -78,7 +74,6 @@ export default function ChatPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Auth state (Mantenuto per mostrare l'avatar utente)
-  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userInitials, setUserInitials] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -92,7 +87,7 @@ export default function ChatPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setIsAuthenticated(true);
-        setUserEmail(session.user.email || null);
+        // User email removed as unused variable
         const email = session.user.email || '';
         const name = session.user.user_metadata?.full_name || email.split('@')[0];
         const initials = name.split(' ')
@@ -196,7 +191,7 @@ export default function ChatPage() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                   </span>
-                  Online • Powered by n8n
+                  {'Online • Powered by n8n'}
                 </div>
               </div>
             </div>
@@ -214,9 +209,9 @@ export default function ChatPage() {
             <Button
               asChild
               size="sm"
-              className="bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white rounded-full px-4 py-2 shadow-lg shadow-orange-200/50 font-semibold text-sm"
+              className="bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white rounded-full px-4 py-2 shadow-lg shadow-orange-500/50 font-semibold text-sm"
             >
-              <a href="tel:+393461027447" className="flex items-center gap-2">
+              <a href={COMPANY_PHONE_LINK} className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />
                 <span className="hidden sm:inline">Emergenza</span>
               </a>
@@ -382,7 +377,7 @@ export default function ChatPage() {
 }
 
 // 🎈 Componente Messaggio Semplificato
-function MessageBubble({ message, isLast }: { message: any; isLast: boolean }) {
+function MessageBubble({ message, isLast }: { readonly message: any; readonly isLast: boolean }) {
   const isUser = message.role === 'user';
 
   // N8N a volte restituisce oggetti, assicuriamoci di mostrare testo
