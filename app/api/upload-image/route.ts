@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase-server';
 import { getCurrentUser } from '@/lib/supabase-helpers';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitExceededResponse } from '@/lib/rate-limit';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
 
 const fileSchema = z.instanceof(File)
   .refine((file) => file.size > 0, "Nessun file fornito")
@@ -15,7 +15,7 @@ const fileSchema = z.instanceof(File)
     `File troppo grande. Massimo 10MB`
   )
   .refine(
-    (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
+    (file) => ACCEPTED_IMAGE_TYPES.has(file.type),
     "Solo file immagine sono permessi (.jpg, .jpeg, .png, .webp)"
   );
 
@@ -30,9 +30,6 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await getCurrentUser();
-    // if (!user?.id) {
-    //   return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
-    // }
 
     const formData = await request.formData();
     const file = formData.get('file');
@@ -56,7 +53,7 @@ export async function POST(request: NextRequest) {
     const fileName = `${uploaderId}/${Date.now()}-${randomBytes(8).toString('hex')}.${fileExt}`;
 
     // Carica il file su Supabase Storage (bucket: ticket-photos, path: userId/filename)
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('ticket-photos')
       .upload(fileName, validatedFile, {
         cacheControl: '3600',

@@ -11,8 +11,8 @@
  *   npx ts-node scripts/test-ai-responses.ts --limit=10
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 // Tipi
 interface SimulatedUser {
@@ -111,7 +111,7 @@ function determinePriority(lowerMessage: string, originalMessage: string): strin
 }
 
 function extractAddress(lowerMessage: string): string | null {
-  const addressMatch = lowerMessage.match(/(?:via|corso|piazza|viale)\s+[^,\.]+/i);
+  const addressMatch = /(?:via|corso|piazza|viale)\s+[^,.]+/.exec(lowerMessage);
   return addressMatch ? addressMatch[0] : null;
 }
 
@@ -384,7 +384,7 @@ function parseCliOptions(args: string[]): { category?: string; urgency?: string;
     } else if (arg.startsWith('--user-type=')) {
       options.userType = arg.split('=')[1];
     } else if (arg.startsWith('--limit=')) {
-      options.limit = parseInt(arg.split('=')[1], 10);
+      options.limit = Number.parseInt(arg.split('=')[1], 10);
     }
   }
   return options;
@@ -415,4 +415,4 @@ async function main() {
   }
 }
 
-main();
+await main();

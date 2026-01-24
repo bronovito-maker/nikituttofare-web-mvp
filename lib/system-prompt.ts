@@ -1,5 +1,4 @@
-// lib/system-prompt.ts
-import { getTasksKnowledgeString } from '@/lib/task-definitions';
+
 import { DOMAIN_KNOWLEDGE, buildTechnicianContextPrompt } from '@/lib/domain-knowledge';
 import { buildExamplesContext } from '@/lib/training-examples';
 
@@ -46,12 +45,12 @@ function extractCity(userText: string): string | undefined {
 }
 
 function extractPhone(originalText: string): string | undefined {
-  const phoneMatch = originalText.match(/(\+39\s?)?(3\d{2}[\s.-]?\d{7}|\d{9,10})/);
-  return phoneMatch ? phoneMatch[0].replace(/[\s.-]/g, '') : undefined;
+  const phoneMatch = /(\+39\s?)?(3\d{2}[\s.-]?\d{7}|\d{9,10})/.exec(originalText);
+  return phoneMatch ? phoneMatch[0].replaceAll(/[\s.-]/g, '') : undefined;
 }
 
 function extractAddress(originalText: string): { streetAddress?: string } {
-  const addressMatch = originalText.match(/(?:via|corso|piazza|viale)\s+[a-zàèéìòù]+(?:[\s]+[a-zàèéìòù]+)*[\s,]+\d+/i);
+  const addressMatch = /(?:via|corso|piazza|viale)\s+[a-zàèéìòù]+(?:\s+[a-zàèéìòù]+)*[\s,]+\d+/i.exec(originalText);
   const streetAddress = addressMatch ? addressMatch[0].trim() : undefined;
   return { streetAddress };
 }
@@ -121,7 +120,7 @@ export function extractSlotsFromConversation(messages: Array<{ role: string; con
 
   slots.urgencyLevel = extractUrgency(userText);
 
-  const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content?.toString().toLowerCase().trim() ?? '';
+  const lastUserMessage = messages.findLast(m => m.role === 'user')?.content?.toString().toLowerCase().trim() ?? '';
   const confirmation = extractConfirmation(lastUserMessage);
   slots.userConfirmed = confirmation.userConfirmed;
   slots.quoteRejected = confirmation.quoteRejected;
@@ -136,9 +135,9 @@ export function extractSlotsFromConversation(messages: Array<{ role: string; con
 
 const normalizeDetails = (details: string): string => {
   return details.toLowerCase().trim()
-    .replace(/(.)\1{2,}/g, '$1$1')
-    .replace(/\brubinett[oa]\b/g, 'rubinetto')
-    .replace(/\bintassat[oa]\b/g, 'intasato');
+    .replaceAll(/(.)\1{2,}/g, '$1$1')
+    .replaceAll(/\brubinett[oa]\b/g, 'rubinetto')
+    .replaceAll(/\bintassat[oa]\b/g, 'intasato');
 }
 
 const isGenericPhrase = (details: string): boolean => {
@@ -212,26 +211,36 @@ const buildSlotStatus = (slots: ConversationSlots): string => `
 - Telefono: ${slots.phoneNumber || 'da chiedere'}
 - Conferma: ${slots.userConfirmed ? 'ACCETTATO' : 'in attesa'}`;
 
-const buildFlowInstructions = (slots: ConversationSlots, priceRange: { min: number, max: number } | null): string => `
+const buildFlowInstructions = (slots: ConversationSlots, priceRange: { min: number, max: number } | null): string => {
+  let preventivoStep = 'Non puoi ancora dare un preventivo.';
+  if (priceRange) {
+    preventivoStep = `Ora puoi dire: "Basandomi su questo, l'intervento si aggira tra **${priceRange.min}€ e ${priceRange.max}€**."`;
+  }
+
+  const preventivoInstruction = slots.userConfirmed
+    ? 'L\'utente ha già accettato, passa a INDIRIZZO.'
+    : preventivoStep;
+
+  return `
 # 🎯 FLUSSO CONVERSAZIONALE STRICT
 1.  **CITTÀ**: Se manca, chiedi "Per aiutarti, di quale città parliamo?". Non procedere senza.
 2.  **CATEGORIA**: Se manca, chiedi "Che tipo di intervento ti serve?". Non procedere senza.
 3.  **DIAGNOSI**: Fai domande specifiche per capire il problema ("Cosa vedi?", "La chiave è spezzata?"). Non puoi dare prezzi su "non funziona".
-4.  **PREVENTIVO**: SOLO se hai città, categoria E problema specifico, puoi dare il preventivo. ${slots.userConfirmed ? 'L\'utente ha già accettato, passa a INDIRIZZO.' :
-    priceRange ? `Ora puoi dire: "Basandomi su questo, l'intervento si aggira tra **${priceRange.min}€ e ${priceRange.max}€**."` :
-      'Non puoi ancora dare un preventivo.'
-  }
+4.  **PREVENTIVO**: SOLO se hai città, categoria E problema specifico, puoi dare il preventivo. ${preventivoInstruction}
 5.  **INDIRIZZO**: Solo DOPO l'accettazione del preventivo, chiedi "Perfetto. Dimmi l'indirizzo esatto (via e numero civico)".
 6.  **TELEFONO**: Ultimo step, chiedi "A che numero può chiamarti il tecnico per confermare?".
 7.  **RIEPILOGO**: Mostra i dati e chiedi conferma finale.`;
+};
+
 
 export function buildNikiSystemPrompt(slots: ConversationSlots, ticketId?: string | null): string {
   const now = new Date().toLocaleString('it-IT', { timeZone: 'Europe/Rome' });
   const priceRange = canGivePriceEstimate(slots) && !slots.userConfirmed ? calculatePriceRange(slots) : null;
 
+  const ticketInfo = ticketId ? `- Ticket: #${ticketId.slice(-8).toUpperCase()}` : '';
   const sections = [
     `# 🤖 IDENTITÀ\nSei **Niki**, l'assistente AI di **NikiTuttoFare**, servizio di pronto intervento H24 in Riviera Romagnola.`,
-    `# ⏰ CONTESTO\n- Data/Ora: ${now}\n- Email utente: ${slots.userEmail || 'Ospite'}\n${ticketId ? `- Ticket: #${ticketId.slice(-8).toUpperCase()}` : ''}`,
+    `# ⏰ CONTESTO\n- Data/Ora: ${now}\n- Email utente: ${slots.userEmail || 'Ospite'}\n${ticketInfo}`,
     buildSlotStatus(slots),
     `# 🧠 ESPERTO TECNICO\nUsa questa knowledge base per distinguere tra lavori domestici (prezzo base) e commerciali/Horeca (più complessi, proponi sopralluogo o range "a partire da").\n${buildTechnicianContextPrompt()}`,
     `# 🧪 CASI DI RIFERIMENTO\nUsa questi esempi per orientare tono e priorità, non per copiare.\n${buildExamplesContext(12)}`,

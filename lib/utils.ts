@@ -14,7 +14,7 @@ export function generateTicketId(): string {
   const max = 999999;
   const range = max - min + 1;
 
-  const crypto = typeof window !== 'undefined' ? window.crypto : globalThis.crypto;
+  const crypto = globalThis.crypto;
   if (crypto) {
     const array = new Uint32Array(1);
     crypto.getRandomValues(array);

@@ -116,7 +116,7 @@ function extractDataFromMessage(message: string): Partial<ConversationSlots> {
     }
   }
 
-  const addressRegex = /(?:via|corso|piazza|viale|vicolo|largo)\s+[a-zàèéìòùáíóú]+(?:[\s]+[a-zàèéìòùáíóú]+)*[\s,]*\d+[a-z]?/i
+  const addressRegex = /(?:via|corso|piazza|viale|vicolo|largo)\s+[a-zàèéìòùáíóú]+(?:\s+[a-zàèéìòùáíóú]+)*[\s,]*\d+[a-z]?/i
   const addressMatch = addressRegex.exec(message)
   if (addressMatch) {
     extracted.serviceAddress = addressMatch[0].trim()
@@ -365,7 +365,7 @@ async function callGemini(fullPrompt: string): Promise<string | null> {
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
     const result = await model.generateContent(fullPrompt)
-    const response = await result.response
+    const response = result.response
     return response.text()
   } catch (error) {
     console.error('Errore Gemini:', error)
@@ -405,7 +405,7 @@ function parseAndValidateAIResponse(
 }
 
 function getCleanTextFromAIResponse(text: string): string {
-  let cleaned = text.replaceAll(/```json/g, '').replaceAll(/```/g, '')
+  let cleaned = text.replaceAll('```json', '').replaceAll('```', '')
 
   const start = cleaned.indexOf('{')
   const end = cleaned.lastIndexOf('}')
@@ -561,7 +561,7 @@ async function handleTicketCreation(
   user: any,
   lastUserMessage: ChatMessage,
 ): Promise<NextResponse | { ticketId: string | null; shouldCreateTicket: boolean }> {
-  const detailsValid = checkProblemDetailsValid(slots)
+  // const detailsValid = checkProblemDetailsValid(slots)
   const hasAllDataForTicketCreation = canCreateTicket(slots)
   const shouldCreateNewTicket = !ticketId && hasAllDataForTicketCreation && user?.id
 

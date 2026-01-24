@@ -69,7 +69,7 @@ interface ChatState {
 
 const generateId = () => {
   const array = new Uint32Array(1);
-  const crypto = typeof window !== 'undefined' ? window.crypto : globalThis.crypto;
+  const crypto = globalThis.crypto;
   if (crypto) {
     crypto.getRandomValues(array);
     return `${Date.now()}-${array[0].toString(36)}`;
@@ -82,7 +82,7 @@ const migrateMessages = (messages: ChatMessage[]): ChatMessage[] => {
   return messages.filter((msg) => {
     // Rimuovi messaggi auth_required senza ticketData valido
     if (typeof msg.content === 'object' && msg.content !== null) {
-      const content = msg.content as AIResponseType;
+      const content = msg.content;
       if (content.type === 'auth_required') {
         const authContent = content.content as any;
         // Se non ha ticketData o è vuoto, rimuovi il messaggio

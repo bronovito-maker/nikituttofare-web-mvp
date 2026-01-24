@@ -9,7 +9,7 @@ export const useN8NChat = () => {
 
   useEffect(() => {
     const array = new Uint32Array(1);
-    window.crypto.getRandomValues(array);
+    globalThis.crypto.getRandomValues(array);
     setChatId(array[0].toString(36));
   }, []);
 
@@ -40,6 +40,7 @@ export const useN8NChat = () => {
       setMessages((prev) => [...prev, newAiMsg]);
 
     } catch (error) {
+      console.error('Chat Error:', error);
       setMessages((prev) => [...prev, { role: 'assistant', content: "Si è verificato un errore.", id: Date.now().toString() }]);
     } finally {
       setIsLoading(false);

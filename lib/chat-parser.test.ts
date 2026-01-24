@@ -8,16 +8,16 @@ const createResponse = (data: unknown) => ({
 });
 
 describe('parseChatData', () => {
-  const originalFetch = global.fetch;
+  const originalFetch = globalThis.fetch;
   let fetchMock: Mock<[RequestInfo | URL, RequestInit?], Promise<unknown>>;
 
   beforeEach(() => {
     fetchMock = vi.fn<[RequestInfo | URL, RequestInit?], Promise<unknown>>();
-    global.fetch = fetchMock as unknown as typeof fetch;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
     fetchMock.mockReset();
   });
 
