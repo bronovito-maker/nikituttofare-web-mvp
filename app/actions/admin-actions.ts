@@ -105,3 +105,25 @@ export async function verifyAndLinkTechnician(phone: string, userId: string) {
 
   return { success: true }
 }
+// --- GESTIONE TICKETS ---
+
+export async function closeTicket(ticketId: string): Promise<void> {
+  await checkAdmin()
+  const supabaseAdmin = createAdminClient()
+
+  const { error } = await supabaseAdmin
+    .from('tickets')
+    .update({
+      status: 'completed',
+      // @ts-ignore - completed_at potrebbe non essere nei tipi generati
+      completed_at: new Date().toISOString()
+    } as any)
+    .eq('id', ticketId)
+
+  if (error) {
+    console.error('Error closing ticket:', error)
+    throw new Error(error.message)
+  }
+
+  revalidatePath('/admin')
+}
