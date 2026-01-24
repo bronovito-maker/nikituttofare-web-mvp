@@ -80,15 +80,15 @@ const categoryMap: Record<string, string[]> = {
 // ANALISI LOCALE (senza chiamare API esterna)
 // ============================================
 const categoryKeywords: Record<string, string[]> = {
-    gas: ['gas', 'odore di uova', 'uova marce', 'puzza di gas', 'bombola', 'metano'],
-    plumbing: ['idraulico', 'acqua', 'tubo', 'perdita', 'scarico', 'rubinetto', 'lavandino', 'doccia', 'wc', 'water', 'bidet', 'allagamento', 'allagato', 'goccia', 'sifone', 'flessibile', 'caldaia', 'boiler'],
-    electric: ['elettric', 'luce', 'presa', 'corrente', 'interruttore', 'scintill', 'cortocircuito', 'salvavita', 'magnetotermico', 'quadro', 'fili', 'cavi', 'lampadina', 'led', 'forno', 'televisore', 'tv'],
-    locksmith: ['fabbro', 'serratura', 'chiave', 'porta', 'bloccato', 'bloccata', 'chiuso fuori', 'cassaforte', 'cancello', 'blindata', 'cilindro', 'maniglia'],
-    climate: ['clima', 'condizionatore', 'caldaia', 'riscaldamento', 'termosifone', 'split', 'aria condizionata', 'caldo', 'freddo', 'temperatura', 'frigorifero', 'cella', 'fan-coil', 'deumidificatore', 'vmc'],
+  gas: ['gas', 'odore di uova', 'uova marce', 'puzza di gas', 'bombola', 'metano'],
+  plumbing: ['idraulico', 'acqua', 'tubo', 'perdita', 'scarico', 'rubinetto', 'lavandino', 'doccia', 'wc', 'water', 'bidet', 'allagamento', 'allagato', 'goccia', 'sifone', 'flessibile', 'caldaia', 'boiler'],
+  electric: ['elettric', 'luce', 'presa', 'corrente', 'interruttore', 'scintill', 'cortocircuito', 'salvavita', 'magnetotermico', 'quadro', 'fili', 'cavi', 'lampadina', 'led', 'forno', 'televisore', 'tv'],
+  locksmith: ['fabbro', 'serratura', 'chiave', 'porta', 'bloccato', 'bloccata', 'chiuso fuori', 'cassaforte', 'cancello', 'blindata', 'cilindro', 'maniglia'],
+  climate: ['clima', 'condizionatore', 'caldaia', 'riscaldamento', 'termosifone', 'split', 'aria condizionata', 'caldo', 'freddo', 'temperatura', 'frigorifero', 'cella', 'fan-coil', 'deumidificatore', 'vmc'],
 };
 
-const emergencyKeywords = [ 'aiuto', 'help', 'emergenza', 'urgente', 'subito', 'ora', 'presto', 'scoppiato', 'esploso', 'fuoco', 'incendio', 'fumo', 'bruciato', 'allagamento', 'allagato', 'schizza', 'trabocca', 'bloccato', 'chiuso dentro', 'non esco', 'bambino', 'paura', 'pericolo', 'scintille', 'puzza di bruciato', 'gas', 'uova marce', 'bollente', 'scottato' ];
-const highKeywords = [ 'rotto', 'non funziona', 'guasto', 'ferma', 'bloccata', 'perdita', 'gocciola', 'saltato', 'in tilt', 'hotel', 'ristorante', 'bar', 'clienti' ];
+const emergencyKeywords = ['aiuto', 'help', 'emergenza', 'urgente', 'subito', 'ora', 'presto', 'scoppiato', 'esploso', 'fuoco', 'incendio', 'fumo', 'bruciato', 'allagamento', 'allagato', 'schizza', 'trabocca', 'bloccato', 'chiuso dentro', 'non esco', 'bambino', 'paura', 'pericolo', 'scintille', 'puzza di bruciato', 'gas', 'uova marce', 'bollente', 'scottato'];
+const highKeywords = ['rotto', 'non funziona', 'guasto', 'ferma', 'bloccata', 'perdita', 'gocciola', 'saltato', 'in tilt', 'hotel', 'ristorante', 'bar', 'clienti'];
 
 function determineCategory(lowerMessage: string): string {
   if (categoryKeywords.gas.some(kw => lowerMessage.includes(kw))) {
@@ -111,8 +111,8 @@ function determinePriority(lowerMessage: string, originalMessage: string): strin
 }
 
 function extractAddress(lowerMessage: string): string | null {
-    const addressMatch = lowerMessage.match(/(?:via|corso|piazza|viale)\s+[^,\.]+/i);
-    return addressMatch ? addressMatch[0] : null;
+  const addressMatch = lowerMessage.match(/(?:via|corso|piazza|viale)\s+[^,\.]+/i);
+  return addressMatch ? addressMatch[0] : null;
 }
 
 function analyzeMessageLocally(message: string): AnalysisResult {
@@ -151,101 +151,101 @@ function evaluateResult(input: SimulatedUser, analysis: AnalysisResult): { categ
 // ESECUZIONE TEST
 // ============================================
 function filterTestCases(testCases: SimulatedUser[], options: { category?: string; urgency?: string; userType?: string; limit?: number; }): SimulatedUser[] {
-    let filtered = testCases;
-    if (options.category) {
-        filtered = filtered.filter(tc => tc.category === options.category);
-    }
-    if (options.urgency) {
-        filtered = filtered.filter(tc => tc.urgency === options.urgency);
-    }
-    if (options.userType) {
-        filtered = filtered.filter(tc => tc.user_type === options.userType);
-    }
-    if (options.limit) {
-        filtered = filtered.slice(0, options.limit);
-    }
-    return filtered;
+  let filtered = testCases;
+  if (options.category) {
+    filtered = filtered.filter(tc => tc.category === options.category);
+  }
+  if (options.urgency) {
+    filtered = filtered.filter(tc => tc.urgency === options.urgency);
+  }
+  if (options.userType) {
+    filtered = filtered.filter(tc => tc.user_type === options.userType);
+  }
+  if (options.limit) {
+    filtered = filtered.slice(0, options.limit);
+  }
+  return filtered;
 }
 
 function processTestCase(testCase: SimulatedUser, index: number): TestResult {
-    const startTime = Date.now();
-    try {
-        const analysis = analyzeMessageLocally(testCase.text);
-        const executionTime = Date.now() - startTime;
-        const { categoryMatch, urgencyMatch } = evaluateResult(testCase, analysis);
-        
-        return {
-            index,
-            input: testCase,
-            analysis,
-            aiResponse: null,
-            categoryMatch,
-            urgencyMatch,
-            error: null,
-            executionTime,
-        };
-    } catch (error) {
-        return {
-            index,
-            input: testCase,
-            analysis: null,
-            aiResponse: null,
-            categoryMatch: false,
-            urgencyMatch: false,
-            error: error instanceof Error ? error.message : 'Errore sconosciuto',
-            executionTime: Date.now() - startTime,
-        };
-    }
+  const startTime = Date.now();
+  try {
+    const analysis = analyzeMessageLocally(testCase.text);
+    const executionTime = Date.now() - startTime;
+    const { categoryMatch, urgencyMatch } = evaluateResult(testCase, analysis);
+
+    return {
+      index,
+      input: testCase,
+      analysis,
+      aiResponse: null,
+      categoryMatch,
+      urgencyMatch,
+      error: null,
+      executionTime,
+    };
+  } catch (error) {
+    return {
+      index,
+      input: testCase,
+      analysis: null,
+      aiResponse: null,
+      categoryMatch: false,
+      urgencyMatch: false,
+      error: error instanceof Error ? error.message : 'Errore sconosciuto',
+      executionTime: Date.now() - startTime,
+    };
+  }
 }
 
 function updateSingleStat(stats: any, key: string, match: boolean) {
-    if (!stats[key]) {
-        stats[key] = { total: 0, correct: 0 };
-    }
-    stats[key].total++;
-    if (match) {
-        stats[key].correct++;
-    }
+  if (!stats[key]) {
+    stats[key] = { total: 0, correct: 0 };
+  }
+  stats[key].total++;
+  if (match) {
+    stats[key].correct++;
+  }
 }
 
 function updateAllStats(stats: any, results: TestResult[]) {
-    for (const result of results) {
-        const { input, categoryMatch, urgencyMatch } = result;
-        const passed = categoryMatch && urgencyMatch;
-        updateSingleStat(stats.byCategory, input.category, categoryMatch);
-        updateSingleStat(stats.byUrgency, input.urgency, urgencyMatch);
-        const userTypeKey = input.user_type.split('_')[0];
-        updateSingleStat(stats.byUserType, userTypeKey, passed);
-    }
+  for (const result of results) {
+    const { input, categoryMatch, urgencyMatch } = result;
+    const passed = categoryMatch && urgencyMatch;
+    updateSingleStat(stats.byCategory, input.category, categoryMatch);
+    updateSingleStat(stats.byUrgency, input.urgency, urgencyMatch);
+    const userTypeKey = input.user_type.split('_')[0];
+    updateSingleStat(stats.byUserType, userTypeKey, passed);
+  }
 }
 
 function calculateFinalReport(results: TestResult[], totalTests: number): TestReport {
-    const passedCount = results.filter(r => r.categoryMatch && r.urgencyMatch).length;
-    const errorCount = results.filter(r => r.error).length;
-    const totalTime = results.reduce((sum, r) => sum + r.executionTime, 0);
-    const categoryCorrect = results.filter(r => r.categoryMatch).length;
-    const urgencyCorrect = results.filter(r => r.urgencyMatch).length;
+  const passedCount = results.filter(r => r.categoryMatch && r.urgencyMatch).length;
+  const errorCount = results.filter(r => r.error).length;
+  const totalTime = results.reduce((sum, r) => sum + r.executionTime, 0);
+  const categoryCorrect = results.filter(r => r.categoryMatch).length;
+  const urgencyCorrect = results.filter(r => r.urgencyMatch).length;
 
-    const stats = { byCategory: {}, byUrgency: {}, byUserType: {} };
-    updateAllStats(stats, results);
+  const stats = { byCategory: {}, byUrgency: {}, byUserType: {} };
+  updateAllStats(stats, results);
 
-    const byCategoryWithAccuracy = Object.fromEntries(Object.entries(stats.byCategory).map(([k, v]: [string, any]) => [k, { ...v, accuracy: (v.correct / v.total) * 100 }]));
-    const byUrgencyWithAccuracy = Object.fromEntries(Object.entries(stats.byUrgency).map(([k, v]: [string, any]) => [k, { ...v, accuracy: (v.correct / v.total) * 100 }]));
-    const byUserTypeWithAccuracy = Object.fromEntries(Object.entries(stats.byUserType).map(([k, v]: [string, any]) => [k, { ...v, accuracy: (v.correct / v.total) * 100 }]));
+  const byCategoryWithAccuracy = Object.fromEntries(Object.entries(stats.byCategory).map(([k, v]: [string, any]) => [k, { ...v, accuracy: (v.correct / v.total) * 100 }]));
+  const byUrgencyWithAccuracy = Object.fromEntries(Object.entries(stats.byUrgency).map(([k, v]: [string, any]) => [k, { ...v, accuracy: (v.correct / v.total) * 100 }]));
+  const byUserTypeWithAccuracy = Object.fromEntries(Object.entries(stats.byUserType).map(([k, v]: [string, any]) => [k, { ...v, accuracy: (v.correct / v.total) * 100 }]));
 
-    return {
-        totalTests,
-        passed: passedCount,
-        failed: totalTests - passedCount - errorCount,
-        errors: errorCount,
-        categoryAccuracy: (categoryCorrect / totalTests) * 100,
-        urgencyAccuracy: (urgencyCorrect / totalTests) * 100,
-        averageResponseTime: totalTime / totalTests,
-        byCategory: byCategoryWithAccuracy,
-        byUrgency: byUrgencyWithAccuracy,
-        byUserType: byUserTypeWithAccuracy,
-        failedCases: results.filter(r => !r.categoryMatch || !r.urgencyMatch).slice(0, 20),
-    };
+  return {
+    totalTests,
+    passed: passedCount,
+    failed: totalTests - passedCount - errorCount,
+    errors: errorCount,
+    categoryAccuracy: (categoryCorrect / totalTests) * 100,
+    urgencyAccuracy: (urgencyCorrect / totalTests) * 100,
+    averageResponseTime: totalTime / totalTests,
+    byCategory: byCategoryWithAccuracy,
+    byUrgency: byUrgencyWithAccuracy,
+    byUserType: byUserTypeWithAccuracy,
+    failedCases: results.filter(r => !r.categoryMatch || !r.urgencyMatch).slice(0, 20),
+  };
 }
 
 
@@ -265,7 +265,7 @@ async function runTests(options: {
   console.log('━'.repeat(60));
 
   const results = filteredTestCases.map(processTestCase);
-  
+
   return calculateFinalReport(results, filteredTestCases.length);
 }
 
@@ -291,48 +291,61 @@ function printMetricsAccuracy(report: TestReport) {
   console.log('');
 }
 
-function printDetailedAccuracy(title: string, data: any, order?: string[]) {
-    console.log(title);
-    console.log('─'.repeat(50));
-    const sortedData = order ? order.map(key => [key, data[key]]).filter(([,v]) => v) : Object.entries(data).sort((a: any, b: any) => b[1].total - a[1].total);
+function getEmojiForCategory(title: string, key: string): string {
+  if (!title.includes('URGENZA')) return '';
+  switch (key) {
+    case 'emergency': return '🔴';
+    case 'high': return '🟠';
+    case 'medium': return '🟡';
+    default: return '🟢';
+  }
+}
 
-    for (const [key, stats] of sortedData) {
-        const bar = getAccuracyBar(stats.accuracy);
-        const emoji = title.includes('URGENZA') ? (key === 'emergency' ? '🔴' : key === 'high' ? '🟠' : key === 'medium' ? '🟡' : '🟢') : '';
-        console.log(`   ${emoji} ${key.padEnd(12)} ${stats.accuracy.toFixed(0)}% ${bar} (${stats.correct}/${stats.total})`);
-    }
-    console.log('');
+function printDetailedAccuracy(title: string, data: any, order?: string[]) {
+  console.log(title);
+  console.log('─'.repeat(50));
+
+  const sortedEntries = order
+    ? order.map(key => [key, data[key]]).filter(([, v]) => v) as [string, any][]
+    : Object.entries(data).sort((a: any, b: any) => b[1].total - a[1].total) as [string, any][];
+
+  for (const [key, stats] of sortedEntries) {
+    const bar = getAccuracyBar(stats.accuracy);
+    const emoji = getEmojiForCategory(title, key);
+    console.log(`   ${emoji} ${key.padEnd(12)} ${stats.accuracy.toFixed(0)}% ${bar} (${stats.correct}/${stats.total})`);
+  }
+  console.log('');
 }
 
 function printFailedCases(failedCases: TestResult[]) {
-    if (failedCases.length === 0) return;
-    console.log('❌ ESEMPI DI CASI FALLITI');
-    console.log('─'.repeat(50));
-    for (const failedCase of failedCases.slice(0, 5)) {
-      console.log(`\n   [${failedCase.input.category}/${failedCase.input.urgency}] ${failedCase.input.user_type}`);
-      console.log(`   Input: "${failedCase.input.text.slice(0, 80)}..."`);
-      if (failedCase.analysis) {
-        console.log(`   Rilevato: ${failedCase.analysis.category}/${failedCase.analysis.priority}`);
-        console.log(`   Cat: ${failedCase.categoryMatch ? '✅' : '❌'} | Urg: ${failedCase.urgencyMatch ? '✅' : '❌'}`);
-      }
+  if (failedCases.length === 0) return;
+  console.log('❌ ESEMPI DI CASI FALLITI');
+  console.log('─'.repeat(50));
+  for (const failedCase of failedCases.slice(0, 5)) {
+    console.log(`\n   [${failedCase.input.category}/${failedCase.input.urgency}] ${failedCase.input.user_type}`);
+    console.log(`   Input: "${failedCase.input.text.slice(0, 80)}..."`);
+    if (failedCase.analysis) {
+      console.log(`   Rilevato: ${failedCase.analysis.category}/${failedCase.analysis.priority}`);
+      console.log(`   Cat: ${failedCase.categoryMatch ? '✅' : '❌'} | Urg: ${failedCase.urgencyMatch ? '✅' : '❌'}`);
     }
+  }
 }
 
 function printFinalVerdict(report: TestReport) {
-    console.log('\n');
-    console.log('═'.repeat(60));
+  console.log('\n');
+  console.log('═'.repeat(60));
 
-    const overallAccuracy = (report.categoryAccuracy + report.urgencyAccuracy) / 2;
-    if (overallAccuracy >= 90) {
-        console.log('🏆 ECCELLENTE! L\'AI performa sopra il 90%');
-    } else if (overallAccuracy >= 75) {
-        console.log('✅ BUONO! L\'AI performa bene, margini di miglioramento');
-    } else if (overallAccuracy >= 60) {
-        console.log('⚠️  SUFFICIENTE. Necessario migliorare il training');
-    } else {
-        console.log('❌ INSUFFICIENTE. Revisione urgente necessaria');
-    }
-    console.log('═'.repeat(60));
+  const overallAccuracy = (report.categoryAccuracy + report.urgencyAccuracy) / 2;
+  if (overallAccuracy >= 90) {
+    console.log('🏆 ECCELLENTE! L\'AI performa sopra il 90%');
+  } else if (overallAccuracy >= 75) {
+    console.log('✅ BUONO! L\'AI performa bene, margini di miglioramento');
+  } else if (overallAccuracy >= 60) {
+    console.log('⚠️  SUFFICIENTE. Necessario migliorare il training');
+  } else {
+    console.log('❌ INSUFFICIENTE. Revisione urgente necessaria');
+  }
+  console.log('═'.repeat(60));
 }
 
 function printReport(report: TestReport) {
@@ -361,20 +374,20 @@ function getAccuracyBar(accuracy: number): string {
 // MAIN
 // ============================================
 function parseCliOptions(args: string[]): { category?: string; urgency?: string; userType?: string; limit?: number; } {
-    const options: { category?: string; urgency?: string; userType?: string; limit?: number; } = {};
+  const options: { category?: string; urgency?: string; userType?: string; limit?: number; } = {};
 
-    for (const arg of args) {
-        if (arg.startsWith('--category=')) {
-            options.category = arg.split('=')[1];
-        } else if (arg.startsWith('--urgency=')) {
-            options.urgency = arg.split('=')[1];
-        } else if (arg.startsWith('--user-type=')) {
-            options.userType = arg.split('=')[1];
-        } else if (arg.startsWith('--limit=')) {
-            options.limit = parseInt(arg.split('=')[1], 10);
-        }
+  for (const arg of args) {
+    if (arg.startsWith('--category=')) {
+      options.category = arg.split('=')[1];
+    } else if (arg.startsWith('--urgency=')) {
+      options.urgency = arg.split('=')[1];
+    } else if (arg.startsWith('--user-type=')) {
+      options.userType = arg.split('=')[1];
+    } else if (arg.startsWith('--limit=')) {
+      options.limit = parseInt(arg.split('=')[1], 10);
     }
-    return options;
+  }
+  return options;
 }
 
 async function main() {
@@ -382,7 +395,7 @@ async function main() {
 
   console.log('\n🚀 NikiTuttoFare AI Test Suite');
   console.log('━'.repeat(60));
-  
+
   if (Object.keys(options).length > 0) {
     console.log('Filtri applicati:', JSON.stringify(options));
   }

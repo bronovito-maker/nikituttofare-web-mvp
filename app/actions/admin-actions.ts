@@ -11,7 +11,7 @@ async function checkAdmin() {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user || user.email !== ADMIN_EMAIL) {
+  if (user?.email !== ADMIN_EMAIL) {
     throw new Error('Non autorizzato: Accesso riservato admin')
   }
   return supabase

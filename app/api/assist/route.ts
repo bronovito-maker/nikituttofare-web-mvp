@@ -89,7 +89,7 @@ function normalizeText(text: string): string {
     normalized = normalized.replaceAll(typo, correct)
   }
 
-  normalized = normalized.replace(/(.)\1{2,}/g, '$1$1')
+  normalized = normalized.replaceAll(/(.)\1{2,}/g, '$1$1')
 
   return normalized
 }
@@ -109,16 +109,15 @@ function extractDataFromMessage(message: string): Partial<ConversationSlots> {
   ]
 
   for (const pattern of phonePatterns) {
-    const match = message.match(pattern)
+    const match = pattern.exec(message)
     if (match) {
-      extracted.phoneNumber = match[0].replace(/[\s.-]/g, '')
+      extracted.phoneNumber = match[0].replaceAll(/[\s.-]/g, '')
       break
     }
   }
 
-  const addressMatch = message.match(
-    /(?:via|corso|piazza|viale|vicolo|largo)\s+[a-zàèéìòùáéíóú]+(?:[\s]+[a-zàèéìòùáéíóú]+)*[\s,]*\d+[a-z]?/i,
-  )
+  const addressRegex = /(?:via|corso|piazza|viale|vicolo|largo)\s+[a-zàèéìòùáíóú]+(?:[\s]+[a-zàèéìòùáíóú]+)*[\s,]*\d+[a-z]?/i
+  const addressMatch = addressRegex.exec(message)
   if (addressMatch) {
     extracted.serviceAddress = addressMatch[0].trim()
   }
@@ -229,7 +228,7 @@ function stringifyContent(content: unknown): string {
   try {
     return JSON.stringify(content)
   } catch {
-    return String(content ?? '')
+    return typeof content === 'object' ? JSON.stringify(content) : String(content ?? '')
   }
 }
 
@@ -280,12 +279,12 @@ function createRecapResponse(
   ticketId: string | null,
 ): AIResponseType {
   const priority = determinePriority(slots)
-  const timeEstimate =
-    priority === 'emergency'
-      ? '30-60 minuti'
-      : priority === 'high'
-        ? '2-4 ore'
-        : '24-48 ore'
+  let timeEstimate = '24-48 ore'
+  if (priority === 'emergency') {
+    timeEstimate = '30-60 minuti'
+  } else if (priority === 'high') {
+    timeEstimate = '2-4 ore'
+  }
 
   return {
     type: 'recap',
@@ -406,7 +405,7 @@ function parseAndValidateAIResponse(
 }
 
 function getCleanTextFromAIResponse(text: string): string {
-  let cleaned = text.replace(/```json/g, '').replace(/```/g, '')
+  let cleaned = text.replaceAll(/```json/g, '').replaceAll(/```/g, '')
 
   const start = cleaned.indexOf('{')
   const end = cleaned.lastIndexOf('}')
@@ -477,10 +476,9 @@ function mergeSlots(
   ]
 
   for (const key of allSlotKeys) {
-    const lockedValue =
-      frontendLockedSlots[key as keyof typeof frontendLockedSlots]
+    const lockedValue = frontendLockedSlots[key]
     const extractedValue = extractedSlots[key]
-    const newValue = newData[key as keyof typeof newData]
+    const newValue = newData[key]
 
     let finalValue: any = [lockedValue, newValue, extractedValue].find(
       v => v !== undefined && v !== null && v !== '',
@@ -618,7 +616,7 @@ async function handleTicketCreation(
         content: {
           message: `🎉 La tua richiesta è stata confermata!\n\nUn tecnico **${CATEGORY_NAMES_IT[slots.problemCategory || 'generic']
             }** ti chiamerà al numero **${slots.phoneNumber
-            }** entro 30-60 minuti per confermare l\'appuntamento.\n\n📍 Intervento a: ${slots.serviceAddress
+            }** entro 30-60 minuti per confermare l'appuntamento.\n\n📍 Intervento a: ${slots.serviceAddress
             }\n💰 Preventivo: ${priceRange.min}€ - ${priceRange.max}€`,
           ticketId: ticketId,
         },
@@ -645,7 +643,7 @@ async function handleTicketCreation(
 
 async function preliminaryChecks(request: NextRequest) {
   const clientId = getClientIdentifier(request)
-  const rateLimitResult = await checkRateLimit(
+  const rateLimitResult = checkRateLimit(
     `assist:${clientId}`,
     RATE_LIMITS.assist,
   )
@@ -665,7 +663,7 @@ async function preliminaryChecks(request: NextRequest) {
 
   const { messages, ticketId: existingTicketId, lockedSlots } = validation.data
   const user = await getCurrentUser()
-  const lastUserMessage = messages.filter(m => m.role === 'user').pop()
+  const lastUserMessage = messages.findLast(m => m.role === 'user')
   if (!lastUserMessage) {
     return {
       error: NextResponse.json(

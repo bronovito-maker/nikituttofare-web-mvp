@@ -14,7 +14,7 @@ export default async function AdminDashboard() {
   const { data: { user } } = await supabase.auth.getUser();
 
   // 🔒 PROTEZIONE PAGINA
-  if (!user || user.email !== 'bronovito@gmail.com') {
+  if (user?.email !== 'bronovito@gmail.com') {
     redirect('/');
   }
 
@@ -30,7 +30,7 @@ export default async function AdminDashboard() {
           <p className="text-slate-500">Loggato come: {user.email}</p>
         </div>
         <form action={async () => { 'use server'; const sb = await createServerClient(); await sb.auth.signOut(); redirect('/'); }}>
-           <Button variant="outline">Esci</Button>
+          <Button variant="outline">Esci</Button>
         </form>
       </header>
 
@@ -86,8 +86,8 @@ export default async function AdminDashboard() {
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="font-bold">{tech.name}</h3>
-                          {tech.is_active ? 
-                            <Badge className="bg-green-500">Attivo</Badge> : 
+                          {tech.is_active ?
+                            <Badge className="bg-green-500">Attivo</Badge> :
                             <Badge variant="destructive">Sospeso</Badge>
                           }
                         </div>
@@ -100,12 +100,12 @@ export default async function AdminDashboard() {
                       </div>
                       <div className="flex gap-2">
                         <form action={toggleTechnicianStatus.bind(null, tech.id, tech.is_active)}>
-                           <Button size="sm" variant="outline">
-                             {tech.is_active ? 'Sospendi' : 'Riattiva'}
-                           </Button>
+                          <Button size="sm" variant="outline">
+                            {tech.is_active ? 'Sospendi' : 'Riattiva'}
+                          </Button>
                         </form>
                         <form action={deleteTechnician.bind(null, tech.id)}>
-                           <Button size="sm" variant="destructive">Elimina</Button>
+                          <Button size="sm" variant="destructive">Elimina</Button>
                         </form>
                       </div>
                     </div>
@@ -123,17 +123,17 @@ export default async function AdminDashboard() {
             <CardHeader><CardTitle>Ultimi Lavori</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-2">
-                 {tickets?.map((t) => (
-                   <div key={t.id} className="p-3 border rounded flex justify-between items-center hover:bg-slate-50">
-                     <div>
-                       <div className="font-medium text-sm">#{t.id.slice(0,8)} - {t.category || 'Richiesta'}</div>
-                       <div className="text-xs text-slate-500">{new Date(t.created_at).toLocaleString()}</div>
-                     </div>
-                     <Badge variant={t.status === 'open' ? 'default' : 'secondary'}>
-                       {t.status}
-                     </Badge>
-                   </div>
-                 ))}
+                {tickets?.map((t) => (
+                  <div key={t.id} className="p-3 border rounded flex justify-between items-center hover:bg-slate-50">
+                    <div>
+                      <div className="font-medium text-sm">#{t.id.slice(0, 8)} - {t.category || 'Richiesta'}</div>
+                      <div className="text-xs text-slate-500">{new Date(t.created_at).toLocaleString()}</div>
+                    </div>
+                    <Badge variant={t.status === 'open' ? 'default' : 'secondary'}>
+                      {t.status}
+                    </Badge>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

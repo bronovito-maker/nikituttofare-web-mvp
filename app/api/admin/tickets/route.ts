@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerClient, createAdminClient } from '@/lib/supabase-server';
 import { getCurrentUser } from '@/lib/supabase-helpers';
-import { Database } from '@/lib/database.types';
+
 
 // Define a type for our filters for clarity
 type TicketFilters = {
