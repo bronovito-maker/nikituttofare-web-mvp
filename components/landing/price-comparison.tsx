@@ -9,7 +9,7 @@ export function PriceComparison() {
             {/* Old Way Side */}
             <div className="relative p-6 xs:p-8 rounded-3xl bg-card border border-border/50 opacity-80 scale-95 md:scale-100 filter grayscale md:grayscale-0 hover:grayscale-0 transition-all duration-500">
                 <div className="absolute top-4 left-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    Il Solito Preventivo
+                    Il solito &quot;pezzo di carta&quot;
                 </div>
 
                 {/* Paper Mock */}
@@ -18,9 +18,9 @@ export function PriceComparison() {
                         <X className="w-5 h-5 text-red-600" />
                     </div>
                     <div className="space-y-4">
-                        <p className="text-lg leading-tight">Riparazione perdita bagno...</p>
+                        <p className="text-lg leading-tight">Sistemazione tubo che gocciola...</p>
                         <div className="h-0.5 w-full bg-slate-800/20" />
-                        <p>Materiali vari...</p>
+                        <p>Pezzi di ricambio (??)</p>
                     </div>
                     <div className="text-right">
                         <p className="text-2xl font-bold">€ 250,00 ?</p>
@@ -31,7 +31,7 @@ export function PriceComparison() {
                 <ul className="mt-6 space-y-3">
                     <li className="flex items-center gap-3 text-sm text-muted-foreground">
                         <X className="w-4 h-4 text-red-500" />
-                        <span>Prezzo &quot;a forfait&quot; imprevedibile</span>
+                        <span>Prezzo &quot;sparato a caso&quot;</span>
                     </li>
                     <li className="flex items-center gap-3 text-sm text-muted-foreground">
                         <X className="w-4 h-4 text-red-500" />
@@ -57,7 +57,7 @@ export function PriceComparison() {
                     <div className="flex justify-between items-start text-sm">
                         <div>
                             <span className="font-semibold text-foreground">Diritto di Chiamata</span>
-                            <p className="text-xs text-muted-foreground">Zona Rimini Sud • Urgenza Diurna</p>
+                            <p className="text-xs text-muted-foreground">Zona Rimini Marina C. • Urgenza</p>
                         </div>
                         <span className="font-mono font-medium">€ 30,00</span>
                     </div>

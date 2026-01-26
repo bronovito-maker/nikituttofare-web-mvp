@@ -15,7 +15,7 @@ export function TechnicianPreview() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
-                        <span> In zona (2.4 km)</span>
+                        <span> In zona <strong>Marina Centro</strong> (5 min)</span>
                     </div>
                     <div className="text-xs text-muted-foreground font-mono">
                         ETA: 18 min

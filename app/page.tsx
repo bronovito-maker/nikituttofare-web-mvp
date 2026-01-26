@@ -57,7 +57,7 @@ export default function Home() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
               </span>
-              <span className="hidden xl:inline">Tecnici disponibili</span>
+              <span className="hidden xl:inline">Tecnici attivi su <strong>Rimini e Provincia</strong></span>
             </div>
             <ThemeToggle />
             <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs sm:text-sm rounded-full px-5 shadow-lg transition-all hover:scale-105">
@@ -96,13 +96,13 @@ export default function Home() {
                 <div className="space-y-4">
                   <BlurText
                     key={userType} // Force re-render on toggle
-                    text={userType === 'residential' ? "Urgenza in Casa?" : "Gestione Asset."}
+                    text={userType === 'residential' ? "Guasti in casa?" : "Manutenzione Hotel."}
                     className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-foreground leading-[1.05]"
                     delay={0.05}
                   />
                   <BlurText
                     key={`${userType}-sub`}
-                    text={userType === 'residential' ? "Risolviamo in 60 minuti." : "Senza Pensieri."}
+                    text={userType === 'residential' ? "Arriviamo subito." : "Stagione Salva."}
                     className={`text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r leading-[1.05] ${userType === 'residential'
                       ? 'from-blue-600 via-blue-500 to-cyan-500'
                       : 'from-slate-700 via-slate-600 to-slate-500 dark:from-slate-300 dark:via-slate-400 dark:to-slate-500'
@@ -115,13 +115,13 @@ export default function Home() {
                   <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0 leading-relaxed font-light">
                     {userType === 'residential' ? (
                       <>
-                        Spesi male, preventivi gonfiati? Mai più. <br />
-                        L&apos;<span className="font-semibold text-foreground">Intelligenza Artificiale</span> calcola il prezzo giusto. I nostri tecnici locali lo eseguono.
+                        Basta preventivi a voce e attese infinite. <br />
+                        L&apos;<span className="font-semibold text-foreground">Intelligenza Artificiale</span> calcola il prezzo giusto su Rimini, Riccione e dintorni. Tu chiami, noi risolviamo.
                       </>
                     ) : (
                       <>
-                        Piattaforma unificata per la manutenzione di <strong>Hotel e Ristoranti</strong>. <br />
-                        Compliance HACCP automatica, fatturazione corretta e storico interventi in Cloud.
+                        Dalla Notte Rosa al Capodanno, i tuoi impianti non si fermano mai. <br />
+                        Assistenza H24 per <strong>Hotel, Ristoranti e Stabilimenti</strong> della Riviera Romagnola.
                       </>
                     )}
                   </p>
@@ -244,10 +244,10 @@ export default function Home() {
           <div className="max-w-7xl mx-auto">
             <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-foreground">
-                Perché noi non siamo come gli altri.
+                Siamo di qui, mica un call center.
               </h2>
               <p className="text-lg text-muted-foreground font-light px-2">
-                Tecnologia per eliminare l&apos;ansia, artigiani per risolvere il problema.
+                Conosciamo ogni via di Rimini e Riccione. Tecnologia per eliminare l&apos;ansia, artigiani per risolvere il problema.
               </p>
             </div>
 
@@ -256,24 +256,24 @@ export default function Home() {
                 icon={<Clock className="w-6 h-6 text-white" />}
                 iconBg="from-blue-600 to-blue-500"
                 number="01"
-                title="60 Minuti Garantiti"
-                desc="La nostra rete locale è ottimizzata per velocità. Quando clicchi, partiamo."
-                features={["Locale (Rimini/Riccione)", "Tracking GPS", "Priorità Emergenza"]}
+                title="Da te in un attimo"
+                desc="I nostri tecnici sono già in zona. Non arriviamo da Bologna, siamo già qui."
+                features={["Rimini, Riccione, Santarcangelo", "Tracking GPS in tempo reale", "Priorità Emergenza"]}
               />
               <PremiumFeatureCard
                 icon={<Star className="w-6 h-6 text-white" />}
                 iconBg="from-purple-600 to-purple-500"
                 number="02"
-                title="Prezzi Certificati"
-                desc="Niente sorprese. Il prezzo è calcolato su listini ufficiali e bloccato prima del lavoro."
-                features={["Analisi AI", "Listini Regionali", "Pagamento In-App"]}
+                title="Prezzi Chiari"
+                desc="Niente 'faccio un prezzo a occhio'. Usiamo i listini ufficiali Emilia-Romagna. Quello che vedi è quello che paghi."
+                features={["Stima Costi Immediata", "Listini Regionali", "Pagamento In-App"]}
               />
               <PremiumFeatureCard
                 icon={<ShieldCheck className="w-6 h-6 text-white" />}
                 iconBg="from-green-600 to-green-500"
                 number="03"
-                title="Garanzia Totale"
-                desc="Ogni lavoro è assicurato fino a 1 Milione di Euro. Dormi tranquillo."
+                title="Lavori Fatti Bene"
+                desc="Siamo romagnoli: le cose o si fanno bene o non si fanno. E se sbagliamo, paghiamo noi."
                 features={["Assicurazione 1M€", "Rifacimento Gratuito", "Supporto h24"]}
               />
             </div>
@@ -299,7 +299,10 @@ export default function Home() {
           </div>
           <div className="pt-8 border-t border-border text-muted-foreground text-sm space-y-2">
             <p>© 2026 NikiTuttofare • Powered by Gemini AI</p>
-            <p className="text-xs">Rimini & Riccione • P.IVA 1234567890</p>
+            <p className="text-xs">
+              Attivi su: Rimini • Riccione • Cattolica • Misano • Bellaria • Santarcangelo • San Marino
+            </p>
+            <p className="text-xs opacity-50">P.IVA 1234567890</p>
           </div>
         </div>
       </footer>
