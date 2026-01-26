@@ -16,12 +16,13 @@ import { Switch } from '@/components/ui/switch';
 import { Database } from '@/lib/database.types';
 import { getChatHistory, sendAdminMessage, toggleAutopilot } from '@/app/actions/admin-chat-actions';
 import { toast } from 'sonner';
+import { createBrowserClient } from '@/lib/supabase-browser';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
 type Message = Database['public']['Tables']['messages']['Row'];
 
 interface CognitiveChatProps {
-    ticket: Ticket | null;
+    readonly ticket: Ticket | null;
 }
 
 export function CognitiveChat({ ticket }: CognitiveChatProps) {
@@ -32,41 +33,79 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
     const [isSending, setIsSending] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    // Sync autopilot state with ticket
+    // Initial State Sync
     useEffect(() => {
         if (ticket) {
-            // If ai_paused is in the DB types we could use it, otherwise state init
             setAutoPilot(!ticket.ai_paused);
         }
     }, [ticket]);
 
-    // Fetch messages when ticket changes or periodically (polling)
+    // FETCH & REALTIME SUBSCRIPTION
     useEffect(() => {
         if (!ticket) return;
 
         let isMounted = true;
+        const supabase = createBrowserClient();
+
+        // 1. Initial Fetch
         const fetchMessages = async () => {
             try {
-                // @ts-ignore - DB types might not fully align yet with chat_session_id if user hasn't regenerated them perfectly
-                const history = await getChatHistory(ticket.id, ticket.chat_session_id);
+                const history = await getChatHistory(ticket.id, ticket.chat_session_id || undefined);
                 if (isMounted) {
                     setMessages(history);
                 }
             } catch (error) {
                 console.error("Failed to fetch messages", error);
+                toast.error("Errore nel caricamento della chat");
             }
         };
 
         fetchMessages();
-        const interval = setInterval(fetchMessages, 3000); // Simple polling every 3s
+
+        // 2. Realtime Subscription
+        const channel = supabase
+            .channel('admin-chat-realtime')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'messages',
+                },
+                (payload) => {
+                    const newMsg = payload.new as Message;
+
+                    // Client-side filtering as requested:
+                    // Check if message belongs to this Ticket OR this Chat Session
+                    const isRelevant =
+                        (newMsg.ticket_id && newMsg.ticket_id === ticket.id) ||
+                        (newMsg.chat_session_id && newMsg.chat_session_id === ticket.chat_session_id);
+
+                    if (isRelevant) {
+                        setMessages((prev) => {
+                            // Deduplicate just in case
+                            if (prev.some(m => m.id === newMsg.id)) return prev;
+                            return [...prev, newMsg];
+                        });
+
+                        // Scroll to bottom on new message
+                        if (scrollRef.current) {
+                            setTimeout(() => {
+                                scrollRef.current!.scrollTop = scrollRef.current!.scrollHeight;
+                            }, 100);
+                        }
+                    }
+                }
+            )
+            .subscribe();
 
         return () => {
             isMounted = false;
-            clearInterval(interval);
+            supabase.removeChannel(channel);
         };
-    }, [ticket]);
+    }, [ticket]); // Re-run if selected ticket changes
 
-    // Auto-scroll
+    // Auto-scroll on messages change
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -82,11 +121,10 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
 
         try {
             await sendAdminMessage(content, ticket.id, ticket.chat_session_id || undefined);
-            // Optimistic update done by polling next cycle, or manual:
-            // setMessages(prev => [...prev, { content, role: 'assistant', created_at: new Date().toISOString(), ... }])
+            // No need to manually update state, Realtime will catch the INSERT.
         } catch (error) {
             toast.error("Errore nell'invio del messaggio");
-            setInputText(content); // Restore input
+            setInputText(content);
         } finally {
             setIsSending(false);
         }

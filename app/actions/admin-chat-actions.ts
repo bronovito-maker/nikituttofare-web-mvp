@@ -6,15 +6,22 @@ import { revalidatePath } from 'next/cache';
 export async function getChatHistory(ticketId?: string, sessionId?: string) {
     const supabase = createAdminClient();
 
-    let query = supabase.from('messages').select('*').order('created_at', { ascending: true });
+    // Start building the query
+    let query = supabase
+        .from('messages')
+        .select('*')
+        .order('created_at', { ascending: true });
 
+    // Apply filters with explicit OR logic if both IDs are present
     if (ticketId && sessionId) {
+        // Syntax: column.operator.value,column.operator.value (comma = OR)
         query = query.or(`ticket_id.eq.${ticketId},chat_session_id.eq.${sessionId}`);
     } else if (ticketId) {
         query = query.eq('ticket_id', ticketId);
     } else if (sessionId) {
         query = query.eq('chat_session_id', sessionId);
     } else {
+        // No identifiers provided, return empty
         return [];
     }
 
