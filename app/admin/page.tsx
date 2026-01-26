@@ -27,8 +27,7 @@ import {
   User,
   Phone,
   LogOut,
-  PlusCircle,
-  Briefcase
+  PlusCircle
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -259,11 +258,18 @@ export default async function AdminDashboard() {
   );
 }
 
-function TicketCard({ ticket, type }: { ticket: any, type: 'pending' | 'completed' }) {
+function TicketCard({ ticket, type }: { readonly ticket: any, readonly type: 'pending' | 'completed' }) {
   const isUrgent = ticket.priority === 'high' || ticket.priority === 'critical';
-  const statusBadgeClass = type === 'pending'
-    ? (isUrgent ? 'badge-urgent' : 'badge-info')
-    : 'badge-success';
+
+  let statusBadgeClass = 'badge-success';
+  if (type === 'pending') {
+    statusBadgeClass = isUrgent ? 'badge-urgent' : 'badge-info';
+  }
+
+  let locationDisplay = 'Località non specificata';
+  if (ticket.city) {
+    locationDisplay = ticket.address ? `${ticket.city}, ${ticket.address}` : ticket.city;
+  }
 
   return (
     <Card className={`card-premium overflow-hidden border-slate-200/60 flex flex-col h-full ${type === 'completed' ? 'grayscale-[0.3]' : ''}`}>
@@ -298,9 +304,12 @@ function TicketCard({ ticket, type }: { ticket: any, type: 'pending' | 'complete
             <User className="h-3.5 w-3.5 text-slate-400" />
             <span className="truncate">{ticket.customer_name || 'Utente'}</span>
           </div>
+
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <MapPin className="h-3.5 w-3.5 text-slate-400" />
-            <span className="truncate">{ticket.city ? `${ticket.city}${ticket.address ? `, ${ticket.address}` : ''}` : 'Località non specificata'}</span>
+            <span className="truncate">
+              {locationDisplay}
+            </span>
           </div>
           {ticket.contact_phone && (
             <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -319,6 +328,6 @@ function TicketCard({ ticket, type }: { ticket: any, type: 'pending' | 'complete
           </form>
         )}
       </CardContent>
-    </Card>
+    </Card >
   );
 }

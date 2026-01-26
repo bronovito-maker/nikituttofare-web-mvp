@@ -90,8 +90,7 @@ function TechnicianClaimContent() {
   const [ticket, setTicket] = useState<TicketDetails | null>(null);
   const [client, setClient] = useState<ClientDetails | null>(null);
   const [phoneNumber, setPhoneNumber] = useState('');
-  // isAuthenticated state is used for conditional rendering after verification
-  const [, setIsAuthenticated] = useState(false);
+
 
   // Check authentication status
   useEffect(() => {
@@ -111,7 +110,6 @@ function TechnicianClaimContent() {
         const profile = profileRaw as { role: ProfileRole } | null;
 
         if (profile?.role === 'technician' || profile?.role === 'admin') {
-          setIsAuthenticated(true);
           setState('ready');
         } else {
           // Logged in but not a technician
@@ -160,7 +158,6 @@ function TechnicianClaimContent() {
       }
 
       // Success! Phone verified, technician auto-logged in
-      setIsAuthenticated(true);
 
       // If the API already assigned the ticket, show success
       if (data.ticket && data.client) {
