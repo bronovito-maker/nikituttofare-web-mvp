@@ -96,15 +96,15 @@ function TechnicianClaimContent() {
   useEffect(() => {
     const checkAuth = async () => {
       const supabase = createBrowserClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { user } } = await supabase.auth.getUser();
 
-      if (session?.user) {
+      if (user) {
         // User is logged in, check if they're a technician
         type ProfileRole = 'user' | 'admin' | 'technician';
         const { data: profileRaw } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', session.user.id)
+          .eq('id', user.id)
           .maybeSingle();
 
         const profile = profileRaw as { role: ProfileRole } | null;

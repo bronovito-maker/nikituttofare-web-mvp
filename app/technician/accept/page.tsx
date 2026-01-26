@@ -4,12 +4,12 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { 
-  CheckCircle2, 
-  XCircle, 
-  Loader2, 
-  MapPin, 
-  Phone, 
+import {
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  MapPin,
+  Phone,
   User,
   Wrench,
   Zap,
@@ -81,7 +81,7 @@ function LoadingState() {
 function TechnicianAcceptContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
-  
+
   const [state, setState] = useState<AcceptanceState>('loading');
   const [error, setError] = useState<string | null>(null);
   const [ticket, setTicket] = useState<TicketDetails | null>(null);
@@ -92,11 +92,11 @@ function TechnicianAcceptContent() {
   useEffect(() => {
     const checkAuth = async () => {
       const supabase = createBrowserClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsAuthenticated(!!session);
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsAuthenticated(!!user);
       setState('ready');
     };
-    
+
     checkAuth();
   }, []);
 
@@ -174,7 +174,7 @@ function TechnicianAcceptContent() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8">
-        
+
         {/* Loading State */}
 
         {state === 'loading' && (
@@ -293,8 +293,8 @@ function TechnicianAcceptContent() {
                   <Phone className="w-5 h-5 text-green-500" />
                   <div>
                     <p className="text-xs text-slate-500 uppercase tracking-wide">Telefono</p>
-                    <a 
-                      href={`tel:${client.phone}`} 
+                    <a
+                      href={`tel:${client.phone}`}
                       className="font-semibold text-green-600 text-lg hover:underline"
                     >
                       {client.phone || 'Non specificato'}
@@ -374,9 +374,9 @@ function TechnicianAcceptContent() {
                   <div>
                     <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Foto del problema</p>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src={ticket.photo_url} 
-                      alt="Foto del guasto" 
+                    <img
+                      src={ticket.photo_url}
+                      alt="Foto del guasto"
                       className="rounded-xl border border-slate-200 max-h-64 w-full object-cover"
                     />
                   </div>

@@ -6,9 +6,9 @@ export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
   const supabase = await createServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (authError || !user) {
     redirect('/login');
   }
 
@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   const { data: tickets, error } = await supabase
     .from('tickets')
     .select('*')
-    .eq('user_id', session.user.id)
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
   if (error) {

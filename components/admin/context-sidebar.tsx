@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Database } from '@/lib/database.types';
+import { toast } from 'sonner';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
 
@@ -30,6 +31,12 @@ export function ContextSidebar({ ticket }: ContextSidebarProps) {
             </div>
         );
     }
+
+    const handleMockAction = (action: string) => {
+        toast.info(`Funzionalità "${action}" in arrivo!`, {
+            description: "Questa azione sarà collegata a breve."
+        });
+    };
 
     return (
         <div className="w-80 border-l border-[#333] bg-[#121212] flex flex-col h-full overflow-y-auto scrollbar-thin scrollbar-thumb-[#333]">
@@ -112,12 +119,20 @@ export function ContextSidebar({ ticket }: ContextSidebarProps) {
                     Azioni Rapide
                 </h3>
 
-                <Button variant="outline" className="w-full justify-start border-[#333] hover:bg-[#222] hover:text-slate-200 text-slate-400 h-10">
+                <Button
+                    onClick={() => handleMockAction('Link Pagamento')}
+                    variant="outline"
+                    className="w-full justify-start border-[#333] hover:bg-[#222] hover:text-slate-200 text-slate-400 h-10"
+                >
                     <CreditCard className="w-4 h-4 mr-2 text-purple-400" />
                     Link Pagamento
                 </Button>
 
-                <Button variant="outline" className="w-full justify-start border-[#333] hover:bg-[#222] hover:text-slate-200 text-slate-400 h-10">
+                <Button
+                    onClick={() => handleMockAction('Genera Preventivo')}
+                    variant="outline"
+                    className="w-full justify-start border-[#333] hover:bg-[#222] hover:text-slate-200 text-slate-400 h-10"
+                >
                     <FileCheck className="w-4 h-4 mr-2 text-blue-400" />
                     Genera Preventivo
                 </Button>

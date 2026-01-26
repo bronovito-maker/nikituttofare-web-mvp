@@ -7,10 +7,10 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
   const supabase = await createServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user }, error } = await supabase.auth.getUser();
 
   // 🔒 SECURITY CHECK
-  if (!session || session.user?.email !== 'bronovito@gmail.com') {
+  if (error || !user || user.email !== 'bronovito@gmail.com') {
     return (
       <div className="flex flex-col items-center justify-center min-vh-100 p-6 text-center space-y-4">
         <h1 className="text-4xl font-bold text-red-600">403 Forbidden</h1>

@@ -7,17 +7,18 @@ import {
     User as UserIcon,
     Paperclip,
     Sparkles,
-    MoreVertical,
-    CornerDownLeft,
-    Power
+    Power,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Database } from '@/lib/database.types';
+import { getChatHistory, sendAdminMessage, toggleAutopilot } from '@/app/actions/admin-chat-actions';
+import { toast } from 'sonner';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
+type Message = Database['public']['Tables']['messages']['Row'];
 
 interface CognitiveChatProps {
     ticket: Ticket | null;
@@ -25,7 +26,90 @@ interface CognitiveChatProps {
 
 export function CognitiveChat({ ticket }: CognitiveChatProps) {
     const [autoPilot, setAutoPilot] = useState(true);
+    const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState('');
+
+    const [isSending, setIsSending] = useState(false);
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    // Sync autopilot state with ticket
+    useEffect(() => {
+        if (ticket) {
+            // If ai_paused is in the DB types we could use it, otherwise state init
+            setAutoPilot(!ticket.ai_paused);
+        }
+    }, [ticket]);
+
+    // Fetch messages when ticket changes or periodically (polling)
+    useEffect(() => {
+        if (!ticket) return;
+
+        let isMounted = true;
+        const fetchMessages = async () => {
+            try {
+                // @ts-ignore - DB types might not fully align yet with chat_session_id if user hasn't regenerated them perfectly
+                const history = await getChatHistory(ticket.id, ticket.chat_session_id);
+                if (isMounted) {
+                    setMessages(history);
+                }
+            } catch (error) {
+                console.error("Failed to fetch messages", error);
+            }
+        };
+
+        fetchMessages();
+        const interval = setInterval(fetchMessages, 3000); // Simple polling every 3s
+
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
+    }, [ticket]);
+
+    // Auto-scroll
+    useEffect(() => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+    }, [messages]);
+
+    const handleSendMessage = async () => {
+        if (!inputText.trim() || !ticket) return;
+
+        const content = inputText;
+        setInputText('');
+        setIsSending(true);
+
+        try {
+            await sendAdminMessage(content, ticket.id, ticket.chat_session_id || undefined);
+            // Optimistic update done by polling next cycle, or manual:
+            // setMessages(prev => [...prev, { content, role: 'assistant', created_at: new Date().toISOString(), ... }])
+        } catch (error) {
+            toast.error("Errore nell'invio del messaggio");
+            setInputText(content); // Restore input
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    const handleToggleAutopilot = async (checked: boolean) => {
+        if (!ticket) return;
+        setAutoPilot(checked); // Optimistic UI
+        try {
+            await toggleAutopilot(ticket.id, !checked); // Paused is inverse of Enabled
+            toast.success(checked ? "Autopilot Attivato" : "Controllo Manuale Attivato");
+        } catch (error) {
+            setAutoPilot(!checked); // Revert
+            toast.error("Errore nel cambio stato Autopilot");
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        }
+    };
 
     if (!ticket) {
         return (
@@ -67,18 +151,15 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
                         <span className={`text-xs font-bold ${autoPilot ? 'text-emerald-400' : 'text-slate-500'}`}>AUTO-PILOT</span>
                         <Switch
                             checked={autoPilot}
-                            onCheckedChange={setAutoPilot}
+                            onCheckedChange={handleToggleAutopilot}
                             className="data-[state=checked]:bg-emerald-600"
                         />
                     </div>
-                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white">
-                        <MoreVertical className="w-4 h-4" />
-                    </Button>
                 </div>
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-[#333]">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-[#333]">
                 {/* System Note */}
                 <div className="flex justify-center">
                     <div className="bg-amber-900/20 text-amber-500 border border-amber-900/50 px-3 py-1 rounded text-xs font-mono">
@@ -86,27 +167,40 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
                     </div>
                 </div>
 
-                {/* User Message */}
-                <div className="flex justify-start max-w-[80%]">
-                    <div className="flex gap-3">
-                        <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center flex-shrink-0">
-                            <UserIcon className="w-4 h-4 text-slate-400" />
-                        </div>
-                        <div className="space-y-1">
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-sm font-bold text-slate-300">{ticket.customer_name || 'Utente'}</span>
-                                <span className="text-xs text-slate-500">10:42 PM</span>
-                            </div>
-                            <div className="bg-[#1e1e1e] p-3 rounded-2xl rounded-tl-none border border-[#333] text-slate-300 text-sm leading-relaxed">
-                                {ticket.description}
-                            </div>
-                        </div>
+                {messages.length === 0 && (
+                    <div className="flex justify-center py-10 opacity-50">
+                        <p className="text-sm text-slate-500">Nessun messaggio precedente.</p>
                     </div>
-                </div>
+                )}
+
+                {messages.map((msg) => {
+                    const isUser = msg.role === 'user';
+                    return (
+                        <div key={msg.id} className={`flex ${isUser ? 'justify-start' : 'justify-end'} max-w-[85%]`}>
+                            <div className={`flex gap-3 ${isUser ? '' : 'flex-row-reverse'}`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isUser ? 'bg-slate-800' : 'bg-blue-600/20 border border-blue-500/30'}`}>
+                                    {isUser ? <UserIcon className="w-4 h-4 text-slate-400" /> : <Bot className="w-4 h-4 text-blue-400" />}
+                                </div>
+                                <div className="space-y-1">
+                                    <div className={`flex items-baseline gap-2 ${isUser ? '' : 'justify-end'}`}>
+                                        <span className="text-sm font-bold text-slate-300">{isUser ? (ticket.customer_name || 'Utente') : 'Niki AI'}</span>
+                                        <span className="text-xs text-slate-500">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    </div>
+                                    <div className={`p-3 rounded-2xl border text-sm leading-relaxed ${isUser
+                                        ? 'bg-[#1e1e1e] border-[#333] rounded-tl-none text-slate-300'
+                                        : 'bg-blue-950/30 border-blue-900/50 rounded-tr-none text-blue-100'
+                                        }`}>
+                                        {msg.content}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
 
                 {/* AI Thinking/Analysis Mock */}
-                {autoPilot && (
-                    <div className="flex justify-start max-w-[80%] opacity-70">
+                {autoPilot && messages.length > 0 && messages[messages.length - 1].role === 'user' && (
+                    <div className="flex justify-start max-w-[80%] opacity-70 animate-pulse">
                         <div className="flex gap-3">
                             <div className="w-8 h-8 rounded-full bg-blue-900/20 flex items-center justify-center flex-shrink-0 border border-blue-500/20">
                                 <Bot className="w-4 h-4 text-blue-400" />
@@ -115,15 +209,10 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs font-mono text-blue-400">ANALISI COGNITIVA...</span>
                                 </div>
-                                <div className="flex gap-2 text-xs">
-                                    <Badge variant="outline" className="bg-blue-950/30 border-blue-800 text-blue-300">Intento: Richiesta Preventivo</Badge>
-                                    <Badge variant="outline" className="bg-blue-950/30 border-blue-800 text-blue-300">Urgenza: Alta</Badge>
-                                </div>
                             </div>
                         </div>
                     </div>
                 )}
-
             </div>
 
             {/* Input Area */}
@@ -131,17 +220,17 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
                 {/* Magic Suggestions */}
                 {!autoPilot && (
                     <div className="flex gap-2 mb-3 overflow-x-auto pb-2 scrollbar-none">
-                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#252525] border border-[#333] hover:border-slate-600 rounded-full text-xs text-slate-300 transition-colors whitespace-nowrap">
+                        <button onClick={() => setInputText("Per procedere ho bisogno di una foto del guasto. Puoi caricarla qui?")} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#252525] border border-[#333] hover:border-slate-600 rounded-full text-xs text-slate-300 transition-colors whitespace-nowrap">
                             <Sparkles className="w-3 h-3 text-purple-400" />
-                            Richiedi foto del guasto
+                            Richiedi foto
                         </button>
-                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#252525] border border-[#333] hover:border-slate-600 rounded-full text-xs text-slate-300 transition-colors whitespace-nowrap">
+                        <button onClick={() => setInputText("Ciao, saresti disponibile per un intervento domani mattina?")} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#252525] border border-[#333] hover:border-slate-600 rounded-full text-xs text-slate-300 transition-colors whitespace-nowrap">
                             <Sparkles className="w-3 h-3 text-purple-400" />
-                            Conferma disponibilità
+                            Conferma disp.
                         </button>
-                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#252525] border border-[#333] hover:border-slate-600 rounded-full text-xs text-slate-300 transition-colors whitespace-nowrap">
+                        <button onClick={() => setInputText("Ecco il preventivo per l'intervento richiesto: [LINK]")} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#252525] border border-[#333] hover:border-slate-600 rounded-full text-xs text-slate-300 transition-colors whitespace-nowrap">
                             <Sparkles className="w-3 h-3 text-purple-400" />
-                            Invia preventivo standard
+                            Preventivo std.
                         </button>
                     </div>
                 )}
@@ -153,17 +242,19 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
                     <Textarea
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
-                        placeholder={autoPilot ? "Disattiva autopilot per rispondere..." : "Scrivi un messaggio o TAB per suggerimento..."}
+                        onKeyDown={handleKeyDown}
+                        placeholder={autoPilot ? "Disattiva autopilot per rispondere..." : "Scrivi un messaggio..."}
                         className="min-h-[20px] max-h-32 border-0 focus-visible:ring-0 bg-transparent p-2 resize-none text-slate-200 placeholder:text-slate-600 leading-normal"
-                        disabled={autoPilot}
+                        disabled={autoPilot || isSending}
                     />
                     <Button
+                        onClick={handleSendMessage}
                         size="icon"
                         className={`h-9 w-9 mb-0.5 transition-all ${autoPilot
-                                ? 'bg-[#222] text-slate-600 cursor-not-allowed'
-                                : (inputText ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-[#222] text-slate-500')
+                            ? 'bg-[#222] text-slate-600 cursor-not-allowed'
+                            : (inputText ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-[#222] text-slate-500')
                             }`}
-                        disabled={autoPilot || !inputText}
+                        disabled={autoPilot || !inputText || isSending}
                     >
                         {autoPilot ? <Power className="w-4 h-4" /> : <Send className="w-4 h-4" />}
                     </Button>

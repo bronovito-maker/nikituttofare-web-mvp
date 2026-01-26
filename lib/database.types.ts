@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      customer_assets: {
+        Row: {
+          brand: string | null
+          created_at: string
+          id: string
+          install_date: string | null
+          last_maintenance_date: string | null
+          meta_data: Json | null
+          model: string | null
+          name: string
+          next_maintenance_date: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          id?: string
+          install_date?: string | null
+          last_maintenance_date?: string | null
+          meta_data?: Json | null
+          model?: string | null
+          name: string
+          next_maintenance_date?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          id?: string
+          install_date?: string | null
+          last_maintenance_date?: string | null
+          meta_data?: Json | null
+          model?: string | null
+          name?: string
+          next_maintenance_date?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_assets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -22,7 +72,8 @@ export type Database = {
           image_url: string | null
           meta_data: Json | null
           role: string
-          ticket_id: string
+          ticket_id: string | null
+          chat_session_id: string | null
         }
         Insert: {
           content: string
@@ -31,7 +82,8 @@ export type Database = {
           image_url?: string | null
           meta_data?: Json | null
           role: string
-          ticket_id: string
+          ticket_id?: string | null
+          chat_session_id?: string | null
         }
         Update: {
           content?: string
@@ -40,7 +92,8 @@ export type Database = {
           image_url?: string | null
           meta_data?: Json | null
           role?: string
-          ticket_id?: string
+          ticket_id?: string | null
+          chat_session_id?: string | null
         }
         Relationships: [
           {
@@ -52,30 +105,66 @@ export type Database = {
           },
         ]
       }
+      n8n_chat_histories: {
+        Row: {
+          created_at: string
+          id: string
+          message: Json
+          session_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: Json
+          session_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: Json
+          session_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          business_name: string | null
           created_at: string
           email: string
           full_name: string | null
           id: string
+          loyalty_level: "bronze" | "silver" | "gold" | "platinum" | null
+          loyalty_points: number | null
           phone: string | null
           role: string
+          user_type: "private" | "business" | null
+          vat_number: string | null
         }
         Insert: {
+          business_name?: string | null
           created_at?: string
           email: string
           full_name?: string | null
           id: string
+          loyalty_level?: "bronze" | "silver" | "gold" | "platinum" | null
+          loyalty_points?: number | null
           phone?: string | null
           role?: string
+          user_type?: "private" | "business" | null
+          vat_number?: string | null
         }
         Update: {
+          business_name?: string | null
           created_at?: string
           email?: string
           full_name?: string | null
           id?: string
+          loyalty_level?: "bronze" | "silver" | "gold" | "platinum" | null
+          loyalty_points?: number | null
           phone?: string | null
           role?: string
+          user_type?: "private" | "business" | null
+          vat_number?: string | null
         }
         Relationships: []
       }
@@ -214,6 +303,7 @@ export type Database = {
           assigned_technician_id: string | null
           category: string
           chat_session_id: string | null
+          ai_paused: boolean
           city: string | null
           contact_phone: number | null
           created_at: string
@@ -234,6 +324,7 @@ export type Database = {
           assigned_technician_id?: string | null
           category: string
           chat_session_id?: string | null
+          ai_paused?: boolean
           city?: string | null
           contact_phone?: number | null
           created_at?: string
@@ -254,6 +345,7 @@ export type Database = {
           assigned_technician_id?: string | null
           category?: string
           chat_session_id?: string | null
+          ai_paused?: boolean
           city?: string | null
           contact_phone?: number | null
           created_at?: string
@@ -316,116 +408,114 @@ type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-    ? R
-    : never
+  ? R
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
+    DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] &
+    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+  ? R
+  : never
+  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
+    Insert: infer I
+  }
+  ? I
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Insert: infer I
+  }
+  ? I
+  : never
+  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
+    Update: infer U
+  }
+  ? U
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Update: infer U
+  }
+  ? U
+  : never
+  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+  : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
 
 export const Constants = {
   public: {

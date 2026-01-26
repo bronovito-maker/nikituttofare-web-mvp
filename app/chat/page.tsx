@@ -84,12 +84,12 @@ export default function ChatPage() {
   useEffect(() => {
     const supabase = createBrowserClient();
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
         setIsAuthenticated(true);
         // User email removed as unused variable
-        const email = session.user.email || '';
-        const name = session.user.user_metadata?.full_name || email.split('@')[0];
+        const email = user.email || '';
+        const name = user.user_metadata?.full_name || email.split('@')[0];
         const initials = name.split(' ')
           .map((n: string) => n[0])
           .slice(0, 2)
