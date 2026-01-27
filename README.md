@@ -53,19 +53,32 @@ Bash
 
 npm install
 Configura le variabili d'ambiente:
-Copia il file .env.example in un nuovo file chiamato .env e compila tutte le variabili richieste.
+Copia il file .env.example (o chiedi all'admin) in .env e compila:
 
-Bash
-
+```bash
 cp .env.example .env
-Le variabili includono le chiavi per Supabase, Google AI, Next-Auth, e l'URL del webhook di n8n.
+```
 
-Avvia il server di sviluppo:
+### Database & Auth (Supabase)
+Il progetto usa Supabase. Assicurati di avere le tabelle:
+- `tickets`: Richieste di intervento.
+- `messages`: Storico chat (con `chat_session_id` e link opzionale a `tickets`).
+- `profiles`: Dati utenti estesi.
+- `n8n_chat_histories`: Memoria per l'integrazione n8n.
 
-Bash
+L'autenticazione supporta:
+- **Magic Link** (Email)
+- **Google OAuth** (Opzionale)
+- **Guest Access** (Anonimo per chat iniziale)
 
+### Avvio Sviluppo
+```bash
 npm run dev
-L'applicazione sarà disponibile su http://localhost:3000.
+```
+L'app sarà su `http://localhost:3000`.
+
+### Admin Access
+Per accedere alla dashboard `/admin`, l'utente deve avere l'email `bronovito@gmail.com` (hardcoded check) o ruolo admin nel DB.
 
 Deploy su Railway
 Questo progetto è configurato per un deploy semplice e veloce su Railway.
@@ -77,3 +90,12 @@ Aggiungi le Variabili d'Ambiente: Nel pannello di configurazione del progetto su
 Comando di Avvio: Railway dovrebbe rilevare automaticamente che si tratta di un'app Next.js e usare npm run start (dopo aver eseguito npm run build in automatico).
 
 Porta: La porta di default è 3000.
+
+## Admin Dashboard (/admin)
+Una potente interfaccia per gestire le richieste e coordinare i tecnici, accessibile solo agli amministratori autorizzati.
+
+- **Ticket Feed**: Visualizzazione in tempo reale di tutte le richieste, con indicatori di urgenza e stato.
+- **Cognitive Chat**: Interfaccia di chat avanzata che permette all'admin di monitorare le conversazioni dell'AI e intervenire manualmente (Handoff).
+- **Autopilot**: Modalità in cui l'AI gestisce la conversazione. L'admin può disattivarla in qualsiasi momento per prendere il controllo.
+- **Quick Actions**: Azioni rapide per inviare preventivi, link di pagamento o richieste foto (In sviluppo).
+- **Realtime Updates**: La dashboard si aggiorna istantaneamente all'arrivo di nuovi messaggi o ticket.

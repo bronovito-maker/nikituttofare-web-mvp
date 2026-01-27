@@ -110,72 +110,69 @@ type AIResponseType = {
 
 ---
 
-## CODING STANDARDS ✅
 
-### TypeScript
-- ✅ Strict mode attivo
-- ✅ NO `any` - tutti i tipi definiti
-- ✅ Interfaces in `@/types` e `@/lib/types.ts`
-- ✅ Zod per runtime validation
+## CHAT FLOW & BUSINESS LOGIC (STRICT) ⚖️
 
-### Components
-- ✅ Functional components only
-- ✅ `const` definitions
-- ✅ Props interfaces esplicite
+### 1. The "Price Gate" Rule
+- **Constraint:** L'AI NON deve mai chiedere dati personali (indirizzo, telefono) PRIMA di aver mostrato il preventivo stimato.
+- **Why:** Costruire fiducia trasparente.
+- **Flow:**
+  1.  Raccolta Dati (Città, Problema)
+  2.  Calcolo Preventivo (Range Min-Max)
+  3.  **UI Output:** Card Preventivo con bottoni [Accetta] / [Rifiuta]
+  4.  Solo se [Accetta] -> Chiedi Dati Contatto.
 
-### Imports
-- ✅ Absolute imports `@/components/...`
-- ✅ Path aliases configurati in tsconfig
+### 2. Pricing Matrix (Reference)
+| Categoria | Intervento | Range (€) |
+| :--- | :--- | :--- |
+| **Idraulico** | Sblocco semplice | 70 - 120 |
+| **Idraulico** | Perdita importante | 100 - 250+ |
+| **Elettrico** | Cambio presa | 60 - 90 |
+| **Fabbro** | Apertura (no scasso) | 80 - 150 |
+| **Clima** | Manutenzione | 70 - 100 |
+| **Tuttofare** | Montaggio | 50 - 100 |
 
-### Error Handling
-- ✅ Try/catch su async calls
-- ✅ Sonner per UI feedback
-- ✅ Fallback graceful quando servizi non disponibili
+### 3. Admin & Server Actions
+- **Security:** Usare SEMPRE `createAdminClient()` per operazioni privilegiate (es. messaggi admin, chiusura ticket).
+- **Client-Side:** Usare `createBrowserClient()` solo per sottoscrizioni Realtime o fetch pubbliche.
+- **Role:** L'Admin agisce come `role: 'assistant'` nella chat per prendere il controllo (Handoff).
 
 ---
 
 ## FILE STRUCTURE
-
 ```
 nikituttofare-web-mvp/
-├── app/                    # Next.js App Router
-│   ├── api/               # API Routes
-│   ├── admin/             # Admin dashboard
-│   ├── dashboard/         # Client dashboard
-│   ├── chat/              # AI Chat
-│   ├── login/             # Auth pages
-│   └── page.tsx           # Landing
+├── app/
+│   ├── admin/             # Secured Dashboard (Bronovito only)
+│   ├── actions/           # Server Actions (Mutations)
+│   ├── api/               # Route Handlers (Webhooks/Proxy)
+│   ├── chat/              # Public Chat Interface
+│   └── dashboard/         # Customer Area
 ├── components/
-│   ├── chat/              # Chat components
-│   ├── ui/                # Shadcn components
-│   └── providers/         # Context providers
+│   ├── admin/             # Admin-specific UI
+│   ├── chat/              # Chat message bubbles & Inputs
+│   └── ui/                # Shadcn Primitives
+├── docs/                  # Project Documentation
 ├── lib/
-│   ├── stores/            # Zustand stores
-│   ├── supabase.ts        # DB client
-│   ├── ai-structures.ts   # AI schemas
-│   └── types.ts           # TypeScript types
-├── hooks/                 # Custom hooks
-├── types/                 # Type declarations
-└── supabase/             # Migrations
+│   ├── database.types.ts  # Supabase Generated Types
+│   ├── supabase-server.ts # Server Clients
+│   └── supabase-browser.ts # Client Singleton
+└── supabase/              # Migrations & Seeds
 ```
 
----
-
 ## ENVIRONMENT VARIABLES
-
 ```env
-# Required
+# Core
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
-NEXTAUTH_SECRET=
+SUPABASE_SERVICE_ROLE_KEY=
 GOOGLE_GEMINI_API_KEY=
+
+# Auth
+NEXTAUTH_SECRET=
 
 # Notifications
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
-
-# Optional
-SUPABASE_SERVICE_ROLE_KEY=
 RESEND_API_KEY=
-BLOB_READ_WRITE_TOKEN=
 ```
