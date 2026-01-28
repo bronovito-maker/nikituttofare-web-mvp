@@ -18,7 +18,7 @@ import { getChatHistory, sendAdminMessage, toggleAutopilot } from '@/app/actions
 import { toast } from 'sonner';
 import { createBrowserClient } from '@/lib/supabase-browser';
 
-type Ticket = Database['public']['Tables']['tickets']['Row'];
+type Ticket = Database['public']['Tables']['tickets']['Row'] & { ai_paused?: boolean | null };
 type Message = Database['public']['Tables']['messages']['Row'];
 
 const getSendButtonClass = (autoPilot: boolean, inputText: string) => {

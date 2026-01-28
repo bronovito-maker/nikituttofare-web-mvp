@@ -136,4 +136,74 @@ export async function forceCloseTicket(ticketId: string): Promise<void> {
   revalidatePath('/dashboard')
 }
 
-export const closeTicket = forceCloseTicket;
+
+// --- GESTIONE AZIONI TECNICO ---
+
+export async function toggleTechnicianStatus(technicianId: string, isActive: boolean) {
+  await checkAdmin()
+  const supabaseAdmin = createAdminClient()
+
+  const { error } = await supabaseAdmin
+    .from('profiles')
+    .update({ is_active: isActive } as any)
+    .eq('id', technicianId)
+
+  if (error) {
+    console.error('Error toggling technician status:', error)
+    return { success: false, message: `Errore: ${error.message}` }
+  }
+
+  revalidatePath('/admin/technicians')
+  return { success: true, message: `Stato tecnico aggiornato: ${isActive ? 'Attivo' : 'Disattivato'}` }
+}
+
+export async function deleteTechnician(technicianId: string) {
+  await checkAdmin()
+  const supabaseAdmin = createAdminClient()
+
+  // 1. Security Check: Check for associated tickets
+  const { data: tickets, error: ticketsError } = await supabaseAdmin
+    .from('tickets')
+    .select('id')
+    .eq('assigned_technician_id', technicianId)
+    .limit(1)
+
+  if (ticketsError) {
+    console.error('Error checking tickets:', ticketsError)
+    return { success: false, message: 'Errore nel controllo dei ticket associati.' }
+  }
+
+  if (tickets && tickets.length > 0) {
+    return {
+      success: false,
+      message: 'Impossibile eliminare: il tecnico ha uno storico interventi. Procedi con la disattivazione.'
+    }
+  }
+
+  // 2. Safe to delete (No tickets associated)
+  // Deleting user from Auth is tricky with just Admin client depending on setup,
+  // but usually we delete from profiles first or auth first. 
+  // Standard Supabase: Delete user from auth.admin triggers cascade or we manage it manually.
+  // Here we delete the user from auth which will likely cascade to profile if set up, 
+  // OR we explicitly delete profile if no CASCADE. 
+  // Let's try deleting the User from Auth Management which is cleaner.
+
+  const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(technicianId)
+
+  if (deleteError) {
+    // Fallback: try deleting profile directly if auth deletion fails or isn't needed/possible
+    console.error('Error deleting auth user:', deleteError)
+
+    const { error: profileDeleteError } = await supabaseAdmin
+      .from('profiles')
+      .delete()
+      .eq('id', technicianId)
+
+    if (profileDeleteError) {
+      return { success: false, message: `Errore eliminazione: ${profileDeleteError.message}` }
+    }
+  }
+
+  revalidatePath('/admin/technicians')
+  return { success: true, message: 'Tecnico eliminato definitivamente.' }
+}
