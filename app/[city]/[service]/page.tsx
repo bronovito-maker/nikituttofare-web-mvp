@@ -25,10 +25,11 @@ export async function generateStaticParams() {
     return params;
 }
 
-export async function generateMetadata({ params }: { params: { city: string; service: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ city: string; service: string }> }): Promise<Metadata> {
     const { cities, services } = await fetchSeoData();
-    const city = cities.find((c) => c.slug === params.city);
-    const service = services.find((s) => s.slug === params.service);
+    const resolvedParams = await params;
+    const city = cities.find((c) => c.slug === resolvedParams.city);
+    const service = services.find((s) => s.slug === resolvedParams.service);
 
     if (!city || !service) return {};
 
@@ -41,10 +42,11 @@ export async function generateMetadata({ params }: { params: { city: string; ser
     };
 }
 
-export default async function ServicePage({ params }: { params: { city: string; service: string } }) {
+export default async function ServicePage({ params }: { params: Promise<{ city: string; service: string }> }) {
     const { cities, services } = await fetchSeoData();
-    const city = cities.find((c) => c.slug === params.city);
-    const service = services.find((s) => s.slug === params.service);
+    const resolvedParams = await params;
+    const city = cities.find((c) => c.slug === resolvedParams.city);
+    const service = services.find((s) => s.slug === resolvedParams.service);
 
     if (!city || !service) {
         notFound();

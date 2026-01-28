@@ -7,9 +7,9 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { completeJob, addJobNote } from '@/app/actions/technician-actions'
 
-export default async function JobOperationalPage({ params }: { params: { id: string } }) {
+export default async function JobOperationalPage({ params }: { params: Promise<{ id: string }> }) {
     const supabase = await createServerClient()
-    const { id } = params
+    const { id } = await params
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return redirect('/login')

@@ -1,17 +1,16 @@
 import { createServerClient } from '@/lib/supabase-server'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { MapPin, ArrowLeft, Calendar, User, MessageCircle } from 'lucide-react'
+import { MapPin, ArrowLeft, User, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { acceptJob } from '@/app/actions/technician-actions'
 import { formatDistanceToNow } from 'date-fns'
 import { it } from 'date-fns/locale'
 
-export default async function JobDetailPage({ params }: { params: { id: string } }) {
+export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const supabase = await createServerClient()
-    const { id } = params
+    const { id } = await params
 
     // 1. Auth Check
     const { data: { user } } = await supabase.auth.getUser()
@@ -88,7 +87,10 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                 {/* Status Actions */}
                 <div className="mb-8">
                     {isAvailable && (
-                        <form action={acceptJob.bind(null, id)}>
+                        <form action={async () => {
+                            'use server'
+                            await acceptJob(id)
+                        }}>
                             <Button type="submit" size="lg" className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold h-12 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
                                 ACCETTA INCARICO
                             </Button>
