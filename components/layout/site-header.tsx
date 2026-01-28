@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { UserTypeToggle } from '@/components/landing/user-type-toggle';
 import { MessageCircle } from 'lucide-react';
+import { MobileNav } from '@/components/layout/mobile-nav';
 
 type UserType = 'residential' | 'business';
 
@@ -16,7 +17,7 @@ interface SiteHeaderProps {
     showUserTypeToggle?: boolean;
 }
 
-export function SiteHeader({ userType, onUserTypeChange, showUserTypeToggle = false }: SiteHeaderProps) {
+export function SiteHeader({ userType, onUserTypeChange, showUserTypeToggle = false }: Readonly<SiteHeaderProps>) {
     const pathname = usePathname();
     const isAboutPage = pathname === '/about';
 
@@ -72,7 +73,7 @@ export function SiteHeader({ userType, onUserTypeChange, showUserTypeToggle = fa
                     </nav>
 
                     <div className="md:hidden">
-                        {/* Mobile reduced toggle or just integrated in menu - for now keep it simple or hide specific controls */}
+                        <MobileNav />
                     </div>
 
                     {/* Active Badge (Hidden on small screens) */}

@@ -21,6 +21,7 @@ import { ImageUpload, ImagePreview } from '@/components/ui/image-upload';
 import { createBrowserClient } from '@/lib/supabase-browser';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { MobileNav } from '@/components/layout/mobile-nav';
 
 // ⚠️ IMPORTIAMO IL NUOVO HOOK N8N
 import { useN8NChat } from '@/hooks/useN8NChat';
@@ -170,7 +171,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
 
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-card shadow-sm">
@@ -217,6 +218,8 @@ export default function ChatPage() {
                 <span className="hidden sm:inline">Emergenza</span>
               </a>
             </Button>
+
+            <MobileNav />
           </div>
         </div>
       </header>
