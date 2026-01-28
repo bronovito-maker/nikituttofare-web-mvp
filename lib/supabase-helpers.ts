@@ -2,9 +2,6 @@
 // Funzioni helper per interagire con Supabase
 
 import { createServerClient } from './supabase-server';
-import { auth } from '@/auth';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
 import { Database } from './database.types';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
@@ -52,7 +49,12 @@ export async function getOrCreateProfile(userId: string, email: string): Promise
       full_name: null,
       phone: null,
       role: 'user',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      business_name: null,
+      loyalty_level: null,
+      loyalty_points: 0,
+      user_type: null,
+      vat_number: null,
     };
   }
 
@@ -94,7 +96,12 @@ export async function getOrCreateProfile(userId: string, email: string): Promise
       full_name: null,
       phone: null,
       role: 'user',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      business_name: null,
+      loyalty_level: null,
+      loyalty_points: 0,
+      user_type: null,
+      vat_number: null,
     };
   }
 }
@@ -165,7 +172,8 @@ export async function createTicket(
       contact_phone: null,
       photo_url: null,
       price_range_max: null,
-      price_range_min: null
+      price_range_min: null,
+      ai_paused: false,
     };
     return mockTicket;
   }
@@ -215,7 +223,8 @@ export async function createTicket(
       contact_phone: null,
       photo_url: null,
       price_range_max: null,
-      price_range_min: null
+      price_range_min: null,
+      ai_paused: false,
     };
   }
 }
@@ -239,7 +248,7 @@ export async function saveMessage(
       role,
       content,
       image_url: imageUrl || null,
-      meta_data: metaData || null,
+      meta_data: metaData as any || null,
       created_at: new Date().toISOString(),
       chat_session_id: chatSessionId || null
     };
@@ -256,7 +265,7 @@ export async function saveMessage(
         role,
         content,
         image_url: imageUrl || null,
-        meta_data: metaData || null,
+        meta_data: metaData as any || null,
         chat_session_id: chatSessionId || null
       })
       .select()
@@ -275,8 +284,9 @@ export async function saveMessage(
       role,
       content,
       image_url: imageUrl || null,
-      meta_data: metaData || null,
-      created_at: new Date().toISOString()
+      meta_data: metaData as any || null,
+      created_at: new Date().toISOString(),
+      chat_session_id: chatSessionId || null
     };
   }
 }
