@@ -67,7 +67,7 @@ function ProfileForm({ user, profile }: Readonly<ProfilePageProps>) {
                             disabled
                             className="bg-muted"
                         />
-                        <p className="text-xs text-muted-foreground">L'email non può essere modificata.</p>
+                        <p className="text-xs text-muted-foreground">L&apos;email non può essere modificata.</p>
                     </div>
 
                     <div className="space-y-2">

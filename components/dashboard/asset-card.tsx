@@ -56,7 +56,7 @@ export function AssetCard({ asset }: Readonly<AssetProps>) {
                 <p className="text-sm font-medium text-muted-foreground">{asset.city}</p>
                 {asset.notes && (
                     <p className="text-sm mt-2 p-2 bg-muted rounded-md text-foreground/80 italic">
-                        "{asset.notes}"
+                        &quot;{asset.notes}&quot;
                     </p>
                 )}
             </CardContent>
