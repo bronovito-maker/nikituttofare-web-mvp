@@ -7,7 +7,7 @@ import {
     User as UserIcon,
     Paperclip,
     Sparkles,
-    Power,
+    Power
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,9 +26,9 @@ interface CognitiveChatProps {
 }
 
 export function CognitiveChat({ ticket }: CognitiveChatProps) {
-    const [autoPilot, setAutoPilot] = useState(true);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState('');
+    const [autoPilot, setAutoPilot] = useState(true);
 
     const [isSending, setIsSending] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -174,7 +174,7 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
                         <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
                             {ticket.description.slice(0, 40)}...
                             <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-[#333] text-slate-400 font-mono">
-                                #{ticket.id.slice(0, 4)}
+                                {ticket.chat_session_id || ticket.id}
                             </Badge>
                         </h2>
                         <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -198,6 +198,7 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
 
             {/* Chat Area */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-[#333]">
+                {/* ... existing chat content ... */}
                 {/* System Note */}
                 <div className="flex justify-center">
                     <div className="bg-amber-900/20 text-amber-500 border border-amber-900/50 px-3 py-1 rounded text-xs font-mono">

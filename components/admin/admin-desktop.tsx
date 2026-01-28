@@ -6,17 +6,20 @@ import { TicketFeed } from '@/components/admin/ticket-feed';
 import { CognitiveChat } from '@/components/admin/cognitive-chat';
 import { ContextSidebar } from '@/components/admin/context-sidebar';
 import { Database } from '@/lib/database.types';
+import { QuoteGeneratorModal } from '@/components/admin/quote-generator-modal';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
 
 interface AdminDesktopProps {
-    initialTickets: Ticket[];
+    readonly initialTickets: Ticket[];
 }
 
 export function AdminDesktop({ initialTickets }: AdminDesktopProps) {
     const [selectedTicketId, setSelectedTicketId] = useState<string | undefined>(
         initialTickets.length > 0 ? initialTickets[0].id : undefined
     );
+
+    const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
     const selectedTicket = initialTickets.find(t => t.id === selectedTicketId) || null;
 
@@ -32,7 +35,11 @@ export function AdminDesktop({ initialTickets }: AdminDesktopProps) {
                 <TicketFeed
                     tickets={initialTickets}
                     selectedTicketId={selectedTicketId}
-                    onSelectTicket={setSelectedTicketId}
+                    onSelectTicket={(id) => {
+                        setSelectedTicketId(id);
+                        // Optional: close modal when switching tickets?
+                        setIsQuoteModalOpen(false);
+                    }}
                 />
             </aside>
 
@@ -42,8 +49,20 @@ export function AdminDesktop({ initialTickets }: AdminDesktopProps) {
                 <CognitiveChat ticket={selectedTicket} />
 
                 {/* Right Sidebar: Context Panel (Collapsible if needed, fixed for now) */}
-                <ContextSidebar ticket={selectedTicket} />
+                <ContextSidebar
+                    ticket={selectedTicket}
+                    onOpenQuoteModal={() => setIsQuoteModalOpen(true)}
+                />
             </main>
+
+            {/* Modals - Hoisted for global access within Admin context */}
+            {selectedTicket && (
+                <QuoteGeneratorModal
+                    isOpen={isQuoteModalOpen}
+                    onClose={() => setIsQuoteModalOpen(false)}
+                    ticket={selectedTicket}
+                />
+            )}
         </div>
     );
 }

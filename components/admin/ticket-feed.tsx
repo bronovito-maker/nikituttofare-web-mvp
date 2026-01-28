@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
 import {
@@ -20,6 +21,9 @@ interface TicketFeedProps {
 }
 
 export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: TicketFeedProps) {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterMode, setFilterMode] = useState<'ALL' | 'OPEN' | 'COMPLETED'>('ALL'); // ALL, OPEN, COMPLETED
+
     // Mock function to determine sentiment/urgency color
     const getUrgencyColor = (priority: string, status: string) => {
         if (status === 'completed') return 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]';
@@ -28,7 +32,34 @@ export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: Ticket
         return 'bg-blue-500';
     };
 
+    const filteredTickets = tickets.filter(ticket => {
+        // 1. Search Filter
+        const query = searchQuery.toLowerCase();
+        const matchesSearch =
+            (ticket.customer_name?.toLowerCase().includes(query) ?? false) ||
+            (ticket.city?.toLowerCase().includes(query) ?? false) ||
+            (ticket.description?.toLowerCase().includes(query) ?? false) ||
+            (ticket.id.toLowerCase().includes(query)) ||
+            (ticket.chat_session_id?.toLowerCase().includes(query) ?? false);
 
+        if (!matchesSearch) return false;
+
+        // 2. Status Filter
+        if (filterMode === 'OPEN') {
+            return ticket.status !== 'completed';
+        }
+        if (filterMode === 'COMPLETED') {
+            return ticket.status === 'completed';
+        }
+
+        return true;
+    });
+
+    const cycleFilter = () => {
+        if (filterMode === 'ALL') setFilterMode('OPEN');
+        else if (filterMode === 'OPEN') setFilterMode('COMPLETED');
+        else setFilterMode('ALL');
+    };
 
     return (
         <div className="flex flex-col h-full bg-[#121212] border-r border-[#333]">
@@ -38,17 +69,29 @@ export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: Ticket
                     <h2 className="text-lg font-bold text-slate-200 tracking-tight flex items-center gap-2">
                         Ticket Feed
                         <Badge variant="secondary" className="bg-[#1a1a1a] text-xs font-mono text-slate-400 border border-[#333]">
-                            {tickets.length}
+                            {filteredTickets.length} / {tickets.length}
                         </Badge>
                     </h2>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white">
-                        <Filter className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase font-bold text-slate-500">
+                            {filterMode === 'ALL' ? 'Tutti' : filterMode === 'OPEN' ? 'Aperti' : 'Chiusi'}
+                        </span>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={cycleFilter}
+                            className={`h-8 w-8 transition-colors ${filterMode !== 'ALL' ? 'text-blue-400 bg-blue-400/10' : 'text-slate-400 hover:text-white'}`}
+                        >
+                            <Filter className="w-4 h-4" />
+                        </Button>
+                    </div>
                 </div>
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                     <Input
-                        placeholder="Cerca ticket, cliente, indirizzo..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Cerca ticket, cliente, ID..."
                         className="bg-[#1a1a1a] border-[#333] pl-9 text-slate-200 placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 h-9 text-sm rounded-lg transition-all"
                     />
                 </div>
@@ -56,13 +99,13 @@ export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: Ticket
 
             {/* Feed List */}
             <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-[#333] scrollbar-track-transparent">
-                {tickets.length === 0 ? (
+                {filteredTickets.length === 0 ? (
                     <div className="p-8 text-center text-slate-600 text-sm">
                         Nessun ticket trovato.
                     </div>
                 ) : (
                     <div className="divide-y divide-[#1f1f1f]">
-                        {tickets.map((ticket) => {
+                        {filteredTickets.map((ticket) => {
                             const isActive = selectedTicketId === ticket.id;
 
                             return (
@@ -80,7 +123,7 @@ export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: Ticket
                                     <div className="space-y-1.5 pr-6">
                                         {/* Header Line */}
                                         <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                                            <span className="font-mono">#{ticket.id.slice(0, 4)}</span>
+                                            <span className="font-mono text-[10px] opacity-70">{ticket.chat_session_id || ticket.id}</span>
                                             <span>•</span>
                                             <span>{formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true, locale: it })}</span>
                                         </div>

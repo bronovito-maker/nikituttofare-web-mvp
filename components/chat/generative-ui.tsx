@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { 
-  CheckCircle2, 
-  Clock, 
-  MapPin, 
-  Phone, 
+import {
+  CheckCircle2,
+  Clock,
+  MapPin,
+  Phone,
   Mail,
   AlertTriangle,
   Wrench,
@@ -40,16 +40,16 @@ export function GenerativeUI({ response, onFormSubmit, onConfirm, onAcceptQuote,
   switch (response.type) {
     case 'text':
       return <TextResponse content={response.content as string} />;
-    
+
     case 'form':
       return <FormResponse form={response.content as FormType} onSubmit={onFormSubmit} />;
-    
+
     case 'recap':
       return <RecapResponse content={response.content} onConfirm={onConfirm} />;
-    
+
     case 'booking_summary':
       return <BookingSummaryResponse content={response.content as Record<string, unknown>} />;
-    
+
     case 'confirmation':
       return <ConfirmationResponse content={response.content} />;
 
@@ -103,14 +103,14 @@ function FormResponse({ form, onSubmit }: { form: FormType; onSubmit?: (data: Re
       <p className="text-sm font-medium text-slate-700">
         Per procedere, ho bisogno di alcune informazioni:
       </p>
-      
+
       <div className="space-y-3 bg-slate-50 rounded-xl p-4 border border-slate-200">
         {form.fields.map((field) => (
           <div key={field.name} className="space-y-1.5">
             <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">
               {field.label}
             </label>
-            
+
             {field.type === 'textarea' ? (
               <textarea
                 placeholder={`Inserisci ${field.label.toLowerCase()}...`}
@@ -197,7 +197,7 @@ interface AuthRequiredContent {
 function RecapResponse({ content, onConfirm }: { content: string | Record<string, unknown>; onConfirm?: () => void }) {
   // Gestisci diversi formati di content
   let recapData: RecapContent = {};
-  
+
   if (typeof content === 'string') {
     recapData = { summary: content };
   } else if (content && typeof content === 'object') {
@@ -379,7 +379,7 @@ function BookingSummaryResponse({ content }: { content: Record<string, unknown> 
               </div>
             </div>
           )}
-          
+
           {Boolean(content.address) && (
             <div className="flex items-start gap-3">
               <MapPin className="w-4 h-4 text-blue-500 mt-1 flex-shrink-0" />
@@ -529,13 +529,13 @@ interface PriceEstimateContent {
   needsConfirmation?: boolean;
 }
 
-function PriceEstimateResponse({ 
-  content, 
-  onAccept, 
-  onReject 
-}: { 
-  content: PriceEstimateContent; 
-  onAccept?: () => void; 
+function PriceEstimateResponse({
+  content,
+  onAccept,
+  onReject
+}: {
+  content: PriceEstimateContent;
+  onAccept?: () => void;
   onReject?: () => void;
 }) {
   const [hasResponded, setHasResponded] = useState(false);

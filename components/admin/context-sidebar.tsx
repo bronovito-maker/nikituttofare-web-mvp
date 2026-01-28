@@ -17,9 +17,10 @@ type Ticket = Database['public']['Tables']['tickets']['Row'];
 
 interface ContextSidebarProps {
     readonly ticket: Ticket | null;
+    readonly onOpenQuoteModal?: () => void;
 }
 
-export function ContextSidebar({ ticket }: ContextSidebarProps) {
+export function ContextSidebar({ ticket, onOpenQuoteModal }: ContextSidebarProps) {
     if (!ticket) {
         return (
             <div className="w-80 border-l border-[#333] bg-[#121212] p-6 flex flex-col items-center justify-center text-center">
@@ -129,11 +130,10 @@ export function ContextSidebar({ ticket }: ContextSidebarProps) {
                 </Button>
 
                 <Button
-                    onClick={() => handleMockAction('Genera Preventivo')}
-                    variant="outline"
-                    className="w-full justify-start border-[#333] hover:bg-[#222] hover:text-slate-200 text-slate-400 h-10"
+                    onClick={onOpenQuoteModal}
+                    className="w-full justify-start bg-blue-600/10 border-blue-600/30 hover:bg-blue-600/20 text-blue-400 hover:text-blue-300 h-10 border"
                 >
-                    <FileCheck className="w-4 h-4 mr-2 text-blue-400" />
+                    <FileCheck className="w-4 h-4 mr-2" />
                     Genera Preventivo
                 </Button>
 

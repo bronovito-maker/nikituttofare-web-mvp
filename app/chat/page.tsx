@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown
 import {
   Send,
   ArrowLeft,
@@ -216,8 +217,6 @@ export default function ChatPage() {
                 <span className="hidden sm:inline">Emergenza</span>
               </a>
             </Button>
-            {/* Added Theme Toggle button for easy switch inside chat */}
-            {/* <ThemeToggle />  - Optional: can be added if requested, but not strictly part of refactor */}
           </div>
         </div>
       </header>
@@ -324,6 +323,7 @@ export default function ChatPage() {
           )}
 
           <div className="flex items-end gap-2 sm:gap-3">
+            {/* Left Box: Upload */}
             <div className="flex-shrink-0">
               <ImageUpload
                 onUploadComplete={handleImageUploaded}
@@ -344,7 +344,8 @@ export default function ChatPage() {
               />
             </div>
 
-            <div className="flex-1 relative">
+            {/* Middle Box: Textarea */}
+            <div className="flex-1">
               <textarea
                 ref={textareaRef}
                 value={input}
@@ -353,14 +354,17 @@ export default function ChatPage() {
                 placeholder="Descrivi il problema..."
                 rows={1}
                 disabled={isLoading}
-                className="w-full px-4 py-3.5 pr-14 bg-secondary/50 border-0 rounded-2xl text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-card transition-all resize-none min-h-[52px] max-h-[120px]"
+                className="w-full px-4 py-3 bg-secondary/50 border-0 rounded-2xl text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-card transition-all resize-none min-h-[48px] max-h-[120px]"
                 style={{ fontSize: '16px' }}
               />
+            </div>
 
+            {/* Right Box: Send Button (Now outside) */}
+            <div className="flex-shrink-0">
               <button
                 onClick={handleSend}
                 disabled={(!input.trim() && !uploadedImageUrl) || isLoading || isUploading}
-                className="absolute right-1.5 bottom-1.5 w-11 h-11 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:from-blue-700 hover:to-blue-600 transition-all shadow-lg shadow-blue-500/25 active:scale-95"
+                className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:from-blue-700 hover:to-blue-600 transition-all shadow-lg shadow-blue-500/25 active:scale-95"
               >
                 {isLoading ? (
                   <LoadingSpinner size="sm" className="text-white" />
@@ -424,9 +428,18 @@ function MessageBubble({ message, isLast }: { readonly message: any; readonly is
         )}
 
         {textContent && (
-          <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words">
-            {textContent}
-          </p>
+          <div className={`text-sm sm:text-base leading-relaxed break-words markdown-content ${isUser ? 'text-white' : 'text-foreground'}`}>
+            <ReactMarkdown
+              components={{
+                // Override per rendere i link cliccabili e sicuri
+                a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" className="underline font-medium" />,
+                strong: ({ node, ...props }) => <strong {...props} className="font-bold" />,
+                p: ({ node, ...props }) => <p {...props} className="mb-2 last:mb-0" />
+              }}
+            >
+              {textContent}
+            </ReactMarkdown>
+          </div>
         )}
       </div>
     </div>
