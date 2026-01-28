@@ -21,6 +21,11 @@ import { createBrowserClient } from '@/lib/supabase-browser';
 type Ticket = Database['public']['Tables']['tickets']['Row'];
 type Message = Database['public']['Tables']['messages']['Row'];
 
+const getSendButtonClass = (autoPilot: boolean, inputText: string) => {
+    if (autoPilot) return 'bg-[#222] text-slate-600 cursor-not-allowed';
+    return inputText ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-[#222] text-slate-500';
+};
+
 interface CognitiveChatProps {
     readonly ticket: Ticket | null;
 }
@@ -122,7 +127,7 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
         try {
             await sendAdminMessage(content, ticket.id, ticket.chat_session_id || undefined);
             // No need to manually update state, Realtime will catch the INSERT.
-        } catch (error) {
+        } catch {
             toast.error("Errore nell'invio del messaggio");
             setInputText(content);
         } finally {
@@ -136,7 +141,7 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
         try {
             await toggleAutopilot(ticket.id, !checked); // Paused is inverse of Enabled
             toast.success(checked ? "Autopilot Attivato" : "Controllo Manuale Attivato");
-        } catch (error) {
+        } catch {
             setAutoPilot(!checked); // Revert
             toast.error("Errore nel cambio stato Autopilot");
         }
@@ -238,7 +243,7 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
                 })}
 
                 {/* AI Thinking/Analysis Mock */}
-                {autoPilot && messages.length > 0 && messages[messages.length - 1].role === 'user' && (
+                {autoPilot && messages.length > 0 && messages.at(-1)?.role === 'user' && (
                     <div className="flex justify-start max-w-[80%] opacity-70 animate-pulse">
                         <div className="flex gap-3">
                             <div className="w-8 h-8 rounded-full bg-blue-900/20 flex items-center justify-center flex-shrink-0 border border-blue-500/20">
@@ -289,10 +294,7 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
                     <Button
                         onClick={handleSendMessage}
                         size="icon"
-                        className={`h-9 w-9 mb-0.5 transition-all ${autoPilot
-                            ? 'bg-[#222] text-slate-600 cursor-not-allowed'
-                            : (inputText ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-[#222] text-slate-500')
-                            }`}
+                        className={`h-9 w-9 mb-0.5 transition-all ${getSendButtonClass(autoPilot, inputText)}`}
                         disabled={autoPilot || !inputText || isSending}
                     >
                         {autoPilot ? <Power className="w-4 h-4" /> : <Send className="w-4 h-4" />}

@@ -79,14 +79,13 @@ export function QuoteGeneratorModal({ isOpen, onClose, ticket }: QuoteGeneratorM
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
             {/* Backdrop */}
-            <div
-                className="absolute inset-0 bg-black/80 backdrop-blur-sm print:hidden"
+            <button
+                type="button"
+                className="absolute inset-0 bg-black/80 backdrop-blur-sm print:hidden w-full h-full cursor-default"
                 onClick={onClose}
                 onKeyDown={(e) => e.key === 'Escape' && onClose()}
-                role="button"
-                tabIndex={0}
                 aria-label="Close modal"
-            ></div>
+            ></button>
 
             {/* Modal Content */}
             <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden print:overflow-visible print:max-h-none print:shadow-none print:w-full print:max-w-none print:fixed print:inset-0 print:rounded-none print-container">
@@ -225,6 +224,7 @@ export function QuoteGeneratorModal({ isOpen, onClose, ticket }: QuoteGeneratorM
                                     <div className="flex justify-between text-sm text-slate-600">
                                         <span className="flex items-center gap-2">
                                             IVA
+                                            &nbsp;
                                             <input
                                                 type="number"
                                                 value={vatRate}

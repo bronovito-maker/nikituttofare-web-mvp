@@ -20,6 +20,14 @@ interface TicketFeedProps {
     readonly onSelectTicket: (ticketId: string) => void;
 }
 
+const getFilterLabel = (mode: 'ALL' | 'OPEN' | 'COMPLETED') => {
+    switch (mode) {
+        case 'OPEN': return 'Aperti';
+        case 'COMPLETED': return 'Chiusi';
+        default: return 'Tutti';
+    }
+};
+
 export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: TicketFeedProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterMode, setFilterMode] = useState<'ALL' | 'OPEN' | 'COMPLETED'>('ALL'); // ALL, OPEN, COMPLETED
@@ -74,13 +82,13 @@ export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: Ticket
                     </h2>
                     <div className="flex items-center gap-2">
                         <span className="text-[10px] uppercase font-bold text-slate-500">
-                            {filterMode === 'ALL' ? 'Tutti' : filterMode === 'OPEN' ? 'Aperti' : 'Chiusi'}
+                            {getFilterLabel(filterMode)}
                         </span>
                         <Button
                             variant="ghost"
                             size="icon"
                             onClick={cycleFilter}
-                            className={`h-8 w-8 transition-colors ${filterMode !== 'ALL' ? 'text-blue-400 bg-blue-400/10' : 'text-slate-400 hover:text-white'}`}
+                            className={`h-8 w-8 transition-colors ${filterMode === 'ALL' ? 'text-slate-400 hover:text-white' : 'text-blue-400 bg-blue-400/10'}`}
                         >
                             <Filter className="w-4 h-4" />
                         </Button>

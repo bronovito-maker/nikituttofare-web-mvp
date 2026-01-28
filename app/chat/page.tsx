@@ -381,6 +381,19 @@ export default function ChatPage() {
 }
 
 // 🎈 Componente Messaggio Semplificato
+const MARKDOWN_COMPONENTS = {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  a: ({ node, ...props }: any) => (
+    <a {...props} target="_blank" rel="noopener noreferrer" className="underline font-medium">
+      {props.children}
+    </a>
+  ),
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  strong: ({ node, ...props }: any) => <strong {...props} className="font-bold" />,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  p: ({ node, ...props }: any) => <p {...props} className="mb-2 last:mb-0" />
+};
+
 function MessageBubble({ message, isLast }: { readonly message: any; readonly isLast: boolean }) {
   const isUser = message.role === 'user';
 
@@ -429,14 +442,7 @@ function MessageBubble({ message, isLast }: { readonly message: any; readonly is
 
         {textContent && (
           <div className={`text-sm sm:text-base leading-relaxed break-words markdown-content ${isUser ? 'text-white' : 'text-foreground'}`}>
-            <ReactMarkdown
-              components={{
-                // Override per rendere i link cliccabili e sicuri
-                a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" className="underline font-medium" />,
-                strong: ({ node, ...props }) => <strong {...props} className="font-bold" />,
-                p: ({ node, ...props }) => <p {...props} className="mb-2 last:mb-0" />
-              }}
-            >
+            <ReactMarkdown components={MARKDOWN_COMPONENTS}>
               {textContent}
             </ReactMarkdown>
           </div>
