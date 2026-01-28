@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
   CheckCircle2,
   Clock,
@@ -16,8 +17,7 @@ import {
   CreditCard,
   Shield,
   ChevronRight,
-  Loader2,
-  Euro
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { AIResponseType, FormType, PriceEstimateType } from '@/lib/ai-structures';
@@ -29,11 +29,11 @@ import { CATEGORY_NAMES_IT } from '@/lib/system-prompt';
 // ============================================
 
 interface GenerativeUIProps {
-  response: AIResponseType;
-  onFormSubmit?: (data: Record<string, string>) => Promise<void> | void;
-  onConfirm?: () => void;
-  onAcceptQuote?: () => void;
-  onRejectQuote?: () => void;
+  readonly response: AIResponseType;
+  readonly onFormSubmit?: (data: Record<string, string>) => Promise<void> | void;
+  readonly onConfirm?: () => void;
+  readonly onAcceptQuote?: () => void;
+  readonly onRejectQuote?: () => void;
 }
 
 export function GenerativeUI({ response, onFormSubmit, onConfirm, onAcceptQuote, onRejectQuote }: GenerativeUIProps) {
@@ -67,7 +67,7 @@ export function GenerativeUI({ response, onFormSubmit, onConfirm, onAcceptQuote,
 // ============================================
 // TEXT RESPONSE
 // ============================================
-function TextResponse({ content }: { content: string }) {
+function TextResponse({ content }: { readonly content: string }) {
   return (
     <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap">
       {content}
@@ -78,7 +78,7 @@ function TextResponse({ content }: { content: string }) {
 // ============================================
 // FORM RESPONSE - Invisible Form (Chat-First)
 // ============================================
-function FormResponse({ form, onSubmit }: { form: FormType; onSubmit?: (data: Record<string, string>) => Promise<void> | void }) {
+function FormResponse({ form, onSubmit }: { readonly form: FormType; readonly onSubmit?: (data: Record<string, string>) => Promise<void> | void }) {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -98,6 +98,51 @@ function FormResponse({ form, onSubmit }: { form: FormType; onSubmit?: (data: Re
 
   const isComplete = form.fields.every(f => formData[f.name]?.trim());
 
+  const renderFieldInput = (field: any) => {
+    if (field.type === 'textarea') {
+      return (
+        <textarea
+          placeholder={`Inserisci ${field.label.toLowerCase()}...`}
+          value={formData[field.name] || ''}
+          onChange={(e) => handleChange(field.name, e.target.value)}
+          className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none transition-all"
+          rows={3}
+        />
+      );
+    }
+
+    if (field.type === 'select') {
+      return (
+        <select
+          value={formData[field.name] || ''}
+          onChange={(e) => handleChange(field.name, e.target.value)}
+          className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+        >
+          <option value="">Seleziona...</option>
+          {field.options?.map((opt: string) => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      );
+    }
+
+    const inputType = field.name.includes('email')
+      ? 'email'
+      : field.name.includes('phone')
+        ? 'tel'
+        : 'text';
+
+    return (
+      <input
+        type={inputType}
+        placeholder={`Inserisci ${field.label.toLowerCase()}...`}
+        value={formData[field.name] || ''}
+        onChange={(e) => handleChange(field.name, e.target.value)}
+        className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+      />
+    );
+  };
+
   return (
     <div className="space-y-4">
       <p className="text-sm font-medium text-slate-700">
@@ -110,35 +155,7 @@ function FormResponse({ form, onSubmit }: { form: FormType; onSubmit?: (data: Re
             <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">
               {field.label}
             </label>
-
-            {field.type === 'textarea' ? (
-              <textarea
-                placeholder={`Inserisci ${field.label.toLowerCase()}...`}
-                value={formData[field.name] || ''}
-                onChange={(e) => handleChange(field.name, e.target.value)}
-                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none transition-all"
-                rows={3}
-              />
-            ) : field.type === 'select' ? (
-              <select
-                value={formData[field.name] || ''}
-                onChange={(e) => handleChange(field.name, e.target.value)}
-                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-              >
-                <option value="">Seleziona...</option>
-                {field.options?.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type={field.name.includes('email') ? 'email' : field.name.includes('phone') ? 'tel' : 'text'}
-                placeholder={`Inserisci ${field.label.toLowerCase()}...`}
-                value={formData[field.name] || ''}
-                onChange={(e) => handleChange(field.name, e.target.value)}
-                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-              />
-            )}
+            {renderFieldInput(field)}
           </div>
         ))}
       </div>
@@ -194,7 +211,7 @@ interface AuthRequiredContent {
   };
 }
 
-function RecapResponse({ content, onConfirm }: { content: string | Record<string, unknown>; onConfirm?: () => void }) {
+function RecapResponse({ content, onConfirm }: { readonly content: string | Record<string, unknown>; readonly onConfirm?: () => void }) {
   // Gestisci diversi formati di content
   let recapData: RecapContent = {};
 
@@ -346,7 +363,7 @@ function RecapResponse({ content, onConfirm }: { content: string | Record<string
 // ============================================
 // BOOKING SUMMARY - Final Confirmation
 // ============================================
-function BookingSummaryResponse({ content }: { content: Record<string, unknown> }) {
+function BookingSummaryResponse({ content }: { readonly content: Record<string, unknown> }) {
   const CATEGORY_CONFIG: Record<string, { icon: typeof Wrench; color: string; label: string }> = {
     plumbing: { icon: Wrench, color: 'text-blue-600', label: 'Idraulico' },
     electric: { icon: Zap, color: 'text-yellow-600', label: 'Elettricista' },
@@ -415,7 +432,7 @@ function BookingSummaryResponse({ content }: { content: Record<string, unknown> 
 // ============================================
 // CONFIRMATION RESPONSE - Success State
 // ============================================
-function ConfirmationResponse({ content }: { content: string | Record<string, unknown> }) {
+function ConfirmationResponse({ content }: { readonly content: string | Record<string, unknown> }) {
   const message = typeof content === 'string' ? content : content.message as string || 'Richiesta confermata';
   const ticketId = typeof content === 'object' ? content.ticketId as string : null;
 
@@ -446,15 +463,15 @@ function ConfirmationResponse({ content }: { content: string | Record<string, un
         <ul className="text-sm text-blue-700 space-y-1">
           <li className="flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center text-xs font-bold">1</span>
-            Riceverai una conferma via email
+            <span className="ml-1">Riceverai una conferma via email</span>
           </li>
           <li className="flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center text-xs font-bold">2</span>
-            Il tecnico ti chiamerà per confermare l&apos;orario
+            <span className="ml-1">Il tecnico ti chiamerà per confermare l&apos;orario</span>
           </li>
           <li className="flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center text-xs font-bold">3</span>
-            Intervento e pagamento a fine lavoro
+            <span className="ml-1">Intervento e pagamento a fine lavoro</span>
           </li>
         </ul>
       </div>
@@ -465,7 +482,7 @@ function ConfirmationResponse({ content }: { content: string | Record<string, un
 // ============================================
 // AUTH REQUIRED RESPONSE - Login Request
 // ============================================
-function AuthRequiredResponse({ content }: { content: AuthRequiredContent }) {
+function AuthRequiredResponse({ content }: { readonly content: AuthRequiredContent }) {
   // Validazione difensiva: verifica che ticketData esista
   const ticketData = content.ticketData || {};
   const hasTicketData = content.ticketData && Object.keys(content.ticketData).length > 0;
@@ -507,12 +524,12 @@ function AuthRequiredResponse({ content }: { content: AuthRequiredContent }) {
       )}
 
       <div className="flex gap-3">
-        <a
+        <Link
           href="/login"
           className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors duration-200 text-center"
         >
           Accedi per Confermare
-        </a>
+        </Link>
       </div>
     </div>
   );
@@ -534,9 +551,9 @@ function PriceEstimateResponse({
   onAccept,
   onReject
 }: {
-  content: PriceEstimateContent;
-  onAccept?: () => void;
-  onReject?: () => void;
+  readonly content: PriceEstimateContent;
+  readonly onAccept?: () => void;
+  readonly onReject?: () => void;
 }) {
   const [hasResponded, setHasResponded] = useState(false);
   const [response, setResponse] = useState<'accepted' | 'rejected' | null>(null);
@@ -658,7 +675,7 @@ function formatLabel(key: string): string {
     name: 'Nome',
     created_at: 'Data',
   };
-  return labels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  return labels[key] || key.replaceAll('_', ' ').replaceAll(/\b\w/g, l => l.toUpperCase());
 }
 
 function getIconForField(key: string): React.ReactNode {

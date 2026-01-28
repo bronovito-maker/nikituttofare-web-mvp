@@ -382,16 +382,16 @@ export default function ChatPage() {
 
 // 🎈 Componente Messaggio Semplificato
 const MARKDOWN_COMPONENTS = {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  a: ({ node, ...props }: any) => (
+
+  a: ({ node: _node, ...props }: any) => (
     <a {...props} target="_blank" rel="noopener noreferrer" className="underline font-medium">
       {props.children}
     </a>
   ),
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  strong: ({ node, ...props }: any) => <strong {...props} className="font-bold" />,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  p: ({ node, ...props }: any) => <p {...props} className="mb-2 last:mb-0" />
+
+  strong: ({ node: _node, ...props }: any) => <strong {...props} className="font-bold" />,
+
+  p: ({ node: _node, ...props }: any) => <p {...props} className="mb-2 last:mb-0" />
 };
 
 function MessageBubble({ message, isLast }: { readonly message: any; readonly isLast: boolean }) {

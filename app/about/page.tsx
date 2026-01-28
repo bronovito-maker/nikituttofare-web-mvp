@@ -145,7 +145,7 @@ export default function AboutPage() {
                             </div>
 
                             <h2 className="text-3xl md:text-5xl font-bold text-foreground leading-tight">
-                                Nati da un'emergenza a Ferragosto.
+                                Nati da un&apos;emergenza a Ferragosto.
                             </h2>
 
                             <div className="space-y-6 text-muted-foreground text-lg leading-relaxed">
@@ -153,10 +153,10 @@ export default function AboutPage() {
                                     Era il 15 agosto 2022 a <strong className="text-foreground">Livorno</strong>. Il nostro fondatore si ritrovò con la casa allagata e nessun idraulico disponibile nel raggio di 50km. Solo segreterie telefoniche o call center anonimi che promettevano richiamate mai arrivate.
                                 </p>
                                 <p className="border-l-4 border-blue-500 pl-6 italic text-foreground/80">
-                                    "È possibile che nel 2022 sia così difficile trovare una persona onesta che ti aiuti in un'emergenza?"
+                                    &quot;È possibile che nel 2022 sia così difficile trovare una persona onesta che ti aiuti in un&apos;emergenza?&quot;
                                 </p>
                                 <p>
-                                    Da quella frustrazione è nato <strong className="text-foreground font-semibold">NikiTuttoFare</strong>. Oggi portiamo quella stessa filosofia in Riviera Romagnola: eliminare l'ansia dell'attesa e offrire un volto amico, non un centralino.
+                                    Da quella frustrazione è nato <strong className="text-foreground font-semibold">NikiTuttoFare</strong>. Oggi portiamo quella stessa filosofia in Riviera Romagnola: eliminare l&apos;ansia dell&apos;attesa e offrire un volto amico, non un centralino.
                                 </p>
                             </div>
 
@@ -186,7 +186,7 @@ export default function AboutPage() {
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 
                             <div className="absolute bottom-8 left-8 right-8 text-white">
-                                <p className="font-medium text-lg">"Ci mettiamo la faccia. Sempre."</p>
+                                <p className="font-medium text-lg">&quot;Ci mettiamo la faccia. Sempre.&quot;</p>
                                 <p className="text-sm text-slate-300 mt-1">Il team tecnico operativo</p>
                             </div>
                         </div>
@@ -223,7 +223,7 @@ export default function AboutPage() {
                             </div>
                             <h3 className="text-xl font-bold text-foreground mb-3">Prezzi Chiari 2026</h3>
                             <p className="text-muted-foreground leading-relaxed">
-                                Nessuno ama le sorprese sul conto. Offriamo stime preventive basate su listini trasparenti e aggiornati. Paghi per il valore, non per l'urgenza.
+                                Nessuno ama le sorprese sul conto. Offriamo stime preventive basate su listini trasparenti e aggiornati. Paghi per il valore, non per l&apos;urgenza.
                             </p>
                         </Card>
 
@@ -250,7 +250,7 @@ export default function AboutPage() {
                         ))}
                     </div>
                     <blockquote className="text-2xl md:text-3xl font-medium text-foreground italic mb-8">
-                        "Finalmente un servizio che risponde subito. Alle 2 di notte mi hanno risolto un problema al quadro elettrico che mi teneva sveglia. Grazie Niki!"
+                        &quot;Finalmente un servizio che risponde subito. Alle 2 di notte mi hanno risolto un problema al quadro elettrico che mi teneva sveglia. Grazie Niki!&quot;
                     </blockquote>
                     <div className="flex items-center justify-center gap-4">
                         <div className="w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-white text-lg">

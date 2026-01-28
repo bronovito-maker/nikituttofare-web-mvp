@@ -129,7 +129,7 @@ export default async function ServicePage({ params }: { params: { city: string; 
                         </Button>
                     </div>
                     <p className="text-sm text-slate-500 animate-in fade-in duration-1000 delay-500">
-                        *L'intelligenza artificiale ti risponde subito, il tecnico arriva dopo.
+                        *L&apos;intelligenza artificiale ti risponde subito, il tecnico arriva dopo.
                     </p>
                 </div>
             </section>
@@ -148,10 +148,10 @@ export default async function ServicePage({ params }: { params: { city: string; 
                     <div className="grid md:grid-cols-2 gap-12">
                         <div className="space-y-6">
                             <p className="text-lg text-muted-foreground leading-relaxed">
-                                A {city.name} è pieno di "tuttofare" improvvisati. Noi di NikiTuttoFare selezioniamo solo <strong>{service.name.toLowerCase()}</strong> con almeno 5 anni di esperienza e P.IVA verificata.
+                                A {city.name} è pieno di &quot;tuttofare&quot; improvvisati. Noi di NikiTuttoFare selezioniamo solo <strong>{service.name.toLowerCase()}</strong> con almeno 5 anni di esperienza e P.IVA verificata.
                             </p>
                             <p className="text-lg text-muted-foreground leading-relaxed">
-                                Che sia Centro Storico, {city.province === 'RN' ? 'Marina Centro' : 'Periferia'} o nell'entroterra, i nostri furgoni sono già in zona. Questo significa <strong>zero costi di uscita</strong> se accetti il preventivo.
+                                Che sia Centro Storico, {city.province === 'RN' ? 'Marina Centro' : 'Periferia'} o nell&apos;entroterra, i nostri furgoni sono già in zona. Questo significa <strong>zero costi di uscita</strong> se accetti il preventivo.
                             </p>
                             <ul className="space-y-3 pt-4">
                                 {[
@@ -196,7 +196,7 @@ export default async function ServicePage({ params }: { params: { city: string; 
                             <Star key={i} className="w-6 h-6 text-yellow-400 fill-yellow-400" />
                         ))}
                     </div>
-                    <h3 className="text-2xl font-bold mb-4">"Il miglior {service.name.toLowerCase()} a {city.name} che abbia mai chiamato"</h3>
+                    <h3 className="text-2xl font-bold mb-4">&quot;Il miglior {service.name.toLowerCase()} a {city.name} che abbia mai chiamato&quot;</h3>
                     <p className="text-muted-foreground">Basato su oltre 500 interventi in Romagna nel 2024</p>
                 </div>
             </section>
