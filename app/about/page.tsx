@@ -134,7 +134,7 @@ export default function AboutPage() {
             </section>
 
             {/* 2. LA NOSTRA STORIA (Trust & Experience) - Two Column Layout */}
-            <article className="py-24 px-6 relative">
+            <article className="py-24 px-4 md:px-6 relative">
                 <div className="container mx-auto max-w-6xl">
                     <div className="grid md:grid-cols-2 gap-16 items-center">
                         {/* Left: Content */}
@@ -195,7 +195,7 @@ export default function AboutPage() {
             </article>
 
             {/* 3. I NOSTRI VALORI (E-E-A-T) */}
-            <section className="py-24 px-6 bg-slate-50 dark:bg-[#0f0f0f] border-y border-border">
+            <section className="py-24 px-4 md:px-6 bg-slate-50 dark:bg-[#0f0f0f] border-y border-border">
                 <div className="container mx-auto max-w-6xl">
                     <div className="text-center mb-16">
                         <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Perché Rimini si fida di noi</h2>
@@ -242,7 +242,7 @@ export default function AboutPage() {
             </section>
 
             {/* 4. SOCIAL PROOF (Trust) */}
-            <section className="py-20 px-6 border-b border-border bg-slate-100 dark:bg-[#0d0d0d]">
+            <section className="py-20 px-4 md:px-6 border-b border-border bg-slate-100 dark:bg-[#0d0d0d]">
                 <div className="container mx-auto max-w-4xl text-center">
                     <div className="flex justify-center gap-1 mb-6">
                         {[1, 2, 3, 4, 5].map((i) => (
@@ -265,7 +265,7 @@ export default function AboutPage() {
             </section>
 
             {/* 5. AREE COPERTE (Local SEO Grid) */}
-            <section className="py-24 px-6 relative overflow-hidden">
+            <section className="py-24 px-4 md:px-6 relative overflow-hidden">
                 <div className="container mx-auto max-w-5xl relative z-10">
                     <div className="text-center mb-12">
                         <h2 className="text-3xl font-bold text-foreground mb-4">Dove Siamo Operativi</h2>
@@ -298,7 +298,7 @@ export default function AboutPage() {
             </section>
 
             {/* 6. CTA FINALE */}
-            <section className="py-24 px-6 text-center bg-gradient-to-b from-background to-slate-100 dark:to-[#111]">
+            <section className="py-24 px-4 md:px-6 text-center bg-gradient-to-b from-background to-slate-100 dark:to-[#111]">
                 <div className="container mx-auto max-w-3xl space-y-8">
                     <h2 className="text-4xl md:text-5xl font-bold text-foreground tracking-tight">
                         Non aspettare che il danno peggiori.
