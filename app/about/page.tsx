@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import Image from 'next/image';
+
 import { RetroGrid } from '@/components/react-bits/RetroGrid';
 import { BlurText } from '@/components/react-bits/BlurText';
 import { Button } from '@/components/ui/button';
@@ -141,7 +141,7 @@ export default function AboutPage() {
                         <div className="space-y-8 order-2 md:order-1">
                             <div className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 font-semibold tracking-wider uppercase text-sm">
                                 <span className="w-8 h-[2px] bg-blue-600 dark:bg-blue-500"></span>
-                                La nostra Storia
+                                <span className="ml-2">La nostra Storia</span>
                             </div>
 
                             <h2 className="text-3xl md:text-5xl font-bold text-foreground leading-tight">

@@ -17,7 +17,62 @@ async function checkAdmin() {
 }
 
 // --- GESTIONE TECNICI ---
-// (Disabilitata temporaneamente per cambio schema DB. Tecnici ora sono Profili con ruolo 'technician')
+
+export async function registerTechnician(formData: FormData) {
+  await checkAdmin()
+  const supabaseAdmin = createAdminClient()
+
+  const fullName = formData.get('fullName') as string
+  const phone = formData.get('phone') as string
+
+  if (!fullName || !phone) {
+    return { error: 'Nome e telefono sono obbligatori' }
+  }
+
+  // 1. Create Auth User (Shadow Account)
+  // Email format: tecnico-[phone]@nikituttofare.it
+  const normalizedPhone = phone.replace(/\D/g, '')
+  const email = `tecnico-${normalizedPhone}@nikituttofare.it`
+  const password = Math.random().toString(36).slice(-8) + 'Aa1!' // Simple random password
+
+  const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: fullName, phone: phone }
+  })
+
+  if (authError) {
+    console.error('Error creating auth user:', authError)
+    return { error: `Errore creazione utente: ${authError.message}` }
+  }
+
+  if (!authUser.user) {
+    return { error: 'Errore imprevisto: utente non creato' }
+  }
+
+  // 2. Insert Profile
+  // Upsert to handle potential trigger-created profiles
+  const { error: profileError } = await supabaseAdmin
+    .from('profiles')
+    .upsert({
+      id: authUser.user.id,
+      email: email,
+      full_name: fullName,
+      phone: phone,
+      role: 'technician',
+      user_type: 'private'
+    })
+
+  if (profileError) {
+    console.error('Error creating profile:', profileError)
+    return { error: `Errore creazione profilo: ${profileError.message}` }
+  }
+
+  revalidatePath('/admin/technicians')
+  return { success: true }
+}
+
 
 // --- GESTIONE LOGIN TECNICO (Public Action) ---
 // --- GESTIONE TICKETS ---

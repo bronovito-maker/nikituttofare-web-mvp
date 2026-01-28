@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { RetroGrid } from '@/components/react-bits/RetroGrid';
-import { SEO_CITIES, SEO_SERVICES, fetchSeoData } from '@/lib/seo-data';
+import { fetchSeoData } from '@/lib/seo-data';
 
 // Force static generation for these paths
 export async function generateStaticParams() {

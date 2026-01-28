@@ -3,20 +3,20 @@ import { Phone, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ContactActionsProps {
-    phone: string;
+    readonly phone: string;
 }
 
 export function ContactActions({ phone }: ContactActionsProps) {
     // Utility per pulire il numero per WhatsApp (rimuove tutto tranne i numeri)
     // Esempio: "+39 333 123 4567" -> "393331234567"
     const cleanPhoneForWhatsApp = (p: string) => {
-        return p.replace(/[^0-9]/g, '');
+        return p.replaceAll(/\D/g, '');
     };
 
     // Utility per il dialer (mantiene + ma rimuove spazi)
     // Esempio: "+39 333 123 4567" -> "+393331234567"
     const cleanPhoneForDialer = (p: string) => {
-        return p.replace(/\s/g, '');
+        return p.replaceAll(/\s/g, '');
     };
 
     const waNumber = cleanPhoneForWhatsApp(phone);

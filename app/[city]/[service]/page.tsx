@@ -2,12 +2,12 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, CheckCircle2, MapPin, Phone, ShieldCheck, Star, Zap } from 'lucide-react';
+import { CheckCircle2, MapPin, Phone, ShieldCheck, Star, Zap } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { SEO_CITIES, SEO_SERVICES, fetchSeoData } from '@/lib/seo-data';
+
+import { fetchSeoData } from '@/lib/seo-data';
 
 // Generate all combinations of City + Service
 export async function generateStaticParams() {
@@ -160,7 +160,7 @@ export default async function ServicePage({ params }: { params: { city: string; 
                                     'Pezzi di ricambio originali',
                                     'Ricevuta fiscale immediata'
                                 ].map((item, i) => (
-                                    <li key={i} className="flex items-center gap-3 font-medium text-foreground">
+                                    <li key={item} className="flex items-center gap-3 font-medium text-foreground">
                                         <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
                                         {item}
                                     </li>
