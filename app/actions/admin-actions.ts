@@ -107,23 +107,30 @@ export async function verifyAndLinkTechnician(phone: string, userId: string) {
 }
 // --- GESTIONE TICKETS ---
 
-export async function closeTicket(ticketId: string): Promise<void> {
+// Replaces Close Ticket with Force Close Ticket functionality or adds alias
+export async function forceCloseTicket(ticketId: string): Promise<void> {
   await checkAdmin()
   const supabaseAdmin = createAdminClient()
 
+  // Update logic to 'completed' as used in schema
   const { error } = await supabaseAdmin
     .from('tickets')
     .update({
-      status: 'completed',
-      // @ts-ignore - completed_at potrebbe non essere nei tipi generati
+      status: 'resolved',
+      // @ts-ignore
       completed_at: new Date().toISOString()
     } as any)
     .eq('id', ticketId)
 
   if (error) {
-    console.error('Error closing ticket:', error)
+    console.error('Error force closing ticket:', error)
     throw new Error(error.message)
   }
 
+  // Revalidate both admin feed and user dashboard
   revalidatePath('/admin')
+  revalidatePath('/dashboard')
 }
+
+export const closeTicket = forceCloseTicket;
+

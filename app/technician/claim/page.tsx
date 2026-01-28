@@ -22,6 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { createBrowserClient } from '@/lib/supabase-browser';
 import { COMPANY_PHONE, COMPANY_PHONE_LINK } from '@/lib/constants';
+import { ContactActions } from '@/components/technician/contact-actions-bar';
 
 type ClaimState = 'loading' | 'phone_input' | 'verifying' | 'ready' | 'accepting' | 'success' | 'error' | 'already_assigned';
 
@@ -407,7 +408,7 @@ function TechnicianClaimContent() {
         {state === 'success' && ticket && client && (
           <div className="space-y-6">
             {/* Success Banner */}
-            <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl shadow-xl p-6 text-white text-center">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl shadow-xl p-6 text-white text-center mb-6">
               <CheckCircle2 className="w-16 h-16 mx-auto mb-4" />
               <h1 className="text-2xl font-bold mb-2">
                 Intervento Assegnato a Te!
@@ -416,6 +417,9 @@ function TechnicianClaimContent() {
                 Contatta il cliente il prima possibile per confermare l&apos;appuntamento.
               </p>
             </div>
+
+            {/* Action Bar Sticky */}
+            <ContactActions phone={client.phone} />
 
             {/* Client Details Card */}
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">

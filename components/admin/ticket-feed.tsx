@@ -5,12 +5,15 @@ import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
 import {
     Search,
-    Filter
+    Filter,
+    CheckCircle2
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Database } from '@/lib/database.types';
+import { forceCloseTicket } from '@/app/actions/admin-actions';
+import { toast } from 'sonner';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
 
@@ -20,24 +23,35 @@ interface TicketFeedProps {
     readonly onSelectTicket: (ticketId: string) => void;
 }
 
-const getFilterLabel = (mode: 'ALL' | 'OPEN' | 'COMPLETED') => {
+const getFilterLabel = (mode: 'ALL' | 'OPEN' | 'RESOLVED') => {
     switch (mode) {
         case 'OPEN': return 'Aperti';
-        case 'COMPLETED': return 'Chiusi';
+        case 'RESOLVED': return 'Chiusi';
         default: return 'Tutti';
     }
 };
 
 export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: TicketFeedProps) {
     const [searchQuery, setSearchQuery] = useState('');
-    const [filterMode, setFilterMode] = useState<'ALL' | 'OPEN' | 'COMPLETED'>('ALL'); // ALL, OPEN, COMPLETED
+    const [filterMode, setFilterMode] = useState<'ALL' | 'OPEN' | 'RESOLVED'>('ALL'); // ALL, OPEN, RESOLVED
 
     // Mock function to determine sentiment/urgency color
     const getUrgencyColor = (priority: string, status: string) => {
-        if (status === 'completed') return 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]';
+        if (status === 'resolved') return 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]';
         if (priority === 'critical' || priority === 'emergency') return 'bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.4)]';
         if (priority === 'high') return 'bg-orange-500';
         return 'bg-blue-500';
+    };
+
+    const handleForceClose = async (e: React.MouseEvent, ticketId: string) => {
+        e.stopPropagation(); // Stop selection trigger
+        try {
+            await forceCloseTicket(ticketId);
+            toast.success("Ticket chiuso manualmente");
+        } catch (error) {
+            toast.error("Errore durante la chiusura");
+            console.error(error);
+        }
     };
 
     const filteredTickets = tickets.filter(ticket => {
@@ -54,10 +68,10 @@ export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: Ticket
 
         // 2. Status Filter
         if (filterMode === 'OPEN') {
-            return ticket.status !== 'completed';
+            return ticket.status !== 'resolved';
         }
-        if (filterMode === 'COMPLETED') {
-            return ticket.status === 'completed';
+        if (filterMode === 'RESOLVED') {
+            return ticket.status === 'resolved';
         }
 
         return true;
@@ -65,7 +79,7 @@ export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: Ticket
 
     const cycleFilter = () => {
         if (filterMode === 'ALL') setFilterMode('OPEN');
-        else if (filterMode === 'OPEN') setFilterMode('COMPLETED');
+        else if (filterMode === 'OPEN') setFilterMode('RESOLVED');
         else setFilterMode('ALL');
     };
 
@@ -117,13 +131,20 @@ export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: Ticket
                             const isActive = selectedTicketId === ticket.id;
 
                             return (
-                                <button
+                                <div
                                     key={ticket.id}
                                     onClick={() => onSelectTicket(ticket.id)}
-                                    className={`w-full text-left p-4 hover:bg-[#1a1a1a] transition-all duration-200 group relative border-l-[3px] ${isActive
+                                    className={`w-full text-left p-4 hover:bg-[#1a1a1a] transition-all duration-200 group relative border-l-[3px] cursor-pointer ${isActive
                                         ? 'bg-[#1a1a1a] border-blue-500'
                                         : 'bg-transparent border-transparent hover:border-[#333]'
                                         }`}
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            onSelectTicket(ticket.id);
+                                        }
+                                    }}
                                 >
                                     {/* Traffic Light Indicator */}
                                     <div className={`absolute top-4 right-4 w-2.5 h-2.5 rounded-full ${getUrgencyColor(ticket.priority, ticket.status)}`} />
@@ -157,9 +178,23 @@ export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: Ticket
 
                                             {/* Status Chip */}
                                             <StatusBadge status={ticket.status} />
+
+                                            {/* Force Close Action */}
+                                            {ticket.status !== 'resolved' && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="h-5 px-1.5 text-[10px] text-green-400 hover:text-green-300 hover:bg-green-400/10 ml-auto"
+                                                    onClick={(e) => handleForceClose(e, ticket.id)}
+                                                    title="Chiudi Lavoro"
+                                                >
+                                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                                    Chiudi
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
-                                </button>
+                                </div>
                             );
                         })}
                     </div>
@@ -170,10 +205,10 @@ export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: Ticket
 }
 
 function StatusBadge({ status }: { readonly status: string }) {
-    if (status === 'completed') {
+    if (status === 'resolved') {
         return (
             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                Completato
+                Resolved
             </span>
         );
     }
