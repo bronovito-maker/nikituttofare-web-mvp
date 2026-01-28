@@ -327,6 +327,7 @@ export type Database = {
           priority: string
           status: string
           user_id: string | null
+          ai_paused: boolean | null
         }
         Insert: {
           address?: string | null
@@ -348,6 +349,7 @@ export type Database = {
           priority?: string
           status?: string
           user_id?: string | null
+          ai_paused?: boolean | null
         }
         Update: {
           address?: string | null
@@ -369,6 +371,7 @@ export type Database = {
           priority?: string
           status?: string
           user_id?: string | null
+          ai_paused?: boolean | null
         }
         Relationships: [
           {
