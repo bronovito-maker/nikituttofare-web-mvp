@@ -33,6 +33,7 @@ export async function getCurrentUser() {
     }
     return data.user;
   } catch (error) {
+    console.error('Error in getCurrentUser:', error);
     return null;
   }
 }
@@ -55,6 +56,8 @@ export async function getOrCreateProfile(userId: string, email: string): Promise
       loyalty_points: 0,
       user_type: null,
       vat_number: null,
+      is_active: true,
+      status: 'active',
     };
   }
 
@@ -89,6 +92,7 @@ export async function getOrCreateProfile(userId: string, email: string): Promise
 
     return newProfile as Profile;
   } catch (error) {
+    console.error('Error in getOrCreateProfile:', error);
     // Fallback a profilo mock
     return {
       id: userId,
@@ -102,18 +106,40 @@ export async function getOrCreateProfile(userId: string, email: string): Promise
       loyalty_points: 0,
       user_type: null,
       vat_number: null,
+      is_active: true,
+      status: 'active',
     };
   }
 }
 
 /**
+ * Categoria valida per i ticket
+ */
+type TicketCategory = 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'handyman' | 'generic';
+
+/**
+ * Interface per le opzioni di createTicket
+ */
+interface CreateTicketOptions {
+  userId: string;
+  category: Database['public']['Tables']['tickets']['Row']['category'];
+  description: string;
+  priority?: Database['public']['Tables']['tickets']['Row']['priority'];
+  address?: string;
+  messageContent?: string;
+  status?: Database['public']['Tables']['tickets']['Row']['status'];
+  imageUrl?: string;
+  chatSessionId?: string;
+  city?: string;
+  customerName?: string;
+}
+
+/**
  * Normalizza la categoria per compatibilità con il database.
  */
-function normalizeCategory(
-  category: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'handyman' | 'generic'
-): 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'handyman' | 'generic' {
+function normalizeCategory(category: TicketCategory): TicketCategory {
   // Lista delle categorie accettate dal database
-  const validCategories: Array<'plumbing' | 'electric' | 'locksmith' | 'climate' | 'handyman' | 'generic'> = [
+  const validCategories: TicketCategory[] = [
     'plumbing',
     'electric',
     'locksmith',
@@ -134,19 +160,17 @@ function normalizeCategory(
 /**
  * Crea un nuovo ticket
  */
-export async function createTicket(
-  userId: string,
-  category: Database['public']['Tables']['tickets']['Row']['category'],
-  description: string,
-  priority: Database['public']['Tables']['tickets']['Row']['priority'] = 'medium',
-  address?: string,
-  messageContent?: string,
-  status: Database['public']['Tables']['tickets']['Row']['status'] = 'pending_verification',
-  imageUrl?: string,
-  chatSessionId?: string,
-  city?: string,
-  customerName?: string
-): Promise<Ticket | null> {
+export async function createTicket({
+  userId,
+  category,
+  description,
+  priority = 'medium',
+  address,
+  status = 'pending_verification',
+  chatSessionId,
+  city,
+  customerName
+}: CreateTicketOptions): Promise<Ticket | null> {
   // Normalizza la categoria per il database
   // @ts-ignore
   const dbCategory = category;
@@ -198,11 +222,13 @@ export async function createTicket(
       .single();
 
     if (error) {
+      console.error('Error creating ticket insert:', error);
       return null;
     }
 
     return data as Ticket;
   } catch (error) {
+    console.error('Error in createTicket:', error);
     // Fallback a ticket mock
     return {
       id: `ticket-${Date.now()}`,
@@ -272,11 +298,13 @@ export async function saveMessage(
       .single();
 
     if (error) {
+      console.error('Error saving message:', error);
       return null;
     }
 
     return data as TicketMessage;
   } catch (error) {
+    console.error('Error in saveMessage:', error);
     // Fallback a messaggio mock
     return {
       id: `msg-${Date.now()}`,
@@ -310,11 +338,13 @@ export async function getTicketMessages(ticketId: string): Promise<TicketMessage
       .order('created_at', { ascending: true });
 
     if (error) {
+      console.error('Error fetching ticket messages:', error);
       return [];
     }
 
     return (data || []) as TicketMessage[];
   } catch (error) {
+    console.error('Error in getTicketMessages:', error);
     return [];
   }
 }
@@ -338,11 +368,13 @@ export async function getUserTickets(userId: string): Promise<Ticket[]> {
       .order('created_at', { ascending: false });
 
     if (error) {
+      console.error('Error fetching user tickets:', error);
       return [];
     }
 
     return (data || []) as Ticket[];
   } catch (error) {
+    console.error('Error in getUserTickets:', error);
     return [];
   }
 }
@@ -368,11 +400,13 @@ export async function updateTicketStatus(
       .eq('id', ticketId);
 
     if (error) {
+      console.error('Error updating ticket status:', error);
       return false;
     }
 
     return true;
   } catch (error) {
+    console.error('Error in updateTicketStatus:', error);
     return false;
   }
 }

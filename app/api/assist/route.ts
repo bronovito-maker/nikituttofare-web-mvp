@@ -571,15 +571,14 @@ async function handleTicketCreation(
       slots.problemDetails ||
       "Problema descritto dall'utente - dettagli da confermare con il tecnico"
 
-    const newTicket = await createTicket(
-      user.id,
-      slots.problemCategory || 'generic',
-      problemDescription,
+    const newTicket = await createTicket({
+      userId: user.id,
+      category: slots.problemCategory || 'generic',
+      description: problemDescription,
       priority,
-      slots.serviceAddress || undefined,
-      undefined,
-      'pending_verification',
-    )
+      address: slots.serviceAddress || undefined,
+      status: 'pending_verification',
+    })
 
     if (!newTicket) {
       return NextResponse.json({

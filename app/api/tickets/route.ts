@@ -38,19 +38,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Crea il ticket
-    const ticket = await createTicket(
-      profile.id,
+    const ticket = await createTicket({
+      userId: profile.id,
       category,
       description,
-      priority || 'medium',
+      priority: priority || 'medium',
       address,
       messageContent,
-      'pending_verification', // status
+      status: 'pending_verification',
       imageUrl,
       chatSessionId,
       city,
       customerName
-    );
+    });
 
     if (!ticket) {
       return NextResponse.json(

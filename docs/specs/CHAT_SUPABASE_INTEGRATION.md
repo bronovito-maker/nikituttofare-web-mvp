@@ -58,6 +58,13 @@
 ```typescript
 {
   id: string (uuid)
+// 1. Creare un ticket
+const ticket = await createTicket({
+  userId: 'user-id',
+  category: 'plumbing',
+  description: 'Problem description',
+  priority: 'medium'
+});
   user_id: string (uuid)
   category: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'handyman' | 'generic'
   status: 'new' | 'pending_verification' | 'confirmed' | 'assigned' | 'in_progress' | 'resolved' | 'cancelled'
