@@ -5,7 +5,11 @@ import { createServerClient } from './supabase-server';
 import { auth } from '@/auth';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
-import type { Ticket, TicketMessage, Profile } from './types';
+import { Database } from './database.types';
+
+type Ticket = Database['public']['Tables']['tickets']['Row'];
+type TicketMessage = Database['public']['Tables']['messages']['Row'];
+type Profile = Database['public']['Tables']['profiles']['Row'];
 
 // Flag per controllare se Supabase è configurato
 const isSupabaseConfigured = () => {
@@ -110,12 +114,12 @@ function normalizeCategory(
     'handyman',
     'generic',
   ];
-  
+
   // Se la categoria è valida, usala
   if (validCategories.includes(category)) {
     return category;
   }
-  
+
   // Fallback a generic per qualsiasi valore non riconosciuto
   return 'generic';
 }
@@ -125,20 +129,24 @@ function normalizeCategory(
  */
 export async function createTicket(
   userId: string,
-  category: 'plumbing' | 'electric' | 'locksmith' | 'climate' | 'handyman' | 'generic',
+  category: Database['public']['Tables']['tickets']['Row']['category'],
   description: string,
-  priority: 'low' | 'medium' | 'high' | 'emergency' = 'medium',
+  priority: Database['public']['Tables']['tickets']['Row']['priority'] = 'medium',
   address?: string,
   messageContent?: string,
-  status: 'new' | 'pending_verification' | 'confirmed' = 'pending_verification',
-  imageUrl?: string
+  status: Database['public']['Tables']['tickets']['Row']['status'] = 'pending_verification',
+  imageUrl?: string,
+  chatSessionId?: string,
+  city?: string,
+  customerName?: string
 ): Promise<Ticket | null> {
   // Normalizza la categoria per il database
-  const dbCategory = normalizeCategory(category);
-  
+  // @ts-ignore
+  const dbCategory = category;
+
   if (!isSupabaseConfigured()) {
     // Restituisci ticket mock se Supabase non è configurato
-    const mockTicket: Ticket = {
+    const mockTicket: any = {
       id: `ticket-${Date.now()}`,
       user_id: userId,
       status: status,
@@ -147,7 +155,17 @@ export async function createTicket(
       description,
       address: address || null,
       payment_status: 'pending',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      chat_session_id: chatSessionId || null,
+      city: city || null,
+      customer_name: customerName || null,
+      assigned_at: null,
+      assigned_technician_id: null,
+      completed_at: null,
+      contact_phone: null,
+      photo_url: null,
+      price_range_max: null,
+      price_range_min: null
     };
     return mockTicket;
   }
@@ -159,11 +177,14 @@ export async function createTicket(
       .from('tickets')
       .insert({
         user_id: userId,
-        category: dbCategory, // Usa la categoria normalizzata
+        category: dbCategory,
         description,
         priority,
         address: address || null,
         status: status,
+        chat_session_id: chatSessionId || null,
+        city: city || null,
+        customer_name: customerName || null,
       })
       .select()
       .single();
@@ -184,7 +205,17 @@ export async function createTicket(
       description,
       address: address || null,
       payment_status: 'pending',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      chat_session_id: chatSessionId || null,
+      city: city || null,
+      customer_name: customerName || null,
+      assigned_at: null,
+      assigned_technician_id: null,
+      completed_at: null,
+      contact_phone: null,
+      photo_url: null,
+      price_range_max: null,
+      price_range_min: null
     };
   }
 }
@@ -193,22 +224,24 @@ export async function createTicket(
  * Salva un messaggio associato a un ticket
  */
 export async function saveMessage(
-  ticketId: string,
+  ticketId: string | null,
   role: 'user' | 'assistant' | 'system',
   content: string,
   imageUrl?: string | null,
-  metaData?: Record<string, unknown> | null
+  metaData?: Record<string, unknown> | null,
+  chatSessionId?: string
 ): Promise<TicketMessage | null> {
   if (!isSupabaseConfigured()) {
     // Restituisci messaggio mock se Supabase non è configurato
-    const mockMessage: TicketMessage = {
+    const mockMessage: any = {
       id: `msg-${Date.now()}`,
       ticket_id: ticketId,
       role,
       content,
       image_url: imageUrl || null,
       meta_data: metaData || null,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      chat_session_id: chatSessionId || null
     };
     return mockMessage;
   }
@@ -224,6 +257,7 @@ export async function saveMessage(
         content,
         image_url: imageUrl || null,
         meta_data: metaData || null,
+        chat_session_id: chatSessionId || null
       })
       .select()
       .single();

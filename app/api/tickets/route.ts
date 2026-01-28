@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     // Rate limiting - previene spam di ticket
     const clientId = getClientIdentifier(request);
     const rateLimitResult = checkRateLimit(`tickets:${clientId}`, RATE_LIMITS.tickets);
-    
+
     if (!rateLimitResult.success) {
       return rateLimitExceededResponse(rateLimitResult);
     }
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { category, description, priority, address, messageContent, imageUrl } = body;
+    const { category, description, priority, address, messageContent, imageUrl, chatSessionId, city, customerName } = body;
 
     // Validazione input
     if (!category || !description) {
@@ -45,7 +45,11 @@ export async function POST(request: NextRequest) {
       priority || 'medium',
       address,
       messageContent,
-      imageUrl
+      'pending_verification', // status
+      imageUrl,
+      chatSessionId,
+      city,
+      customerName
     );
 
     if (!ticket) {

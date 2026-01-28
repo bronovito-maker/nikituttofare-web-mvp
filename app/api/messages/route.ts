@@ -9,6 +9,7 @@ const postMessageSchema = z.object({
   content: z.string().min(1),
   imageUrl: z.string().url().optional().nullable(),
   metaData: z.record(z.unknown()).optional().nullable(),
+  chatSessionId: z.string().optional(),
 });
 
 // Zod schema for GET request query
@@ -30,14 +31,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Dati non validi', details: validation.error.flatten() }, { status: 400 });
     }
 
-    const { ticketId, role, content, imageUrl, metaData } = validation.data;
+    const { ticketId, role, content, imageUrl, metaData, chatSessionId } = validation.data;
 
     const message = await saveMessage(
       ticketId,
       role,
       content,
       imageUrl,
-      metaData
+      metaData,
+      chatSessionId
     );
 
     if (!message) {

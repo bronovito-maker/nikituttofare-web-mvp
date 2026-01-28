@@ -38,7 +38,7 @@ export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: Ticket
     // Mock function to determine sentiment/urgency color
     const getUrgencyColor = (priority: string, status: string) => {
         if (status === 'resolved') return 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]';
-        if (priority === 'critical' || priority === 'emergency') return 'bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.4)]';
+        if (priority === 'emergency') return 'bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.4)]';
         if (priority === 'high') return 'bg-orange-500';
         return 'bg-blue-500';
     };
@@ -219,9 +219,23 @@ function StatusBadge({ status }: { readonly status: string }) {
             </span>
         );
     }
+    if (status === 'assigned') {
+        return (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border bg-purple-500/10 text-purple-400 border-purple-500/20">
+                Assegnato
+            </span>
+        );
+    }
+    if (status === 'cancelled') {
+        return (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border bg-red-500/10 text-red-400 border-red-500/20">
+                Cancellato
+            </span>
+        );
+    }
     return (
         <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20">
-            Da Assegnare
+            {status === 'pending_verification' ? 'Da Verificare' : 'Nuovo'}
         </span>
     );
 }

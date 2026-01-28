@@ -2,17 +2,17 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { ShieldCheck, Clock, Star, ArrowRight, FileCheck, FileSpreadsheet, QrCode } from 'lucide-react';
 import { RetroGrid } from '@/components/react-bits/RetroGrid';
 import { BlurText } from '@/components/react-bits/BlurText';
 import { ClientAnimationWrapper } from '@/components/ui/client-animation-wrapper';
-import { COMPANY_PHONE, COMPANY_PHONE_LINK } from '@/lib/constants';
+import { COMPANY_PHONE_LINK } from '@/lib/constants';
+
+import { SiteHeader } from '@/components/layout/site-header';
+import { SiteFooter } from '@/components/layout/site-footer';
 
 // New Components
-import { UserTypeToggle } from '@/components/landing/user-type-toggle';
 import { StickyActionNav } from '@/components/landing/sticky-action-nav';
 import { TechnicianPreview } from '@/components/landing/technician-preview';
 import { PriceComparison } from '@/components/landing/price-comparison';
@@ -25,52 +25,12 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-blue-100 dark:selection:bg-blue-900 pb-20 sm:pb-0">
 
-      {/* --- NAVBAR STICKY GLASSMORPHISM --- */}
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-card/80 backdrop-blur-xl shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          {/* Logo & Brand */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <div className="relative h-9 sm:h-11 w-9 sm:w-11 overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow flex-shrink-0">
-              <Image src="/logo_ntf.png" alt="NTF Logo" fill className="object-cover" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-foreground leading-none">
-                <span className="sm:hidden">NTF</span>
-                <span className="hidden sm:inline">Niki<span className="text-blue-600 dark:text-blue-400">Tuttofare</span></span>
-              </span>
-              <span className="hidden sm:block text-xs text-muted-foreground font-medium">Pronto Intervento H24</span>
-            </div>
-          </div>
-
-          {/* Center Toggle - Desktop */}
-          <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <UserTypeToggle value={userType} onChange={setUserType} />
-          </div>
-
-          {/* Right Actions */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="md:hidden">
-              {/* Mobile reduced toggle or just integrated in menu - for now keep it simple or hide specific controls */}
-            </div>
-            <div className="hidden lg:flex items-center gap-2 text-xs sm:text-sm font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-1.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/50">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
-              </span>
-              <span className="hidden xl:inline">Tecnici attivi su <strong>Rimini e Provincia</strong></span>
-            </div>
-            <ThemeToggle />
-            <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs sm:text-sm rounded-full px-5 shadow-lg transition-all hover:scale-105">
-              <Link href="/login">Area Riservata</Link>
-            </Button>
-          </div>
-        </div>
-
-        {/* Mobile Toggle Row */}
-        <div className="md:hidden border-t border-border bg-card/50 p-2 flex justify-center">
-          <UserTypeToggle value={userType} onChange={setUserType} />
-        </div>
-      </header>
+      {/* --- SITE HEADER --- */}
+      <SiteHeader
+        userType={userType}
+        onUserTypeChange={setUserType}
+        showUserTypeToggle={true}
+      />
 
       <main className="flex-1">
 
@@ -286,26 +246,7 @@ export default function Home() {
       <StickyActionNav />
 
       {/* FOOTER PREMIUM */}
-      <footer className="py-12 lg:py-16 bg-card border-t border-border text-center mb-20 sm:mb-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8">
-          <div className="space-y-2">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.1em]">Supporto Totale</p>
-            <a
-              href={COMPANY_PHONE_LINK}
-              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-bold text-xl transition-colors"
-            >
-              📞 +39 {COMPANY_PHONE}
-            </a>
-          </div>
-          <div className="pt-8 border-t border-border text-muted-foreground text-sm space-y-2">
-            <p>© 2026 NikiTuttofare • Powered by Gemini AI</p>
-            <p className="text-xs">
-              Attivi su: Rimini • Riccione • Cattolica • Misano • Bellaria • Santarcangelo • San Marino
-            </p>
-            <p className="text-xs opacity-50">P.IVA 1234567890</p>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

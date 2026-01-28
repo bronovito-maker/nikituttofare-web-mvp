@@ -64,8 +64,48 @@ export type Database = {
           },
         ]
       }
+      leads_recovery: {
+        Row: {
+          abandoned_at: string
+          chat_session_id: string
+          created_at: string | null
+          detected_intent: string | null
+          extracted_contact: Json | null
+          id: string
+          lead_score: number | null
+          notes: string | null
+          status: Database["public"]["Enums"]["recovery_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          abandoned_at: string
+          chat_session_id: string
+          created_at?: string | null
+          detected_intent?: string | null
+          extracted_contact?: Json | null
+          id?: string
+          lead_score?: number | null
+          notes?: string | null
+          status?: Database["public"]["Enums"]["recovery_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          abandoned_at?: string
+          chat_session_id?: string
+          created_at?: string | null
+          detected_intent?: string | null
+          extracted_contact?: Json | null
+          id?: string
+          lead_score?: number | null
+          notes?: string | null
+          status?: Database["public"]["Enums"]["recovery_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
+          chat_session_id: string | null
           content: string
           created_at: string
           id: string
@@ -73,19 +113,19 @@ export type Database = {
           meta_data: Json | null
           role: string
           ticket_id: string | null
-          chat_session_id: string | null
         }
         Insert: {
+          chat_session_id?: string | null
           content: string
           created_at?: string
-          id: string
+          id?: string
           image_url?: string | null
           meta_data?: Json | null
           role: string
           ticket_id?: string | null
-          chat_session_id?: string | null
         }
         Update: {
+          chat_session_id?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -93,7 +133,6 @@ export type Database = {
           meta_data?: Json | null
           role?: string
           ticket_id?: string | null
-          chat_session_id?: string | null
         }
         Relationships: [
           {
@@ -110,19 +149,19 @@ export type Database = {
           created_at: string
           id: string
           message: Json
-          session_id: string | null
+          session_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           message: Json
-          session_id?: string | null
+          session_id: string
         }
         Update: {
           created_at?: string
           id?: string
           message?: Json
-          session_id?: string | null
+          session_id?: string
         }
         Relationships: []
       }
@@ -133,11 +172,11 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
-          loyalty_level: "bronze" | "silver" | "gold" | "platinum" | null
+          loyalty_level: string | null
           loyalty_points: number | null
           phone: string | null
           role: string
-          user_type: "private" | "business" | null
+          user_type: string | null
           vat_number: string | null
         }
         Insert: {
@@ -146,11 +185,11 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
-          loyalty_level?: "bronze" | "silver" | "gold" | "platinum" | null
+          loyalty_level?: string | null
           loyalty_points?: number | null
           phone?: string | null
           role?: string
-          user_type?: "private" | "business" | null
+          user_type?: string | null
           vat_number?: string | null
         }
         Update: {
@@ -159,52 +198,14 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
-          loyalty_level?: "bronze" | "silver" | "gold" | "platinum" | null
+          loyalty_level?: string | null
           loyalty_points?: number | null
           phone?: string | null
           role?: string
-          user_type?: "private" | "business" | null
+          user_type?: string | null
           vat_number?: string | null
         }
         Relationships: []
-      }
-      technicians: {
-        Row: {
-          id: string
-          name: string
-          phone: string
-          skills: string[]
-          is_active: boolean
-          user_id: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          phone: string
-          skills: string[]
-          is_active?: boolean
-          user_id?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          phone?: string
-          skills?: string[]
-          is_active?: boolean
-          user_id?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "technicians_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       technician_assignment_tokens: {
         Row: {
@@ -254,27 +255,36 @@ export type Database = {
       technician_notifications: {
         Row: {
           id: string
+          message_content: string | null
+          meta_data: Json | null
           notification_type: string
           sent_at: string
           status: string
+          technician_id: string | null
           telegram_message_id: string | null
           ticket_id: string
           token_id: string | null
         }
         Insert: {
           id?: string
-          notification_type: string
+          message_content?: string | null
+          meta_data?: Json | null
+          notification_type?: string
           sent_at?: string
           status?: string
+          technician_id?: string | null
           telegram_message_id?: string | null
           ticket_id: string
           token_id?: string | null
         }
         Update: {
           id?: string
+          message_content?: string | null
+          meta_data?: Json | null
           notification_type?: string
           sent_at?: string
           status?: string
+          technician_id?: string | null
           telegram_message_id?: string | null
           ticket_id?: string
           token_id?: string | null
@@ -303,8 +313,8 @@ export type Database = {
           assigned_technician_id: string | null
           category: string
           chat_session_id: string | null
-          ai_paused: boolean
           city: string | null
+          completed_at: string | null
           contact_phone: number | null
           created_at: string
           customer_name: string | null
@@ -324,8 +334,8 @@ export type Database = {
           assigned_technician_id?: string | null
           category: string
           chat_session_id?: string | null
-          ai_paused?: boolean
           city?: string | null
+          completed_at?: string | null
           contact_phone?: number | null
           created_at?: string
           customer_name?: string | null
@@ -345,8 +355,8 @@ export type Database = {
           assigned_technician_id?: string | null
           category?: string
           chat_session_id?: string | null
-          ai_paused?: boolean
           city?: string | null
+          completed_at?: string | null
           contact_phone?: number | null
           created_at?: string
           customer_name?: string | null
@@ -379,7 +389,13 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      orphan_sessions_view: {
+        Row: {
+          chat_session_id: string | null
+          last_message_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       accept_technician_assignment: {
@@ -394,7 +410,7 @@ export type Database = {
       is_admin_or_technician: { Args: never; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      recovery_status: "new" | "contacted" | "recovered" | "discarded"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -487,6 +503,7 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
+  | keyof DefaultSchema["Enums"]
   | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
@@ -503,6 +520,7 @@ export type Enums<
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
+  | keyof DefaultSchema["CompositeTypes"]
   | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
@@ -519,6 +537,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      recovery_status: ["new", "contacted", "recovered", "discarded"],
+    },
   },
 } as const
