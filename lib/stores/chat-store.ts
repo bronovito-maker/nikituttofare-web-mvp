@@ -68,13 +68,16 @@ interface ChatState {
 }
 
 const generateId = () => {
-  const array = new Uint32Array(1);
-  const crypto = globalThis.crypto;
-  if (crypto) {
-    crypto.getRandomValues(array);
+  const c = globalThis.crypto as Crypto | undefined;
+  if (c?.randomUUID) {
+    return c.randomUUID();
+  }
+  if (c?.getRandomValues) {
+    const array = new Uint32Array(1);
+    c.getRandomValues(array);
     return `${Date.now()}-${array[0].toString(36)}`;
   }
-  return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  throw new Error("Secure RNG not available");
 };
 
 // Funzione di migrazione per pulire messaggi corrotti

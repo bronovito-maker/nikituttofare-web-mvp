@@ -73,13 +73,15 @@ function extractName(text: string): { name?: string, confidence: ConfidenceLevel
   // Simplified regexes to avoid complexity warnings - removed nested quantifiers
 
   // 1. Direct introduction: "mi chiamo X", "sono X" -> captures up to 60 chars of name-like string
-  const introMatch = /(?:mi\s+chiamo|chiamarmi|mio\s+nome\s+è|sono)\s+([a-zà-öø-ÿ\s'-]{1,60})(?:[.,\n]|$)/i.exec(text);
+  // Fixed ReDoS ambiguity: Ensure capture group starts with non-whitespace ([a-z...'-])
+  const introMatch = /(?:mi\s+chiamo|chiamarmi|mio\s+nome\s+è|sono)\s+([a-zà-öø-ÿ'-][a-zà-öø-ÿ\s'-]{0,59})(?:[.,\n]|$)/i.exec(text);
 
   // 2. "name is" / "under name": "a nome X", "il mio nome è X"
-  const labelMatch = /(?:a\s+nome|il\s+mio\s+nome\s+è)\s+([a-zà-öø-ÿ\s'-]{1,60})(?:[.,\n]|$)/i.exec(text);
+  const labelMatch = /(?:a\s+nome|il\s+mio\s+nome\s+è)\s+([a-zà-öø-ÿ'-][a-zà-öø-ÿ\s'-]{0,59})(?:[.,\n]|$)/i.exec(text);
 
   // 3. Capitalized name at start/newline: "Mario Rossi" -> captures capitalized sequences
-  const capitalizedMatch = /(?:^|\n)(?:user:\s*)?((?:[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ'’-]+\s*){1,4})\b/.exec(text);
+  // Refactored to avoid ReDoS (S5852) by matching "Word" then up to 3 "(space) Word" groups specifically.
+  const capitalizedMatch = /(?:^|\n)(?:user:\s*)?([A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ'’-]+(?:\s+[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ'’-]+){0,3})\b/.exec(text);
 
   const nameMatch = introMatch ?? labelMatch ?? capitalizedMatch;
 
@@ -230,8 +232,8 @@ function parseWithHeuristics(messages: Message[]): { data: ParsedChatData; confi
   confidence.party_size = partySizeResult.confidence;
   if (data.party_size) data.persone = String(data.party_size);
 
-  // ReDoS safe email regex
-  const emailMatch = /([a-zA-Z0-9._-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,})/.exec(fullText);
+  // ReDoS safe email regex (simplified linear pattern)
+  const emailMatch = /\b[a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/.exec(fullText);
   if (emailMatch) data.email = emailMatch[0].toLowerCase();
 
   const dateResult = extractBookingDate(fullText, now);
