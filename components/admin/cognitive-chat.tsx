@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react';
 import {
     Send,
     Bot,
-    User as UserIcon,
     Paperclip,
     Sparkles,
     Power
@@ -17,6 +16,8 @@ import { Database } from '@/lib/database.types';
 import { getChatHistory, sendAdminMessage, toggleAutopilot } from '@/app/actions/admin-chat-actions';
 import { toast } from 'sonner';
 import { createBrowserClient } from '@/lib/supabase-browser';
+import { ChatMessage } from './chat-message';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'] & { ai_paused?: boolean | null };
 type Message = Database['public']['Tables']['messages']['Row'];
@@ -73,6 +74,32 @@ export function CognitiveChat({ ticket, isMobileView, externalAutoPilot, onToggl
 
         fetchMessages();
 
+        // Helper to handle new messages
+        const handleNewMessage = (payload: RealtimePostgresChangesPayload<Message>) => {
+            const newMsg = payload.new as Message;
+
+            // Client-side filtering as requested:
+            // Check if message belongs to this Ticket OR this Chat Session
+            const isRelevant =
+                (newMsg.ticket_id && newMsg.ticket_id === ticket.id) ||
+                (newMsg.chat_session_id && newMsg.chat_session_id === ticket.chat_session_id);
+
+            if (!isRelevant) return;
+
+            setMessages((prev) => {
+                // Deduplicate just in case
+                if (prev.some(m => m.id === newMsg.id)) return prev;
+                return [...prev, newMsg];
+            });
+
+            // Scroll to bottom on new message
+            if (scrollRef.current) {
+                setTimeout(() => {
+                    scrollRef.current!.scrollTop = scrollRef.current!.scrollHeight;
+                }, 100);
+            }
+        };
+
         // 2. Realtime Subscription
         const channel = supabase
             .channel('admin-chat-realtime')
@@ -83,30 +110,7 @@ export function CognitiveChat({ ticket, isMobileView, externalAutoPilot, onToggl
                     schema: 'public',
                     table: 'messages',
                 },
-                (payload) => {
-                    const newMsg = payload.new as Message;
-
-                    // Client-side filtering as requested:
-                    // Check if message belongs to this Ticket OR this Chat Session
-                    const isRelevant =
-                        (newMsg.ticket_id && newMsg.ticket_id === ticket.id) ||
-                        (newMsg.chat_session_id && newMsg.chat_session_id === ticket.chat_session_id);
-
-                    if (isRelevant) {
-                        setMessages((prev) => {
-                            // Deduplicate just in case
-                            if (prev.some(m => m.id === newMsg.id)) return prev;
-                            return [...prev, newMsg];
-                        });
-
-                        // Scroll to bottom on new message
-                        if (scrollRef.current) {
-                            setTimeout(() => {
-                                scrollRef.current!.scrollTop = scrollRef.current!.scrollHeight;
-                            }, 100);
-                        }
-                    }
-                }
+                handleNewMessage
             )
             .subscribe();
 
@@ -228,30 +232,9 @@ export function CognitiveChat({ ticket, isMobileView, externalAutoPilot, onToggl
                     </div>
                 )}
 
-                {messages.map((msg) => {
-                    const isUser = msg.role === 'user';
-                    return (
-                        <div key={msg.id} className={`flex ${isUser ? 'justify-start' : 'justify-end'} w-full`}>
-                            <div className={`flex gap-3 max-w-[85%] md:max-w-[70%] ${isUser ? '' : 'flex-row-reverse'}`}>
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isUser ? 'bg-slate-800' : 'bg-blue-600/20 border border-blue-500/30'}`}>
-                                    {isUser ? <UserIcon className="w-4 h-4 text-slate-400" /> : <Bot className="w-4 h-4 text-blue-400" />}
-                                </div>
-                                <div className="space-y-1 min-w-0">
-                                    <div className={`flex items-baseline gap-2 ${isUser ? '' : 'justify-end'}`}>
-                                        <span className="text-sm font-bold text-slate-300 truncate">{isUser ? (ticket.customer_name || 'Utente') : 'Niki AI'}</span>
-                                        <span className="text-xs text-slate-500 whitespace-nowrap">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                    </div>
-                                    <div className={`p-3 rounded-2xl border text-sm leading-relaxed overflow-x-auto break-words ${isUser
-                                        ? 'bg-[#1e1e1e] border-[#333] rounded-tl-none text-slate-300'
-                                        : 'bg-blue-950/30 border-blue-900/50 rounded-tr-none text-blue-100'
-                                        }`}>
-                                        {msg.content}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
+                {messages.map((msg) => (
+                    <ChatMessage key={msg.id} message={msg} ticket={ticket} />
+                ))}
 
                 {/* AI Thinking/Analysis Mock */}
                 {autoPilot && messages.length > 0 && messages.at(-1)?.role === 'user' && (
