@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button'
 import { MapPin, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { formatDistanceToNow } from 'date-fns'
-import { it } from 'date-fns/locale'
+
 
 export default async function TechnicianMyJobsPage() {
     const supabase = await createServerClient()

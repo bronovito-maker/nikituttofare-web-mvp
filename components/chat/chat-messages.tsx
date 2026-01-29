@@ -24,7 +24,7 @@ interface ChatMessageData {
 }
 
 // Message Bubble Component
-function MessageBubble({ message }: { message: ChatMessageData }) {
+function MessageBubble({ message }: Readonly<{ message: ChatMessageData }>) {
   const isUser = message.role === 'user';
 
   return (
@@ -37,11 +37,10 @@ function MessageBubble({ message }: { message: ChatMessageData }) {
 
       <div className={`max-w-[80%] sm:max-w-[70%] ${isUser ? 'order-1' : ''}`}>
         <div
-          className={`px-4 py-3 rounded-2xl ${
-            isUser
+          className={`px-4 py-3 rounded-2xl ${isUser
               ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-br-md'
               : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-tl-md shadow-sm'
-          }`}
+            }`}
         >
           {/* Message Content */}
           <div className={`text-sm leading-relaxed ${isUser ? 'text-white' : 'text-slate-900 dark:text-slate-50'}`}>
@@ -84,7 +83,7 @@ function MessageBubble({ message }: { message: ChatMessageData }) {
 }
 
 // AI Response Renderer
-function AIResponseRenderer({ content }: { content: AIResponseType }) {
+function AIResponseRenderer({ content }: Readonly<{ content: AIResponseType }>) {
   if (!content || typeof content !== 'object') return null;
 
   switch (content.type) {
@@ -165,7 +164,7 @@ interface ChatMessagesProps {
   isLoading: boolean;
 }
 
-export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
+export function ChatMessages({ messages, isLoading }: Readonly<ChatMessagesProps>) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -189,9 +188,8 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
 
   return (
     <div
-      className={`flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4 transition-colors ${
-        isDragging ? 'bg-blue-50/50' : ''
-      }`}
+      className={`flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4 transition-colors ${isDragging ? 'bg-blue-50/50' : ''
+        }`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >

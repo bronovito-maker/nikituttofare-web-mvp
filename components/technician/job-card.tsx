@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { MapPin, Clock, ArrowRight } from 'lucide-react'
+import { MapPin, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { it } from 'date-fns/locale'
@@ -9,7 +9,7 @@ interface JobCardProps {
     ticket: any // Using specific type if available would be better, but 'any' for speed now as Types matches DB
 }
 
-export function JobCard({ ticket }: JobCardProps) {
+export function JobCard({ ticket }: Readonly<JobCardProps>) {
     return (
         <div className="rounded-lg border border-border bg-card p-4 text-card-foreground hover:border-orange-500/50 transition-colors shadow-sm">
             <div className="flex justify-between items-start mb-3">

@@ -47,7 +47,7 @@ export default async function TechnicianDashboard() {
             {/* Welcome Section */}
             <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                    <h2 className="text-2xl font-bold tracking-tight text-foreground">Ciao, {profile.full_name?.split(' ')[0]}</h2>
+                    <h2 className="text-2xl font-bold tracking-tight text-foreground">Ciao, {(profile.full_name ?? '').split(' ')[0]}</h2>
                     <p className="text-muted-foreground">Ecco il riepilogo della tua attività.</p>
                 </div>
                 <div className="flex items-center gap-2">

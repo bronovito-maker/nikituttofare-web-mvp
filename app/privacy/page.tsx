@@ -33,11 +33,11 @@ export default function PrivacyPage() {
 
           <h2>1. Titolare del Trattamento</h2>
           <p>
-            Il titolare del trattamento dei dati personali è <strong>NikiTuttoFare</strong>, 
+            Il titolare del trattamento dei dati personali è <strong>NikiTuttoFare</strong>,
             con sede in Rimini (RN), Italia.
           </p>
           <p>
-            Per qualsiasi richiesta relativa alla privacy, puoi contattarci a: 
+            Per qualsiasi richiesta relativa alla privacy, puoi contattarci a:{' '}
             <a href="mailto:privacy@nikituttofare.com">privacy@nikituttofare.com</a>
           </p>
 
@@ -70,7 +70,7 @@ export default function PrivacyPage() {
 
           <h2>5. Conservazione dei Dati</h2>
           <p>
-            I tuoi dati vengono conservati per il tempo necessario a fornirti il servizio e comunque 
+            I tuoi dati vengono conservati per il tempo necessario a fornirti il servizio e comunque
             non oltre <strong>5 anni</strong> dalla chiusura del ticket, salvo obblighi di legge.
           </p>
 
@@ -87,8 +87,8 @@ export default function PrivacyPage() {
 
           <h2>7. Trasferimento Extra-UE</h2>
           <p>
-            Alcuni dei nostri fornitori (es. Vercel, Google) possono trasferire dati al di fuori 
-            dell&apos;Unione Europea. In tal caso, ci assicuriamo che vengano rispettate le garanzie 
+            Alcuni dei nostri fornitori (es. Vercel, Google) possono trasferire dati al di fuori
+            dell&apos;Unione Europea. In tal caso, ci assicuriamo che vengano rispettate le garanzie
             previste dal GDPR (Clausole Contrattuali Standard o Data Privacy Framework).
           </p>
 
@@ -103,13 +103,13 @@ export default function PrivacyPage() {
             <li><strong>Revoca consenso:</strong> ritirare il consenso in qualsiasi momento</li>
           </ul>
           <p>
-            Per esercitare questi diritti, scrivi a: 
+            Per esercitare questi diritti, scrivi a:{' '}
             <a href="mailto:privacy@nikituttofare.com">privacy@nikituttofare.com</a>
           </p>
 
           <h2>9. Cookie</h2>
           <p>
-            Utilizziamo cookie tecnici necessari al funzionamento del sito e cookie analitici 
+            Utilizziamo cookie tecnici necessari al funzionamento del sito e cookie analitici
             (anonimizzati) per capire come migliorare il servizio.
           </p>
           <p>
@@ -133,13 +133,13 @@ export default function PrivacyPage() {
 
           <h2>11. Modifiche alla Privacy Policy</h2>
           <p>
-            Ci riserviamo di aggiornare questa informativa. In caso di modifiche sostanziali, 
+            Ci riserviamo di aggiornare questa informativa. In caso di modifiche sostanziali,
             ti avviseremo via email o tramite banner sul sito.
           </p>
 
           <h2>12. Reclami</h2>
           <p>
-            Se ritieni che il trattamento dei tuoi dati violi il GDPR, puoi presentare reclamo 
+            Se ritieni che il trattamento dei tuoi dati violi il GDPR, puoi presentare reclamo
             al <strong>Garante per la Protezione dei Dati Personali</strong>:{' '}
             <a href="https://www.garanteprivacy.it" target="_blank" rel="noopener noreferrer">
               www.garanteprivacy.it

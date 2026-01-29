@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { completeJob, addJobNote } from '@/app/actions/technician-actions'
 
-export default async function JobOperationalPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function JobOperationalPage({ params }: { params: Promise<Readonly<{ id: string }>> }) {
     const supabase = await createServerClient()
     const { id } = await params
 

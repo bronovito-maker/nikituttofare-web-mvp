@@ -4,7 +4,7 @@ import { fetchSeoData } from '@/lib/seo-data';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+
 import { MapPin, ArrowRight } from 'lucide-react';
 
 export const metadata: Metadata = {

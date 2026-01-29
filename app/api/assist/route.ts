@@ -59,40 +59,13 @@ type ChatMessage = z.infer<typeof MessageSchema>
 // ============================================
 // NORMALIZZAZIONE TESTO (typos, dialetti, etc.)
 // ============================================
-function normalizeText(text: string): string {
-  let normalized = text.toLowerCase()
-
-  const typoMap: Record<string, string> = {
-    alagamento: 'allagamento',
-    alagato: 'allagato',
-    allagametno: 'allagamento',
-    intatasto: 'intasato',
-    intatasta: 'intasato',
-    intatasti: 'intasato',
-    intassato: 'intasato',
-    intassata: 'intasato',
-    ovuneuqe: 'ovunque',
-    solpito: 'scoppiato',
-    sepozzata: 'spezzata',
-    chisua: 'chiusa',
-    blocataaa: 'bloccata',
-    presaaaa: 'presa',
-    brucoato: 'bruciato',
-    preseee: 'prese',
-    bgano: 'bagno',
-    foco: 'fuoco',
-    semrba: 'sembra',
-    tremamo: 'tremano',
-  }
-
-  for (const [typo, correct] of Object.entries(typoMap)) {
-    normalized = normalized.replaceAll(typo, correct)
-  }
-
-  normalized = normalized.replaceAll(/(.)\1{2,}/g, '$1$1')
-
-  return normalized
-}
+import {
+  extractPhoneNumber,
+  extractAddress,
+  extractCategory,
+  extractUrgency,
+  normalizeText
+} from '@/lib/assist-extraction';
 
 // ============================================
 // ESTRAZIONE DATI DAL MESSAGGIO (fallback)
@@ -101,80 +74,17 @@ function extractDataFromMessage(message: string): Partial<ConversationSlots> {
   const text = normalizeText(message)
   const extracted: Partial<ConversationSlots> = {}
 
-  const phonePatterns = [
-    /(\+39\s?)?\d{3}[\s.-]?\d{3}[\s.-]?\d{4}/,
-    /(\+39\s?)?\d{3}[\s.-]?\d{6,7}/,
-    /3\d{2}[\s.-]?\d{3}[\s.-]?\d{4}/,
-    /0\d{2,4}[\s.-]?\d{5,8}/,
-  ]
+  const phoneNumber = extractPhoneNumber(message);
+  if (phoneNumber) extracted.phoneNumber = phoneNumber;
 
-  for (const pattern of phonePatterns) {
-    const match = pattern.exec(message)
-    if (match) {
-      extracted.phoneNumber = match[0].replaceAll(/[\s.-]/g, '')
-      break
-    }
-  }
+  const address = extractAddress(message);
+  if (address) extracted.serviceAddress = address;
 
-  const addressRegex = /(?:via|corso|piazza|viale|vicolo|largo)\s+[a-zàèéìòùáíóú]+(?:\s+[a-zàèéìòùáíóú]+)*[\s,]*\d+[a-z]?/i
-  const addressMatch = addressRegex.exec(message)
-  if (addressMatch) {
-    extracted.serviceAddress = addressMatch[0].trim()
-  }
+  const category = extractCategory(text);
+  if (category) extracted.problemCategory = category;
 
-  const categoryKeywords: Record<string, string[]> = {
-    plumbing: [
-      'idraulico',
-      'acqua',
-      'tubo',
-      'perdita',
-      'scarico',
-      'rubinetto',
-      'allagamento',
-      'wc',
-      'bagno',
-      'bidet',
-      'intasato',
-      'otturato',
-    ],
-    electric: [
-      'elettric',
-      'luce',
-      'presa',
-      'corrente',
-      'salvavita',
-      'blackout',
-      'scintill',
-    ],
-    locksmith: ['fabbro', 'serratura', 'chiave', 'porta', 'bloccato', 'chiuso fuori'],
-    climate: [
-      'condizionatore',
-      'caldaia',
-      'riscaldamento',
-      'termosifone',
-      'clima',
-      'aria condizionata',
-    ],
-  }
-
-  for (const [category, keywords] of Object.entries(categoryKeywords)) {
-    if (keywords.some(kw => text.includes(kw))) {
-      extracted.problemCategory = category as ConversationSlots['problemCategory']
-      break
-    }
-  }
-
-  const emergencyKeywords = [
-    'urgente',
-    'emergenza',
-    'subito',
-    'allagamento',
-    'bloccato fuori',
-    'senza luce',
-  ]
-  if (emergencyKeywords.some(kw => text.includes(kw))) {
-    extracted.urgencyLevel = 'emergency'
-  }
+  const urgency = extractUrgency(text);
+  if (urgency) extracted.urgencyLevel = urgency;
 
   if (message.length > 15) {
     extracted.problemDetails = message.slice(0, 200)
@@ -228,7 +138,7 @@ function stringifyContent(content: unknown): string {
   try {
     return JSON.stringify(content)
   } catch {
-    return typeof content === 'object' && content !== null ? JSON.stringify(content) : String(content ?? '')
+    return String(content ?? '')
   }
 }
 

@@ -14,7 +14,7 @@ interface PageProps {
     };
 }
 
-export default async function AssetPassportPage({ params }: PageProps) {
+export default async function AssetPassportPage({ params }: Readonly<PageProps>) {
     const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
 

@@ -224,7 +224,7 @@ export function QuoteGeneratorModal({ isOpen, onClose, ticket }: QuoteGeneratorM
                                     <div className="flex justify-between text-sm text-slate-600">
                                         <span className="flex items-center gap-2">
                                             IVA
-                                            &nbsp;
+                                            {' '}
                                             <input
                                                 type="number"
                                                 value={vatRate}

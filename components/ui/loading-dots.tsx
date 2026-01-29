@@ -7,7 +7,7 @@ interface LoadingDotsProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-export function LoadingDots({ className, size = 'md' }: LoadingDotsProps) {
+export function LoadingDots({ className, size = 'md' }: Readonly<LoadingDotsProps>) {
   const sizeClasses = {
     sm: 'w-1.5 h-1.5',
     md: 'w-2 h-2',
@@ -23,7 +23,7 @@ export function LoadingDots({ className, size = 'md' }: LoadingDotsProps) {
   );
 }
 
-export function LoadingSpinner({ className, size = 'md' }: LoadingDotsProps) {
+export function LoadingSpinner({ className, size = 'md' }: Readonly<LoadingDotsProps>) {
   const sizeClasses = {
     sm: 'w-4 h-4',
     md: 'w-6 h-6',

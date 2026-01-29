@@ -13,7 +13,7 @@ interface TicketItemProps {
     readonly onForceClose: (e: React.MouseEvent, ticketId: string) => Promise<void>;
 }
 
-export function TicketItem({ ticket, isActive, onSelect, onForceClose }: TicketItemProps) {
+export function TicketItem({ ticket, isActive, onSelect, onForceClose }: Readonly<TicketItemProps>) {
     const getUrgencyColor = (priority: string, status: string) => {
         if (status === 'resolved') return 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]';
         if (priority === 'emergency') return 'bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.4)]';
@@ -22,19 +22,13 @@ export function TicketItem({ ticket, isActive, onSelect, onForceClose }: TicketI
     };
 
     return (
-        <div
+        <button
+            type="button"
             onClick={() => onSelect(ticket.id)}
-            className={`w-full text-left p-4 hover:bg-[#1a1a1a] transition-all duration-200 group relative border-l-[3px] cursor-pointer ${isActive
+            className={`w-full text-left p-4 hover:bg-[#1a1a1a] transition-all duration-200 group relative border-l-[3px] cursor-pointer focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${isActive
                 ? 'bg-[#1a1a1a] border-blue-500'
                 : 'bg-transparent border-transparent hover:border-[#333]'
                 }`}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    onSelect(ticket.id);
-                }
-            }}
         >
             {/* Traffic Light Indicator */}
             <div className={`absolute top-4 right-4 w-2.5 h-2.5 rounded-full ${getUrgencyColor(ticket.priority, ticket.status)}`} />
@@ -85,7 +79,7 @@ export function TicketItem({ ticket, isActive, onSelect, onForceClose }: TicketI
                     )}
                 </div>
             </div>
-        </div>
+        </button>
     );
 }
 

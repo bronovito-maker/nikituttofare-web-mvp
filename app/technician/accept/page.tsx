@@ -136,6 +136,7 @@ function TechnicianAcceptContent() {
       setState('success');
 
     } catch (err) {
+      console.error('Accept job error:', err);
       setState('error');
       setError('Errore di connessione. Riprova.');
     }

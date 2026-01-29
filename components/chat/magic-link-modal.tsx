@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { X, Mail, Loader2, CheckCircle2, ArrowRight, Shield, AlertCircle } from 'lucide-react';
+import { X, Mail, Loader2, ArrowRight, Shield, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createBrowserClient } from '@/lib/supabase-browser';
 
@@ -13,13 +13,13 @@ interface MagicLinkModalProps {
   description?: string;
 }
 
-export function MagicLinkModal({ 
-  isOpen, 
-  onClose, 
+export function MagicLinkModal({
+  isOpen,
+  onClose,
   onSuccess,
   title = "Conferma la tua richiesta",
   description = "Inserisci la tua email per ricevere un link di accesso sicuro e confermare l'intervento."
-}: MagicLinkModalProps) {
+}: Readonly<MagicLinkModalProps>) {
   const supabase = useMemo(() => createBrowserClient(), []);
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -29,7 +29,7 @@ export function MagicLinkModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
     if (!email || !email.includes('@')) {
       setError('Inserisci un indirizzo email valido');
       return;
@@ -54,6 +54,7 @@ export function MagicLinkModal({
         onSuccess(email);
       }
     } catch (err) {
+      console.error('MagicLink error:', err);
       setError('Errore nell\'invio del link. Riprova.');
     } finally {
       setIsLoading(false);
@@ -65,16 +66,11 @@ export function MagicLinkModal({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+      {/* Backdrop */}
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm w-full h-full border-0 cursor-default"
         onClick={onClose}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            onClose();
-          }
-        }}
-        role="button"
-        tabIndex={0}
         aria-label="Close modal"
       />
 
@@ -118,12 +114,13 @@ export function MagicLinkModal({
 
                 {/* Email Input */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-slate-700">
+                  <label htmlFor="email-input" className="block text-sm font-semibold text-slate-700">
                     Email
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input
+                      id="email-input"
                       type="email"
                       placeholder="tuaemail@esempio.it"
                       value={email}
@@ -174,7 +171,7 @@ export function MagicLinkModal({
             <p className="text-sm text-slate-600 mb-4">
               Ti ho inviato una mail a <strong className="text-slate-800">{email}</strong>
             </p>
-            
+
             {/* Critical Warning Box */}
             <div className="p-5 bg-gradient-to-br from-red-50 to-amber-50 rounded-xl border-2 border-amber-300 text-left mb-6">
               <div className="flex items-start gap-3">
@@ -186,9 +183,9 @@ export function MagicLinkModal({
                     🚨 DEVI CLICCARE IL LINK NELLA MAIL!
                   </p>
                   <p className="text-sm text-amber-800 leading-relaxed">
-                    La tua richiesta <strong>NON è ancora attiva</strong>. 
-                    Per inviarla ai tecnici e ricevere assistenza, 
-                    <strong> apri la mail e clicca sul link di conferma</strong>.
+                    La tua richiesta <strong>NON è ancora attiva</strong>.
+                    Per inviarla ai tecnici e ricevere assistenza,{' '}
+                    <strong>apri la mail e clicca sul link di conferma</strong>.
                   </p>
                 </div>
               </div>

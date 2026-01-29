@@ -135,7 +135,7 @@ export function ImageUpload({
   className = '',
   isAuthenticated = true,
   onAuthError
-}: ImageUploadProps) {
+}: Readonly<ImageUploadProps>) {
   const [state, setState] = useState<UploadState>('idle');
   const [progress, setProgress] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -226,7 +226,12 @@ export function ImageUpload({
         type="button"
         onClick={handleClick}
         disabled={disabled || state === 'compressing' || state === 'uploading'}
-        className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all group ${state === 'error' ? 'bg-red-50 hover:bg-red-100' : state === 'success' ? 'bg-green-50' : 'bg-slate-100 hover:bg-slate-200'} ${(disabled || state === 'compressing' || state === 'uploading') ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+        className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all group ${state === 'error'
+            ? 'bg-red-50 hover:bg-red-100'
+            : state === 'success'
+              ? 'bg-green-50'
+              : 'bg-slate-100 hover:bg-slate-200'
+          } ${(disabled || state === 'compressing' || state === 'uploading') ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
       >
         <UploadContent state={state} progress={progress} errorMessage={errorMessage} />
       </button>
@@ -249,11 +254,11 @@ export function ImagePreview({
   url,
   onRemove,
   className = ''
-}: {
+}: Readonly<{
   url: string;
   onRemove?: () => void;
   className?: string;
-}) {
+}>) {
   return (
     <div className={`relative inline-block ${className}`}>
       <NextImage src={url} alt="Preview" className="h-20 w-auto rounded-xl border border-slate-200 shadow-sm object-cover" width={80} height={80} />

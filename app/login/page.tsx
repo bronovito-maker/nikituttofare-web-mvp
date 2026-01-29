@@ -47,6 +47,7 @@ export default function LoginPage() {
         setEmailSent(true);
       }
     } catch (err) {
+      console.error('Login error:', err);
       setError('Errore nell\'invio del Magic Link. Riprova.');
     } finally {
       setIsLoading(false);

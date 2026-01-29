@@ -8,7 +8,7 @@ import { acceptJob } from '@/app/actions/technician-actions'
 import { formatDistanceToNow } from 'date-fns'
 import { it } from 'date-fns/locale'
 
-export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function JobDetailPage({ params }: { params: Promise<Readonly<{ id: string }>> }) {
     const supabase = await createServerClient()
     const { id } = await params
 

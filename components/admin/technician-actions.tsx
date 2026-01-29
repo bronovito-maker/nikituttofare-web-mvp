@@ -30,7 +30,7 @@ interface TechnicianActionsProps {
     technician: Profile;
 }
 
-export function TechnicianActions({ technician }: TechnicianActionsProps) {
+export function TechnicianActions({ technician }: Readonly<TechnicianActionsProps>) {
     const [loading, setLoading] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
@@ -117,7 +117,7 @@ export function TechnicianActions({ technician }: TechnicianActionsProps) {
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-slate-100">Sei assolutamente sicuro?</AlertDialogTitle>
                         <AlertDialogDescription className="text-slate-400">
-                            Questa azione non può essere annullata. Eliminerà permanentemente l&apos;account del tecnico
+                            Questa azione non può essere annullata. Eliminerà permanentemente l&apos;account del tecnico{' '}
                             <span className="font-bold text-slate-200 ml-1">{technician.full_name}</span> dal database.
                             Se il tecnico ha degli interventi nello storico, l&apos;operazione verrà bloccata per sicurezza.
                         </AlertDialogDescription>

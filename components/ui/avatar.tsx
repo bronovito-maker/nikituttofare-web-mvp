@@ -12,14 +12,14 @@ interface AvatarProps {
   status?: 'online' | 'offline' | 'busy';
 }
 
-export function Avatar({ 
-  src, 
-  alt = 'Avatar', 
-  fallback, 
-  size = 'md', 
+export function Avatar({
+  src,
+  alt = 'Avatar',
+  fallback,
+  size = 'md',
   className,
-  status 
-}: AvatarProps) {
+  status
+}: Readonly<AvatarProps>) {
   const sizeClasses = {
     sm: 'w-8 h-8 text-xs',
     md: 'w-10 h-10 text-sm',
@@ -54,7 +54,7 @@ export function Avatar({
           <span>{initials}</span>
         )}
       </div>
-      
+
       {status && (
         <span
           className={cn(
@@ -69,7 +69,7 @@ export function Avatar({
 }
 
 // NikiBot Avatar specializzato
-export function NikiBotAvatar({ size = 'md', className }: { size?: 'sm' | 'md' | 'lg'; className?: string }) {
+export function NikiBotAvatar({ size = 'md', className }: Readonly<{ size?: 'sm' | 'md' | 'lg'; className?: string }>) {
   const sizeClasses = {
     sm: 'w-8 h-8',
     md: 'w-10 h-10',
@@ -87,7 +87,9 @@ export function NikiBotAvatar({ size = 'md', className }: { size?: 'sm' | 'md' |
       <svg
         className={cn(
           'text-white',
-          size === 'sm' ? 'w-4 h-4' : size === 'md' ? 'w-5 h-5' : 'w-6 h-6'
+          size === 'sm' && 'w-4 h-4',
+          size === 'md' && 'w-5 h-5',
+          size === 'lg' && 'w-6 h-6'
         )}
         fill="none"
         stroke="currentColor"

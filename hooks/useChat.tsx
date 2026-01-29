@@ -1,8 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Message as ParserMessage } from '@/lib/types';
-import { AIResponseType, FormType } from '@/lib/ai-structures';
+import { useCallback, useState } from 'react';
+import { AIResponseType } from '@/lib/ai-structures';
 
 // --- CUSTOM MESSAGE TYPE ---
 export interface CustomMessage {
@@ -26,7 +25,7 @@ const detectCategory = (message: string): 'plumbing' | 'electric' | 'locksmith' 
   if (electricKeywords.some(kw => lowerMessage.includes(kw))) return 'electric';
   if (locksmithKeywords.some(kw => lowerMessage.includes(kw))) return 'locksmith';
   if (climateKeywords.some(kw => lowerMessage.includes(kw))) return 'climate';
-  
+
   return 'generic';
 };
 
@@ -215,7 +214,7 @@ export const useChat = (options?: { onMessage?: (message: CustomMessage) => void
       setIsLoading(false);
     }
   };
-  
+
   const onConfirm = (type: string, data?: any) => {
     if (type === 'quote') {
       setLockedSlots(prev => ({ ...prev, userConfirmed: true, quoteRejected: false }));
@@ -239,12 +238,12 @@ export const useChat = (options?: { onMessage?: (message: CustomMessage) => void
     onConfirm,
     onReject,
     // Keep other exports for compatibility if they are used elsewhere
-    input: '', setInput: () => {}, reload: () => {}, stop: () => {},
+    input: '', setInput: () => { }, reload: () => { }, stop: () => { },
     parsedData: null, bookingData: null, currentStep: '', missingSteps: [],
     summaryReady: false, summaryData: null, bookingSaved: false, savedLeadInfo: null,
     slotState: {}, clarifications: [], recentlyUpdatedSlots: [],
-    confirmBooking: async () => {}, isConfirming: false, confirmationError: null,
-    resetConfirmationError: () => {}, highlightSlot: null,
-    handlePillBarUpdate: () => {}, handlePillBarClear: () => {},
+    confirmBooking: async () => { }, isConfirming: false, confirmationError: null,
+    resetConfirmationError: () => { }, highlightSlot: null,
+    handlePillBarUpdate: () => { }, handlePillBarClear: () => { },
   };
 };

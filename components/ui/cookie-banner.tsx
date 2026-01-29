@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { X, Cookie, Shield } from 'lucide-react';
+import { Cookie, Shield } from 'lucide-react';
 
 const COOKIE_CONSENT_KEY = 'ntf_cookie_consent';
 
@@ -44,7 +44,7 @@ export function CookieBanner() {
     setIsVisible(false);
 
     // Se analytics è accettato, abilita Vercel Analytics
-    if (prefs.analytics && typeof window !== 'undefined') {
+    if (prefs.analytics && typeof globalThis.window !== 'undefined') {
       // Vercel Analytics si attiva automaticamente se presente
       console.log('Analytics consent granted');
     }
@@ -70,7 +70,7 @@ export function CookieBanner() {
     <div className="fixed inset-x-0 bottom-0 z-[200] p-4 pointer-events-none">
       <div className="max-w-2xl mx-auto pointer-events-auto">
         <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in slide-in-from-bottom-5 duration-500">
-          
+
           {/* Header */}
           <div className="px-5 py-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100">
             <div className="flex items-center gap-3">
@@ -88,7 +88,7 @@ export function CookieBanner() {
           <div className="px-5 py-4">
             {!showDetails ? (
               <p className="text-sm text-slate-600 leading-relaxed">
-                Utilizziamo cookie tecnici necessari e, con il tuo consenso, cookie analitici 
+                Utilizziamo cookie tecnici necessari e, con il tuo consenso, cookie analitici
                 per migliorare il servizio. Puoi accettare tutti i cookie o personalizzare le tue preferenze.
                 <Link href="/privacy" className="text-blue-600 hover:underline ml-1">
                   Leggi la Privacy Policy →
@@ -125,7 +125,8 @@ export function CookieBanner() {
                     type="checkbox"
                     checked={preferences.analytics}
                     onChange={(e) => setPreferences(p => ({ ...p, analytics: e.target.checked }))}
-                    className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="w-full h-full rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    aria-label="Accetta cookie analitici"
                   />
                 </label>
 
@@ -144,7 +145,8 @@ export function CookieBanner() {
                     type="checkbox"
                     checked={preferences.marketing}
                     onChange={(e) => setPreferences(p => ({ ...p, marketing: e.target.checked }))}
-                    className="w-5 h-5 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                    className="w-full h-full rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                    aria-label="Accetta cookie marketing"
                   />
                 </label>
               </div>

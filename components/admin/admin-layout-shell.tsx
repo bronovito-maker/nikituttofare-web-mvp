@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 
-export function AdminLayoutShell({ children }: { children: React.ReactNode }) {
+export function AdminLayoutShell({ children }: Readonly<{ children: React.ReactNode }>) {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
     return (

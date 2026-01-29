@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: result?.error,
-        message: errorMessages[result?.error as keyof typeof errorMessages] || result?.message
+        message: errorMessages[result?.error || ''] || result?.message
       }, { status: 409 });
     }
 

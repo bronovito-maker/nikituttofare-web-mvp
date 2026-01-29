@@ -126,11 +126,12 @@ function FormResponse({ form, onSubmit }: { readonly form: FormType; readonly on
       );
     }
 
-    const inputType = field.name.includes('email')
-      ? 'email'
-      : field.name.includes('phone')
-        ? 'tel'
-        : 'text';
+    let inputType = 'text';
+    if (field.name.includes('email')) {
+      inputType = 'email';
+    } else if (field.name.includes('phone')) {
+      inputType = 'tel';
+    }
 
     return (
       <input
