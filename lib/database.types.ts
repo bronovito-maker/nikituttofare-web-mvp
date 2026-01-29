@@ -331,6 +331,7 @@ export type Database = {
         Row: {
           address: string | null
           ai_paused: boolean | null
+          asset_id: string | null
           assigned_at: string | null
           assigned_technician_id: string | null
           category: string
@@ -353,6 +354,7 @@ export type Database = {
         Insert: {
           address?: string | null
           ai_paused?: boolean | null
+          asset_id?: string | null
           assigned_at?: string | null
           assigned_technician_id?: string | null
           category: string
@@ -375,6 +377,7 @@ export type Database = {
         Update: {
           address?: string | null
           ai_paused?: boolean | null
+          asset_id?: string | null
           assigned_at?: string | null
           assigned_technician_id?: string | null
           category?: string
@@ -395,6 +398,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tickets_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "user_assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tickets_assigned_technician_id_fkey"
             columns: ["assigned_technician_id"]

@@ -58,7 +58,7 @@ async function getUserRole(supabase: any, userId: string) {
   return profile?.role || 'user';
 }
 
-export async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });

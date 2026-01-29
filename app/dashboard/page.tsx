@@ -23,5 +23,12 @@ export default async function DashboardPage() {
     console.error('Error fetching tickets:', error);
   }
 
-  return <CustomerDashboard initialTickets={tickets || []} />;
+  // Fetch profile (incl. loyalty_points)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  return <CustomerDashboard initialTickets={tickets || []} userProfile={profile} />;
 }

@@ -1,5 +1,9 @@
 'use client';
 
+import { createBrowserClient } from '@supabase/ssr';
+import { type Database } from '@/lib/database.types';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { HeroTile } from '@/components/dashboard/hero-tile';
 import { ActionTile } from '@/components/dashboard/action-tile';
@@ -9,10 +13,50 @@ import { Button } from '@/components/ui/button';
 
 interface CustomerDashboardProps {
     readonly initialTickets: any[]; // Using loose type for speed without blocking on complex DB types
+    readonly userProfile?: any;
 }
 
-export function CustomerDashboard({ initialTickets }: CustomerDashboardProps) {
-    const activeTicket = initialTickets.find(t => ['new', 'assigned', 'in_progress'].includes(t.status));
+export function CustomerDashboard({ initialTickets, userProfile }: CustomerDashboardProps) {
+    const router = useRouter();
+    const [tickets, setTickets] = useState(initialTickets);
+    // Find the most relevant active ticket (New > Assigned > In Progress)
+    const activeTicket = tickets.find(t => ['new', 'assigned', 'in_progress'].includes(t.status));
+
+    // Realtime Subscription
+    useEffect(() => {
+        const supabase = createBrowserClient<Database>(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+
+        const channel = supabase
+            .channel('dashboard-tickets')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*', // Listen to all events (INSERT, UPDATE)
+                    schema: 'public',
+                    table: 'tickets',
+                    filter: userProfile ? `user_id=eq.${userProfile.id}` : undefined,
+                },
+                (payload) => {
+                    console.log('Realtime update:', payload);
+                    router.refresh(); // Refresh Server Components for deep data
+
+                    // Optimistic update for immediate UI feedback
+                    if (payload.eventType === 'UPDATE') {
+                        setTickets(prev => prev.map(t => t.id === payload.new.id ? { ...t, ...payload.new } : t));
+                    } else if (payload.eventType === 'INSERT') {
+                        setTickets(prev => [payload.new, ...prev]);
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [userProfile, router]); // Re-subscribe if profile changes match
 
     // Bottom Navigation Items (Mobile First Concept)
     const navItems = [
@@ -64,7 +108,7 @@ export function CustomerDashboard({ initialTickets }: CustomerDashboardProps) {
 
                     {/* Tile C: Loyalty (Spans half on mobile, 4 cols on desktop) */}
                     <div className="md:col-span-4">
-                        <LoyaltyTile />
+                        <LoyaltyTile points={userProfile?.loyalty_points || 0} />
                     </div>
 
                 </div>

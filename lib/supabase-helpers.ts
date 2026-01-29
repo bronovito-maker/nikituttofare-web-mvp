@@ -258,6 +258,7 @@ export async function createTicket({
       completed_at: null,
       contact_phone: null,
       photo_url: null,
+      asset_id: null,
       price_range_max: null,
       price_range_min: null,
       ai_paused: false,
