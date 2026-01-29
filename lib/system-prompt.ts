@@ -50,7 +50,8 @@ function extractPhone(originalText: string): string | undefined {
 }
 
 function extractAddress(originalText: string): { streetAddress?: string } {
-  const addressMatch = /(?:via|corso|piazza|viale)\s+[a-zàèéìòù]+(?:\s+[a-zàèéìòù]+)*[\s,]+\d+/i.exec(originalText);
+  // ReDoS fix: limit the number of word groups for street name to avoid O(2^n) on long strings
+  const addressMatch = /(?:via|corso|piazza|viale)\s+[a-zàèéìòù]+(?:\s+[a-zàèéìòù]+){0,10}[\s,]+\d+/i.exec(originalText);
   const streetAddress = addressMatch ? addressMatch[0].trim() : undefined;
   return { streetAddress };
 }

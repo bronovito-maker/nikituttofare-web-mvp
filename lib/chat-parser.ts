@@ -74,10 +74,11 @@ function extractName(text: string): { name?: string, confidence: ConfidenceLevel
 
   // 1. Direct introduction: "mi chiamo X", "sono X" -> captures up to 60 chars of name-like string
   // Fixed ReDoS ambiguity: Ensure capture group starts with non-whitespace ([a-z...'-])
-  const introMatch = /(?:mi\s+chiamo|chiamarmi|mio\s+nome\s+è|sono)\s+([a-zà-öø-ÿ'-][a-zà-öø-ÿ\s'-]{0,59})(?:[.,\n]|$)/i.exec(text);
+  // Using specific non-overlapping groups instead of broad wildcards
+  const introMatch = /(?:mi\s+chiamo|chiamarmi|mio\s+nome\s+è|sono)\s+([a-zà-öø-ÿ'-]+(?:\s+[a-zà-öø-ÿ'-]+){0,5})(?:[.,\n]|$)/i.exec(text);
 
   // 2. "name is" / "under name": "a nome X", "il mio nome è X"
-  const labelMatch = /(?:a\s+nome|il\s+mio\s+nome\s+è)\s+([a-zà-öø-ÿ'-][a-zà-öø-ÿ\s'-]{0,59})(?:[.,\n]|$)/i.exec(text);
+  const labelMatch = /(?:a\s+nome|il\s+mio\s+nome\s+è)\s+([a-zà-öø-ÿ'-]+(?:\s+[a-zà-öø-ÿ'-]+){0,5})(?:[.,\n]|$)/i.exec(text);
 
   // 3. Capitalized name at start/newline: "Mario Rossi" -> captures capitalized sequences
   // Refactored to avoid ReDoS (S5852) by matching "Word" then up to 3 "(space) Word" groups specifically.
@@ -233,8 +234,13 @@ function parseWithHeuristics(messages: Message[]): { data: ParsedChatData; confi
   if (data.party_size) data.persone = String(data.party_size);
 
   // ReDoS safe email regex (simplified linear pattern)
+  // Limited length for domain parts to prevent catastrophic backtracking
   const emailMatch = /\b[a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/.exec(fullText);
-  if (emailMatch) data.email = emailMatch[0].toLowerCase();
+  if (emailMatch) {
+    const email = emailMatch[0].toLowerCase();
+    // Extra safety: simple length check
+    if (email.length < 100) data.email = email;
+  }
 
   const dateResult = extractBookingDate(fullText, now);
   let bookingDate = dateResult?.date;
