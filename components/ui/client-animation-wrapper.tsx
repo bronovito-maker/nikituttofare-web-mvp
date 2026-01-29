@@ -3,15 +3,17 @@
 import { motion } from 'framer-motion';
 import { ReactNode, useState, useEffect } from 'react';
 
+interface ClientAnimationWrapperProps {
+  readonly children: ReactNode;
+  readonly delay?: number;
+  duration?: number;
+}
+
 export function ClientAnimationWrapper({
   children,
   delay = 0,
   duration = 0.7,
-}: {
-  children: ReactNode;
-  delay?: number;
-  duration?: number;
-}) {
+}: ClientAnimationWrapperProps) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {

@@ -1,8 +1,8 @@
 // scripts/check-deps.js
 // Script per verificare che tutte le dipendenze necessarie siano installate
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const requiredDeps = [
   '@supabase/supabase-js',

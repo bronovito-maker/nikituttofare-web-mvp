@@ -220,19 +220,23 @@ export function ImageUpload({
     fileInputRef.current?.click();
   }, [disabled, state, resetState, isAuthenticated, onAuthError]);
 
+  // Compute button background class based on state
+  const getButtonBgClass = () => {
+    if (state === 'error') return 'bg-red-50 hover:bg-red-100';
+    if (state === 'success') return 'bg-green-50';
+    return 'bg-slate-100 hover:bg-slate-200';
+  };
+
+  const isDisabled = disabled || state === 'compressing' || state === 'uploading';
+
   return (
     <div className={`relative ${className}`}>
       {/* Image upload button */}
       <button
         type="button"
         onClick={handleClick}
-        disabled={disabled || state === 'compressing' || state === 'uploading'}
-        className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all group ${state === 'error'
-            ? 'bg-red-50 hover:bg-red-100'
-            : state === 'success'
-              ? 'bg-green-50'
-              : 'bg-slate-100 hover:bg-slate-200'
-          } ${(disabled || state === 'compressing' || state === 'uploading') ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+        disabled={isDisabled}
+        className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all group ${getButtonBgClass()} ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
       >
         <UploadContent state={state} progress={progress} errorMessage={errorMessage} />
       </button>

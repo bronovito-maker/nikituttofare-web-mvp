@@ -18,10 +18,26 @@
   {
     "severity": "MAJOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/image-upload.tsx",
-    "line": 231,
+    "line": 232,
     "message": "Extract this nested ternary operation into an independent statement.",
     "type": "CODE_SMELL",
     "rule": "typescript:S3358"
+  },
+  {
+    "severity": "MINOR",
+    "component": "bronovito-maker_nikituttofare-web-mvp:download-issues.js",
+    "line": 2,
+    "message": "Prefer `node:fs` over `fs`.",
+    "type": "CODE_SMELL",
+    "rule": "javascript:S7772"
+  },
+  {
+    "severity": "MAJOR",
+    "component": "bronovito-maker_nikituttofare-web-mvp:download-issues.js",
+    "line": 46,
+    "message": "Prefer top-level await over an async function `fetchIssues` call.",
+    "type": "CODE_SMELL",
+    "rule": "javascript:S7785"
   },
   {
     "severity": "MAJOR",
@@ -65,14 +81,6 @@
   },
   {
     "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/form.tsx",
-    "line": 36,
-    "message": "The object passed as the value prop to the Context provider changes every render. To fix this consider wrapping it in a useMemo hook.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6481"
-  },
-  {
-    "severity": "MAJOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/table.tsx",
     "line": 10,
     "message": "Add a valid header row or column to this \"<table>\".",
@@ -86,14 +94,6 @@
     "message": "Use <dialog> instead of the \"dialog\" role to ensure accessibility across all devices.",
     "type": "CODE_SMELL",
     "rule": "typescript:S6819"
-  },
-  {
-    "severity": "CRITICAL",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/admin/cognitive-chat.tsx",
-    "line": 91,
-    "message": "Refactor this code to not nest functions more than 4 levels deep.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S2004"
   },
   {
     "severity": "MINOR",
@@ -488,17 +488,9 @@
     "rule": "javascript:S7772"
   },
   {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/form.tsx",
-    "line": 82,
-    "message": "The object passed as the value prop to the Context provider changes every render. To fix this consider wrapping it in a useMemo hook.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6481"
-  },
-  {
     "severity": "MINOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/form.tsx",
-    "line": 117,
+    "line": 120,
     "message": "Unexpected negated condition.",
     "type": "CODE_SMELL",
     "rule": "typescript:S7735"

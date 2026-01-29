@@ -1,7 +1,7 @@
 // scripts/generate-secret.js
 // Genera un secret sicuro per NextAuth
 
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 
 const secret = crypto.randomBytes(32).toString('base64');
 
