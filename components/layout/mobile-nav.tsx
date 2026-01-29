@@ -38,15 +38,15 @@ export function MobileNav() {
     ];
 
     return (
-        <div className="md:hidden">
+        <>
             <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsOpen(true)}
-                className="relative z-50"
+                className="relative z-50 h-11 w-11 hover:bg-transparent"
                 aria-label="Open Menu"
             >
-                <Menu className="w-6 h-6" />
+                <Menu className="w-8 h-8" />
             </Button>
 
             <AnimatePresence>
@@ -62,27 +62,28 @@ export function MobileNav() {
                             className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
                         />
 
-                        {/* Drawer */}
+                        {/* Drawer (Solid Theme Background) */}
                         <motion.div
                             initial={{ x: '100%' }}
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed right-0 top-0 bottom-0 z-[70] w-[80%] max-w-[300px] bg-background border-l border-border shadow-2xl p-6 flex flex-col h-[100dvh]"
+                            className="fixed right-0 top-0 bottom-0 z-[70] w-[85%] max-w-[320px] bg-background border-l border-border shadow-2xl flex flex-col h-[100dvh]"
                         >
-                            <div className="flex items-center justify-between mb-8">
-                                <span className="font-bold text-lg">Menu</span>
+                            <div className="flex items-center justify-between p-6 border-b border-border/50">
+                                <span className="font-bold text-2xl text-foreground tracking-tight">Menu</span>
                                 <Button
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => setIsOpen(false)}
                                     aria-label="Close Menu"
+                                    className="text-foreground hover:bg-muted rounded-full h-10 w-10"
                                 >
                                     <X className="w-6 h-6" />
                                 </Button>
                             </div>
 
-                            <nav className="flex-1 space-y-2 overflow-y-auto">
+                            <nav className="flex-1 px-6 py-4 space-y-4 overflow-y-auto">
                                 {menuItems.map((item) => {
                                     const Icon = item.icon;
                                     const isActive = pathname === item.href;
@@ -90,24 +91,26 @@ export function MobileNav() {
                                         <Link
                                             key={item.href}
                                             href={item.href}
-                                            className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${isActive
-                                                ? 'bg-primary/10 text-primary font-semibold'
-                                                : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                                            onClick={() => setIsOpen(false)}
+                                            className={`flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-200 group ${isActive
+                                                ? 'bg-primary/10 text-primary font-bold'
+                                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                                                 }`}
                                         >
-                                            <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : ''}`} />
-                                            {item.label}
+                                            <Icon className={`w-6 h-6 ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'} transition-colors`} />
+                                            <span className="text-lg font-bold">{item.label}</span>
                                         </Link>
                                     );
                                 })}
                             </nav>
 
-                            <div className="pt-6 border-t border-border mt-auto space-y-4">
-                                <div className="flex items-center justify-between px-4">
-                                    <span className="text-sm font-medium">Tema</span>
+                            <div className="p-6 mt-auto space-y-6">
+                                {/* Theme Toggle Row */}
+                                <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-muted/50 border border-border">
+                                    <span className="text-sm font-medium text-foreground">Tema</span>
                                     <ThemeToggle />
                                 </div>
-                                <p className="text-xs text-center text-muted-foreground pt-4">
+                                <p className="text-xs text-center text-slate-500">
                                     © 2026 NikiTuttoFare
                                 </p>
                             </div>
@@ -115,6 +118,6 @@ export function MobileNav() {
                     </>
                 )}
             </AnimatePresence>
-        </div>
+        </>
     );
 }

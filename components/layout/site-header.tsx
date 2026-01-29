@@ -22,7 +22,7 @@ export function SiteHeader({ userType, onUserTypeChange, showUserTypeToggle = fa
     const isAboutPage = pathname === '/about';
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b border-border bg-card/80 backdrop-blur-xl shadow-sm">
+        <header className="sticky top-0 z-[9999] w-full border-b border-border bg-background shadow-sm">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
                 {/* Logo & Brand */}
                 <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
@@ -72,10 +72,6 @@ export function SiteHeader({ userType, onUserTypeChange, showUserTypeToggle = fa
                         )}
                     </nav>
 
-                    <div className="md:hidden">
-                        <MobileNav />
-                    </div>
-
                     {/* Active Badge (Hidden on small screens) */}
                     <div className="hidden lg:flex items-center gap-2 text-xs sm:text-sm font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-1.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/50">
                         <span className="relative flex h-2 w-2">
@@ -85,11 +81,16 @@ export function SiteHeader({ userType, onUserTypeChange, showUserTypeToggle = fa
                         <span className="hidden xl:inline">Tecnici attivi su <strong>Rimini e Provincia</strong></span>
                     </div>
 
-                    <ThemeToggle />
+                    <div className="hidden md:flex items-center gap-2">
+                        <ThemeToggle />
+                        <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs sm:text-sm rounded-full px-5 shadow-lg transition-all hover:scale-105">
+                            <Link href="/login">Area Riservata</Link>
+                        </Button>
+                    </div>
 
-                    <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs sm:text-sm rounded-full px-5 shadow-lg transition-all hover:scale-105">
-                        <Link href="/login">Area Riservata</Link>
-                    </Button>
+                    <div className="md:hidden">
+                        <MobileNav />
+                    </div>
                 </div>
             </div>
 

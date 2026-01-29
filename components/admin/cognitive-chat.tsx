@@ -28,22 +28,28 @@ const getSendButtonClass = (autoPilot: boolean, inputText: string) => {
 
 interface CognitiveChatProps {
     readonly ticket: Ticket | null;
+    readonly isMobileView?: boolean;
+    readonly externalAutoPilot?: boolean;
+    readonly onToggleAutoPilot?: (checked: boolean) => void;
 }
 
-export function CognitiveChat({ ticket }: CognitiveChatProps) {
+export function CognitiveChat({ ticket, isMobileView, externalAutoPilot, onToggleAutoPilot }: CognitiveChatProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState('');
-    const [autoPilot, setAutoPilot] = useState(true);
+    // Internal state fallback
+    const [internalAutoPilot, setInternalAutoPilot] = useState(true);
+
+    const autoPilot = externalAutoPilot ?? internalAutoPilot;
 
     const [isSending, setIsSending] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    // Initial State Sync
+    // Initial State Sync (Only if no external control)
     useEffect(() => {
-        if (ticket) {
-            setAutoPilot(!ticket.ai_paused);
+        if (ticket && externalAutoPilot === undefined) {
+            setInternalAutoPilot(!ticket.ai_paused);
         }
-    }, [ticket]);
+    }, [ticket, externalAutoPilot]);
 
     // FETCH & REALTIME SUBSCRIPTION
     useEffect(() => {
@@ -136,13 +142,18 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
     };
 
     const handleToggleAutopilot = async (checked: boolean) => {
+        if (onToggleAutoPilot) {
+            onToggleAutoPilot(checked);
+            return;
+        }
+
         if (!ticket) return;
-        setAutoPilot(checked); // Optimistic UI
+        setInternalAutoPilot(checked); // Optimistic UI
         try {
             await toggleAutopilot(ticket.id, !checked); // Paused is inverse of Enabled
             toast.success(checked ? "Autopilot Attivato" : "Controllo Manuale Attivato");
         } catch {
-            setAutoPilot(!checked); // Revert
+            setInternalAutoPilot(!checked); // Revert
             toast.error("Errore nel cambio stato Autopilot");
         }
     };
@@ -173,7 +184,7 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
     return (
         <div className="flex-1 flex flex-col h-full bg-[#121212] relative">
             {/* Header Handoff Control */}
-            <div className="h-16 border-b border-[#333] flex items-center justify-between px-6 bg-[#121212]/80 backdrop-blur-sm z-10">
+            <div className="hidden md:flex h-16 border-b border-[#333] items-center justify-between px-6 bg-[#121212]/80 backdrop-blur-sm z-10">
                 <div className="flex items-center gap-3">
                     <div className="flex flex-col">
                         <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
@@ -202,7 +213,7 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
             </div>
 
             {/* Chat Area */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-[#333]">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scrollbar-thin scrollbar-thumb-[#333] pb-32 md:pb-6">
                 {/* ... existing chat content ... */}
                 {/* System Note */}
                 <div className="flex justify-center">
@@ -220,17 +231,17 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
                 {messages.map((msg) => {
                     const isUser = msg.role === 'user';
                     return (
-                        <div key={msg.id} className={`flex ${isUser ? 'justify-start' : 'justify-end'} max-w-[85%]`}>
-                            <div className={`flex gap-3 ${isUser ? '' : 'flex-row-reverse'}`}>
+                        <div key={msg.id} className={`flex ${isUser ? 'justify-start' : 'justify-end'} w-full`}>
+                            <div className={`flex gap-3 max-w-[85%] md:max-w-[70%] ${isUser ? '' : 'flex-row-reverse'}`}>
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isUser ? 'bg-slate-800' : 'bg-blue-600/20 border border-blue-500/30'}`}>
                                     {isUser ? <UserIcon className="w-4 h-4 text-slate-400" /> : <Bot className="w-4 h-4 text-blue-400" />}
                                 </div>
-                                <div className="space-y-1">
+                                <div className="space-y-1 min-w-0">
                                     <div className={`flex items-baseline gap-2 ${isUser ? '' : 'justify-end'}`}>
-                                        <span className="text-sm font-bold text-slate-300">{isUser ? (ticket.customer_name || 'Utente') : 'Niki AI'}</span>
-                                        <span className="text-xs text-slate-500">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                        <span className="text-sm font-bold text-slate-300 truncate">{isUser ? (ticket.customer_name || 'Utente') : 'Niki AI'}</span>
+                                        <span className="text-xs text-slate-500 whitespace-nowrap">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
-                                    <div className={`p-3 rounded-2xl border text-sm leading-relaxed ${isUser
+                                    <div className={`p-3 rounded-2xl border text-sm leading-relaxed overflow-x-auto break-words ${isUser
                                         ? 'bg-[#1e1e1e] border-[#333] rounded-tl-none text-slate-300'
                                         : 'bg-blue-950/30 border-blue-900/50 rounded-tr-none text-blue-100'
                                         }`}>
@@ -260,7 +271,7 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 bg-[#121212] border-t border-[#333]">
+            <div className="p-4 bg-[#121212] border-t border-[#333] fixed bottom-0 inset-x-0 z-[60] md:static md:z-auto">
                 {/* Magic Suggestions */}
                 {!autoPilot && (
                     <div className="flex gap-2 mb-3 overflow-x-auto pb-2 scrollbar-none">
@@ -300,11 +311,7 @@ export function CognitiveChat({ ticket }: CognitiveChatProps) {
                         {autoPilot ? <Power className="w-4 h-4" /> : <Send className="w-4 h-4" />}
                     </Button>
                 </div>
-                <p className="text-[10px] text-slate-600 text-center mt-2 font-mono">
-                    {autoPilot
-                        ? "SISTEMA IN ASCOLTO ATTIVO. INTERVIENI SOLO IN EMERGENZA."
-                        : "MODALITÀ MANUALE ATTIVA. PREMI ENTER PER INVIARE."}
-                </p>
+                <div className="h-4 md:hidden" /> {/* Safe area spacer */}
             </div>
         </div>
     );

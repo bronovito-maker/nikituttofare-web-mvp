@@ -88,7 +88,7 @@ export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: Ticket
             {/* Feed Header */}
             <div className="p-4 border-b border-[#333] space-y-4">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-slate-200 tracking-tight flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-slate-200 tracking-tight flex items-center gap-2 ml-12 md:ml-0">
                         Ticket Feed
                         <Badge variant="secondary" className="bg-[#1a1a1a] text-xs font-mono text-slate-400 border border-[#333]">
                             {filteredTickets.length} / {tickets.length}

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { Menu, Home, MapPin, Briefcase, User, LogOut } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { createBrowserClient } from '@/lib/supabase-browser';
@@ -40,6 +40,7 @@ export function TechnicianNav() {
                             </Button>
                         </SheetTrigger>
                         <SheetContent side="left" className="pr-0">
+                            <SheetTitle className="sr-only">Menu Navigazione Tecnico</SheetTitle>
                             <div className="px-7">
                                 <Link href="/technician/dashboard" className="flex items-center">
                                     <span className="font-bold text-xl">Niki<span className="text-primary">Tech</span></span>

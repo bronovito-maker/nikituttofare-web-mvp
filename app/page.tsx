@@ -12,12 +12,18 @@ import { COMPANY_PHONE_LINK } from '@/lib/constants';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 
-// New Components
 import { StickyActionNav } from '@/components/landing/sticky-action-nav';
 import { TechnicianPreview } from '@/components/landing/technician-preview';
 import { PriceComparison } from '@/components/landing/price-comparison';
+import { HowItWorks } from '@/components/landing/how-it-works';
+import { DirectContact } from '@/components/landing/direct-contact';
 
 type UserType = 'residential' | 'business';
+
+// ... (existing helper functions)
+
+// Helper function for PremiumFeatureCard moved to bottom
+// ...
 
 export default function Home() {
   const [userType, setUserType] = useState<UserType>('residential');
@@ -34,10 +40,10 @@ export default function Home() {
 
       <main className="flex-1">
 
-        {/* --- HERO SECTION --- */}
+        {/* --- HERO SECTION --- (Unchanged) */}
         <section className="relative py-12 sm:py-20 lg:py-32 px-4 sm:px-6 overflow-hidden">
+          {/* ... (Hero content stays here, just referencing it to know where we are) ... */}
           <RetroGrid className="absolute inset-0 z-0 opacity-20" />
-
           <div className="relative z-10 max-w-6xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
 
@@ -198,6 +204,12 @@ export default function Home() {
             </div>
           </section>
         )}
+
+        {/* --- HOW IT WORKS (New Visual Guide) --- */}
+        <HowItWorks />
+
+        {/* --- DIRECT CONTACT (New "No-AI" Option) --- */}
+        <DirectContact />
 
         {/* --- COMMON FEATURES --- */}
         <section id="how-it-works" className="py-20 px-4 sm:px-6 bg-background">

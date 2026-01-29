@@ -5,10 +5,12 @@ export const metadata: Metadata = {
   description: 'Pannello di amministrazione per la gestione dei ticket e dei tecnici',
 };
 
+import { AdminLayoutShell } from '@/components/admin/admin-layout-shell';
+
 export default function AdminLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
-  return children;
+}>) {
+  return <AdminLayoutShell>{children}</AdminLayoutShell>;
 }

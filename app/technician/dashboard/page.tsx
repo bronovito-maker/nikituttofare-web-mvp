@@ -47,11 +47,11 @@ export default async function TechnicianDashboard() {
             {/* Welcome Section */}
             <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                    <h2 className="text-2xl font-bold tracking-tight">Ciao, {profile.full_name?.split(' ')[0]}</h2>
-                    <p className="text-muted-foreground">Ecco il riepilogo della tua attività.</p>
+                    <h2 className="text-2xl font-bold tracking-tight text-white">Ciao, {profile.full_name?.split(' ')[0]}</h2>
+                    <p className="text-slate-400">Ecco il riepilogo della tua attività.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Badge variant={profile.is_active ? 'default' : 'secondary'} className={profile.is_active ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 border-emerald-500/20' : ''}>
+                    <Badge variant={profile.is_active ? 'default' : 'secondary'} className={profile.is_active ? 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/20' : 'bg-slate-800 text-slate-400 border border-slate-700'}>
                         {profile.is_active ? 'In Servizio' : 'Offline'}
                     </Badge>
                 </div>
@@ -59,38 +59,38 @@ export default async function TechnicianDashboard() {
 
             {/* Status Summary */}
             <section className="grid grid-cols-2 gap-4">
-                <Card>
+                <Card className="bg-[#1E1E1E] border-[#333] shadow-md">
                     <CardContent className="p-6 flex flex-col items-center justify-center text-center">
-                        <span className="text-4xl font-bold text-primary mb-2">{activeJobsCount || 0}</span>
-                        <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Interventi Attivi</span>
+                        <span className="text-4xl font-bold text-orange-500 mb-2">{activeJobsCount || 0}</span>
+                        <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Interventi Attivi</span>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="bg-[#1E1E1E] border-[#333] shadow-md">
                     <CardContent className="p-6 flex flex-col items-center justify-center text-center">
-                        <span className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">{profile.loyalty_points || 0}</span>
-                        <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Punti / Rating</span>
+                        <span className="text-4xl font-bold text-emerald-400 mb-2">{profile.loyalty_points || 0}</span>
+                        <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Punti / Rating</span>
                     </CardContent>
                 </Card>
             </section>
 
             {/* Action Grid */}
             <section className="space-y-4">
-                <h3 className="text-lg font-semibold text-foreground px-1">Azioni Rapide</h3>
+                <h3 className="text-lg font-semibold text-white px-1">Azioni Rapide</h3>
 
                 <div className="grid gap-4 md:grid-cols-2">
                     {/* 1. Nuovi Lavori (Claim) */}
                     <Link href="/technician/claim" className="block md:col-span-2">
-                        <Card className="border-primary/20 bg-primary/5 dark:bg-primary/10 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors group">
+                        <Card className="border-orange-500/20 bg-orange-500/5 hover:bg-orange-500/10 transition-colors group">
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-lg font-semibold text-primary group-hover:underline decoration-primary/50 underline-offset-4 transition-all">Nuovi Lavori</CardTitle>
-                                <MapPin className="w-5 h-5 text-primary" />
+                                <CardTitle className="text-lg font-semibold text-orange-500 group-hover:underline decoration-orange-500/50 underline-offset-4 transition-all">Nuovi Lavori</CardTitle>
+                                <MapPin className="w-5 h-5 text-orange-500" />
                             </CardHeader>
                             <CardContent>
-                                <CardDescription className="text-foreground/80 font-medium">
-                                    Ci sono <span className="text-primary font-bold text-lg">{pendingCount}</span> richieste in attesa nella tua zona.
+                                <CardDescription className="text-slate-300 font-medium">
+                                    Ci sono <span className="text-orange-500 font-bold text-lg">{pendingCount}</span> richieste in attesa nella tua zona.
                                 </CardDescription>
                                 <div className="mt-4 flex justify-end">
-                                    <Button size="sm" className="shadow-sm">
+                                    <Button size="sm" className="shadow-sm bg-orange-600 hover:bg-orange-500 text-white border-0">
                                         Cerca Lavori <ArrowRight className="w-4 h-4 ml-1" />
                                     </Button>
                                 </div>
@@ -100,13 +100,13 @@ export default async function TechnicianDashboard() {
 
                     {/* 2. I Miei Interventi */}
                     <Link href="/technician/jobs" className="block">
-                        <Card className="hover:border-primary/50 transition-colors h-full group">
+                        <Card className="bg-[#1E1E1E] border-[#333] hover:border-orange-500/50 transition-colors h-full group">
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">I Miei Interventi</CardTitle>
-                                <Briefcase className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                <CardTitle className="text-lg font-semibold text-white group-hover:text-orange-400 transition-colors">I Miei Interventi</CardTitle>
+                                <Briefcase className="w-5 h-5 text-slate-400 group-hover:text-orange-400 transition-colors" />
                             </CardHeader>
                             <CardContent>
-                                <CardDescription>
+                                <CardDescription className="text-slate-400">
                                     Gestisci e chiudi i lavori che hai preso in carico.
                                 </CardDescription>
                             </CardContent>
@@ -116,18 +116,18 @@ export default async function TechnicianDashboard() {
                     {/* 3. Profilo */}
                     <div className="grid grid-cols-2 gap-4">
                         <Link href="/technician/profile" className="block h-full">
-                            <Card className="hover:border-primary/50 transition-colors h-full">
+                            <Card className="bg-[#1E1E1E] border-[#333] hover:border-orange-500/50 transition-colors h-full">
                                 <CardContent className="p-4 flex flex-col items-center justify-center gap-2 h-full py-8">
-                                    <User className="w-8 h-8 text-muted-foreground" />
-                                    <span className="text-sm font-medium text-foreground">Profilo</span>
+                                    <User className="w-8 h-8 text-slate-400" />
+                                    <span className="text-sm font-medium text-white">Profilo</span>
                                 </CardContent>
                             </Card>
                         </Link>
                         <Link href="#" className="block h-full cursor-not-allowed opacity-60">
-                            <Card className="h-full bg-muted/50 border-dashed">
+                            <Card className="h-full bg-[#1a1a1a] border border-[#333] border-dashed">
                                 <CardContent className="p-4 flex flex-col items-center justify-center gap-2 h-full py-8">
-                                    <Calendar className="w-8 h-8 text-muted-foreground/50" />
-                                    <span className="text-sm font-medium text-muted-foreground">Turni</span>
+                                    <Calendar className="w-8 h-8 text-slate-600" />
+                                    <span className="text-sm font-medium text-slate-500">Turni</span>
                                 </CardContent>
                             </Card>
                         </Link>

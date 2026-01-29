@@ -10,7 +10,6 @@ import {
     MapPin,
     ShieldCheck,
     Zap,
-    Users,
     CheckCircle2,
     ArrowRight,
     Star,
@@ -93,25 +92,25 @@ export default function AboutPage() {
                 <RetroGrid className="opacity-30 dark:opacity-20" />
 
                 <div className="relative z-10 max-w-5xl space-y-6 animate-in fade-in zoom-in duration-1000">
-                    <Badge variant="outline" className="text-emerald-600 dark:text-emerald-400 border-emerald-500/20 bg-emerald-500/10 backdrop-blur-md px-4 py-1.5 text-sm font-semibold tracking-wide uppercase mb-4 shadow-lg shadow-emerald-500/10">
-                        <MapPin className="w-3.5 h-3.5 mr-2" />
-                        Pronto Intervento Rimini & Riccione
-                    </Badge>
+
 
                     {/* H1 Semantic Title */}
-                    <div className="space-y-2">
-                        <h1 className="sr-only">Il tuo Idraulico ed Elettricista di Fiducia a Rimini</h1>
-                        <div className="text-4xl md:text-6xl lg:text-7xl font-bold text-foreground tracking-tight leading-[1.1]">
+                    <div className="space-y-8 py-12 md:py-20">
+                        <h1 className="text-5xl md:text-7xl font-black text-foreground tracking-tight leading-[1.1] text-center px-4">
+                            Chi Siamo
+                        </h1>
+
+                        <div className="text-4xl md:text-6xl lg:text-7xl font-bold text-foreground tracking-tight leading-[1.1] pt-4">
                             <BlurText
-                                text="Non siamo il solito call center."
+                                text="Dimentica i soliti call center."
                                 className="text-foreground drop-shadow-2xl"
                                 delay={0.15}
                             />
                         </div>
-                        <p className="text-xl md:text-3xl text-muted-foreground font-medium max-w-3xl mx-auto pt-4">
+                        <p className="text-xl md:text-3xl text-muted-foreground font-medium max-w-3xl mx-auto pt-4 leading-relaxed">
                             Siamo i tuoi vicini di casa esperti.
                             <br className="hidden md:block" />
-                            Nati a Livorno, cresciuti in <span className="text-foreground font-bold underline decoration-blue-500/50 underline-offset-4">Romagna</span>.
+                            Nati a Livorno e cresciuti in <span className="text-foreground font-bold underline decoration-blue-500/50 underline-offset-4">Romagna</span>.
                         </p>
                     </div>
 
@@ -172,22 +171,21 @@ export default function AboutPage() {
                             </div>
                         </div>
 
-                        {/* Right: Visual / Image Placeholder */}
-                        <div className="order-1 md:order-2 relative h-[500px] rounded-[2.5rem] overflow-hidden group shadow-2xl shadow-blue-900/10 border border-border">
-                            {/* Placeholder for Image - In production use next/image */}
-                            <div className="absolute inset-0 bg-slate-100 dark:bg-neutral-900 flex items-center justify-center">
-                                <div className="text-center space-y-4 opacity-50">
-                                    <Users className="w-20 h-20 mx-auto text-slate-400 dark:text-slate-600" />
-                                    <p className="text-sm font-mono text-muted-foreground">Team NikiTuttoFare al lavoro</p>
-                                </div>
-                            </div>
+                        {/* Right: Visual / Image Real */}
+                        <div className="order-1 md:order-2 relative h-auto aspect-[4/5] md:aspect-[3/4] w-full max-w-md mx-auto rounded-[2.5rem] overflow-hidden group shadow-2xl shadow-blue-900/10 border border-border">
+                            {/* Real Team Photo */}
+                            <img
+                                src="/team-photo.png"
+                                alt="Il Team NikiTuttoFare"
+                                className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                            />
 
                             {/* Overlay Gradient */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
-                            <div className="absolute bottom-8 left-8 right-8 text-white">
-                                <p className="font-medium text-lg">&quot;Ci mettiamo la faccia. Sempre.&quot;</p>
-                                <p className="text-sm text-slate-300 mt-1">Il team tecnico operativo</p>
+                            <div className="absolute bottom-4 left-4 right-4 text-white z-20">
+                                <p className="font-bold text-lg leading-tight">Nikita Bronovs</p>
+                                <p className="text-sm text-white/80 font-normal leading-snug">CEO di NikiTuttoFare</p>
                             </div>
                         </div>
                     </div>
