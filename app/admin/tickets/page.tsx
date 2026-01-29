@@ -9,7 +9,7 @@ export default async function AdminTicketsPage() {
     const supabase = await createServerClient();
     const { data: { user }, error } = await supabase.auth.getUser();
 
-    if (error || !user || user.email !== 'bronovito@gmail.com') {
+    if (error || user?.email !== 'bronovito@gmail.com') {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center space-y-4">
                 <h1 className="text-4xl font-bold text-red-600">403 Forbidden</h1>

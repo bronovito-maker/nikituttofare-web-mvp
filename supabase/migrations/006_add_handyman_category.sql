@@ -9,6 +9,5 @@ ALTER TABLE public.tickets ADD CONSTRAINT tickets_category_check
   CHECK (category IN ('plumbing', 'electric', 'locksmith', 'climate', 'handyman', 'generic'));
 
 -- Verify the constraint was created
--- SELECT conname, pg_get_constraintdef(oid) 
--- FROM pg_constraint 
--- WHERE conrelid = 'public.tickets'::regclass AND contype = 'c';
+-- Verify the constraint was created
+-- (Run manually if needed)

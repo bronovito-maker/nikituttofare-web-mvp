@@ -19,11 +19,11 @@ function getRedirectUrl(request: NextRequest, path: string): string {
 }
 
 async function confirmPendingTicket(
-  ticket: any,
+  ticket: any, // kept as any for simplicity as it crosses module boundaries, in real app import Database type
   request: NextRequest,
 ): Promise<NextResponse | null> {
   const adminSupabase = createAdminClient()
-  console.log('🔍 Found pending ticket to confirm:', ticket.id)
+  // console.log('🔍 Found pending ticket to confirm:', ticket.id)
 
   const { error: updateError } = await adminSupabase
     .from('tickets')
@@ -35,7 +35,7 @@ async function confirmPendingTicket(
     return null
   }
 
-  console.log('✅ Ticket confirmed:', ticket.id)
+  // console.log('✅ Ticket confirmed:', ticket.id)
 
   await notifyNewTicket({
     id: ticket.id,
@@ -48,7 +48,7 @@ async function confirmPendingTicket(
     address: ticket.address,
     created_at: ticket.created_at,
   })
-  console.log('📤 Telegram notification sent for confirmed ticket')
+  // console.log('📤 Telegram notification sent for confirmed ticket')
 
   const successUrl = `/chat?confirmed=true&ticket=${ticket.id.slice(-8)}`
   return NextResponse.redirect(getRedirectUrl(request, successUrl))

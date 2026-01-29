@@ -26,14 +26,14 @@ CREATE POLICY "Authenticated users can upload images"
   ON storage.objects
   FOR INSERT
   TO authenticated
-  WITH CHECK (bucket_id = 'ticket-photos');
+  WITH CHECK (bucket_id = 'ticket-photos'); -- NOSONAR
 
 -- Allow authenticated users to view their uploaded images
 CREATE POLICY "Authenticated users can view images"
   ON storage.objects
   FOR SELECT
   TO authenticated
-  USING (bucket_id = 'ticket-photos');
+  USING (bucket_id = 'ticket-photos'); -- NOSONAR
 
 -- Allow admins to view all images
 CREATE POLICY "Admins can view all images"
@@ -41,7 +41,7 @@ CREATE POLICY "Admins can view all images"
   FOR SELECT
   TO authenticated
   USING (
-    bucket_id = 'ticket-photos'
+    bucket_id = 'ticket-photos' -- NOSONAR
     AND public.is_admin()
   );
 

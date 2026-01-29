@@ -47,7 +47,7 @@ export function QuoteGeneratorModal({ isOpen, onClose, ticket }: QuoteGeneratorM
     if (!isOpen) return null;
 
     const addItem = () => {
-        setItems([...items, { id: Math.random().toString(), description: '', quantity: 1, price: 0 }]);
+        setItems([...items, { id: crypto.randomUUID(), description: '', quantity: 1, price: 0 }]);
     };
 
     const removeItem = (id: string) => {

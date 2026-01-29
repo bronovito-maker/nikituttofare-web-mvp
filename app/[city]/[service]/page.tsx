@@ -25,7 +25,7 @@ export async function generateStaticParams() {
     return params;
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ city: string; service: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<Readonly<{ city: string; service: string }>> }): Promise<Metadata> {
     const { cities, services } = await fetchSeoData();
     const resolvedParams = await params;
     const city = cities.find((c) => c.slug === resolvedParams.city);
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
     };
 }
 
-export default async function ServicePage({ params }: { params: Promise<{ city: string; service: string }> }) {
+export default async function ServicePage({ params }: { params: Promise<Readonly<{ city: string; service: string }>> }) {
     const { cities, services } = await fetchSeoData();
     const resolvedParams = await params;
     const city = cities.find((c) => c.slug === resolvedParams.city);

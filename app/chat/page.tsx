@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, ComponentPropsWithoutRef } from 'react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown
 import {
@@ -384,17 +384,19 @@ export default function ChatPage() {
 }
 
 // 🎈 Componente Messaggio Semplificato
+
+
 const MARKDOWN_COMPONENTS = {
 
-  a: ({ node: _node, ...props }: any) => (
+  a: ({ node: _node, ...props }: ComponentPropsWithoutRef<'a'> & { node?: any }) => (
     <a {...props} target="_blank" rel="noopener noreferrer" className="underline font-medium">
       {props.children}
     </a>
   ),
 
-  strong: ({ node: _node, ...props }: any) => <strong {...props} className="font-bold" />,
+  strong: ({ node: _node, ...props }: ComponentPropsWithoutRef<'strong'> & { node?: any }) => <strong {...props} className="font-bold" />,
 
-  p: ({ node: _node, ...props }: any) => <p {...props} className="mb-2 last:mb-0" />
+  p: ({ node: _node, ...props }: ComponentPropsWithoutRef<'p'> & { node?: any }) => <p {...props} className="mb-2 last:mb-0" />
 };
 
 function MessageBubble({ message, isLast }: { readonly message: any; readonly isLast: boolean }) {

@@ -11,10 +11,8 @@ SET role = 'admin'
 WHERE email = 'admin@esempio.com';
 
 -- OPZIONE 2: Promuovi per ID utente
--- Sostituisci 'uuid-here' con l'UUID reale
--- UPDATE public.profiles
--- SET role = 'admin'
--- WHERE id = 'uuid-here';
+-- (Sostituisci UUID e decommenta se necessario)
+-- UPDATE public.profiles SET role = 'admin' WHERE id = 'uuid-here';
 
 -- ============================================
 -- VERIFICA
@@ -24,14 +22,7 @@ SELECT id, email, full_name, role, created_at
 FROM public.profiles
 WHERE role = 'admin';
 
--- Mostra tutti gli utenti (per trovare l'email giusta)
--- SELECT id, email, full_name, role, created_at
--- FROM public.profiles
--- ORDER BY created_at DESC;
-
 -- ============================================
--- RIMUOVI RUOLO ADMIN (se necessario)
+-- RIMUOVI RUOLO ADMIN
 -- ============================================
--- UPDATE public.profiles
--- SET role = 'user'
--- WHERE email = 'ex-admin@esempio.com';
+-- (Esegui update manuale se necessario)

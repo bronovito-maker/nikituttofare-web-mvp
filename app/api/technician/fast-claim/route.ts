@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Success! Return ticket and client details
-    console.log(`✅ Fast claim successful: Technician ${technician.full_name} (${technician.phone}) accepted ticket`);
+    // console.log(`✅ Fast claim successful: Technician ${technician.full_name} (${technician.phone}) accepted ticket`);
 
     return NextResponse.json({
       success: true,

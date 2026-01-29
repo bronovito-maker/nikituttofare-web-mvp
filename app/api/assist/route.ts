@@ -228,7 +228,7 @@ function stringifyContent(content: unknown): string {
   try {
     return JSON.stringify(content)
   } catch {
-    return typeof content === 'object' ? JSON.stringify(content) : String(content ?? '')
+    return typeof content === 'object' && content !== null ? JSON.stringify(content) : String(content ?? '')
   }
 }
 
