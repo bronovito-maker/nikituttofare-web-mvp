@@ -264,7 +264,7 @@ async function runTests(options: {
   console.log(`\n🧪 Avvio test su ${filteredTestCases.length} casi...\n`);
   console.log('━'.repeat(60));
 
-  const results = filteredTestCases.map(processTestCase);
+  const results = filteredTestCases.map((tc, i) => processTestCase(tc, i));
 
   return calculateFinalReport(results, filteredTestCases.length);
 }
