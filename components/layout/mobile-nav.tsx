@@ -72,15 +72,6 @@ export function MobileNav() {
                         >
                             <div className="flex items-center justify-between p-6 border-b border-border/50">
                                 <span className="font-bold text-2xl text-foreground tracking-tight">Menu</span>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setIsOpen(false)}
-                                    aria-label="Close Menu"
-                                    className="text-foreground hover:bg-muted rounded-full h-10 w-10"
-                                >
-                                    <X className="w-6 h-6" />
-                                </Button>
                             </div>
 
                             <nav className="flex-1 px-6 py-4 space-y-4 overflow-y-auto">

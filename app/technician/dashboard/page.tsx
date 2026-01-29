@@ -47,11 +47,11 @@ export default async function TechnicianDashboard() {
             {/* Welcome Section */}
             <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                    <h2 className="text-2xl font-bold tracking-tight text-white">Ciao, {profile.full_name?.split(' ')[0]}</h2>
-                    <p className="text-slate-400">Ecco il riepilogo della tua attività.</p>
+                    <h2 className="text-2xl font-bold tracking-tight text-foreground">Ciao, {profile.full_name?.split(' ')[0]}</h2>
+                    <p className="text-muted-foreground">Ecco il riepilogo della tua attività.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Badge variant={profile.is_active ? 'default' : 'secondary'} className={profile.is_active ? 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/20' : 'bg-slate-800 text-slate-400 border border-slate-700'}>
+                    <Badge variant={profile.is_active ? 'default' : 'secondary'} className={profile.is_active ? 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/20' : 'bg-secondary text-muted-foreground border border-border'}>
                         {profile.is_active ? 'In Servizio' : 'Offline'}
                     </Badge>
                 </div>
@@ -59,23 +59,23 @@ export default async function TechnicianDashboard() {
 
             {/* Status Summary */}
             <section className="grid grid-cols-2 gap-4">
-                <Card className="bg-[#1E1E1E] border-[#333] shadow-md">
+                <Card className="bg-card border-border shadow-md">
                     <CardContent className="p-6 flex flex-col items-center justify-center text-center">
                         <span className="text-4xl font-bold text-orange-500 mb-2">{activeJobsCount || 0}</span>
-                        <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Interventi Attivi</span>
+                        <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Interventi Attivi</span>
                     </CardContent>
                 </Card>
-                <Card className="bg-[#1E1E1E] border-[#333] shadow-md">
+                <Card className="bg-card border-border shadow-md">
                     <CardContent className="p-6 flex flex-col items-center justify-center text-center">
                         <span className="text-4xl font-bold text-emerald-400 mb-2">{profile.loyalty_points || 0}</span>
-                        <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Punti / Rating</span>
+                        <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Punti / Rating</span>
                     </CardContent>
                 </Card>
             </section>
 
             {/* Action Grid */}
             <section className="space-y-4">
-                <h3 className="text-lg font-semibold text-white px-1">Azioni Rapide</h3>
+                <h3 className="text-lg font-semibold text-foreground px-1">Azioni Rapide</h3>
 
                 <div className="grid gap-4 md:grid-cols-2">
                     {/* 1. Nuovi Lavori (Claim) */}
@@ -86,7 +86,7 @@ export default async function TechnicianDashboard() {
                                 <MapPin className="w-5 h-5 text-orange-500" />
                             </CardHeader>
                             <CardContent>
-                                <CardDescription className="text-slate-300 font-medium">
+                                <CardDescription className="text-muted-foreground font-medium">
                                     Ci sono <span className="text-orange-500 font-bold text-lg">{pendingCount}</span> richieste in attesa nella tua zona.
                                 </CardDescription>
                                 <div className="mt-4 flex justify-end">
@@ -100,13 +100,13 @@ export default async function TechnicianDashboard() {
 
                     {/* 2. I Miei Interventi */}
                     <Link href="/technician/jobs" className="block">
-                        <Card className="bg-[#1E1E1E] border-[#333] hover:border-orange-500/50 transition-colors h-full group">
+                        <Card className="bg-card border-border hover:border-orange-500/50 transition-colors h-full group">
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-lg font-semibold text-white group-hover:text-orange-400 transition-colors">I Miei Interventi</CardTitle>
-                                <Briefcase className="w-5 h-5 text-slate-400 group-hover:text-orange-400 transition-colors" />
+                                <CardTitle className="text-lg font-semibold text-foreground group-hover:text-orange-400 transition-colors">I Miei Interventi</CardTitle>
+                                <Briefcase className="w-5 h-5 text-muted-foreground group-hover:text-orange-400 transition-colors" />
                             </CardHeader>
                             <CardContent>
-                                <CardDescription className="text-slate-400">
+                                <CardDescription className="text-muted-foreground">
                                     Gestisci e chiudi i lavori che hai preso in carico.
                                 </CardDescription>
                             </CardContent>
@@ -116,18 +116,18 @@ export default async function TechnicianDashboard() {
                     {/* 3. Profilo */}
                     <div className="grid grid-cols-2 gap-4">
                         <Link href="/technician/profile" className="block h-full">
-                            <Card className="bg-[#1E1E1E] border-[#333] hover:border-orange-500/50 transition-colors h-full">
+                            <Card className="bg-card border-border hover:border-orange-500/50 transition-colors h-full">
                                 <CardContent className="p-4 flex flex-col items-center justify-center gap-2 h-full py-8">
-                                    <User className="w-8 h-8 text-slate-400" />
-                                    <span className="text-sm font-medium text-white">Profilo</span>
+                                    <User className="w-8 h-8 text-muted-foreground" />
+                                    <span className="text-sm font-medium text-foreground">Profilo</span>
                                 </CardContent>
                             </Card>
                         </Link>
                         <Link href="#" className="block h-full cursor-not-allowed opacity-60">
-                            <Card className="h-full bg-[#1a1a1a] border border-[#333] border-dashed">
+                            <Card className="h-full bg-secondary/50 border border-border border-dashed">
                                 <CardContent className="p-4 flex flex-col items-center justify-center gap-2 h-full py-8">
-                                    <Calendar className="w-8 h-8 text-slate-600" />
-                                    <span className="text-sm font-medium text-slate-500">Turni</span>
+                                    <Calendar className="w-8 h-8 text-muted-foreground" />
+                                    <span className="text-sm font-medium text-muted-foreground">Turni</span>
                                 </CardContent>
                             </Card>
                         </Link>

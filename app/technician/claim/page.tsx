@@ -17,7 +17,7 @@ export default async function TechnicianClaimPage() {
 
   if (profile?.role !== 'technician') {
     return (
-      <div className="flex h-screen items-center justify-center bg-black text-white">
+      <div className="flex h-screen items-center justify-center bg-background text-foreground">
         Accesso riservato ai tecnici
       </div>
     )
@@ -35,8 +35,8 @@ export default async function TechnicianClaimPage() {
     <div className="flex-1 p-4 pb-20 max-w-5xl mx-auto w-full">
       <header className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-white">Lavori Disponibili</h1>
-          <p className="text-slate-400 text-sm">Seleziona un incarico per accettarlo</p>
+          <h1 className="text-xl font-bold text-foreground">Lavori Disponibili</h1>
+          <p className="text-muted-foreground text-sm">Seleziona un incarico per accettarlo</p>
         </div>
         <div className="bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full text-xs font-mono border border-emerald-500/20">
           {tickets?.length || 0} ATTIVI
@@ -49,7 +49,7 @@ export default async function TechnicianClaimPage() {
         ))}
 
         {(!tickets || tickets.length === 0) && (
-          <div className="col-span-full py-20 text-center text-gray-500 border border-dashed border-[#333] rounded-lg">
+          <div className="col-span-full py-20 text-center text-muted-foreground border border-dashed border-border rounded-lg">
             <p>Nessun nuovo lavoro disponibile al momento.</p>
             <p className="text-xs mt-2">Riceverai una notifica quando ci saranno nuove richieste.</p>
           </div>

@@ -8,10 +8,12 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/s
 import { Menu, Home, MapPin, Briefcase, User, LogOut } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { createBrowserClient } from '@/lib/supabase-browser';
+import { useState } from 'react';
 
 export function TechnicianNav() {
     const pathname = usePathname();
     const router = useRouter();
+    const [open, setOpen] = useState(false);
 
     const links = [
         { href: '/technician/dashboard', label: 'Bacheca', icon: Home },
@@ -32,17 +34,17 @@ export function TechnicianNav() {
 
                 {/* Mobile Menu & Logo */}
                 <div className="flex items-center gap-2 md:gap-4">
-                    <Sheet>
+                    <Sheet open={open} onOpenChange={setOpen}>
                         <SheetTrigger asChild>
                             <Button variant="ghost" size="icon" className="md:hidden">
                                 <Menu className="h-5 w-5" />
                                 <span className="sr-only">Menu Tecnico</span>
                             </Button>
                         </SheetTrigger>
-                        <SheetContent side="left" className="pr-0">
+                        <SheetContent side="left" className="pr-0 [&>button]:hidden">
                             <SheetTitle className="sr-only">Menu Navigazione Tecnico</SheetTitle>
                             <div className="px-7">
-                                <Link href="/technician/dashboard" className="flex items-center">
+                                <Link href="/technician/dashboard" className="flex items-center" onClick={() => setOpen(false)}>
                                     <span className="font-bold text-xl">Niki<span className="text-primary">Tech</span></span>
                                 </Link>
                             </div>
@@ -53,6 +55,7 @@ export function TechnicianNav() {
                                         <Link
                                             key={link.href}
                                             href={link.href}
+                                            onClick={() => setOpen(false)}
                                             className={cn(
                                                 "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
                                                 pathname === link.href ? "bg-accent/50 text-accent-foreground" : "text-muted-foreground"

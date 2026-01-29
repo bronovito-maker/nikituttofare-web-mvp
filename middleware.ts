@@ -1,6 +1,63 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// Helper to determine redirect logic based on user role
+function getRoleBasedRedirect(
+  request: NextRequest,
+  userRole: string,
+  pathname: string
+): URL | null {
+  const isAuthPage = pathname.startsWith('/login');
+  const isAdminRoute = pathname.startsWith('/admin');
+  const isTechnicianRoute = pathname.startsWith('/technician') && !pathname.startsWith('/technician/login');
+
+  // 1. Redirect authenticated users away from login pages
+  if (isAuthPage) {
+    let defaultRedirect = '/dashboard';
+    if (userRole === 'admin') defaultRedirect = '/admin';
+    if (userRole === 'technician') defaultRedirect = '/technician/dashboard';
+
+    const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
+    // Use callback if valid and not a login page, otherwise role-based default
+    const dest = callbackUrl && !callbackUrl.includes('login') ? callbackUrl : defaultRedirect;
+
+    return new URL(dest, request.url);
+  }
+
+  // 2. Admin Route Protection
+  if (isAdminRoute && userRole !== 'admin') {
+    return new URL('/dashboard', request.url);
+  }
+
+  // 3. Technician Route Protection
+  if (isTechnicianRoute && userRole !== 'technician') {
+    return new URL('/dashboard', request.url);
+  }
+
+  return null;
+}
+
+function isRoutePublic(pathname: string) {
+  return pathname === '/' ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/auth/callback') ||
+    pathname === '/chat' ||
+    pathname === '/privacy';
+}
+
+function isRouteProtected(pathname: string) {
+  return pathname.startsWith('/admin') || pathname.startsWith('/dashboard');
+}
+
+async function getUserRole(supabase: any, userId: string) {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .single();
+  return profile?.role || 'user';
+}
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -36,30 +93,12 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Public routes - accessible to everyone
-  const isPublicRoute = pathname === '/' || pathname.startsWith('/api');
-
-  // Auth callback route - must be accessible for Magic Link flow
-  const isAuthCallback = pathname.startsWith('/auth/callback');
-
-  // Guest-allowed routes - accessible without login (chat for initial contact)
-  const isGuestRoute = pathname === '/chat' || pathname === '/privacy';
-
-  // Auth pages
-  const isAuthPage = pathname.startsWith('/login');
-
-  // Protected routes - require authentication
-  const isAdminRoute = pathname.startsWith('/admin');
-  const isDashboardRoute = pathname.startsWith('/dashboard');
-  const isProtectedRoute = isAdminRoute || isDashboardRoute;
-
-  // Allow public routes, guest routes, and auth callback
-  if (isPublicRoute || isGuestRoute || isAuthCallback) {
+  if (isRoutePublic(pathname)) {
     return supabaseResponse;
   }
 
-  // Redirect to login if trying to access protected route without auth
-  if (isProtectedRoute && !user) {
+  // Auth protection
+  if (isRouteProtected(pathname) && !user) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(loginUrl);
@@ -67,37 +106,11 @@ export async function middleware(request: NextRequest) {
 
   // RBAC & Redirect Logic
   if (user) {
-    const { data: profile } = await (supabase as any)
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
+    const userRole = await getUserRole(supabase, user.id);
+    const redirectUrl = getRoleBasedRedirect(request, userRole, pathname);
 
-    const userRole = profile?.role || 'user';
-
-    // 1. Redirect authenticated users away from login pages
-    if (isAuthPage) {
-      let defaultRedirect = '/dashboard';
-      if (userRole === 'admin') defaultRedirect = '/admin';
-      if (userRole === 'technician') defaultRedirect = '/technician/dashboard';
-
-      const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
-      // Use callback if valid and not a login page, otherwise role-based default
-      const dest = callbackUrl && !callbackUrl.includes('login') ? callbackUrl : defaultRedirect;
-
-      return NextResponse.redirect(new URL(dest, request.url));
-    }
-
-    // 2. Admin Route Protection
-    if (isAdminRoute && userRole !== 'admin') {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-
-    // 3. Technician Route Protection
-    if (pathname.startsWith('/technician') && !pathname.startsWith('/technician/login')) {
-      if (userRole !== 'technician') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
+    if (redirectUrl) {
+      return NextResponse.redirect(redirectUrl);
     }
   }
 
@@ -106,12 +119,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)', // NOSONAR
   ],
 };
