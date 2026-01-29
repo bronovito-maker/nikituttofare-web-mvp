@@ -12,70 +12,74 @@ import { toast } from 'sonner';
 
 function TechnicianLoginForm() {
   const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [step, setStep] = useState<'PHONE' | 'OTP'>('PHONE');
+  const [pin, setPin] = useState('');
+  const [step, setStep] = useState<'PHONE' | 'PIN'>('PHONE');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const supabase = createBrowserClient();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get('redirect') || '/dashboard';
+  const redirectUrl = searchParams.get('redirect') || '/technician/dashboard';
 
-  // 1. INVIA OTP
-  const handleSendOtp = async () => {
+  // 1. VERIFICA FORMATO TELEFONO
+  const handlePhoneSubmit = async () => {
     setLoading(true);
     setError('');
 
     const cleanPhone = phone.trim();
     if (!cleanPhone.startsWith('+39')) {
       setError('Inserisci il prefisso +39');
+      setLoading(false);
       return;
     }
 
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: cleanPhone,
-    });
-
-    if (error) {
-      setError(error.message);
-    } else {
-      setStep('OTP');
-      toast.success('Codice inviato via SMS');
-    }
+    // Passiamo allo step PIN
+    setStep('PIN');
     setLoading(false);
   };
 
-  // 2. VERIFICA OTP
-  const handleVerifyOtp = async () => {
+  // 2. LOGIN CON PASSWORD (PIN)
+  const handleLogin = async () => {
     setLoading(true);
     setError('');
 
-    const { data, error } = await supabase.auth.verifyOtp({
-      phone: phone.trim(),
-      token: otp,
-      type: 'sms',
-    });
+    try {
+      // Ricostruisci le credenziali
+      const normalizedPhone = phone.replaceAll(/\D/g, '');
+      const email = `tecnico-${normalizedPhone}@nikituttofare.it`;
+      const password = `${pin}ntf`;
 
-    if (error || !data.user) {
-      setError('Codice non valido o scaduto');
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error || !data.user) {
+        setError('PIN non valido o tecnico non trovato.');
+        setLoading(false);
+        return;
+      }
+
+      // 3. CHECK WHITELIST / LINK
+      const linkResult = await verifyAndLinkTechnician(phone.trim(), data.user.id);
+
+      if (!linkResult.success) {
+        setError(linkResult.message || 'Accesso negato');
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+
+      // 4. SUCCESSO
+      toast.success('Accesso effettuato!');
+      router.push(redirectUrl);
+
+    } catch (err) {
+      setError('Errore durante il login.');
+      console.error(err);
       setLoading(false);
-      return;
     }
-
-    // 3. CHECK WHITELIST
-    const linkResult = await verifyAndLinkTechnician(phone.trim(), data.user.id);
-
-    if (!linkResult.success) {
-      setError(linkResult.message || 'Accesso negato');
-      await supabase.auth.signOut();
-      setLoading(false);
-      return;
-    }
-
-    // 4. SUCCESSO
-    toast.success('Accesso effettuato!');
-    router.push(redirectUrl);
   };
 
   return (
@@ -94,12 +98,12 @@ function TechnicianLoginForm() {
         <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl shadow-2xl">
           <CardHeader>
             <CardTitle className="text-center text-slate-200">
-              {step === 'PHONE' ? 'Login' : 'Verifica Sicurezza'}
+              {step === 'PHONE' ? 'Login' : 'Codice Accesso'}
             </CardTitle>
             <CardDescription className="text-center text-slate-500">
               {step === 'PHONE'
                 ? "Inserisci il tuo numero aziendale"
-                : `Inserisci il codice inviato a ${phone}`}
+                : `Inserisci il PIN per ${phone}`}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -111,11 +115,12 @@ function TechnicianLoginForm() {
                     placeholder="+39 333 1234567"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handlePhoneSubmit()}
                     className="bg-slate-950/50 border-slate-700 text-slate-200 focus:border-blue-500 transition-colors h-12 text-lg text-center tracking-wide"
                   />
                 </div>
                 <Button
-                  onClick={handleSendOtp}
+                  onClick={handlePhoneSubmit}
                   disabled={loading || phone.length < 5}
                   className="w-full h-12 bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-lg shadow-blue-900/20 transition-all hover:scale-[1.02]"
                 >
@@ -126,20 +131,21 @@ function TechnicianLoginForm() {
               <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                 <div className="space-y-2">
                   <Input
-                    type="text"
-                    placeholder="000000"
+                    type="password"
+                    placeholder="PIN (6 cifre)"
                     maxLength={6}
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                     className="bg-slate-950/50 border-slate-700 text-slate-200 focus:border-blue-500 transition-colors h-14 text-center text-3xl tracking-[1em] font-mono"
                   />
                 </div>
                 <Button
-                  onClick={handleVerifyOtp}
-                  disabled={loading || otp.length < 6}
+                  onClick={handleLogin}
+                  disabled={loading || pin.length < 6}
                   className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-lg shadow-emerald-900/20 transition-all hover:scale-[1.02]"
                 >
-                  {loading ? <Loader2 className="animate-spin" /> : 'Verifica Accesso'}
+                  {loading ? <Loader2 className="animate-spin" /> : 'Accedi'}
                 </Button>
                 <div className="text-center">
                   <button

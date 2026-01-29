@@ -58,6 +58,7 @@ export async function getOrCreateProfile(userId: string, email: string): Promise
       vat_number: null,
       is_active: true,
       status: 'active',
+      pin: null,
     };
   }
 
@@ -108,6 +109,7 @@ export async function getOrCreateProfile(userId: string, email: string): Promise
       vat_number: null,
       is_active: true,
       status: 'active',
+      pin: null,
     };
   }
 }

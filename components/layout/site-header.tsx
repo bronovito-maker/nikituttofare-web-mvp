@@ -42,7 +42,7 @@ export function SiteHeader({ userType, onUserTypeChange, showUserTypeToggle = fa
 
                 {/* Center Toggle - Desktop (Only if enabled) */}
                 {showUserTypeToggle && userType && onUserTypeChange && (
-                    <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                    <div className="hidden md:flex flex-1 justify-center px-4">
                         <UserTypeToggle value={userType} onChange={onUserTypeChange} />
                     </div>
                 )}

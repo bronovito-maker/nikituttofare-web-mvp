@@ -71,6 +71,22 @@ export function AddTechnicianDialog() {
                             required
                         />
                     </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="pin" className="text-right text-gray-400">
+                            PIN (6 cifre)
+                        </Label>
+                        <Input
+                            id="pin"
+                            name="pin"
+                            type="text"
+                            placeholder="123456"
+                            maxLength={6}
+                            pattern="\d{6}"
+                            title="Inserisci 6 cifre"
+                            className="col-span-3 bg-[#121212] border-[#333] text-white focus:border-emerald-500 font-mono tracking-widest"
+                            required
+                        />
+                    </div>
                     <div className="flex justify-end pt-4">
                         <Button
                             type="submit"

@@ -16,6 +16,29 @@ async function checkAdmin() {
   return supabase
 }
 
+// Helper per normalizzare il telefono (rimuove spazi, assicura +39)
+function normalizePhone(phone: string): string {
+  // Rimuovi tutto ciò che non è digit o +
+  let clean = phone.replaceAll(/[^0-9+]/g, '')
+
+  // Se inizia con 39 (senza +), aggiungi +
+  if (clean.startsWith('39') && !clean.startsWith('+')) {
+    clean = '+' + clean
+  }
+
+  // Se non inizia con +39, aggiungi +39 (assumendo numero IT)
+  if (!clean.startsWith('+39')) {
+    // Se inizia con +, ma non 39, è estero? Per ora forziamo IT se manca
+    if (clean.startsWith('+')) {
+      // Lasciamo così com'è se è un altro prefisso
+    } else {
+      clean = '+39' + clean
+    }
+  }
+
+  return clean
+}
+
 // --- GESTIONE TECNICI ---
 
 export async function registerTechnician(formData: FormData) {
@@ -24,22 +47,26 @@ export async function registerTechnician(formData: FormData) {
 
   const fullName = formData.get('fullName') as string
   const phone = formData.get('phone') as string
+  const pin = formData.get('pin') as string
 
-  if (!fullName || !phone) {
-    return { error: 'Nome e telefono sono obbligatori' }
+  if (!fullName || !phone || !pin) {
+    return { error: 'Nome, telefono e PIN sono obbligatori' }
   }
 
+  // Normalizza telefono per coerenza DB
+  const formattedPhone = normalizePhone(phone)
+
   // 1. Create Auth User (Shadow Account)
-  // Email format: tecnico-[phone]@nikituttofare.it
-  const normalizedPhone = phone.replaceAll(/\D/g, '')
-  const email = `tecnico-${normalizedPhone}@nikituttofare.it`
-  const password = Math.random().toString(36).slice(-8) + 'Aa1!' // Simple random password
+  // Email format: tecnico-[digits]@nikituttofare.it
+  const emailPhone = formattedPhone.replaceAll(/\D/g, '') // Solo cifre per email
+  const email = `tecnico-${emailPhone}@nikituttofare.it`
+  const password = `${pin}ntf` // Deterministic password based on PIN
 
   const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
-    user_metadata: { full_name: fullName, phone: phone }
+    user_metadata: { full_name: fullName, phone: formattedPhone, pin: pin } // Adding PIN to metadata for admin reference
   })
 
   if (authError) {
@@ -59,9 +86,12 @@ export async function registerTechnician(formData: FormData) {
       id: authUser.user.id,
       email: email,
       full_name: fullName,
-      phone: phone,
+      phone: formattedPhone, // Save normalized phone
+      pin: Number.parseInt(pin),    // Save PIN to new column (User defined as number)
       role: 'technician',
-      user_type: 'private'
+      user_type: 'private',
+      is_active: true,
+      status: 'active'
     })
 
   if (profileError) {
@@ -79,11 +109,14 @@ export async function registerTechnician(formData: FormData) {
 export async function verifyAndLinkTechnician(phone: string, userId: string) {
   const supabaseAdmin = createAdminClient()
 
+  // Normalizza l'input per cercare nel DB
+  const formattedPhone = normalizePhone(phone)
+
   // 1. Cerca se esiste un profilo tecnico con questo telefono
   const { data: profile, error } = await supabaseAdmin
     .from('profiles')
     .select('*')
-    .eq('phone', phone)
+    .eq('phone', formattedPhone)
     .eq('role', 'technician')
     .single()
 
