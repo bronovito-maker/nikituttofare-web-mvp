@@ -14,25 +14,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       authorize: async (credentials) => {
         const email = credentials?.email as string;
-        
-        if (!email || !email.includes('@')) {
+
+        if (!email?.includes('@')) {
           return null;
         }
 
         // In sviluppo: crea un utente mock
         // In produzione: verificare il Magic Link token con Supabase
         const userId = `user-${email.split('@')[0]}`;
-        
-        return { 
-          id: userId, 
-          name: email.split('@')[0], 
+
+        return {
+          id: userId,
+          name: email.split('@')[0],
           email: email,
           role: email.includes('admin') ? 'admin' : 'user',
         }
       },
     }),
   ],
-  session: { 
+  session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 giorni
   },
@@ -57,7 +57,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const isAdmin = auth?.user?.role === 'admin';
-      
+
       const isOnAdmin = nextUrl.pathname.startsWith('/admin');
       const isOnDashboard = nextUrl.pathname.startsWith('/dashboard');
 

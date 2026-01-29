@@ -25,7 +25,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!email || !email.includes('@')) {
+    if (!email?.includes('@')) {
       setError('Inserisci un indirizzo email valido');
       return;
     }
@@ -33,7 +33,7 @@ export default function LoginPage() {
 
     try {
       // Redirect to auth callback which will exchange code for session on server
-      const redirectTo = `${window.location.origin}/auth/callback?next=/dashboard`;
+      const redirectTo = `${globalThis.location.origin}/auth/callback?next=/dashboard`;
       const { error: magicError } = await supabase.auth.signInWithOtp({
         email,
         options: {

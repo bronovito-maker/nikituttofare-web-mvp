@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 // --- CORREZIONE QUI ---
 // Leggiamo il valore dalle variabili d'ambiente, con un valore di default sicuro.
 const BCRYPT_SALT_ROUNDS = process.env.BCRYPT_SALT_ROUNDS
-  ? parseInt(process.env.BCRYPT_SALT_ROUNDS, 10)
+  ? Number.parseInt(process.env.BCRYPT_SALT_ROUNDS, 10)
   : 10;
 
 /**

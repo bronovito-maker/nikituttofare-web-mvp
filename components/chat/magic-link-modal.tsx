@@ -39,7 +39,7 @@ export function MagicLinkModal({
 
     try {
       // Redirect to auth callback which will exchange code for session on server
-      const redirectTo = `${window.location.origin}/auth/callback?next=/chat`;
+      const redirectTo = `${globalThis.location.origin}/auth/callback?next=/chat`;
       const { error: magicError } = await supabase.auth.signInWithOtp({
         email,
         options: {

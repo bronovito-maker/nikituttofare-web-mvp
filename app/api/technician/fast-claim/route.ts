@@ -36,12 +36,12 @@ export async function POST(request: NextRequest) {
 
     // Normalize phone number (remove spaces, dashes, and ensure consistent format)
     const normalizedPhone = phone
-      .replace(/\s|-|\(|\)/g, '')
-      .replace(/^00/, '+')
+      .replaceAll(/\s|-|\(|\)/g, '')
+      .replaceAll(/^00/, '+')
       .trim();
 
     // Also try without +39 prefix for matching
-    const phoneWithoutPrefix = normalizedPhone.replace(/^\+39/, '');
+    const phoneWithoutPrefix = normalizedPhone.replaceAll(/^\+39/, '');
     const phoneWithPrefix = normalizedPhone.startsWith('+39') ? normalizedPhone : `+39${normalizedPhone}`;
 
     const adminClient = createAdminClient();
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     } | null;
 
     // Check the result from the database function
-    if (!result || !result.success) {
+    if (!result?.success) {
       const errorMessages: Record<string, string> = {
         'invalid_token': 'Il link non è valido. Potrebbe essere già stato usato o non esistere.',
         'token_expired': 'Il link è scaduto. Gli interventi devono essere accettati entro 24 ore.',

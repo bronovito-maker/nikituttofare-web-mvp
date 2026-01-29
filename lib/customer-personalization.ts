@@ -1,11 +1,3 @@
-// import { listViewRowsById } from '@/lib/noco-helpers';
-// import {
-//   NC_TABLE_CUSTOMERS_ID,
-//   NC_VIEW_CUSTOMERS_ID,
-//   NC_TABLE_BOOKINGS_ID,
-//   NC_VIEW_BOOKINGS_ID,
-// } from '@/lib/noco-ids';
-
 type RawRecord = Record<string, any>;
 
 export type CustomerPersonalization = {
@@ -24,7 +16,7 @@ export type CustomerPersonalization = {
   preferredTimes?: string[];
 };
 
-const sanitizeWhereValue = (value: string) => value.replace(/~/g, '').replace(/\(/g, '').replace(/\)/g, '');
+const sanitizeWhereValue = (value: string) => value.replaceAll('~', '').replaceAll('(', '').replaceAll(')', '');
 
 const toTimeKey = (iso: string) => {
   const date = new Date(iso);
@@ -46,7 +38,7 @@ export async function fetchCustomerPersonalization(
   if (!email || !tenantId) {
     return null;
   }
-  
+
   const mockPersonalization: CustomerPersonalization = {
     customerId: 1,
     fullName: 'Mario Rossi (Mock)',

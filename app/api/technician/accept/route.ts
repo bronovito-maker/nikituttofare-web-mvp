@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       client?: any;
     } | null;
 
-    if (!result || !result.success) {
+    if (!result?.success) {
       // Map error codes to user-friendly messages
       const errorMessages: Record<string, string> = {
         'invalid_token': 'Il link non è valido. Potrebbe essere già stato usato o non esistere.',

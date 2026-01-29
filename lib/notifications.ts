@@ -39,18 +39,18 @@ function getTelegramMessageId(payload: unknown): number | undefined {
  * FIX: Added AbortController with 15s timeout to prevent ETIMEDOUT errors
  */
 async function sendTelegramMessage(
-  botToken: string, 
-  chatId: string, 
+  botToken: string,
+  chatId: string,
   message: TelegramMessage
 ): Promise<{ ok: boolean; result?: unknown; error?: string }> {
   // Timeout di 15 secondi per evitare ETIMEDOUT
   const TELEGRAM_TIMEOUT_MS = 15000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TELEGRAM_TIMEOUT_MS);
-  
+
   try {
     console.log('📤 Sending Telegram message to chat:', chatId);
-    
+
     const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: {
@@ -80,25 +80,25 @@ async function sendTelegramMessage(
     return { ok: true, result };
   } catch (error: unknown) {
     clearTimeout(timeoutId);
-    
+
     // Gestione specifica per diversi tipi di errore
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
         console.error('⏱️ Telegram request timeout after', TELEGRAM_TIMEOUT_MS, 'ms');
         return { ok: false, error: `Timeout after ${TELEGRAM_TIMEOUT_MS}ms` };
       }
-      
+
       // ETIMEDOUT o altri errori di rete
       const cause = (error as Error & { cause?: { code?: string } }).cause;
       if (cause?.code === 'ETIMEDOUT') {
         console.error('🌐 Network timeout (ETIMEDOUT) - possibly IPv6/DNS issue');
         return { ok: false, error: 'Network timeout - ETIMEDOUT' };
       }
-      
+
       console.error('❌ Telegram fetch error:', error.message);
       return { ok: false, error: error.message };
     }
-    
+
     console.error('❌ Telegram unknown error:', error);
     return { ok: false, error: 'Unknown error' };
   }
@@ -149,7 +149,7 @@ interface TicketNotificationData {
 async function generateAssignmentToken(ticketId: string): Promise<string | null> {
   try {
     const adminClient = createAdminClient();
-    
+
     const { data, error } = await (adminClient as any).rpc('generate_assignment_token', {
       p_ticket_id: ticketId,
       p_expires_hours: 24
@@ -179,7 +179,7 @@ function formatPrivacyFirstTelegramMessage(
 ): TelegramMessage {
   const priority = priorityEmoji[ticket.priority] || ticket.priority.toUpperCase();
   const category = categoryNames[ticket.category] || ticket.category;
-  
+
   // Format date nicely
   const requestDate = new Date(ticket.created_at || Date.now());
   const formattedDate = requestDate.toLocaleDateString('it-IT', {
@@ -192,47 +192,47 @@ function formatPrivacyFirstTelegramMessage(
     minute: '2-digit',
     second: '2-digit'
   });
-  
+
   // Clean description: remove city/address duplications, phone numbers
   let cleanDescription = '';
   if (ticket.description) {
     cleanDescription = ticket.description
-      .replace(/\d{10,}/g, '') // Remove phone numbers
-      .replace(/(?:via|corso|piazza|viale)\s+[a-zàèéìòùáéíóú\s]+[\s,]*\d*[a-z]?/gi, '') // Remove addresses
-      .replace(new RegExp(ticket.city || '', 'gi'), '') // Remove city mentions
-      .replace(/,\s*,/g, ',') // Clean up double commas
-      .replace(/\s+/g, ' ') // Normalize whitespace
+      .replaceAll(/\d{10,}/g, '') // Remove phone numbers
+      .replaceAll(/(?:via|corso|piazza|viale)\s+[a-zàèéìòùáíóú\s]+[\s,]*\d*[a-z]?/gi, '') // Remove addresses
+      .replaceAll(new RegExp(ticket.city || '', 'gi'), '') // Remove city mentions
+      .replaceAll(/,\s*,/g, ',') // Clean up double commas
+      .replaceAll(/\s+/g, ' ') // Normalize whitespace
       .trim()
       .slice(0, 120);
-    
+
     // Ensure we have something to show
     if (cleanDescription.length < 10 && ticket.description.length > 10) {
       cleanDescription = ticket.description.slice(0, 120);
     }
   }
-  
+
   // Build clean message
   let text = `${priority}\n`;
   text += `━━━━━━━━━━━━━━━━━━\n\n`;
-  
+
   text += `<b>Nuovo Intervento Disponibile</b>\n\n`;
-  
+
   text += `📍 <b>Città:</b> ${ticket.city || 'Non specificata'}\n`;
   text += `🔧 <b>Tipo:</b> ${category}\n`;
-  
+
   if (ticket.price_range_min && ticket.price_range_max) {
     text += `💰 <b>Preventivo:</b> ${ticket.price_range_min}€ - ${ticket.price_range_max}€\n`;
   }
-  
+
   text += `\n`;
-  
+
   // Clean problem description
   if (cleanDescription) {
     text += `📝 <b>Problema:</b> ${cleanDescription}${ticket.description && ticket.description.length > 120 ? '...' : ''}\n\n`;
   }
-  
+
   text += `⏰ <b>Richiesta:</b> ${formattedDate}, ${formattedTime}\n\n`;
-  
+
   text += `━━━━━━━━━━━━━━━━━━\n`;
   text += `<i>Clicca il pulsante per accettare l'intervento.\nIl primo tecnico che accetta riceverà i dati completi.</i>`;
 
@@ -284,7 +284,7 @@ export async function notifyNewTicket(ticket: TicketNotificationData) {
     if (result.ok) {
       // Log the notification (optional: save to DB)
       console.log('✅ Telegram notification sent for ticket:', ticket.id);
-      
+
       const messageId = getTelegramMessageId(result.result);
 
       // Save notification record
@@ -336,7 +336,7 @@ const formatEmailHtml = (lead: Record<string, any>) => {
     : '';
 
   const richiesta = lead.richiesta
-    ? `<blockquote style="margin:16px 0;padding:12px 16px;background:#f3f5ff;border-left:3px solid #4f46e5;color:#1e293b;">${lead.richiesta.replace(/\n/g, '<br/>')}</blockquote>`
+    ? `<blockquote style="margin:16px 0;padding:12px 16px;background:#f3f5ff;border-left:3px solid #4f46e5;color:#1e293b;">${lead.richiesta.replaceAll('\n', '<br/>')}</blockquote>`
     : '';
 
   return `
@@ -351,11 +351,11 @@ const formatEmailHtml = (lead: Record<string, any>) => {
 };
 
 const formatSlackPayload = (lead: Record<string, any>) => ({
-  text: `Nuovo lead per ${lead.tenant_id || 'tenant'}\\n` +
-    `Nome: ${lead.nome || '—'}\\n` +
-    `Telefono: ${lead.telefono || '—'}\\n` +
-    `Persone: ${lead.persone || '—'}\\n` +
-    `Orario: ${lead.orario || '—'}\\n` +
+  text: String.raw`Nuovo lead per ${lead.tenant_id || 'tenant'}\n` +
+    String.raw`Nome: ${lead.nome || '—'}\n` +
+    String.raw`Telefono: ${lead.telefono || '—'}\n` +
+    String.raw`Persone: ${lead.persone || '—'}\n` +
+    String.raw`Orario: ${lead.orario || '—'}\n` +
     `Note: ${lead.note_interne || '—'}`,
 });
 
@@ -363,15 +363,15 @@ export async function notifyLeadChannels(tenantId: string, lead: Record<string, 
   try {
     // TODO: Replace this with Supabase logic to fetch notification settings
     const assistant = {
-        notification_email: 'test@example.com',
-        notification_slack_webhook: null,
-        nome_attivita: 'Niki Restaurant (Mock)'
+      notification_email: 'test@example.com',
+      notification_slack_webhook: null,
+      nome_attivita: 'Niki Restaurant (Mock)'
     };
 
     if (!assistant) return;
 
     const email = assistant.notification_email || undefined;
-    const slackWebhook = assistant.notification_slack_webhook || undefined;
+    const slackWebhook = assistant.notification_slack_webhook ?? undefined;
 
     if (email) {
       const resend = emailClient();
@@ -463,7 +463,7 @@ export async function sendClientConfirmationEmail(
         </div>
       `,
     });
-    
+
     console.log('✅ Client confirmation email sent to:', email);
   } catch (error) {
     console.warn('Error sending client confirmation email:', error);

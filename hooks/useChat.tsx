@@ -101,7 +101,7 @@ const preSendMessageChecks = (
   const trimmedContent = messageContent.trim();
   if (!trimmedContent && !photo) return { pass: false, trimmedContent: '' };
 
-  const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+  const lastUserMessage = messages.findLast(m => m.role === 'user');
   if (lastUserMessage?.content === trimmedContent && !photo) {
     console.warn('Duplicate message ignored');
     return { pass: false, trimmedContent: '' };

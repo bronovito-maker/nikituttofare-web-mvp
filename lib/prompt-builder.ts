@@ -7,7 +7,7 @@ export async function getAssistantConfig(tenantId: string | number): Promise<Ten
     console.error('getAssistantConfig: tenantId nullo o non definito.');
     return null;
   }
-  
+
   const mockTenant: Tenant = {
     Id: 1,
     name: 'Niki Restaurant (Mock)',
@@ -57,21 +57,21 @@ const buildBookingRules = (): string => `
 - Se il cliente chiede di modificare, aggiorna lo slot, comunica la variazione e ricapitola.`;
 
 function formatLastBooking(lastBooking: CustomerPersonalization['lastBooking']): string {
-    if (!lastBooking?.bookingDateTime) return '';
-    
-    const lastDate = new Date(lastBooking.bookingDateTime);
-    if (isNaN(lastDate.getTime())) return '';
+  if (!lastBooking?.bookingDateTime) return '';
 
-    return `- Ultima prenotazione: ${lastDate.toLocaleDateString('it-IT')} alle ${lastDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} per ${lastBooking.partySize ?? '?'} persone.`;
+  const lastDate = new Date(lastBooking.bookingDateTime);
+  if (Number.isNaN(lastDate.getTime())) return '';
+
+  return `- Ultima prenotazione: ${lastDate.toLocaleDateString('it-IT')} alle ${lastDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} per ${lastBooking.partySize ?? '?'} persone.`;
 }
 
 function buildProfileHints(profile: CustomerPersonalization): string {
-    const hints: string[] = [];
-    if (profile.favoritePartySize) hints.push(`Numero persone più frequente: ${profile.favoritePartySize}.`);
-    if (profile.preferredTimes?.length) hints.push(`Orari preferiti: ${profile.preferredTimes.join(', ')}.`);
-    if (profile.lastBooking?.notes) hints.push(`Ultime note: ${profile.lastBooking.notes}.`);
-    
-    return hints.length ? `- Insight: ${hints.join(' ')}` : '';
+  const hints: string[] = [];
+  if (profile.favoritePartySize) hints.push(`Numero persone più frequente: ${profile.favoritePartySize}.`);
+  if (profile.preferredTimes?.length) hints.push(`Orari preferiti: ${profile.preferredTimes.join(', ')}.`);
+  if (profile.lastBooking?.notes) hints.push(`Ultime note: ${profile.lastBooking.notes}.`);
+
+  return hints.length ? `- Insight: ${hints.join(' ')}` : '';
 }
 
 const buildCustomerProfileSection = (profile?: CustomerPersonalization | null): string => {
@@ -79,20 +79,20 @@ const buildCustomerProfileSection = (profile?: CustomerPersonalization | null): 
 
   const { fullName, phoneNumber, totalBookings, lastBooking } = profile;
   const parts: string[] = ['\n\n### Dati Cliente Autenticato ###'];
-  
+
   if (fullName) parts.push(`- Nome riconosciuto: ${fullName}.`);
   if (phoneNumber) parts.push(`- Telefono in archivio: ${phoneNumber}.`);
-  
+
   const lastBookingInfo = formatLastBooking(lastBooking);
   if (lastBookingInfo) parts.push(lastBookingInfo);
 
   parts.push(`- Prenotazioni totali: ${totalBookings}.`);
-  
+
   const hints = buildProfileHints(profile);
   if (hints) parts.push(hints);
 
   parts.push(`- Usa questi dati per accogliere il cliente in modo proattivo, ma chiedi SEMPRE conferma esplicita.`);
-  
+
   return parts.join('\n');
 };
 
@@ -119,9 +119,11 @@ const buildMenuInfo = (config: Tenant): string => {
   const parts: string[] = [];
   if (config.menu_text) {
     parts.push(`\n\n### MENU DEL RISTORANTE ###\n${config.menu_text}\n### FINE MENU ###`);
-    parts.push(`Istruzioni sul menu:`);
-    parts.push(`1. Usa *solo* il menu qui sopra per rispondere.`);
-    parts.push(`2. Sii proattivo: se un utente chiede consigli, suggerisci 1-2 piatti basandoti sulla tua analisi.`);
+    parts.push(
+      `Istruzioni sul menu:`,
+      `1. Usa *solo* il menu qui sopra per rispondere.`,
+      `2. Sii proattivo: se un utente chiede consigli, suggerisci 1-2 piatti basandoti sulla tua analisi.`
+    );
   }
   if (config.menu_pdf_url) {
     parts.push(`\n\nSe il cliente desidera il menu completo, fornisci questo link: ${config.menu_pdf_url}`);

@@ -16,14 +16,6 @@
     "rule": "typescript:S7741"
   },
   {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/image-upload.tsx",
-    "line": 232,
-    "message": "Extract this nested ternary operation into an independent statement.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S3358"
-  },
-  {
     "severity": "MINOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:download-issues.js",
     "line": 2,
@@ -400,25 +392,9 @@
     "rule": "typescript:S7735"
   },
   {
-    "severity": "CRITICAL",
-    "component": "bronovito-maker_nikituttofare-web-mvp:supabase/migrations/002_admin_rls_and_storage.sql",
-    "line": 12,
-    "message": "Define a constant instead of duplicating this literal 5 times.",
-    "type": "CODE_SMELL",
-    "rule": "plsql:S1192"
-  },
-  {
-    "severity": "CRITICAL",
-    "component": "bronovito-maker_nikituttofare-web-mvp:supabase/migrations/002_admin_rls_and_storage.sql",
-    "line": 64,
-    "message": "Define a constant instead of duplicating this literal 3 times.",
-    "type": "CODE_SMELL",
-    "rule": "plsql:S1192"
-  },
-  {
     "severity": "MINOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/client-animation-wrapper.tsx",
-    "line": 6,
+    "line": 12,
     "message": "Mark the props of the component as read-only.",
     "type": "CODE_SMELL",
     "rule": "typescript:S6759"
@@ -441,51 +417,11 @@
   },
   {
     "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:next.config.mjs",
-    "line": 2,
-    "message": "Prefer `node:path` over `path`.",
-    "type": "CODE_SMELL",
-    "rule": "javascript:S7772"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:next.config.mjs",
-    "line": 3,
-    "message": "Prefer `node:url` over `url`.",
-    "type": "CODE_SMELL",
-    "rule": "javascript:S7772"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:scripts/check-deps.js",
-    "line": 4,
-    "message": "Prefer `node:fs` over `fs`.",
-    "type": "CODE_SMELL",
-    "rule": "javascript:S7772"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:scripts/check-deps.js",
-    "line": 5,
-    "message": "Prefer `node:path` over `path`.",
-    "type": "CODE_SMELL",
-    "rule": "javascript:S7772"
-  },
-  {
-    "severity": "MINOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:scripts/check-deps.js",
     "line": 48,
     "message": "Unexpected negated condition.",
     "type": "CODE_SMELL",
     "rule": "javascript:S7735"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:scripts/generate-secret.js",
-    "line": 4,
-    "message": "Prefer `node:crypto` over `crypto`.",
-    "type": "CODE_SMELL",
-    "rule": "javascript:S7772"
   },
   {
     "severity": "MINOR",
@@ -518,14 +454,6 @@
     "message": "Complete the task associated to this \"TODO\" comment.",
     "type": "CODE_SMELL",
     "rule": "typescript:S1135"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:vitest.config.ts",
-    "line": 2,
-    "message": "Prefer `node:path` over `path`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7772"
   },
   {
     "severity": "MINOR",
