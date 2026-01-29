@@ -1,67 +1,27 @@
 [
   {
+    "severity": "MINOR",
+    "component": "bronovito-maker_nikituttofare-web-mvp:app/api/assist/route.ts",
+    "line": 141,
+    "message": "'content ?? ''' will use Object's default stringification format ('[object Object]') when stringified.",
+    "type": "CODE_SMELL",
+    "rule": "typescript:S6551"
+  },
+  {
+    "severity": "MINOR",
+    "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/cookie-banner.tsx",
+    "line": 47,
+    "message": "Compare with `undefined` directly instead of using `typeof`.",
+    "type": "CODE_SMELL",
+    "rule": "typescript:S7741"
+  },
+  {
     "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/admin/ticket-item.tsx",
-    "line": 25,
-    "message": "Use <input type=\"button\">, <input type=\"image\">, <input type=\"reset\">, <input type=\"submit\">, or <button> instead of the \"button\" role to ensure accessibility across all devices.",
+    "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/image-upload.tsx",
+    "line": 231,
+    "message": "Extract this nested ternary operation into an independent statement.",
     "type": "CODE_SMELL",
-    "rule": "typescript:S6819"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/dashboard/customer-dashboard.tsx",
-    "line": 28,
-    "message": "This assertion is unnecessary since the receiver accepts the original type of the expression.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S4325"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/dashboard/customer-dashboard.tsx",
-    "line": 29,
-    "message": "This assertion is unnecessary since the receiver accepts the original type of the expression.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S4325"
-  },
-  {
-    "severity": "CRITICAL",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/dashboard/customer-dashboard.tsx",
-    "line": 48,
-    "message": "Refactor this code to not nest functions more than 4 levels deep.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S2004"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:app/dashboard/assets/[id]/page.tsx",
-    "line": 17,
-    "message": "Mark the props of the component as read-only.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6759"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/layout/mobile-nav.tsx",
-    "line": 7,
-    "message": "Remove this unused import of 'X'.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S1128"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/technician/profile-form.tsx",
-    "line": 39,
-    "message": "Mark the props of the component as read-only.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6759"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/admin/admin-layout-shell.tsx",
-    "line": 9,
-    "message": "Mark the props of the component as read-only.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6759"
+    "rule": "typescript:S3358"
   },
   {
     "severity": "MAJOR",
@@ -70,30 +30,6 @@
     "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
     "type": "CODE_SMELL",
     "rule": "typescript:S6582"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:app/technician/layout.tsx",
-    "line": 3,
-    "message": "Mark the props of the component as read-only.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6759"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/admin/technician-actions.tsx",
-    "line": 33,
-    "message": "Mark the props of the component as read-only.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6759"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/admin/technician-actions.tsx",
-    "line": 121,
-    "message": "Ambiguous spacing before next element span",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6772"
   },
   {
     "severity": "MINOR",
@@ -120,60 +56,12 @@
     "rule": "typescript:S6759"
   },
   {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/chat/generative-ui.tsx",
-    "line": 131,
-    "message": "Extract this nested ternary operation into an independent statement.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S3358"
-  },
-  {
     "severity": "MINOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:app/technician/jobs/[id]/page.tsx",
     "line": 10,
     "message": "Mark the props of the component as read-only.",
     "type": "CODE_SMELL",
     "rule": "typescript:S6759"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:app/technician/jobs/page.tsx",
-    "line": 7,
-    "message": "Remove this unused import of 'formatDistanceToNow'.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S1128"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:app/technician/jobs/page.tsx",
-    "line": 8,
-    "message": "Remove this unused import of 'it'.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S1128"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/technician/job-card.tsx",
-    "line": 3,
-    "message": "Remove this unused import of 'Clock'.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S1128"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/technician/job-card.tsx",
-    "line": 12,
-    "message": "Mark the props of the component as read-only.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6759"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:app/indice-zone/page.tsx",
-    "line": 7,
-    "message": "Remove this unused import of 'Badge'.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S1128"
   },
   {
     "severity": "MAJOR",
@@ -200,17 +88,9 @@
     "rule": "typescript:S6819"
   },
   {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/admin/quote-generator-modal.tsx",
-    "line": 228,
-    "message": "Ambiguous spacing before next element input",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6772"
-  },
-  {
     "severity": "CRITICAL",
     "component": "bronovito-maker_nikituttofare-web-mvp:components/admin/cognitive-chat.tsx",
-    "line": 98,
+    "line": 91,
     "message": "Refactor this code to not nest functions more than 4 levels deep.",
     "type": "CODE_SMELL",
     "rule": "typescript:S2004"
@@ -222,22 +102,6 @@
     "message": "Prefer `globalThis` over `window`.",
     "type": "CODE_SMELL",
     "rule": "typescript:S7764"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/admin/context-sidebar.tsx",
-    "line": 152,
-    "message": "Ambiguous spacing after previous element span",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6772"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:app/api/assist/route.ts",
-    "line": 231,
-    "message": "'content ?? ''' will use Object's default stringification format ('[object Object]') when stringified.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6551"
   },
   {
     "severity": "MINOR",
@@ -265,22 +129,6 @@
   },
   {
     "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/chat/chat-messages.tsx",
-    "line": 168,
-    "message": "Mark the props of the component as read-only.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6759"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/chat/magic-link-modal.tsx",
-    "line": 68,
-    "message": "Use <input type=\"button\">, <input type=\"image\">, <input type=\"reset\">, <input type=\"submit\">, or <button> instead of the \"button\" role to ensure accessibility across all devices.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6819"
-  },
-  {
-    "severity": "MINOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:lib/prompt-builder.ts",
     "line": 63,
     "message": "Prefer `Number.isNaN` over `isNaN`.",
@@ -290,47 +138,15 @@
   {
     "severity": "MINOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:scripts/test-ai-responses.mjs",
-    "line": 242,
+    "line": 247,
     "message": "Prefer `Number.parseInt` over `parseInt`.",
     "type": "CODE_SMELL",
     "rule": "javascript:S7773"
   },
   {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/image-upload.tsx",
-    "line": 229,
-    "message": "Extract this nested ternary operation into an independent statement.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S3358"
-  },
-  {
     "severity": "MINOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:hooks/useChat.tsx",
-    "line": 3,
-    "message": "Remove this unused import of 'useEffect'.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S1128"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:hooks/useChat.tsx",
-    "line": 3,
-    "message": "Remove this unused import of 'useMemo'.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S1128"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:hooks/useChat.tsx",
-    "line": 3,
-    "message": "Remove this unused import of 'useRef'.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S1128"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:hooks/useChat.tsx",
-    "line": 105,
+    "line": 104,
     "message": "Prefer `.findLast(…)` over `.filter(…).pop()`.",
     "type": "CODE_SMELL",
     "rule": "typescript:S7750"
@@ -369,35 +185,11 @@
   },
   {
     "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:scripts/test-ai-responses.mjs",
-    "line": 217,
-    "message": "Extract this nested ternary operation into an independent statement.",
-    "type": "CODE_SMELL",
-    "rule": "javascript:S3358"
-  },
-  {
-    "severity": "MAJOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:lib/training-examples.ts",
     "line": 30,
     "message": "Refactor this code to not use nested template literals.",
     "type": "CODE_SMELL",
     "rule": "typescript:S4624"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/chat/magic-link-modal.tsx",
-    "line": 4,
-    "message": "Remove this unused import of 'CheckCircle2'.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S1128"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/chat/magic-link-modal.tsx",
-    "line": 191,
-    "message": "Ambiguous spacing before next element strong",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6772"
   },
   {
     "severity": "MAJOR",
@@ -465,30 +257,6 @@
   },
   {
     "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:app/technician/accept/page.tsx",
-    "line": 138,
-    "message": "Handle this exception or don't catch it at all.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S2486"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:app/auth/callback/route.ts",
-    "line": 97,
-    "message": "This assertion is unnecessary since the receiver accepts the original type of the expression.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S4325"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:app/auth/callback/route.ts",
-    "line": 98,
-    "message": "This assertion is unnecessary since the receiver accepts the original type of the expression.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S4325"
-  },
-  {
-    "severity": "MINOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:app/login/page.tsx",
     "line": 36,
     "message": "Prefer `globalThis` over `window`.",
@@ -520,38 +288,6 @@
     "rule": "typescript:S4325"
   },
   {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:app/privacy/page.tsx",
-    "line": 41,
-    "message": "Ambiguous spacing before next element a",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6772"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:app/privacy/page.tsx",
-    "line": 107,
-    "message": "Ambiguous spacing before next element a",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6772"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/cookie-banner.tsx",
-    "line": 5,
-    "message": "Remove this unused import of 'X'.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S1128"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/cookie-banner.tsx",
-    "line": 47,
-    "message": "Prefer `globalThis.window` over `window`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7764"
-  },
-  {
     "severity": "MINOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/cookie-banner.tsx",
     "line": 89,
@@ -560,44 +296,12 @@
     "rule": "typescript:S7735"
   },
   {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/cookie-banner.tsx",
-    "line": 114,
-    "message": "A form label must have accessible text.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6853"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/cookie-banner.tsx",
-    "line": 133,
-    "message": "A form label must have accessible text.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6853"
-  },
-  {
     "severity": "MINOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/cookie-banner.tsx",
-    "line": 157,
+    "line": 159,
     "message": "Unexpected negated condition.",
     "type": "CODE_SMELL",
     "rule": "typescript:S7735"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/image-upload.tsx",
-    "line": 130,
-    "message": "Mark the props of the component as read-only.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6759"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/image-upload.tsx",
-    "line": 248,
-    "message": "Mark the props of the component as read-only.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6759"
   },
   {
     "severity": "MAJOR",
@@ -606,30 +310,6 @@
     "message": "Remove this commented out code.",
     "type": "CODE_SMELL",
     "rule": "plsql:S125"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:scripts/test-ai-responses.mjs",
-    "line": 6,
-    "message": "Prefer `node:fs` over `fs`.",
-    "type": "CODE_SMELL",
-    "rule": "javascript:S7772"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:scripts/test-ai-responses.mjs",
-    "line": 7,
-    "message": "Prefer `node:path` over `path`.",
-    "type": "CODE_SMELL",
-    "rule": "javascript:S7772"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:scripts/test-ai-responses.mjs",
-    "line": 8,
-    "message": "Prefer `node:url` over `url`.",
-    "type": "CODE_SMELL",
-    "rule": "javascript:S7772"
   },
   {
     "severity": "MINOR",
@@ -688,33 +368,9 @@
     "rule": "typescript:S6582"
   },
   {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:app/login/page.tsx",
-    "line": 49,
-    "message": "Handle this exception or don't catch it at all.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S2486"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/chat/chat-messages.tsx",
-    "line": 27,
-    "message": "Mark the props of the component as read-only.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6759"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/chat/chat-messages.tsx",
-    "line": 87,
-    "message": "Mark the props of the component as read-only.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6759"
-  },
-  {
     "severity": "MAJOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:components/chat/chat-messages.tsx",
-    "line": 112,
+    "line": 111,
     "message": "Ambiguous spacing after previous element span",
     "type": "CODE_SMELL",
     "rule": "typescript:S6772"
@@ -722,18 +378,10 @@
   {
     "severity": "MAJOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:components/chat/chat-messages.tsx",
-    "line": 191,
+    "line": 190,
     "message": "Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element.",
     "type": "CODE_SMELL",
     "rule": "typescript:S6848"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/chat/magic-link-modal.tsx",
-    "line": 16,
-    "message": "Mark the props of the component as read-only.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6759"
   },
   {
     "severity": "MAJOR",
@@ -746,66 +394,10 @@
   {
     "severity": "MINOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:components/chat/magic-link-modal.tsx",
-    "line": 56,
-    "message": "Handle this exception or don't catch it at all.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S2486"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/chat/magic-link-modal.tsx",
-    "line": 91,
+    "line": 87,
     "message": "Unexpected negated condition.",
     "type": "CODE_SMELL",
     "rule": "typescript:S7735"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/chat/magic-link-modal.tsx",
-    "line": 121,
-    "message": "A form label must be associated with a control.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6853"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/avatar.tsx",
-    "line": 15,
-    "message": "Mark the props of the component as read-only.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6759"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/avatar.tsx",
-    "line": 72,
-    "message": "Mark the props of the component as read-only.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6759"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/avatar.tsx",
-    "line": 90,
-    "message": "Extract this nested ternary operation into an independent statement.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S3358"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/loading-dots.tsx",
-    "line": 10,
-    "message": "Mark the props of the component as read-only.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6759"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/ui/loading-dots.tsx",
-    "line": 26,
-    "message": "Mark the props of the component as read-only.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6759"
   },
   {
     "severity": "CRITICAL",
@@ -912,14 +504,6 @@
     "rule": "typescript:S7735"
   },
   {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:hooks/useChat.tsx",
-    "line": 5,
-    "message": "Remove this unused import of 'FormType'.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S1128"
-  },
-  {
     "severity": "MAJOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:lib/customer-personalization.ts",
     "line": 1,
@@ -942,14 +526,6 @@
     "message": "Complete the task associated to this \"TODO\" comment.",
     "type": "CODE_SMELL",
     "rule": "typescript:S1135"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:hooks/useChat.tsx",
-    "line": 4,
-    "message": "Remove this unused import of 'ParserMessage'.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S1128"
   },
   {
     "severity": "MINOR",

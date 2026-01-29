@@ -72,9 +72,16 @@ export function CognitiveChat({ ticket, isMobileView, externalAutoPilot, onToggl
             }
         };
 
+
         fetchMessages();
 
-        // Helper to handle new messages
+        // Helper to add unique message
+        const addUniqueMessage = (messages: Message[], newMsg: Message) => {
+            if (messages.some(m => m.id === newMsg.id)) return messages;
+            return [...messages, newMsg];
+        };
+
+        // Realtime handler
         const handleNewMessage = (payload: RealtimePostgresChangesPayload<Message>) => {
             const newMsg = payload.new as Message;
 
@@ -86,11 +93,7 @@ export function CognitiveChat({ ticket, isMobileView, externalAutoPilot, onToggl
 
             if (!isRelevant) return;
 
-            setMessages((prev) => {
-                // Deduplicate just in case
-                if (prev.some(m => m.id === newMsg.id)) return prev;
-                return [...prev, newMsg];
-            });
+            setMessages(prev => addUniqueMessage(prev, newMsg));
 
             // Scroll to bottom on new message
             if (scrollRef.current) {

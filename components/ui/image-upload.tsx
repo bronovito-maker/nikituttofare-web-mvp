@@ -58,7 +58,7 @@ const compressImage = (file: File): Promise<Blob> => {
     const img = new Image();
     const canvas = document.createElement('canvas');
     img.onload = () => handleImageLoadForCompression(img, canvas, resolve, reject);
-    img.onerror = (err) => reject(new Error(`Caricamento immagine fallito: ${err}`));
+    img.onerror = (err) => reject(new Error(`Caricamento immagine fallito: ${String(err)}`));
     img.src = URL.createObjectURL(file);
   });
 };
@@ -222,6 +222,7 @@ export function ImageUpload({
 
   return (
     <div className={`relative ${className}`}>
+      {/* Image upload button */}
       <button
         type="button"
         onClick={handleClick}
