@@ -18,7 +18,7 @@ describe('ReDoS Vulnerability Tests', () => {
             // Vulnerable pattern: (a+)+
             const maliciousInput = 'mi chiamo ' + 'a'.repeat(5000) + '!';
             await runWithTimeout(async () => {
-                await parseChatData([{ role: 'user', content: maliciousInput }]);
+                await parseChatData([{ role: 'user', content: maliciousInput, id: 'test' }]);
             });
         });
 
@@ -26,7 +26,7 @@ describe('ReDoS Vulnerability Tests', () => {
             // Vulnerable pattern: (x+x+)+
             const maliciousInput = 'sono ' + 'a '.repeat(2000) + 'a';
             await runWithTimeout(async () => {
-                await parseChatData([{ role: 'user', content: maliciousInput }]);
+                await parseChatData([{ role: 'user', content: maliciousInput, id: 'test' }]);
             });
         });
 
@@ -34,7 +34,7 @@ describe('ReDoS Vulnerability Tests', () => {
             // Vulnerable pattern: domain part with excessive backtracking
             const maliciousInput = 'test@' + 'a'.repeat(5000) + '.com';
             await runWithTimeout(async () => {
-                await parseChatData([{ role: 'user', content: maliciousInput }]);
+                await parseChatData([{ role: 'user', content: maliciousInput, id: 'test' }]);
             });
         });
     });

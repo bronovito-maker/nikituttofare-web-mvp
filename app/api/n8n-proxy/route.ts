@@ -1,64 +1,51 @@
-// app/api/n8n-proxy/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { logger } from '@/lib/logger';
-
-const n8nProxySchema = z.object({
-  message: z.string(),
-  chatId: z.string().optional(),
-});
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Authentication (incoming request from our frontend)
-    const authToken = req.headers.get('Authorization')?.split(' ')[1];
-    if (authToken !== process.env.N8N_PROXY_SECRET) {
-      return NextResponse.json({ error: "Non autorizzato" }, { status: 401 });
-    }
-
-    // 2. Environment variable for URL
-    const n8nUrl = process.env.N8N_WEBHOOK_URL;
-    if (!n8nUrl) {
-      logger.error('N8N_WEBHOOK_URL not configured', { action: 'n8n_proxy' });
-      return NextResponse.json({ error: "Errore di configurazione del server" }, { status: 500 });
-    }
-
-    // 3. Webhook Secret (outgoing request to n8n) - FAIL SAFE
-    const webhookSecret = process.env.N8N_WEBHOOK_SECRET;
-    if (!webhookSecret) {
-      logger.error('N8N_WEBHOOK_SECRET not configured - blocking request for security', {
-        action: 'n8n_proxy',
-        component: 'n8n-proxy'
-      });
-      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
-    }
-
+    // 1. Leggi il messaggio dal client
     const body = await req.json();
+    const { message, chatId } = body;
 
-    // 4. Input Validation
-    const validation = n8nProxySchema.safeParse(body);
-    if (!validation.success) {
-      return NextResponse.json({ error: 'Dati non validi', details: validation.error.flatten() }, { status: 400 });
+    // 2. Prepara l'URL e la Password
+    const n8nUrl = process.env.N8N_WEBHOOK_URL;
+    // Usa la password semplice che hai messo su n8n
+    const n8nSecret = process.env.N8N_WEBHOOK_SECRET;
+
+    if (!n8nUrl) {
+      console.error("❌ ERRORE: N8N_WEBHOOK_URL mancante nel .env");
+      return NextResponse.json({ error: "Configurazione Server Mancante" }, { status: 500 });
     }
 
-    // 5. Forward to n8n with secure header
+    // 3. Invia la richiesta a n8n (Metodo Standard Header Auth)
     const response = await fetch(n8nUrl, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'x-n8n-secret': webhookSecret,
+        "Content-Type": "application/json",
+        // Qui inviamo la password nell'header che n8n si aspetta per "Header Auth"
+        "x-n8n-secret": n8nSecret || "",
       },
-      body: JSON.stringify(validation.data),
+      body: JSON.stringify({
+        message,
+        chatId,
+        // Aggiungiamo un timestamp per debug, male non fa
+        timestamp: new Date().toISOString()
+      }),
     });
 
+    if (!response.ok) {
+      console.error(`❌ Errore n8n: ${response.status} ${response.statusText}`);
+      return NextResponse.json({ text: "Errore di comunicazione con l'assistente." }, { status: 502 });
+    }
+
+    // 4. Restituisci la risposta al frontend
     const data = await response.json();
-    return NextResponse.json(data);
+    // Gestisce vari formati di risposta di n8n
+    const text = data.text || data.output || data.message || "Risposta ricevuta.";
+
+    return NextResponse.json({ text });
 
   } catch (error) {
-    logger.captureError(error, { action: 'n8n_proxy', component: 'n8n-proxy' });
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Dati non validi', details: error.flatten() }, { status: 400 });
-    }
-    return NextResponse.json({ text: "Errore di connessione." }, { status: 500 });
+    console.error("❌ Errore Proxy:", error);
+    return NextResponse.json({ text: "Errore interno del server." }, { status: 500 });
   }
 }

@@ -11,6 +11,7 @@ const nextConfig = {
   // Questa opzione risolve problemi di compatibilità con alcune librerie
   // Risolve il warning sui lockfile multipli
   outputFileTracingRoot: path.join(__dirname),
+  output: "standalone", // <--- AGGIUNGI QUESTA RIGA (Fix 404 Vercel)
 
   // Gestisci errori di caricamento .env
   onDemandEntries: {

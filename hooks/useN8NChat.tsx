@@ -20,7 +20,7 @@ export const useN8NChat = () => {
     setIsLoading(true);
 
     try {
-      // 2. Chiama il nostro PONTE (creato al passo 1)
+      // 2. Chiama il nostro Proxy
       const response = await fetch('/api/n8n-proxy', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -33,8 +33,8 @@ export const useN8NChat = () => {
       const data = await response.json();
 
       // 3. Mostra la risposta di n8n
-      // Nota: n8n deve rispondere con un JSON che contiene "text" o "output"
-      const aiText = data.text || data.output || "Risposta ricevuta";
+      // 3. Mostra la risposta di n8n
+      const aiText = data.text || "Risposta ricevuta";
 
       const newAiMsg = { role: 'assistant', content: aiText, id: (Date.now() + 1).toString() };
       setMessages((prev) => [...prev, newAiMsg]);
