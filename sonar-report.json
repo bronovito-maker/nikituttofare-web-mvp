@@ -16,22 +16,6 @@
     "rule": "typescript:S7741"
   },
   {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:download-issues.js",
-    "line": 2,
-    "message": "Prefer `node:fs` over `fs`.",
-    "type": "CODE_SMELL",
-    "rule": "javascript:S7772"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:download-issues.js",
-    "line": 46,
-    "message": "Prefer top-level await over an async function `fetchIssues` call.",
-    "type": "CODE_SMELL",
-    "rule": "javascript:S7785"
-  },
-  {
     "severity": "MAJOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:app/technician/dashboard/page.tsx",
     "line": 26,
@@ -104,46 +88,6 @@
     "rule": "typescript:S6551"
   },
   {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:app/api/technician/fast-claim/route.ts",
-    "line": 102,
-    "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6582"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:app/api/technician/accept/route.ts",
-    "line": 79,
-    "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6582"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/prompt-builder.ts",
-    "line": 63,
-    "message": "Prefer `Number.isNaN` over `isNaN`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7773"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:scripts/test-ai-responses.mjs",
-    "line": 247,
-    "message": "Prefer `Number.parseInt` over `parseInt`.",
-    "type": "CODE_SMELL",
-    "rule": "javascript:S7773"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:hooks/useChat.tsx",
-    "line": 104,
-    "message": "Prefer `.findLast(…)` over `.filter(…).pop()`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7750"
-  },
-  {
     "severity": "MINOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:lib/prompt-builder.ts",
     "line": 122,
@@ -153,115 +97,11 @@
   },
   {
     "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/prompt-builder.ts",
-    "line": 123,
-    "message": "Do not call `Array#push()` multiple times.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7778"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/prompt-builder.ts",
-    "line": 124,
-    "message": "Do not call `Array#push()` multiple times.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7778"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:scripts/test-ai-responses.mjs",
-    "line": 26,
-    "message": "Prefer `String#replaceAll()` over `String#replace()`.",
-    "type": "CODE_SMELL",
-    "rule": "javascript:S7781"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/training-examples.ts",
-    "line": 30,
-    "message": "Refactor this code to not use nested template literals.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S4624"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/notifications.ts",
-    "line": 201,
-    "message": "Remove duplicates in this character class.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S5869"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/notifications.ts",
-    "line": 202,
-    "message": "Prefer `String#replaceAll()` over `String#replace()`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7781"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/notifications.ts",
-    "line": 203,
-    "message": "Prefer `String#replaceAll()` over `String#replace()`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7781"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/notifications.ts",
-    "line": 204,
-    "message": "Prefer `String#replaceAll()` over `String#replace()`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7781"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:app/api/technician/fast-claim/route.ts",
-    "line": 39,
-    "message": "Prefer `String#replaceAll()` over `String#replace()`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7781"
-  },
-  {
-    "severity": "MINOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:components/chat/chat-messages.tsx",
     "line": 13,
     "message": "'content ?? ''' will use Object's default stringification format ('[object Object]') when stringified.",
     "type": "CODE_SMELL",
     "rule": "typescript:S6551"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/notifications.ts",
-    "line": 200,
-    "message": "Prefer `String#replaceAll()` over `String#replace()`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7781"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/notifications.ts",
-    "line": 201,
-    "message": "Prefer `String#replaceAll()` over `String#replace()`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7781"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:app/login/page.tsx",
-    "line": 36,
-    "message": "Prefer `globalThis` over `window`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7764"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:components/chat/magic-link-modal.tsx",
-    "line": 42,
-    "message": "Prefer `globalThis` over `window`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7764"
   },
   {
     "severity": "MINOR",
@@ -294,70 +134,6 @@
     "message": "Unexpected negated condition.",
     "type": "CODE_SMELL",
     "rule": "typescript:S7735"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:supabase/migrations/003_idempotent_policies.sql",
-    "line": 273,
-    "message": "Remove this commented out code.",
-    "type": "CODE_SMELL",
-    "rule": "plsql:S125"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:scripts/test-ai-responses.mjs",
-    "line": 24,
-    "message": "Prefer `String#replaceAll()` over `String#replace()`.",
-    "type": "CODE_SMELL",
-    "rule": "javascript:S7781"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:auth.ts",
-    "line": 18,
-    "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6582"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/notifications.ts",
-    "line": 374,
-    "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6606"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:supabase/migrations/001_initial_schema.sql",
-    "line": 98,
-    "message": "Remove this commented out code.",
-    "type": "CODE_SMELL",
-    "rule": "plsql:S125"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:supabase/migrations/001_initial_schema.sql",
-    "line": 156,
-    "message": "Remove this commented out code.",
-    "type": "CODE_SMELL",
-    "rule": "plsql:S125"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:supabase/migrations/001_initial_schema.sql",
-    "line": 205,
-    "message": "Remove this commented out code.",
-    "type": "CODE_SMELL",
-    "rule": "plsql:S125"
-  },
-  {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:app/login/page.tsx",
-    "line": 28,
-    "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S6582"
   },
   {
     "severity": "MAJOR",
@@ -432,17 +208,9 @@
     "rule": "typescript:S7735"
   },
   {
-    "severity": "MAJOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/customer-personalization.ts",
-    "line": 1,
-    "message": "Remove this commented out code.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S125"
-  },
-  {
     "severity": "INFO",
     "component": "bronovito-maker_nikituttofare-web-mvp:lib/customer-personalization.ts",
-    "line": 45,
+    "line": 37,
     "message": "Complete the task associated to this \"TODO\" comment.",
     "type": "CODE_SMELL",
     "rule": "typescript:S1135"
@@ -457,30 +225,6 @@
   },
   {
     "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/customer-personalization.ts",
-    "line": 27,
-    "message": "Prefer `String#replaceAll()` over `String#replace()`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7781"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/customer-personalization.ts",
-    "line": 27,
-    "message": "Prefer `String#replaceAll()` over `String#replace()`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7781"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/customer-personalization.ts",
-    "line": 27,
-    "message": "Prefer `String#replaceAll()` over `String#replace()`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7781"
-  },
-  {
-    "severity": "MINOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:lib/ai-shim.ts",
     "line": 41,
     "message": "The empty object is useless.",
@@ -489,66 +233,10 @@
   },
   {
     "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/notifications.ts",
-    "line": 339,
-    "message": "Prefer `String#replaceAll()` over `String#replace()`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7781"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/notifications.ts",
-    "line": 354,
-    "message": "`String.raw` should be used to avoid escaping `\\`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7780"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/notifications.ts",
-    "line": 355,
-    "message": "`String.raw` should be used to avoid escaping `\\`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7780"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/notifications.ts",
-    "line": 356,
-    "message": "`String.raw` should be used to avoid escaping `\\`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7780"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/notifications.ts",
-    "line": 357,
-    "message": "`String.raw` should be used to avoid escaping `\\`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7780"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/notifications.ts",
-    "line": 358,
-    "message": "`String.raw` should be used to avoid escaping `\\`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7780"
-  },
-  {
-    "severity": "MINOR",
     "component": "bronovito-maker_nikituttofare-web-mvp:lib/chat-copy.tsx",
     "line": 1,
     "message": "Remove this unused import of 'Link'.",
     "type": "CODE_SMELL",
     "rule": "typescript:S1128"
-  },
-  {
-    "severity": "MINOR",
-    "component": "bronovito-maker_nikituttofare-web-mvp:lib/crypto.ts",
-    "line": 7,
-    "message": "Prefer `Number.parseInt` over `parseInt`.",
-    "type": "CODE_SMELL",
-    "rule": "typescript:S7773"
   }
 ]

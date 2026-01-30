@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Database } from '@/lib/database.types';
 import { forceCloseTicket } from '@/app/actions/admin-actions';
+import { markTicketAsPaid } from '@/app/actions/payment-actions';
 import { toast } from 'sonner';
 import { TicketItem } from './ticket-item';
 
@@ -40,6 +41,21 @@ export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: Ticket
             toast.success("Ticket chiuso manualmente");
         } catch (error) {
             toast.error("Errore durante la chiusura");
+            console.error(error);
+        }
+    };
+
+    const handleMarkAsPaid = async (e: React.MouseEvent, ticketId: string) => {
+        e.stopPropagation(); // Stop selection trigger
+        try {
+            const result = await markTicketAsPaid(ticketId, 'transfer');
+            if (result.success) {
+                toast.success(result.message ?? 'Pagamento registrato');
+            } else {
+                toast.error(result.error ?? 'Errore');
+            }
+        } catch (error) {
+            toast.error("Errore durante la registrazione pagamento");
             console.error(error);
         }
     };
@@ -126,6 +142,7 @@ export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: Ticket
                                 isActive={selectedTicketId === ticket.id}
                                 onSelect={onSelectTicket}
                                 onForceClose={handleForceClose}
+                                onMarkAsPaid={handleMarkAsPaid}
                             />
                         ))}
                     </div>

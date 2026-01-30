@@ -1,6 +1,6 @@
 import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Banknote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Database } from '@/lib/database.types';
 
@@ -11,9 +11,10 @@ interface TicketItemProps {
     readonly isActive: boolean;
     readonly onSelect: (ticketId: string) => void;
     readonly onForceClose: (e: React.MouseEvent, ticketId: string) => Promise<void>;
+    readonly onMarkAsPaid?: (e: React.MouseEvent, ticketId: string) => Promise<void>;
 }
 
-export function TicketItem({ ticket, isActive, onSelect, onForceClose }: Readonly<TicketItemProps>) {
+export function TicketItem({ ticket, isActive, onSelect, onForceClose, onMarkAsPaid }: Readonly<TicketItemProps>) {
     const getUrgencyColor = (priority: string, status: string) => {
         if (status === 'resolved') return 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]';
         if (priority === 'emergency') return 'bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.4)]';
@@ -76,6 +77,28 @@ export function TicketItem({ ticket, isActive, onSelect, onForceClose }: Readonl
                             <CheckCircle2 className="w-3 h-3 mr-1" />
                             Chiudi
                         </Button>
+                    )}
+
+                    {/* Payment Action */}
+                    {ticket.payment_status !== 'paid' && onMarkAsPaid && (
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-5 px-1.5 text-[10px] text-amber-400 hover:text-amber-300 hover:bg-amber-400/10"
+                            onClick={(e) => onMarkAsPaid(e, ticket.id)}
+                            title="Segna come Pagato"
+                            aria-label="Segna ticket come pagato"
+                        >
+                            <Banknote className="w-3 h-3 mr-1" />
+                            Pagato
+                        </Button>
+                    )}
+
+                    {/* Payment Status Badge */}
+                    {ticket.payment_status === 'paid' && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                            💰 Pagato
+                        </span>
                     )}
                 </div>
             </div>

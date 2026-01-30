@@ -20,3 +20,6 @@ dist
 # System
 .DS_Store
 Thumbs.db
+
+# Sentry Config File
+.env.sentry-build-plugin

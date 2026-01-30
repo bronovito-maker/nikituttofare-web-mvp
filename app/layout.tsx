@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { CookieConsentProvider } from "@/components/providers/cookie-consent-provider";
 import { CookieBanner } from "@/components/ui/cookie-banner";
 import { AutoThemeWatcher } from "@/components/providers/auto-theme-watcher";
 import { Toaster } from "sonner";
@@ -41,6 +42,29 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="it" className={dmSans.variable} suppressHydrationWarning>
+      <head>
+        {/* 
+          GDPR TODO: Wrap future tracking scripts with CookieConsentProvider condition.
+          
+          Example for Google Analytics:
+          
+          import { useConsentCheck } from '@/components/providers/cookie-consent-provider';
+          
+          function AnalyticsScript() {
+            const analyticsAllowed = useConsentCheck('analytics');
+            if (!analyticsAllowed) return null;
+            return <Script src="https://..." />;
+          }
+          
+          For Meta Pixel / Marketing:
+          
+          function MarketingScripts() {
+            const marketingAllowed = useConsentCheck('marketing');
+            if (!marketingAllowed) return null;
+            return <Script src="https://..." />;
+          }
+        */}
+      </head>
       <body className={`${dmSans.className} antialiased`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
@@ -48,12 +72,15 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <AutoThemeWatcher />
-          {children}
-          <CookieBanner />
-          <Toaster />
+          <CookieConsentProvider>
+            <AutoThemeWatcher />
+            {children}
+            <CookieBanner />
+            <Toaster />
+          </CookieConsentProvider>
         </ThemeProvider>
       </body>
     </html>
   );
 }
+

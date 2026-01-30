@@ -2,10 +2,29 @@ import { createServerClient } from '@/lib/supabase-server'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
-import { Phone, MapPin, CheckCircle, ArrowLeft, Navigation } from 'lucide-react'
+import { Phone, MapPin, CheckCircle, ArrowLeft, Navigation, Banknote, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { completeJob, addJobNote } from '@/app/actions/technician-actions'
+import { markTicketAsPaid, type PaymentMethod } from '@/app/actions/payment-actions'
+
+// Payment Status Badge Component
+function PaymentStatusBadge({ status }: { status: string | null }) {
+    if (status === 'paid') {
+        return (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <Banknote className="w-3.5 h-3.5" />
+                PAGATO
+            </span>
+        )
+    }
+    return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            <CreditCard className="w-3.5 h-3.5" />
+            IN ATTESA DI PAGAMENTO
+        </span>
+    )
+}
 
 export default async function JobOperationalPage({ params }: { params: Promise<Readonly<{ id: string }>> }) {
     const supabase = await createServerClient()
@@ -33,6 +52,9 @@ export default async function JobOperationalPage({ params }: { params: Promise<R
         .contains('meta_data', { type: 'internal_note' })
         .order('created_at', { ascending: false })
 
+    const isPaid = ticket.payment_status === 'paid'
+    const isResolved = ticket.status === 'resolved'
+
     return (
         <div className="min-h-screen bg-[#121212] text-white font-sans pb-24">
             {/* Top Bar */}
@@ -40,10 +62,12 @@ export default async function JobOperationalPage({ params }: { params: Promise<R
                 <Link href="/technician/jobs" className="p-2 -ml-2 text-gray-400 hover:text-white">
                     <ArrowLeft className="w-6 h-6" />
                 </Link>
-                <div>
+                <div className="flex-1">
                     <h1 className="font-bold text-lg leading-none">Intervento in Corso</h1>
                     <span className="text-xs text-emerald-400">Assigned</span>
                 </div>
+                {/* Payment Status Badge */}
+                <PaymentStatusBadge status={ticket.payment_status} />
             </div>
 
             <div className="p-4 space-y-6">
@@ -123,17 +147,62 @@ export default async function JobOperationalPage({ params }: { params: Promise<R
                 </section>
             </div>
 
-            {/* Sticky Bottom Action */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0a0a0a]/95 border-t border-[#333] backdrop-blur z-50">
-                <form action={async () => {
-                    'use server'
-                    await completeJob(id)
-                }}>
-                    <Button type="submit" size="lg" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-14 text-lg shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-                        <CheckCircle className="w-6 h-6 mr-2" /> LAVORO COMPLETATO
-                    </Button>
-                </form>
+            {/* Sticky Bottom Actions */}
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0a0a0a]/95 border-t border-[#333] backdrop-blur z-50 space-y-3">
+                {/* Payment Action - Only show if not resolved */}
+                {!isResolved && !isPaid && (
+                    <form action={async (formData) => {
+                        'use server'
+                        const method = formData.get('method') as PaymentMethod
+                        await markTicketAsPaid(id, method)
+                    }}>
+                        <input type="hidden" name="method" value="cash" />
+                        <Button
+                            type="submit"
+                            variant="outline"
+                            size="lg"
+                            className="w-full border-amber-500/50 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 h-12"
+                        >
+                            <Banknote className="w-5 h-5 mr-2" />
+                            💰 Segna come Pagato (Contanti)
+                        </Button>
+                    </form>
+                )}
+
+                {/* Already Paid Indicator */}
+                {isPaid && !isResolved && (
+                    <div className="text-center py-2 px-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                        <p className="text-sm text-emerald-400 font-medium">✓ Pagamento registrato</p>
+                    </div>
+                )}
+
+                {/* Complete Job Button */}
+                {!isResolved && (
+                    <form action={async () => {
+                        'use server'
+                        await completeJob(id)
+                    }}>
+                        <Button
+                            type="submit"
+                            size="lg"
+                            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-14 text-lg shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                        >
+                            <CheckCircle className="w-6 h-6 mr-2" /> LAVORO COMPLETATO
+                        </Button>
+                    </form>
+                )}
+
+                {/* Resolved State */}
+                {isResolved && (
+                    <div className="text-center py-4">
+                        <p className="text-emerald-400 font-bold text-lg">✅ Lavoro Completato</p>
+                        <p className="text-gray-500 text-sm mt-1">
+                            {isPaid ? 'Pagamento ricevuto' : 'In attesa di pagamento'}
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     )
 }
+
