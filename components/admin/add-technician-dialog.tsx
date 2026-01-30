@@ -41,25 +41,25 @@ export function AddTechnicianDialog() {
                     + Aggiungi Tecnico
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px] bg-[#1a1a1a] border-[#333] text-white">
+            <DialogContent className="sm:max-w-[425px] bg-card border-border text-foreground">
                 <DialogHeader>
                     <DialogTitle>Registra Nuovo Tecnico</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="fullName" className="text-right text-gray-400">
+                        <Label htmlFor="fullName" className="text-right text-muted-foreground">
                             Nome
                         </Label>
                         <Input
                             id="fullName"
                             name="fullName"
                             placeholder="Mario Rossi"
-                            className="col-span-3 bg-[#121212] border-[#333] text-white focus:border-emerald-500"
+                            className="col-span-3 bg-background border-border text-foreground focus:border-emerald-500"
                             required
                         />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="phone" className="text-right text-gray-400">
+                        <Label htmlFor="phone" className="text-right text-muted-foreground">
                             Telefono
                         </Label>
                         <Input
@@ -67,12 +67,12 @@ export function AddTechnicianDialog() {
                             name="phone"
                             type="tel"
                             placeholder="+39 333 1234567"
-                            className="col-span-3 bg-[#121212] border-[#333] text-white focus:border-emerald-500"
+                            className="col-span-3 bg-background border-border text-foreground focus:border-emerald-500"
                             required
                         />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="pin" className="text-right text-gray-400">
+                        <Label htmlFor="pin" className="text-right text-muted-foreground">
                             PIN (6 cifre)
                         </Label>
                         <Input
@@ -83,7 +83,7 @@ export function AddTechnicianDialog() {
                             maxLength={6}
                             pattern="\d{6}"
                             title="Inserisci 6 cifre"
-                            className="col-span-3 bg-[#121212] border-[#333] text-white focus:border-emerald-500 font-mono tracking-widest"
+                            className="col-span-3 bg-background border-border text-foreground focus:border-emerald-500 font-mono tracking-widest"
                             required
                         />
                     </div>

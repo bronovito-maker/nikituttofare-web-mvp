@@ -23,12 +23,12 @@ interface ContextSidebarProps {
 export function ContextSidebar({ ticket, onOpenQuoteModal }: ContextSidebarProps) {
     if (!ticket) {
         return (
-            <div className="w-80 border-l border-[#333] bg-[#121212] p-6 flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 rounded-full bg-[#1a1a1a] flex items-center justify-center mb-4">
-                    <Zap className="w-6 h-6 text-slate-600" />
+            <div className="w-80 border-l border-border bg-background p-6 flex flex-col items-center justify-center text-center">
+                <div className="w-16 h-16 rounded-full bg-card flex items-center justify-center mb-4">
+                    <Zap className="w-6 h-6 text-muted-foreground" />
                 </div>
-                <h3 className="text-slate-200 font-medium mb-2">Nessun ticket selezionato</h3>
-                <p className="text-sm text-slate-500">Seleziona una conversazione per vedere i dettagli e le azioni rapide.</p>
+                <h3 className="text-foreground font-medium mb-2">Nessun ticket selezionato</h3>
+                <p className="text-sm text-muted-foreground">Seleziona una conversazione per vedere i dettagli e le azioni rapide.</p>
             </div>
         );
     }
@@ -40,11 +40,11 @@ export function ContextSidebar({ ticket, onOpenQuoteModal }: ContextSidebarProps
     };
 
     return (
-        <div className="w-80 border-l border-[#333] bg-[#121212] flex flex-col h-full overflow-y-auto scrollbar-thin scrollbar-thumb-[#333]">
+        <div className="w-80 border-l border-border bg-background flex flex-col h-full overflow-y-auto scrollbar-thin scrollbar-thumb-border">
 
             {/* Entity Extraction Card */}
-            <div className="p-6 border-b border-[#333]">
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <div className="p-6 border-b border-border">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Zap className="w-3 h-3 text-amber-500" />
                     Dati Estratti (AI)
                 </h3>
@@ -52,37 +52,37 @@ export function ContextSidebar({ ticket, onOpenQuoteModal }: ContextSidebarProps
                 <div className="space-y-4">
                     {/* Customer */}
                     <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
-                            <User className="w-4 h-4 text-slate-400" />
+                        <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center flex-shrink-0">
+                            <User className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <div>
-                            <p className="text-xs text-slate-500 mb-0.5">Cliente</p>
-                            <p className="text-sm text-slate-200 font-medium">{ticket.customer_name || 'Non rilevato'}</p>
+                            <p className="text-xs text-muted-foreground mb-0.5">Cliente</p>
+                            <p className="text-sm text-foreground font-medium">{ticket.customer_name || 'Non rilevato'}</p>
                         </div>
                     </div>
 
                     {/* Location */}
                     <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
-                            <MapPin className="w-4 h-4 text-slate-400" />
+                        <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center flex-shrink-0">
+                            <MapPin className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <div>
-                            <p className="text-xs text-slate-500 mb-0.5">Posizione</p>
-                            <p className="text-sm text-slate-200 font-medium leading-tight">
+                            <p className="text-xs text-muted-foreground mb-0.5">Posizione</p>
+                            <p className="text-sm text-foreground font-medium leading-tight">
                                 {ticket.city || 'Città non rilevata'}
-                                {ticket.address && <span className="block text-slate-400 text-xs mt-0.5">{ticket.address}</span>}
+                                {ticket.address && <span className="block text-muted-foreground text-xs mt-0.5">{ticket.address}</span>}
                             </p>
                         </div>
                     </div>
 
                     {/* Phone */}
                     <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
-                            <Phone className="w-4 h-4 text-slate-400" />
+                        <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center flex-shrink-0">
+                            <Phone className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <div>
-                            <p className="text-xs text-slate-500 mb-0.5">Contatto</p>
-                            <p className="text-sm text-slate-200 font-medium">
+                            <p className="text-xs text-muted-foreground mb-0.5">Contatto</p>
+                            <p className="text-sm text-foreground font-medium">
                                 {ticket.contact_phone ? `+39 ${ticket.contact_phone}` : 'Non rilevato'}
                             </p>
                         </div>
@@ -91,12 +91,12 @@ export function ContextSidebar({ ticket, onOpenQuoteModal }: ContextSidebarProps
             </div>
 
             {/* Snapshot Preview (Mock) */}
-            <div className="p-6 border-b border-[#333]">
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
+            <div className="p-6 border-b border-border">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">
                     Media Rilevati
                 </h3>
                 {ticket.photo_url ? (
-                    <div className="relative aspect-video rounded-lg overflow-hidden border border-[#333] group cursor-pointer">
+                    <div className="relative aspect-video rounded-lg overflow-hidden border border-border group cursor-pointer">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={ticket.photo_url}
@@ -108,7 +108,7 @@ export function ContextSidebar({ ticket, onOpenQuoteModal }: ContextSidebarProps
                         </div>
                     </div>
                 ) : (
-                    <div className="h-24 bg-[#1a1a1a] rounded-lg border border-[#333] border-dashed flex items-center justify-center text-xs text-slate-500">
+                    <div className="h-24 bg-card rounded-lg border border-border border-dashed flex items-center justify-center text-xs text-muted-foreground">
                         Nessuna foto
                     </div>
                 )}
@@ -116,35 +116,35 @@ export function ContextSidebar({ ticket, onOpenQuoteModal }: ContextSidebarProps
 
             {/* Quick Actions */}
             <div className="p-6 space-y-3">
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
                     Azioni Rapide
                 </h3>
 
                 <Button
                     onClick={() => handleMockAction('Link Pagamento')}
                     variant="outline"
-                    className="w-full justify-start border-[#333] hover:bg-[#222] hover:text-slate-200 text-slate-400 h-10"
+                    className="w-full justify-start border-border hover:bg-secondary hover:text-foreground text-muted-foreground h-10"
                 >
-                    <CreditCard className="w-4 h-4 mr-2 text-purple-400" />
+                    <CreditCard className="w-4 h-4 mr-2 text-purple-500" />
                     Link Pagamento
                 </Button>
 
                 <Button
                     onClick={onOpenQuoteModal}
-                    className="w-full justify-start bg-blue-600/10 border-blue-600/30 hover:bg-blue-600/20 text-blue-400 hover:text-blue-300 h-10 border"
+                    className="w-full justify-start bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 hover:text-blue-500 h-10 border"
                 >
                     <FileCheck className="w-4 h-4 mr-2" />
                     Genera Preventivo
                 </Button>
 
-                <Button variant="outline" className="w-full justify-start border-[#333] hover:bg-[#222] hover:text-slate-200 text-slate-400 h-10">
+                <Button variant="outline" className="w-full justify-start border-border hover:bg-secondary hover:text-foreground text-muted-foreground h-10">
                     <MoreHorizontal className="w-4 h-4 mr-2" />
                     Altro
                 </Button>
             </div>
 
-            <div className="mt-auto p-6 bg-[#0a0a0a] border-t border-[#333]">
-                <h4 className="text-xs font-bold text-slate-400 mb-1">Status Sistema</h4>
+            <div className="mt-auto p-6 bg-card/50 border-t border-border">
+                <h4 className="text-xs font-bold text-muted-foreground mb-1">Status Sistema</h4>
                 <div className="flex items-center gap-2 text-[10px] text-emerald-500 font-mono">
                     <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>

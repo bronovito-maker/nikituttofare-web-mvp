@@ -90,25 +90,25 @@ export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: Ticket
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#121212] border-r border-[#333]">
+        <div className="flex flex-col h-full bg-background border-r border-border">
             {/* Feed Header */}
-            <div className="p-4 border-b border-[#333] space-y-4">
+            <div className="p-4 border-b border-border space-y-4">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-slate-200 tracking-tight flex items-center gap-2 ml-12 md:ml-0">
+                    <h2 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2 ml-12 md:ml-0">
                         Ticket Feed
-                        <Badge variant="secondary" className="bg-[#1a1a1a] text-xs font-mono text-slate-400 border border-[#333]">
+                        <Badge variant="secondary" className="bg-card text-xs font-mono text-muted-foreground border border-border">
                             {filteredTickets.length} / {tickets.length}
                         </Badge>
                     </h2>
                     <div className="flex items-center gap-2">
-                        <span className="text-[10px] uppercase font-bold text-slate-500">
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground">
                             {getFilterLabel(filterMode)}
                         </span>
                         <Button
                             variant="ghost"
                             size="icon"
                             onClick={cycleFilter}
-                            className={`h-8 w-8 transition-colors ${filterMode === 'ALL' ? 'text-slate-400 hover:text-white' : 'text-blue-400 bg-blue-400/10'}`}
+                            className={`h-8 w-8 transition-colors ${filterMode === 'ALL' ? 'text-muted-foreground hover:text-foreground' : 'text-blue-500 bg-blue-500/10'}`}
                             aria-label={`Filtro stato: ${getFilterLabel(filterMode)}`}
                         >
                             <Filter className="w-4 h-4" />
@@ -116,25 +116,25 @@ export function TicketFeed({ tickets, selectedTicketId, onSelectTicket }: Ticket
                     </div>
                 </div>
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Cerca ticket, cliente, ID..."
-                        className="bg-[#1a1a1a] border-[#333] pl-9 text-slate-200 placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 h-9 text-sm rounded-lg transition-all"
+                        className="bg-card border-border pl-9 text-foreground placeholder:text-muted-foreground focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 h-9 text-sm rounded-lg transition-all"
                         aria-label="Cerca ticket"
                     />
                 </div>
             </div>
 
             {/* Feed List */}
-            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-[#333] scrollbar-track-transparent">
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
                 {filteredTickets.length === 0 ? (
-                    <div className="p-8 text-center text-slate-600 text-sm">
+                    <div className="p-8 text-center text-muted-foreground text-sm">
                         Nessun ticket trovato.
                     </div>
                 ) : (
-                    <div className="divide-y divide-[#1f1f1f]">
+                    <div className="divide-y divide-border">
                         {filteredTickets.map((ticket) => (
                             <TicketItem
                                 key={ticket.id}

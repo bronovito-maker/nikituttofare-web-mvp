@@ -23,7 +23,7 @@ export function CustomerDashboard({ initialTickets, userProfile }: CustomerDashb
 
 
     return (
-        <div className="min-h-screen bg-[#0f0f0f] text-slate-200 pb-24 md:pb-8 selection:bg-emerald-500/30">
+        <div className="min-h-screen bg-background text-foreground pb-24 md:pb-8 selection:bg-emerald-500/30">
 
             <DashboardHeader />
 

@@ -12,14 +12,14 @@ import { markTicketAsPaid, type PaymentMethod } from '@/app/actions/payment-acti
 function PaymentStatusBadge({ status }: { status: string | null }) {
     if (status === 'paid') {
         return (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30">
                 <Banknote className="w-3.5 h-3.5" />
                 PAGATO
             </span>
         )
     }
     return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30">
             <CreditCard className="w-3.5 h-3.5" />
             IN ATTESA DI PAGAMENTO
         </span>
@@ -56,15 +56,15 @@ export default async function JobOperationalPage({ params }: { params: Promise<R
     const isResolved = ticket.status === 'resolved'
 
     return (
-        <div className="min-h-screen bg-[#121212] text-white font-sans pb-24">
+        <div className="min-h-screen bg-background text-foreground font-sans pb-24">
             {/* Top Bar */}
-            <div className="sticky top-0 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-[#333] p-4 flex items-center gap-4 z-50">
-                <Link href="/technician/jobs" className="p-2 -ml-2 text-gray-400 hover:text-white">
+            <div className="sticky top-0 bg-background/90 backdrop-blur-md border-b border-border p-4 flex items-center gap-4 z-50">
+                <Link href="/technician/jobs" className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
                     <ArrowLeft className="w-6 h-6" />
                 </Link>
                 <div className="flex-1">
-                    <h1 className="font-bold text-lg leading-none">Intervento in Corso</h1>
-                    <span className="text-xs text-emerald-400">Assigned</span>
+                    <h1 className="font-bold text-lg leading-none text-foreground">Intervento in Corso</h1>
+                    <span className="text-xs text-emerald-500 dark:text-emerald-400">Assigned</span>
                 </div>
                 {/* Payment Status Badge */}
                 <PaymentStatusBadge status={ticket.payment_status} />
@@ -72,28 +72,28 @@ export default async function JobOperationalPage({ params }: { params: Promise<R
 
             <div className="p-4 space-y-6">
                 {/* Customer Card */}
-                <section className="bg-[#1a1a1a] rounded-xl p-5 border border-[#333]">
+                <section className="bg-card rounded-xl p-5 border border-border">
                     <div className="flex justify-between items-start mb-4">
                         <div>
-                            <h2 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Cliente</h2>
-                            <p className="text-xl font-semibold">{ticket.customer_name || 'Cliente Guest'}</p>
+                            <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-1">Cliente</h2>
+                            <p className="text-xl font-semibold text-foreground">{ticket.customer_name || 'Cliente Guest'}</p>
                         </div>
-                        <Button size="icon" className="rounded-full bg-emerald-600 hover:bg-emerald-700" asChild>
+                        <Button size="icon" className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white" asChild>
                             <a href={`tel:${ticket.contact_phone || ''}`}>
                                 <Phone className="w-5 h-5" />
                             </a>
                         </Button>
                     </div>
 
-                    <div className="flex items-start gap-3 bg-[#121212] p-3 rounded-lg border border-[#333/50]">
-                        <MapPin className="w-5 h-5 text-gray-500 mt-1" />
+                    <div className="flex items-start gap-3 bg-secondary/50 p-3 rounded-lg border border-border">
+                        <MapPin className="w-5 h-5 text-muted-foreground mt-1" />
                         <div className="flex-1">
-                            <p className="text-sm text-gray-200">{ticket.address}, {ticket.city || ''}</p>
+                            <p className="text-sm text-foreground">{ticket.address}, {ticket.city || ''}</p>
                             <a
                                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((ticket.address || '') + ' ' + (ticket.city || ''))}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs text-emerald-400 font-medium mt-1 inline-flex items-center gap-1 hover:underline"
+                                className="text-xs text-emerald-500 dark:text-emerald-400 font-medium mt-1 inline-flex items-center gap-1 hover:underline"
                             >
                                 <Navigation className="w-3 h-3" /> Apri Mappe
                             </a>
@@ -103,11 +103,11 @@ export default async function JobOperationalPage({ params }: { params: Promise<R
 
                 {/* Problem Detail */}
                 <section>
-                    <h2 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Dettaglio Problema</h2>
-                    <div className="bg-[#1a1a1a] rounded-xl p-4 border border-[#333]">
-                        <p className="text-gray-200 leading-relaxed">{ticket.description}</p>
+                    <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">Dettaglio Problema</h2>
+                    <div className="bg-card rounded-xl p-4 border border-border">
+                        <p className="text-foreground leading-relaxed">{ticket.description}</p>
                         {ticket.photo_url && (
-                            <div className="mt-4 rounded-lg overflow-hidden border border-[#333]">
+                            <div className="mt-4 rounded-lg overflow-hidden border border-border">
                                 <img src={ticket.photo_url} alt="Foto guasto" className="w-full h-auto" />
                             </div>
                         )}
@@ -116,8 +116,8 @@ export default async function JobOperationalPage({ params }: { params: Promise<R
 
                 {/* Internal Notes */}
                 <section>
-                    <h2 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Note Tecniche</h2>
-                    <div className="bg-[#1a1a1a] rounded-xl p-4 border border-[#333] space-y-4">
+                    <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">Note Tecniche</h2>
+                    <div className="bg-card rounded-xl p-4 border border-border space-y-4">
                         <form action={async (formData) => {
                             'use server'
                             const note = formData.get('note') as string
@@ -126,18 +126,18 @@ export default async function JobOperationalPage({ params }: { params: Promise<R
                             <Textarea
                                 name="note"
                                 placeholder="Aggiungi una nota interna..."
-                                className="bg-[#121212] border-[#333] text-white focus:border-emerald-500 mb-2"
+                                className="bg-secondary/50 border-border text-foreground focus:border-emerald-500 mb-2"
                             />
-                            <Button type="submit" variant="secondary" size="sm" className="w-full bg-[#333] hover:bg-[#444] text-white text-xs">
+                            <Button type="submit" variant="secondary" size="sm" className="w-full text-xs">
                                 Salva Nota
                             </Button>
                         </form>
 
                         <div className="space-y-3 pt-2">
                             {notes?.map((note) => (
-                                <div key={note.id} className="text-sm bg-[#121212] p-3 rounded border border-[#333/50]">
-                                    <p className="text-gray-300">{note.content}</p>
-                                    <span className="text-[10px] text-gray-600 block mt-1 text-right">
+                                <div key={note.id} className="text-sm bg-secondary/50 p-3 rounded border border-border">
+                                    <p className="text-foreground">{note.content}</p>
+                                    <span className="text-[10px] text-muted-foreground block mt-1 text-right">
                                         {new Date(note.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
@@ -148,31 +148,49 @@ export default async function JobOperationalPage({ params }: { params: Promise<R
             </div>
 
             {/* Sticky Bottom Actions */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0a0a0a]/95 border-t border-[#333] backdrop-blur z-50 space-y-3">
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 border-t border-border backdrop-blur z-50 space-y-3">
                 {/* Payment Action - Only show if not resolved */}
                 {!isResolved && !isPaid && (
-                    <form action={async (formData) => {
-                        'use server'
-                        const method = formData.get('method') as PaymentMethod
-                        await markTicketAsPaid(id, method)
-                    }}>
-                        <input type="hidden" name="method" value="cash" />
-                        <Button
-                            type="submit"
-                            variant="outline"
-                            size="lg"
-                            className="w-full border-amber-500/50 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 h-12"
-                        >
-                            <Banknote className="w-5 h-5 mr-2" />
-                            💰 Segna come Pagato (Contanti)
-                        </Button>
-                    </form>
+                    <div className="flex gap-3">
+                        <form action={async (formData) => {
+                            'use server'
+                            const method = formData.get('method') as PaymentMethod
+                            await markTicketAsPaid(id, method)
+                        }} className="flex-1">
+                            <input type="hidden" name="method" value="cash" />
+                            <Button
+                                type="submit"
+                                variant="outline"
+                                size="lg"
+                                className="w-full border-amber-500/50 text-amber-500 dark:text-amber-400 hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-300 h-12"
+                            >
+                                <Banknote className="w-5 h-5 mr-2" />
+                                💵 Contanti
+                            </Button>
+                        </form>
+                        <form action={async (formData) => {
+                            'use server'
+                            const method = formData.get('method') as PaymentMethod
+                            await markTicketAsPaid(id, method)
+                        }} className="flex-1">
+                            <input type="hidden" name="method" value="card" />
+                            <Button
+                                type="submit"
+                                variant="outline"
+                                size="lg"
+                                className="w-full border-blue-500/50 text-blue-500 dark:text-blue-400 hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-300 h-12"
+                            >
+                                <CreditCard className="w-5 h-5 mr-2" />
+                                💳 POS
+                            </Button>
+                        </form>
+                    </div>
                 )}
 
                 {/* Already Paid Indicator */}
                 {isPaid && !isResolved && (
                     <div className="text-center py-2 px-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                        <p className="text-sm text-emerald-400 font-medium">✓ Pagamento registrato</p>
+                        <p className="text-sm text-emerald-500 dark:text-emerald-400 font-medium">✓ Pagamento registrato</p>
                     </div>
                 )}
 
@@ -195,8 +213,8 @@ export default async function JobOperationalPage({ params }: { params: Promise<R
                 {/* Resolved State */}
                 {isResolved && (
                     <div className="text-center py-4">
-                        <p className="text-emerald-400 font-bold text-lg">✅ Lavoro Completato</p>
-                        <p className="text-gray-500 text-sm mt-1">
+                        <p className="text-emerald-500 dark:text-emerald-400 font-bold text-lg">✅ Lavoro Completato</p>
+                        <p className="text-muted-foreground text-sm mt-1">
                             {isPaid ? 'Pagamento ricevuto' : 'In attesa di pagamento'}
                         </p>
                     </div>
@@ -205,4 +223,3 @@ export default async function JobOperationalPage({ params }: { params: Promise<R
         </div>
     )
 }
-

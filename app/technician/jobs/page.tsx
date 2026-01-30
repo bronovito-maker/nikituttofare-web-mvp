@@ -29,28 +29,28 @@ export default async function TechnicianMyJobsPage() {
         .order('assigned_at', { ascending: false })
 
     return (
-        <div className="min-h-screen bg-[#121212] text-white p-4 pb-20 font-sans">
+        <div className="min-h-screen bg-background text-foreground p-4 pb-20 font-sans">
             <header className="mb-6">
-                <h1 className="text-xl font-bold">I Miei Lavori Attivi</h1>
-                <p className="text-gray-400 text-sm">Interventi in corso o programmati</p>
+                <h1 className="text-xl font-bold text-foreground">I Miei Lavori Attivi</h1>
+                <p className="text-muted-foreground text-sm">Interventi in corso o programmati</p>
             </header>
 
             <div className="space-y-4">
                 {jobs?.map((job) => (
-                    <div key={job.id} className="bg-[#1a1a1a] border border-l-4 border-[#333] border-l-emerald-500 rounded-lg p-4 relative">
+                    <div key={job.id} className="bg-card border border-l-4 border-border border-l-emerald-500 rounded-lg p-4 relative">
                         <div className="flex justify-between items-start mb-2">
-                            <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 text-[10px] uppercase">
+                            <Badge variant="outline" className="border-emerald-500/30 text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 text-[10px] uppercase">
                                 {job.category}
                             </Badge>
                             {job.priority === 'emergency' && (
-                                <span className="text-red-400 text-[10px] font-bold animate-pulse px-2 bg-red-900/20 rounded">URGENTE</span>
+                                <span className="text-red-500 dark:text-red-400 text-[10px] font-bold animate-pulse px-2 bg-red-500/10 dark:bg-red-900/20 rounded">URGENTE</span>
                             )}
                         </div>
 
-                        <h3 className="font-semibold text-lg leading-tight mb-2 pr-10">{job.description}</h3>
+                        <h3 className="font-semibold text-lg leading-tight mb-2 pr-10 text-foreground">{job.description}</h3>
 
-                        <div className="flex items-center text-sm text-gray-400 mb-4">
-                            <MapPin className="w-4 h-4 mr-1 text-gray-500" />
+                        <div className="flex items-center text-sm text-muted-foreground mb-4">
+                            <MapPin className="w-4 h-4 mr-1" />
                             <span className="truncate max-w-[200px]">{job.city || job.address}</span>
                         </div>
 
@@ -63,9 +63,9 @@ export default async function TechnicianMyJobsPage() {
                 ))}
 
                 {(!jobs || jobs.length === 0) && (
-                    <div className="text-center py-20 text-gray-500">
+                    <div className="text-center py-20 text-muted-foreground">
                         <p>Nessun lavoro attivo.</p>
-                        <Button variant="link" className="text-emerald-400 mt-2" asChild>
+                        <Button variant="link" className="text-emerald-500 dark:text-emerald-400 mt-2" asChild>
                             <Link href="/technician/claim">Cerca nuovi lavori</Link>
                         </Button>
                     </div>

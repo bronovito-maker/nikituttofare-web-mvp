@@ -23,19 +23,19 @@ export function ChatMessage({ message, ticket }: ChatMessageProps) {
         <div className={`flex ${isUser ? 'justify-start' : 'justify-end'} w-full`}>
             <div className={`flex gap-3 max-w-[85%] md:max-w-[70%] ${isUser ? '' : 'flex-row-reverse'}`}>
                 {/* Avatar */}
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isUser ? 'bg-slate-800' : 'bg-blue-600/20 border border-blue-500/30'}`}>
-                    {isUser ? <UserIcon className="w-4 h-4 text-slate-400" /> : <Bot className="w-4 h-4 text-blue-400" />}
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isUser ? 'bg-secondary' : 'bg-blue-500/10 border border-blue-500/30'}`}>
+                    {isUser ? <UserIcon className="w-4 h-4 text-muted-foreground" /> : <Bot className="w-4 h-4 text-blue-500 dark:text-blue-400" />}
                 </div>
 
                 {/* Content */}
                 <div className="space-y-1 min-w-0">
                     <div className={`flex items-baseline gap-2 ${isUser ? '' : 'justify-end'}`}>
-                        <span className="text-sm font-bold text-slate-300 truncate">{senderName}</span>
-                        <span className="text-xs text-slate-500 whitespace-nowrap">{timeString}</span>
+                        <span className="text-sm font-bold text-foreground truncate">{senderName}</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">{timeString}</span>
                     </div>
                     <div className={`p-3 rounded-2xl border text-sm leading-relaxed overflow-x-auto break-words ${isUser
-                        ? 'bg-[#1e1e1e] border-[#333] rounded-tl-none text-slate-300'
-                        : 'bg-blue-950/30 border-blue-900/50 rounded-tr-none text-blue-100'
+                        ? 'bg-card border-border rounded-tl-none text-foreground'
+                        : 'bg-blue-500/10 border-blue-500/30 rounded-tr-none text-blue-900 dark:text-blue-100'
                         }`}>
                         {message.content}
                     </div>

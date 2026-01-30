@@ -13,7 +13,7 @@ export default async function AdminDashboard() {
     return (
       <div className="flex flex-col items-center justify-center min-vh-100 p-6 text-center space-y-4">
         <h1 className="text-4xl font-bold text-red-600">403 Forbidden</h1>
-        <p className="text-slate-600 dark:text-slate-400">Accesso riservato all&apos;amministrazione.</p>
+        <p className="text-muted-foreground">Accesso riservato all&apos;amministrazione.</p>
         <Button asChild variant="outline">
           <Link href="/">Torna alla Home</Link>
         </Button>
@@ -41,33 +41,33 @@ export default async function AdminDashboard() {
   const completedTickets = tickets?.filter(t => t.status === 'completed' || t.status === 'closed').length || 0;
 
   return (
-    <div className="p-6 md:p-8 pt-16 md:pt-8 bg-[#121212] min-h-full">
-      <h1 className="text-3xl font-bold text-white mb-6">Dashboard Overview</h1>
+    <div className="p-6 md:p-8 pt-16 md:pt-8 bg-background min-h-full">
+      <h1 className="text-3xl font-bold text-foreground mb-6">Dashboard Overview</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6 shadow-lg">
-          <h3 className="text-gray-400 font-medium mb-2">Ticket Totali</h3>
-          <p className="text-4xl font-black text-white">{ticketCount}</p>
+        <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
+          <h3 className="text-muted-foreground font-medium mb-2">Ticket Totali</h3>
+          <p className="text-4xl font-black text-foreground">{ticketCount}</p>
         </div>
 
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6 shadow-lg">
-          <h3 className="text-emerald-400 font-medium mb-2">Ticket Attivi</h3>
-          <p className="text-4xl font-black text-white">{activeTickets}</p>
+        <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
+          <h3 className="text-emerald-600 dark:text-emerald-400 font-medium mb-2">Ticket Attivi</h3>
+          <p className="text-4xl font-black text-foreground">{activeTickets}</p>
         </div>
 
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6 shadow-lg">
-          <h3 className="text-blue-400 font-medium mb-2">Ticket Completati</h3>
-          <p className="text-4xl font-black text-white">{completedTickets}</p>
+        <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
+          <h3 className="text-blue-600 dark:text-blue-400 font-medium mb-2">Ticket Completati</h3>
+          <p className="text-4xl font-black text-foreground">{completedTickets}</p>
         </div>
       </div>
 
       <div className="mt-8">
-        <h2 className="text-xl font-bold text-white mb-4">Azioni Rapide</h2>
+        <h2 className="text-xl font-bold text-foreground mb-4">Azioni Rapide</h2>
         <div className="flex gap-4">
           <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
             <Link href="/admin/tickets">Gestisci Ticket</Link>
           </Button>
-          <Button asChild variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-800">
+          <Button asChild variant="outline" className="border-border text-foreground hover:bg-secondary">
             <Link href="/admin/technicians">Visualizza Tecnici</Link>
           </Button>
         </div>

@@ -83,24 +83,24 @@ function TechnicianLoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f172a] p-4 text-slate-200 selection:bg-blue-500/30">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 text-foreground selection:bg-blue-500/30">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-xl shadow-blue-900/20 mb-4 animate-in zoom-in duration-500">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-xl shadow-blue-900/20 dark:shadow-blue-500/10 mb-4 animate-in zoom-in duration-500">
             <HardHat className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
             Area Tecnici
           </h1>
-          <p className="text-slate-400">Accedi al portale operativo</p>
+          <p className="text-muted-foreground">Accedi al portale operativo</p>
         </div>
 
-        <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl shadow-2xl">
+        <Card className="bg-card/80 backdrop-blur-xl border-border shadow-2xl">
           <CardHeader>
-            <CardTitle className="text-center text-slate-200">
+            <CardTitle className="text-center text-foreground">
               {step === 'PHONE' ? 'Login' : 'Codice Accesso'}
             </CardTitle>
-            <CardDescription className="text-center text-slate-500">
+            <CardDescription className="text-center text-muted-foreground">
               {step === 'PHONE'
                 ? "Inserisci il tuo numero aziendale"
                 : `Inserisci il PIN per ${phone}`}
@@ -116,13 +116,13 @@ function TechnicianLoginForm() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handlePhoneSubmit()}
-                    className="bg-slate-950/50 border-slate-700 text-slate-200 focus:border-blue-500 transition-colors h-12 text-lg text-center tracking-wide"
+                    className="bg-secondary/50 border-border text-foreground focus:border-blue-500 transition-colors h-12 text-lg text-center tracking-wide"
                   />
                 </div>
                 <Button
                   onClick={handlePhoneSubmit}
                   disabled={loading || phone.length < 5}
-                  className="w-full h-12 bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-lg shadow-blue-900/20 transition-all hover:scale-[1.02]"
+                  className="w-full h-12 bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02]"
                 >
                   {loading ? <Loader2 className="animate-spin" /> : <>Avanti <ArrowRight className="ml-2 w-4 h-4" /></>}
                 </Button>
@@ -137,20 +137,20 @@ function TechnicianLoginForm() {
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                    className="bg-slate-950/50 border-slate-700 text-slate-200 focus:border-blue-500 transition-colors h-14 text-center text-3xl tracking-[1em] font-mono"
+                    className="bg-secondary/50 border-border text-foreground focus:border-blue-500 transition-colors h-14 text-center text-3xl tracking-[1em] font-mono"
                   />
                 </div>
                 <Button
                   onClick={handleLogin}
                   disabled={loading || pin.length < 6}
-                  className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-lg shadow-emerald-900/20 transition-all hover:scale-[1.02]"
+                  className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02]"
                 >
                   {loading ? <Loader2 className="animate-spin" /> : 'Accedi'}
                 </Button>
                 <div className="text-center">
                   <button
                     onClick={() => setStep('PHONE')}
-                    className="text-sm text-slate-500 hover:text-slate-300 transition-colors text-center hover:underline"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors text-center hover:underline"
                   >
                     Hai sbagliato numero?
                   </button>
@@ -159,7 +159,7 @@ function TechnicianLoginForm() {
             )}
 
             {error && (
-              <div className="p-3 bg-red-950/30 border border-red-900/50 text-red-400 text-sm rounded-lg text-center font-medium animate-in zoom-in-95">
+              <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm rounded-lg text-center font-medium animate-in zoom-in-95">
                 {error}
               </div>
             )}
@@ -172,7 +172,7 @@ function TechnicianLoginForm() {
 
 export default function TechnicianLogin() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0f172a]"><Loader2 className="animate-spin text-blue-500 w-8 h-8" /></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-blue-500 w-8 h-8" /></div>}>
       <TechnicianLoginForm />
     </Suspense>
   );

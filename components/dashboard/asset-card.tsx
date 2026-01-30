@@ -36,7 +36,7 @@ export function AssetCard({ asset }: Readonly<AssetProps>) {
 
     return (
         <Link href={`/dashboard/assets/${asset.id}`}>
-            <Card key={asset.id} className="relative overflow-hidden group hover:shadow-md transition-shadow cursor-pointer border-white/10 bg-[#151515] hover:border-white/20">
+            <Card key={asset.id} className="relative overflow-hidden group hover:shadow-md transition-shadow cursor-pointer border-border bg-card hover:border-primary/30">
                 <CardHeader className="pb-2">
                     <div className="flex justify-between items-start">
                         <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 mb-2 group-hover:bg-blue-500/20 transition-colors">
@@ -55,12 +55,12 @@ export function AssetCard({ asset }: Readonly<AssetProps>) {
                             <Trash2 className="w-4 h-4" />
                         </Button>
                     </div>
-                    <CardTitle className="text-lg leading-tight text-white group-hover:text-blue-400 transition-colors">{asset.address}</CardTitle>
+                    <CardTitle className="text-lg leading-tight text-foreground group-hover:text-blue-500 transition-colors">{asset.address}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm font-medium text-slate-400">{asset.city}</p>
+                    <p className="text-sm font-medium text-muted-foreground">{asset.city}</p>
                     {asset.notes && (
-                        <p className="text-sm mt-3 p-3 bg-black/20 rounded-lg text-slate-400 italic border border-white/5">
+                        <p className="text-sm mt-3 p-3 bg-secondary/50 rounded-lg text-muted-foreground italic border border-border">
                             &quot;{asset.notes}&quot;
                         </p>
                     )}

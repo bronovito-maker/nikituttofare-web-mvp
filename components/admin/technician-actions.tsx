@@ -75,7 +75,7 @@ export function TechnicianActions({ technician }: Readonly<TechnicianActionsProp
         <>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-white/10 text-slate-400">
+                    <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-secondary text-muted-foreground">
                         <span className="sr-only">Apri menu</span>
                         {loading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -84,10 +84,10 @@ export function TechnicianActions({ technician }: Readonly<TechnicianActionsProp
                         )}
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-[#1a1a1a] border-[#333] text-slate-200">
+                <DropdownMenuContent align="end" className="bg-card border-border text-foreground">
                     <DropdownMenuItem
                         onClick={handleToggleStatus}
-                        className="cursor-pointer focus:bg-[#252525] focus:text-slate-100"
+                        className="cursor-pointer focus:bg-secondary focus:text-foreground"
                     >
                         {isActive ? (
                             <>
@@ -101,10 +101,10 @@ export function TechnicianActions({ technician }: Readonly<TechnicianActionsProp
                             </>
                         )}
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-[#333]" />
+                    <DropdownMenuSeparator className="bg-border" />
                     <DropdownMenuItem
                         onClick={() => setIsDeleteDialogOpen(true)}
-                        className="text-red-500 cursor-pointer focus:bg-red-900/20 focus:text-red-400"
+                        className="text-red-500 cursor-pointer focus:bg-red-500/10 focus:text-red-500"
                     >
                         <Trash2 className="mr-2 h-4 w-4" />
                         <span>Elimina</span>
@@ -113,17 +113,17 @@ export function TechnicianActions({ technician }: Readonly<TechnicianActionsProp
             </DropdownMenu>
 
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <AlertDialogContent className="bg-[#1a1a1a] border-[#333]">
+                <AlertDialogContent className="bg-card border-border">
                     <AlertDialogHeader>
-                        <AlertDialogTitle className="text-slate-100">Sei assolutamente sicuro?</AlertDialogTitle>
-                        <AlertDialogDescription className="text-slate-400">
+                        <AlertDialogTitle className="text-foreground">Sei assolutamente sicuro?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-muted-foreground">
                             Questa azione non può essere annullata. Eliminerà permanentemente l&apos;account del tecnico{' '}
-                            <span className="font-bold text-slate-200 ml-1">{technician.full_name}</span> dal database.
+                            <span className="font-bold text-foreground ml-1">{technician.full_name}</span> dal database.
                             Se il tecnico ha degli interventi nello storico, l&apos;operazione verrà bloccata per sicurezza.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel className="bg-transparent border-[#333] text-slate-300 hover:bg-[#252525] hover:text-white">
+                        <AlertDialogCancel className="bg-transparent border-border text-foreground hover:bg-secondary hover:text-foreground">
                             Annulla
                         </AlertDialogCancel>
                         <AlertDialogAction

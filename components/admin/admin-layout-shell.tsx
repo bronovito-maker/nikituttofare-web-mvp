@@ -10,9 +10,9 @@ export function AdminLayoutShell({ children }: Readonly<{ children: React.ReactN
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
     return (
-        <div className="flex h-screen w-full bg-[#121212] overflow-hidden">
+        <div className="flex h-screen w-full bg-background overflow-hidden">
             {/* Desktop Sidebar (Hidden on Mobile) */}
-            <aside className="hidden md:flex w-16 flex-none bg-[#0a0a0a] border-r border-[#333] z-50 flex-col">
+            <aside className="hidden md:flex w-16 flex-none bg-card border-r border-border z-50 flex-col">
                 <SidebarNav />
             </aside>
 
@@ -20,11 +20,11 @@ export function AdminLayoutShell({ children }: Readonly<{ children: React.ReactN
             <div className="md:hidden absolute top-4 left-4 z-[60]">
                 <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
                     <SheetTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
+                        <Button variant="ghost" size="icon" className="text-foreground hover:bg-secondary">
                             <Menu className="w-6 h-6" />
                         </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="w-[80%] max-w-[300px] bg-[#0a0a0a] border-r border-[#333] p-0 text-white">
+                    <SheetContent side="left" className="w-[80%] max-w-[300px] bg-card border-r border-border p-0 text-foreground">
                         <SheetTitle className="sr-only">Menu Navigazione</SheetTitle>
                         <div className="h-full w-full">
                             <SidebarNav expanded />

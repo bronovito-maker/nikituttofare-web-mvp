@@ -1,6 +1,7 @@
 // app/api/n8n-proxy/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 const n8nProxySchema = z.object({
   message: z.string(),
@@ -9,7 +10,7 @@ const n8nProxySchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Authentication
+    // 1. Authentication (incoming request from our frontend)
     const authToken = req.headers.get('Authorization')?.split(' ')[1];
     if (authToken !== process.env.N8N_PROXY_SECRET) {
       return NextResponse.json({ error: "Non autorizzato" }, { status: 401 });
@@ -18,21 +19,35 @@ export async function POST(req: NextRequest) {
     // 2. Environment variable for URL
     const n8nUrl = process.env.N8N_WEBHOOK_URL;
     if (!n8nUrl) {
-      console.error('N8N_WEBHOOK_URL non è configurato');
+      logger.error('N8N_WEBHOOK_URL not configured', { action: 'n8n_proxy' });
       return NextResponse.json({ error: "Errore di configurazione del server" }, { status: 500 });
+    }
+
+    // 3. Webhook Secret (outgoing request to n8n) - FAIL SAFE
+    const webhookSecret = process.env.N8N_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      logger.error('N8N_WEBHOOK_SECRET not configured - blocking request for security', {
+        action: 'n8n_proxy',
+        component: 'n8n-proxy'
+      });
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
 
     const body = await req.json();
 
-    // 3. Input Validation
+    // 4. Input Validation
     const validation = n8nProxySchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json({ error: 'Dati non validi', details: validation.error.flatten() }, { status: 400 });
     }
 
+    // 5. Forward to n8n with secure header
     const response = await fetch(n8nUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-n8n-secret': webhookSecret,
+      },
       body: JSON.stringify(validation.data),
     });
 
@@ -40,7 +55,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(data);
 
   } catch (error) {
-    console.error('Errore Ponte n8n:', error);
+    logger.captureError(error, { action: 'n8n_proxy', component: 'n8n-proxy' });
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Dati non validi', details: error.flatten() }, { status: 400 });
     }
