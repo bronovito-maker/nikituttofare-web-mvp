@@ -1,4 +1,5 @@
 'use client';
+import { useState, useEffect } from 'react';
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -35,6 +36,13 @@ export function SidebarNav({ expanded = false }: { readonly expanded?: boolean }
         router.refresh(); // Pulisce la cache
         window.location.href = '/login'; // Redirect forzato
     };
+
+
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const toggleTheme = () => {
         setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -106,13 +114,13 @@ export function SidebarNav({ expanded = false }: { readonly expanded?: boolean }
                                     : 'w-12 h-12 justify-center'
                                     } rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/50`}
                             >
-                                {theme === 'dark' ? (
-                                    <Sun className={expanded ? "w-6 h-6" : "w-5 h-5"} />
-                                ) : (
-                                    <Moon className={expanded ? "w-6 h-6" : "w-5 h-5"} />
-                                )}
+                                {(() => {
+                                    if (!mounted) return <div className={expanded ? "w-6 h-6" : "w-5 h-5"} />;
+                                    if (theme === 'dark') return <Sun className={expanded ? "w-6 h-6" : "w-5 h-5"} />;
+                                    return <Moon className={expanded ? "w-6 h-6" : "w-5 h-5"} />;
+                                })()}
                                 <span className={expanded ? "" : "sr-only"}>
-                                    {theme === 'dark' ? 'Modalità Chiara' : 'Modalità Scura'}
+                                    {!mounted ? '' : theme === 'dark' ? 'Modalità Chiara' : 'Modalità Scura'}
                                 </span>
                             </Button>
                         );
@@ -125,7 +133,7 @@ export function SidebarNav({ expanded = false }: { readonly expanded?: boolean }
                                     {themeBtn}
                                 </TooltipTrigger>
                                 <TooltipContent side="right" className="bg-card border-border text-foreground font-medium">
-                                    {theme === 'dark' ? 'Modalità Chiara' : 'Modalità Scura'}
+                                    {!mounted ? 'Cambia Tema' : theme === 'dark' ? 'Modalità Chiara' : 'Modalità Scura'}
                                 </TooltipContent>
                             </Tooltip>
                         );

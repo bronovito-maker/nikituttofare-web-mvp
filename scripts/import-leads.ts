@@ -1,126 +1,115 @@
-import fs from 'node:fs';
-// @ts-ignore
-import csv from 'csv-parser';
 import { createClient } from '@supabase/supabase-js';
-import 'dotenv/config';
+import fs from 'node:fs';   // Fix SonarLint: node:fs
+import path from 'node:path'; // Fix SonarLint: node:path
+import { parse } from 'csv-parse/sync';
+import dotenv from 'dotenv';
 
-// Load ENV
+// 1. CONFIGURAZIONE ENV
+dotenv.config({ path: '.env.local' });
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) dotenv.config({ path: '.env' });
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    console.error("❌ Missing Supabase credentials in .env");
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error('❌ ERRORE: Mancano le variabili d\'ambiente (URL o SERVICE_KEY).');
     process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-interface CsvRow {
-    'Nome Struttura': string;
-    'Città': string;
-    'Tipologia': string;
-    'Valutazione': string;
-    'Indirizzo completo': string;
-    'Telefono': string;
-    'Email': string;
-    'Mail inviata': string;
-    'Chiamato': string;
-    'Visitato': string;
-    'Confermato': string;
-    'Note': string;
-}
+// Helper: Converte stringa "TRUE" in boolean
+const parseBool = (val: any) => String(val).toUpperCase().trim() === 'TRUE';
 
-const CSV_FILE_PATH = 'scripts/leads.csv';
-const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org/search';
+// Helper: Estrae la logica di Geocoding per ridurre la complessità del main
+async function getCoordinates(indirizzo: string, citta: string): Promise<string | null> {
+    if (!indirizzo || !citta) return null;
 
-// Helper for delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-async function geocodeAddress(address: string, city: string) {
     try {
-        const query = `${address}, ${city}`;
-        const url = `${NOMINATIM_BASE_URL}?q=${encodeURIComponent(query)}&format=json&limit=1`;
+        const query = `${indirizzo}, ${citta}`;
+        // User-Agent è obbligatorio per Nominatim
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`, {
+            headers: { 'User-Agent': 'NikiTuttofare-ImportScript/1.0' }
+        });
 
-        // User-Agent is required by Nominatim
-        const headers = { 'User-Agent': 'NTF-Leads-Importer/1.0' };
-
-        const response = await fetch(url, { headers });
-        if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+        if (!response.ok) return null;
 
         const data = await response.json();
-        if (data && data.length > 0) {
-            return { lat: data[0].lat, lon: data[0].lon };
+        if (Array.isArray(data) && data.length > 0) {
+            // Restituisce formato POINT(lon, lat) per Postgres
+            return `(${data[0].lat},${data[0].lon})`;
         }
-        return null;
     } catch (error) {
-        console.warn(`⚠️ Geocoding failed for ${address}:`, error);
-        return null;
+        console.warn(`⚠️ Errore geocoding per ${indirizzo}:`, error);
     }
+    return null;
 }
 
-async function parseBoolean(value: string) {
-    if (!value) return false;
-    const v = value.toLowerCase().trim();
-    return v === 'si' || v === 'yes' || v === 'true' || v === '1' || v === 'x';
-}
+// 2. FUNZIONE PRINCIPALE
+async function main() {
+    console.log('🚀 Avvio importazione Leads...');
 
-async function importLeads() {
-    if (!fs.existsSync(CSV_FILE_PATH)) {
-        console.error(`❌ CSV file not found at ${CSV_FILE_PATH}`);
-        console.log("👉 Please place your CSV file there before running the script.");
+    const csvPath = path.join(process.cwd(), 'scripts', 'leads.csv');
+
+    if (!fs.existsSync(csvPath)) {
+        console.error(`❌ File non trovato: ${csvPath}`);
         process.exit(1);
     }
 
-    const results: CsvRow[] = [];
+    const fileContent = fs.readFileSync(csvPath, 'utf-8');
 
-    fs.createReadStream(CSV_FILE_PATH)
-        .pipe(csv())
-        .on('data', (data) => results.push(data))
-        .on('end', async () => {
-            console.log(`📊 Found ${results.length} rows. Starting import...`);
+    const records = parse(fileContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+        bom: true,
+    });
 
-            for (const [index, row] of results.entries()) {
-                const name = row['Nome Struttura'];
-                if (!name) continue; // Skip empty rows
+    console.log(`📄 Trovate ${records.length} righe. Elaborazione in corso...`);
 
-                const address = row['Indirizzo completo'] || '';
-                const city = row['Città'] || '';
+    let successCount = 0;
+    let errorCount = 0;
 
-                // Geocoding with delay (1s to respect Nominatim rate limit)
-                await delay(1000);
-                const coords = await geocodeAddress(address, city);
+    for (const row of records) {
+        const nome = row['Nome Struttura'];
 
-                // Prepare DB object
-                const leadData = {
-                    name: name,
-                    city: city,
-                    type: row['Tipologia'],
-                    rating: Number.parseInt(row['Valutazione'] || '0'),
-                    address: address,
-                    phone: row['Telefono'],
-                    email: row['Email'],
-                    status_mail_sent: await parseBoolean(row['Mail inviata']),
-                    status_called: await parseBoolean(row['Chiamato']),
-                    status_visited: await parseBoolean(row['Visitato']),
-                    status_confirmed: await parseBoolean(row['Confermato']),
-                    notes: row['Note'],
-                    coordinates: coords ? `(${coords.lon},${coords.lat})` : null // Postgres point format (x,y) -> (lon,lat)
-                };
+        if (!nome) {
+            console.warn('⚠️ Riga saltata: Nome mancante');
+            continue;
+        }
 
-                const { error } = await supabase.from('leads').upsert(leadData, { onConflict: 'name' }); // Assuming name is somewhat unique or we rely on ID. Adjust to email if unique? IDK. Using insert for now, or upsert if we want to update.
-                // Actually, upsert requires a unique constraint. If no unique constraint other than ID, upsert acts like insert unless we specify ID. 
-                // Let's just use insert for simple import, or maybe upsert if we assume we might re-run.
-                // The migration didn't enforce unique name. I'll stick to insert, but check if exists strictly speaking or just insert.
-                // To keep it simple let's just insert.
+        // Ottieni coordinate (con delay per rate limit)
+        const coords = await getCoordinates(row['Indirizzo completo'], row['Città']);
+        if (coords) await new Promise(resolve => setTimeout(resolve, 1000)); // 1 secondo di pausa
 
-                if (error) {
-                    console.error(`❌ Error importing ${name}:`, error.message);
-                } else {
-                    console.log(`✅ Imported ${index + 1}/${results.length}: ${name} ${coords ? '📍' : ''}`);
-                }
-            }
-            console.log("🎉 Import finished!");
+        // Inserimento DB
+        const { error } = await supabase.from('leads').insert({
+            name: nome,
+            city: row['Città'],
+            type: row['Tipologia'],
+            rating: Number.parseInt(row['Valutazione'] || '0', 10), // Fix SonarLint: Number.parseInt
+            address: row['Indirizzo completo'],
+            phone: row['Numero di telefono'] || row['Contatto telefonico'],
+            email: row['Email di contatto'],
+            status_mail_sent: parseBool(row['Stato Invio Mail']),
+            status_called: parseBool(row['Contatto telefonico']),
+            status_visited: parseBool(row['Visita di Persona']),
+            status_confirmed: parseBool(row['Cliente Confermato']),
+            notes: row['Note/Servizi Suggeriti'] || row['Risposta'],
+            coordinates: coords
         });
+
+        if (error) {
+            console.error(`❌ Errore insert ${nome}:`, error.message);
+            errorCount++;
+        } else {
+            console.log(`✅ Inserito: ${nome} ${coords ? '📍' : ''}`);
+            successCount++;
+        }
+    }
+
+    console.log(`\n🏁 Finito! Inseriti: ${successCount}, Errori: ${errorCount}`);
 }
 
-await importLeads().catch(console.error);
+// Esecuzione Top-Level Await (supportata da tsx)
+await main();
