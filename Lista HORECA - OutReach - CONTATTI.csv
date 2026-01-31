@@ -1,0 +1,50 @@
+,,,,,,,,,,,,
+Nome Struttura,Città,Tipologia,Valutazione,Indirizzo completo,Numero di telefono,Email di contatto,Stato Invio Mail,Contatto telefonico,Visita di Persona,Cliente Confermato,Risposta,Note/Servizi Suggeriti
+La Voglia Ristorante & Bar,Riccione,Ristorante,3,"Viale Gabriele D'Annunzio, 223",3206478409,lavoglia25@libero.it,TRUE,TRUE,FALSE,TRUE,TRUE,inefficienza energetica e discomfort termico
+Il Vicolo,Riccione,Ristorante,2,"Via Latini, 11",3883006633,info@ilvicoloriccione.com,TRUE,TRUE,FALSE,FALSE,FALSE,ergonomia spaziale e degrado arredi esterni
+Ristorante Da Gher,Riccione,Ristorante,3,"Viale A. Galli, 2",0541647484,info@ristorantedagher.it,TRUE,FALSE,FALSE,FALSE,FALSE,inquinamento acustico e vetustà
+Ristorante Canasta,Riccione,Ristorante,2,"Viale Maria Ceccarini, 84",0541692306,info@canastariccione.com,TRUE,FALSE,FALSE,FALSE,FALSE,obsolescenza idraulica
+Sushi King,Rimini,Ristorante,2,"Via Ennio Coletti, 20",3761786995,441608246@gmail.com,FALSE,TRUE,FALSE,TRUE,TRUE,igiene e degrado ambientale
+"OASI Beach, Bar & Restaurant",Rimini,Ristorante,2,"Viale San Salvador, 87b",0541720168,oasibeachbartorrepedrera@gmail.com,TRUE,FALSE,FALSE,FALSE,FALSE,logorio da spiaggia e manutenzione esterna
+Royal Boutique Hotel,Riccione,Hotel,3,"Viale Antonio Gramsci, 110",0541600331,info@hotelroyalriccione.it,TRUE,FALSE,FALSE,FALSE,FALSE,disallineamento tra brand e struttura
+Hotel Giulietta,Riccione,Hotel,3,"Viale A. Galli, 3",0541647464,info@hotelgiulietta.com,TRUE,FALSE,FALSE,FALSE,FALSE,il gap tra aree comuni e camere
+Hotel Cristina,Riccione,Hotel,3,"Viale Catalani, 8",3283261027,info@hotelcristinariccione.it,TRUE,TRUE,FALSE,FALSE,FALSE,la transazione incompiuta
+Hotel Stella,Riccione,Hotel,3,"Viale Giardini, 19",0541692070,info@hotelstella.net,TRUE,FALSE,FALSE,FALSE,FALSE,superior solo sulla carta
+Hotel Record,Riccione,Hotel,3,"Viale Catalani, 2",0541647914,info@record-riccione.com,TRUE,FALSE,FALSE,FALSE,FALSE,emergenza idraulica
+Hotel Panoramic,Riccione,Hotel,2,"Viale Gabriele D'Annunzio, 109",0541646260,info@panoramichotel.it,TRUE,FALSE,FALSE,FALSE,FALSE,obsolesenza strutturale fronte mare
+Hotel Tre Rose,Riccione,Hotel,3,"Viale Guido Cavalcanti, 19",3472694122,info@hoteltrerose.com,TRUE,TRUE,FALSE,FALSE,FALSE,la sfida dell'igiene profonda
+Hotel Grisenda,Riccione,Hotel,3,"Viale Gabriele D'Annunzio, 11",0541647334,info@hotelgarisenda.it,TRUE,FALSE,FALSE,FALSE,FALSE,deficit elettrico e comfort
+Hotel Astra,Riccione,Hotel,3,"Viale Gabriele D'Annunzio, 51",0541647460,astra@hotelastra.net,TRUE,FALSE,FALSE,FALSE,FALSE,usura meccanica ed impiantistica
+Hotel Colombo,Riccione,Hotel,2,"Viale Maria Ceccarini, 106",0541603232,info@hotelcolomboriccione.it,TRUE,FALSE,FALSE,FALSE,FALSE,collasso delle infrastrutture sanitarie
+Hotel Viscount,Riccione,Hotel,2,"Viale Carlo Goldoni, 10",0541641533,info@hotelviscount.com,TRUE,FALSE,FALSE,FALSE,FALSE,patologie da condensa e muffe
+Hotel Hollywood,Riccione,Hotel,3,"Viale G. Leopardi, 24",05411834331,info@hotelhollywoodriccione.it,TRUE,FALSE,FALSE,FALSE,FALSE,"obsolescenza FF&E (furniture, fixtures & equipment)"
+Hotel Eliseo,Riccione,Hotel,3,"Viale Claudio Monteverdi, 3",0541646548,info@hoteleliseo.it,TRUE,FALSE,FALSE,FALSE,FALSE,degrado sistemico
+Hotel Morena,Riccione,Hotel,2,"viale Mario Rapisardi, 7",3381317854,hotelmorenariccione@gmail.com,TRUE,TRUE,FALSE,FALSE,FALSE,ventilazione e salubrità
+Hotel Columbia Frontemare,Rimini,Hotel,3,"Viale Regina Elena, 4",0541391104,info@hotel-columbia.it,TRUE,FALSE,FALSE,FALSE,FALSE,collasso della logistica verticale e degrado strutturale
+Hotel Artide,Rimini,Hotel,3,"Viale Regina Margherita, 30/A",0541312631,info@hotelartiderimini.com,TRUE,FALSE,FALSE,FALSE,FALSE,obsolescensa estetica e deficit igienico-funzionale
+Hotel Suprem,Rimini,Hotel,3,"Viale Giuliano Dati, 93",0541734403,info@hotelsuprem.it,TRUE,FALSE,FALSE,FALSE,FALSE,decadimento involucro e discomfort acustico
+Hotel Fellini,Rimini,Hotel,3,"Viale Rapallo, 21",3514639940,info@hotelfellinirimini.it,TRUE,TRUE,FALSE,FALSE,FALSE,deficit termico e impianti vetusti
+Hotel Bologna,Rimini,Hotel,3,"Viale Tirrenia, 8",3296483812,info@hotelbolognarimini.com,TRUE,TRUE,FALSE,FALSE,FALSE,emergenza muffa e ruggine
+Riviera Mare Beach Life,Rimini,Hotel,3,"Viale Giuliano Dati, 85",0541733557,info@rivieramarebeachlifehotel.com,TRUE,FALSE,FALSE,FALSE,FALSE,odori molesti e infiltrazioni
+Hotel Lily,Rimini,Hotel,3,"Viale Regina Elena, 175",0541392356,lily@primehospitalitygroup.it,TRUE,FALSE,FALSE,FALSE,FALSE,crisi idraulica e sicurezza elettrica
+Hotel Adria Mare,Rimini,Hotel,3,"Viale Sarsina, 4",3456601806,info@hoteladriamare.it,TRUE,TRUE,FALSE,FALSE,FALSE,space planning e insonorizzazione
+Hotel Carol,Rimini,Hotel,3,"Viale Sabotino, 12",054127165,info@hotelcarol.it,FALSE,FALSE,FALSE,FALSE,FALSE,decadimento strutturale e impiantistico
+Hotel Alcazar,Rimini,Hotel,3,"Viale Aretusa, 1",0541721007,info@hotelalcazar.it,FALSE,FALSE,FALSE,FALSE,FALSE,"igiene e manutenzione ""a rottura"""
+Luna Hotel,Rimini,Hotel,3,"Viale Como, 6",0541014468,info@lunahotelrimini.it,TRUE,FALSE,FALSE,FALSE,FALSE,ruggine e meccanismi rotti
+Hotel Laguna Blu,Rimini,Hotel,2,"Viale San Salvador, 4",0541720353,,FALSE,FALSE,FALSE,FALSE,FALSE,pericolo elettrico e strutturale
+Hotel Migani,Rimini,Hotel,2,"Viale Vincenzo Monti, 7",3913095897,francescabarcellona7@gmail.com,TRUE,TRUE,FALSE,FALSE,FALSE,degrado strutturale esterno ed interno
+Hotel Pecci,Rimini,Hotel,3,"Viale Brescia, 4",0541372061,hotelpeccirimini@gmail.com,FALSE,FALSE,FALSE,FALSE,FALSE,igiene e manutenzione tessile
+Hotel Venus,Rimini,Hotel,3,"Viale Latina, 2",3278039641,,FALSE,TRUE,FALSE,FALSE,FALSE,
+Hotel Venus,Riccione,Hotel,3,"Viale San Francesco, 14",0541641482,hvenus@libero.it,TRUE,FALSE,FALSE,FALSE,FALSE,tenuto molto bene
+Hotel Aurea,Rimini,Hotel,3,"Viale Giacinto Martinelli, 7",3710113848,info@hotelaurea.it,FALSE,TRUE,FALSE,FALSE,FALSE,tenuto molto bene
+Panna e Cioccolato,Riccione,Gelateria,3,"Viale Emilia, 38",0541694606,info@pannaecioccolato.net,FALSE,FALSE,FALSE,FALSE,FALSE,usura da alto traffico e deficit igienico
+Bevvabè,Riccione,Bar,4,"Viale Filippo Corridoni, 37",,bevabbe.riccione@gmail.com,FALSE,FALSE,FALSE,FALSE,FALSE,corrosione salina e degrado delle finiture
+Pasticceria Reale Caffetteria,Rimini,Pasticceria,3,"Viale Giuliano Dati, 47",0541738432,realeviserba@libero.it,FALSE,FALSE,FALSE,FALSE,FALSE,il peso della storia (e della polvere)
+,,,0,,,,FALSE,FALSE,FALSE,FALSE,FALSE,
+,,,0,,,,FALSE,FALSE,FALSE,FALSE,FALSE,
+,,,0,,,,FALSE,FALSE,FALSE,FALSE,FALSE,
+,,,0,,,,FALSE,FALSE,FALSE,FALSE,FALSE,
+,,,0,,,,FALSE,FALSE,FALSE,FALSE,FALSE,
+,,,0,,,,FALSE,FALSE,FALSE,FALSE,FALSE,
+,,,0,,,,FALSE,FALSE,FALSE,FALSE,FALSE,
+,,,0,,,,FALSE,FALSE,FALSE,FALSE,FALSE,
