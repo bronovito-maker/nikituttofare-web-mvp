@@ -28,7 +28,7 @@ export function LeadsTable({ leads }: LeadsTableProps) {
     const [filterStatus, setFilterStatus] = useState('all');
 
     // Extract unique cities
-    const cities = Array.from(new Set(leads.map(l => l.city).filter(Boolean))).sort();
+    const cities = Array.from(new Set(leads.map(l => l.city).filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b)));
 
     const filteredLeads = leads.filter(lead => {
         const s = search.toLowerCase();
