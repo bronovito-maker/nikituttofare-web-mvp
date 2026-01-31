@@ -17,6 +17,12 @@ import { TechnicianPreview } from '@/components/landing/technician-preview';
 import { PriceComparison } from '@/components/landing/price-comparison';
 import { HowItWorks } from '@/components/landing/how-it-works';
 import { DirectContact } from '@/components/landing/direct-contact';
+import { UrgencyStats } from '@/components/landing/urgency-stats';
+import { TestimonialCarousel } from '@/components/landing/testimonial-carousel';
+import { WhyChooseUs } from '@/components/landing/why-choose-us';
+import { TechnicianCTA } from '@/components/landing/technician-cta';
+import { TrustBadges } from '@/components/landing/trust-badges';
+import { FAQSection } from '@/components/landing/faq-section';
 
 type UserType = 'residential' | 'business';
 
@@ -62,15 +68,15 @@ export default function Home() {
                 <div className="space-y-4">
                   <BlurText
                     key={userType} // Force re-render on toggle
-                    text={userType === 'residential' ? "Guasti in casa?" : "Manutenzione Hotel."}
+                    text={userType === 'residential' ? "Un guasto ti sta" : "Manutenzione Hotel."}
                     className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-foreground leading-[1.05]"
                     delay={0.05}
                   />
                   <BlurText
                     key={`${userType}-sub`}
-                    text={userType === 'residential' ? "Arriviamo subito." : "Stagione Salva."}
+                    text={userType === 'residential' ? "rovinando la giornata?" : "Stagione Salva."}
                     className={`text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r leading-[1.05] ${userType === 'residential'
-                      ? 'from-blue-600 via-blue-500 to-cyan-500'
+                      ? 'from-orange-600 via-red-500 to-orange-500'
                       : 'from-slate-700 via-slate-600 to-slate-500 dark:from-slate-300 dark:via-slate-400 dark:to-slate-500'
                       }`}
                     delay={0.25}
@@ -81,8 +87,8 @@ export default function Home() {
                   <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0 leading-relaxed font-light">
                     {userType === 'residential' ? (
                       <>
-                        Basta preventivi a voce e attese infinite. <br />
-                        L&apos;<span className="font-semibold text-foreground">Intelligenza Artificiale</span> calcola il prezzo giusto su Rimini, Riccione e dintorni. Tu chiami, noi risolviamo.
+                        <span className="font-semibold text-foreground">Non aspettare che peggiori.</span> Descrivi il problema, <br />
+                        e in <span className="font-bold text-blue-600 dark:text-blue-400">18 minuti</span> un tecnico certificato è da te.
                       </>
                     ) : (
                       <>
@@ -159,6 +165,9 @@ export default function Home() {
           </div>
         </section>
 
+        {/* --- URGENCY STATS --- */}
+        <UrgencyStats />
+
         {/* --- COMPARISON SECTION (Glass Box) --- */}
         {userType === 'residential' && (
           <section className="py-16 sm:py-24 bg-card/50 border-y border-border">
@@ -208,7 +217,22 @@ export default function Home() {
         {/* --- HOW IT WORKS (New Visual Guide) --- */}
         <HowItWorks />
 
-        {/* --- DIRECT CONTACT (New "No-AI" Option) --- */}
+        {/* --- TESTIMONIALS --- */}
+        <TestimonialCarousel />
+
+        {/* --- WHY CHOOSE US --- */}
+        <WhyChooseUs />
+
+        {/* --- TRUST BADGES --- */}
+        <TrustBadges />
+
+        {/* --- TECHNICIAN CTA --- */}
+        <TechnicianCTA />
+
+        {/* --- FAQ --- */}
+        <FAQSection />
+
+        {/* --- DIRECT CONTACT ("No-AI" Option) --- */}
         <DirectContact />
 
         {/* --- COMMON FEATURES --- */}

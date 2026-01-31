@@ -11,6 +11,14 @@ export const useN8NChat = () => {
     const array = new Uint32Array(1);
     globalThis.crypto.getRandomValues(array);
     setChatId(array[0].toString(36));
+
+    // Welcome message from Niki
+    const welcomeMsg = {
+      role: 'assistant',
+      content: 'Ciao! 👋 Sono Niki, il tuo assistente personale. Sono qui per aiutarti con qualsiasi problema domestico: idraulica, elettricità, serrature, climatizzazione... **Raccontami cosa sta succedendo** e troverò il tecnico giusto per te!',
+      id: 'welcome',
+    };
+    setMessages([welcomeMsg]);
   }, []);
 
   const sendMessage = async (userMessage: string) => {

@@ -26,6 +26,8 @@ import { MobileNav } from '@/components/layout/mobile-nav';
 // ⚠️ IMPORTIAMO IL NUOVO HOOK N8N
 import { useN8NChat } from '@/hooks/useN8NChat';
 import { COMPANY_PHONE_LINK } from '@/lib/constants';
+import { ChatSuggestions, INITIAL_SUGGESTIONS, PROBLEM_FOLLOWUP_SUGGESTIONS } from '@/components/chat/chat-suggestions';
+import { ChatProgress } from '@/components/chat/chat-progress';
 
 // Quick action categories
 const QUICK_ACTIONS = [
@@ -74,6 +76,7 @@ export default function ChatPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [conversationStep, setConversationStep] = useState(0);
 
   // Auth state (Mantenuto per mostrare l'avatar utente)
   const [userInitials, setUserInitials] = useState<string | null>(null);
@@ -140,12 +143,22 @@ export default function ChatPage() {
     // 🔥 Chiama n8n tramite il nostro hook
     await sendMessage(finalMessage);
 
+    // Advance conversation step
+    setConversationStep(prev => Math.min(prev + 1, 3));
+
   }, [input, uploadedImageUrl, isLoading, isUploading, sendMessage]);
 
   // Gestione Quick Actions
   const handleQuickAction = async (action: typeof QUICK_ACTIONS[0]) => {
     setShowQuickActions(false);
     await sendMessage(action.message);
+    setConversationStep(1);
+  };
+
+  // Handle suggestion click
+  const handleSuggestionClick = async (suggestion: string) => {
+    await sendMessage(suggestion);
+    setConversationStep(prev => Math.min(prev + 1, 3));
   };
 
   // Gestione Immagini (UI Only per ora)
@@ -224,6 +237,9 @@ export default function ChatPage() {
         </div>
       </header>
 
+      {/* Progress Bar */}
+      {conversationStep > 0 && <ChatProgress step={conversationStep} />}
+
       {/* Main Chat Area */}
       <main className="flex-1 overflow-y-auto scrollbar-thin">
         <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
@@ -280,6 +296,15 @@ export default function ChatPage() {
               isLast={index === messages.length - 1}
             />
           ))}
+
+          {/* Suggestions after last AI message */}
+          {!isLoading && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && (
+            <ChatSuggestions
+              suggestions={conversationStep === 0 ? INITIAL_SUGGESTIONS : PROBLEM_FOLLOWUP_SUGGESTIONS}
+              onSelect={handleSuggestionClick}
+              disabled={isLoading}
+            />
+          )}
 
           {/* Loading Indicator */}
           {isLoading && (

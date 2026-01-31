@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, Home, Info, MessageSquare, LogIn, HardHat, Users } from 'lucide-react';
+import { Menu, Home, Info, MessageSquare, LogIn, HardHat } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,7 +23,6 @@ export function MobileNav() {
         { href: '/chat', label: 'Parla con Niki', icon: MessageSquare },
         { href: '/login', label: 'Area Clienti', icon: LogIn },
         { href: '/technician/login', label: 'Area Tecnici', icon: HardHat },
-        { href: '/admin/leads', label: 'CRM Leads', icon: Users }, // New CRM Link
     ];
 
     return (

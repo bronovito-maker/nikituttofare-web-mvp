@@ -1,24 +1,30 @@
-import { MessageSquare, Sparkles, Wrench } from 'lucide-react';
+import { MessageSquare, Sparkles, Wrench, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function HowItWorks() {
     const steps = [
         {
             icon: MessageSquare,
-            title: 'Descrivi il problema',
-            description: 'Scrivi cosa non va, come se parlassi a un amico.',
+            title: 'Chatta con Niki',
+            description: 'Descrivi il problema come se parlassi a un amico. Foto? Ancora meglio.',
             lightIconBg: 'bg-blue-100 text-blue-600',
         },
         {
             icon: Sparkles,
-            title: "L'AI Analizza",
-            description: 'Niki capisce l\'urgenza e trova il tecnico giusto in zona.',
+            title: 'Analisi Istantanea',
+            description: "L'AI capisce l'urgenza, categorizza e trova il tecnico giusto in zona.",
             lightIconBg: 'bg-purple-100 text-purple-600',
         },
         {
             icon: Wrench,
+            title: 'Tecnico in Arrivo',
+            description: 'Un professionista certificato ti contatta e arriva in media in 18 minuti.',
+            lightIconBg: 'bg-orange-100 text-orange-600',
+        },
+        {
+            icon: CheckCircle,
             title: 'Problema Risolto',
-            description: 'Un professionista certificato ti contatta subito.',
+            description: 'Lavoro fatto, pagamento digitale, fattura automatica. Tutto tracciato.',
             lightIconBg: 'bg-emerald-100 text-emerald-600',
         },
     ];
@@ -30,7 +36,7 @@ export function HowItWorks() {
                     Come Funziona
                 </h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
                     {steps.map((step, index) => {
                         const Icon = step.icon;
                         return (
