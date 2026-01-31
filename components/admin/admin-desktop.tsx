@@ -19,9 +19,7 @@ interface AdminDesktopProps {
 }
 
 export function AdminDesktop({ initialTickets }: AdminDesktopProps) {
-    const [selectedTicketId, setSelectedTicketId] = useState<string | undefined>(
-        initialTickets.length > 0 ? initialTickets[0].id : undefined
-    );
+    const [selectedTicketId, setSelectedTicketId] = useState<string | undefined>(undefined);
     // Lifted Autopilot State
     const [autoPilot, setAutoPilot] = useState(true);
 
@@ -66,7 +64,7 @@ export function AdminDesktop({ initialTickets }: AdminDesktopProps) {
             </aside>
 
             {/* Pane C: Workspace (Chat + Context) */}
-            <main className={`flex-1 flex flex-col min-w-0 bg-background ${selectedTicketId ? 'flex fixed inset-0 z-[100]' : 'hidden md:flex relative'}`}>
+            <main className={`flex-1 flex flex-col min-w-0 bg-background ${selectedTicketId ? 'flex fixed inset-0 z-[100] md:static md:z-auto' : 'hidden md:flex relative'}`}>
                 {/* Mobile Sticky Header (2-Rows) */}
                 {selectedTicketId && (
                     <div className="md:hidden flex-none bg-background border-b border-border flex flex-col px-4 py-3 gap-3 sticky top-0 z-50 shadow-lg">

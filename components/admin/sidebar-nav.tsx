@@ -12,13 +12,14 @@ import {
     Settings,
     LogOut,
     LayoutGrid,
+    MapPin,
     Sun,
     Moon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-export function SidebarNav({ expanded = false }: { readonly expanded?: boolean }) {
+export function SidebarNav({ expanded = false, onLinkClick }: { readonly expanded?: boolean, readonly onLinkClick?: () => void }) {
     const pathname = usePathname();
     const router = useRouter();
     const supabase = createBrowserClient();
@@ -28,6 +29,7 @@ export function SidebarNav({ expanded = false }: { readonly expanded?: boolean }
         { icon: LayoutGrid, label: 'Dashboard', href: '/admin' },
         { icon: Ticket, label: 'Ticket', href: '/admin/tickets' },
         { icon: Users, label: 'Tecnici', href: '/admin/technicians' },
+        { icon: MapPin, label: 'CRM Leads', href: '/admin/leads' },
         { icon: Settings, label: 'Settings', href: '/admin/settings' },
     ];
 
@@ -63,7 +65,7 @@ export function SidebarNav({ expanded = false }: { readonly expanded?: boolean }
                     {navItems.map((item) => {
                         const isActive = pathname === item.href;
                         const content = (
-                            <Link href={item.href} className={expanded ? "w-full" : ""}>
+                            <Link href={item.href} className={expanded ? "w-full" : ""} onClick={onLinkClick}>
                                 <Button
                                     variant="ghost"
                                     size={expanded ? "lg" : "icon"}
@@ -115,12 +117,16 @@ export function SidebarNav({ expanded = false }: { readonly expanded?: boolean }
                                     } rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/50`}
                             >
                                 {(() => {
-                                    if (!mounted) return <div className={expanded ? "w-6 h-6" : "w-5 h-5"} />;
-                                    if (theme === 'dark') return <Sun className={expanded ? "w-6 h-6" : "w-5 h-5"} />;
-                                    return <Moon className={expanded ? "w-6 h-6" : "w-5 h-5"} />;
+                                    const iconSize = expanded ? "w-6 h-6" : "w-5 h-5";
+                                    if (!mounted) return <div className={iconSize} />;
+                                    if (theme === 'dark') return <Sun className={iconSize} />;
+                                    return <Moon className={iconSize} />;
                                 })()}
                                 <span className={expanded ? "" : "sr-only"}>
-                                    {!mounted ? '' : theme === 'dark' ? 'Modalità Chiara' : 'Modalità Scura'}
+                                    {(() => {
+                                        if (!mounted) return '';
+                                        return theme === 'dark' ? 'Modalità Chiara' : 'Modalità Scura';
+                                    })()}
                                 </span>
                             </Button>
                         );
@@ -133,7 +139,10 @@ export function SidebarNav({ expanded = false }: { readonly expanded?: boolean }
                                     {themeBtn}
                                 </TooltipTrigger>
                                 <TooltipContent side="right" className="bg-card border-border text-foreground font-medium">
-                                    {!mounted ? 'Cambia Tema' : theme === 'dark' ? 'Modalità Chiara' : 'Modalità Scura'}
+                                    {(() => {
+                                        if (!mounted) return 'Cambia Tema';
+                                        return theme === 'dark' ? 'Modalità Chiara' : 'Modalità Scura';
+                                    })()}
                                 </TooltipContent>
                             </Tooltip>
                         );

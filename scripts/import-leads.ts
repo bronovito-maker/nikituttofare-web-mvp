@@ -1,18 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
-import fs from 'node:fs';   // Fix SonarLint: node:fs
-import path from 'node:path'; // Fix SonarLint: node:path
+import fs from 'node:fs';
+import path from 'node:path';
 import { parse } from 'csv-parse/sync';
 import dotenv from 'dotenv';
 
 // 1. CONFIGURAZIONE ENV
+// Carica le variabili d'ambiente
 dotenv.config({ path: '.env.local' });
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL) dotenv.config({ path: '.env' });
+// Fallback su .env se non trova le variabili
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    dotenv.config({ path: '.env' });
+}
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// Controllo critico configurazione
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-    console.error('❌ ERRORE: Mancano le variabili d\'ambiente (URL o SERVICE_KEY).');
+    console.error('❌ ERRORE CRITICO: Variabili d\'ambiente mancanti.');
+    console.error('Verifica di avere NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY nel file .env.local');
     process.exit(1);
 }
 
@@ -21,13 +27,13 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 // Helper: Converte stringa "TRUE" in boolean
 const parseBool = (val: any) => String(val).toUpperCase().trim() === 'TRUE';
 
-// Helper: Estrae la logica di Geocoding per ridurre la complessità del main
+// Helper: Geocoding separato per pulizia codice
 async function getCoordinates(indirizzo: string, citta: string): Promise<string | null> {
     if (!indirizzo || !citta) return null;
 
     try {
         const query = `${indirizzo}, ${citta}`;
-        // User-Agent è obbligatorio per Nominatim
+        // User-Agent obbligatorio per Nominatim
         const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`, {
             headers: { 'User-Agent': 'NikiTuttofare-ImportScript/1.0' }
         });
@@ -36,8 +42,8 @@ async function getCoordinates(indirizzo: string, citta: string): Promise<string 
 
         const data = await response.json();
         if (Array.isArray(data) && data.length > 0) {
-            // Restituisce formato POINT(lon, lat) per Postgres
-            return `(${data[0].lat},${data[0].lon})`;
+            // Restituisce formato POINT(lon, lat) compatibile con Postgres
+            return `(${data[0].lon},${data[0].lat})`;
         }
     } catch (error) {
         console.warn(`⚠️ Errore geocoding per ${indirizzo}:`, error);
@@ -53,17 +59,36 @@ async function main() {
 
     if (!fs.existsSync(csvPath)) {
         console.error(`❌ File non trovato: ${csvPath}`);
+        console.error('Assicurati di aver rinominato il file in "leads.csv" e di averlo messo nella cartella "scripts".');
         process.exit(1);
     }
 
     const fileContent = fs.readFileSync(csvPath, 'utf-8');
+
+    interface CsvRow {
+        'Nome Struttura': string;
+        'Città': string;
+        'Tipologia': string;
+        'Valutazione': string;
+        'Indirizzo completo': string;
+        'Numero di telefono'?: string;
+        'Contatto telefonico'?: string;
+        'Email di contatto': string;
+        'Stato Invio Mail': string;
+        'Visita di Persona': string;
+        'Cliente Confermato': string;
+        'Note/Servizi Suggeriti'?: string;
+        'Risposta'?: string;
+        [key: string]: any;
+    }
 
     const records = parse(fileContent, {
         columns: true,
         skip_empty_lines: true,
         trim: true,
         bom: true,
-    });
+        from_line: 2 // Skip the first empty line
+    }) as CsvRow[];
 
     console.log(`📄 Trovate ${records.length} righe. Elaborazione in corso...`);
 
@@ -73,12 +98,18 @@ async function main() {
     for (const row of records) {
         const nome = row['Nome Struttura'];
 
-        if (!nome) {
-            console.warn('⚠️ Riga saltata: Nome mancante');
+        const values = Object.values(row).filter(v => v !== '');
+        if (values.length === 0) {
+            // Silently skip completely empty rows
             continue;
         }
 
-        // Ottieni coordinate (con delay per rate limit)
+        if (!nome) {
+            console.warn('⚠️ Riga incompleta saltata (Nome mancante):', JSON.stringify(row));
+            continue;
+        }
+
+        // Ottieni coordinate (con delay per rispettare il rate limit di Nominatim)
         const coords = await getCoordinates(row['Indirizzo completo'], row['Città']);
         if (coords) await new Promise(resolve => setTimeout(resolve, 1000)); // 1 secondo di pausa
 
@@ -87,7 +118,7 @@ async function main() {
             name: nome,
             city: row['Città'],
             type: row['Tipologia'],
-            rating: Number.parseInt(row['Valutazione'] || '0', 10), // Fix SonarLint: Number.parseInt
+            rating: Number.parseInt(row['Valutazione'] || '0', 10),
             address: row['Indirizzo completo'],
             phone: row['Numero di telefono'] || row['Contatto telefonico'],
             email: row['Email di contatto'],
@@ -111,5 +142,9 @@ async function main() {
     console.log(`\n🏁 Finito! Inseriti: ${successCount}, Errori: ${errorCount}`);
 }
 
-// Esecuzione Top-Level Await (supportata da tsx)
-await main();
+// 3. ESECUZIONE (Fix Top-Level Await)
+// Invece di 'await main()', usiamo .catch() per gestire la Promise
+main().catch((e) => {
+    console.error('❌ Errore fatale nello script:', e);
+    process.exit(1);
+});

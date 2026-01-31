@@ -1,6 +1,7 @@
 import { createServerClient, createAdminClient } from '@/lib/supabase-server';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { Ticket, Users, MapPin } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,8 +38,8 @@ export default async function AdminDashboard() {
   // Calculate stats
   const ticketCount = tickets?.length || 0;
   // We can fetch technicians count too if needed, for now just show ticket stats
-  const activeTickets = tickets?.filter(t => t.status === 'open' || t.status === 'in_progress').length || 0;
-  const completedTickets = tickets?.filter(t => t.status === 'completed' || t.status === 'closed').length || 0;
+  const activeTickets = tickets?.filter(t => ['open', 'in_progress', 'assigned', 'pending'].includes(t.status || '')).length || 0;
+  const completedTickets = tickets?.filter(t => ['resolved', 'closed', 'completed'].includes(t.status || '')).length || 0;
 
   return (
     <div className="p-6 md:p-8 pt-16 md:pt-8 bg-background min-h-full">
@@ -61,14 +62,30 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
+
+
       <div className="mt-8">
         <h2 className="text-xl font-bold text-foreground mb-4">Azioni Rapide</h2>
-        <div className="flex gap-4">
-          <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
-            <Link href="/admin/tickets">Gestisci Ticket</Link>
+        <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
+          <Button asChild className="gap-2">
+            <Link href="/admin/tickets">
+              <Ticket className="w-4 h-4" />
+              Gestisci Ticket
+            </Link>
           </Button>
-          <Button asChild variant="outline" className="border-border text-foreground hover:bg-secondary">
-            <Link href="/admin/technicians">Visualizza Tecnici</Link>
+
+          <Button asChild variant="secondary" className="gap-2">
+            <Link href="/admin/leads">
+              <MapPin className="w-4 h-4" />
+              CRM Leads
+            </Link>
+          </Button>
+
+          <Button asChild variant="outline" className="gap-2 hover:bg-secondary">
+            <Link href="/admin/technicians">
+              <Users className="w-4 h-4" />
+              Visualizza Tecnici
+            </Link>
           </Button>
         </div>
       </div>

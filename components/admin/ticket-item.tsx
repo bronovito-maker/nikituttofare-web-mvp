@@ -23,9 +23,16 @@ export function TicketItem({ ticket, isActive, onSelect, onForceClose, onMarkAsP
     };
 
     return (
-        <button
-            type="button"
+        <div
             onClick={() => onSelect(ticket.id)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelect(ticket.id);
+                }
+            }}
             className={`w-full text-left p-4 hover:bg-secondary/50 transition-all duration-200 group relative border-l-[3px] cursor-pointer focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${isActive
                 ? 'bg-secondary/50 border-blue-500'
                 : 'bg-transparent border-transparent hover:border-border'
@@ -70,7 +77,10 @@ export function TicketItem({ ticket, isActive, onSelect, onForceClose, onMarkAsP
                             size="sm"
                             variant="ghost"
                             className="h-5 px-1.5 text-[10px] text-green-600 dark:text-green-400 hover:text-green-500 hover:bg-green-500/10 ml-auto"
-                            onClick={(e) => onForceClose(e, ticket.id)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onForceClose(e, ticket.id);
+                            }}
                             title="Chiudi Lavoro"
                             aria-label="Chiudi ticket manualmente"
                         >
@@ -85,12 +95,15 @@ export function TicketItem({ ticket, isActive, onSelect, onForceClose, onMarkAsP
                             size="sm"
                             variant="ghost"
                             className="h-5 px-1.5 text-[10px] text-amber-600 dark:text-amber-400 hover:text-amber-500 hover:bg-amber-500/10"
-                            onClick={(e) => onMarkAsPaid(e, ticket.id)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onMarkAsPaid(e, ticket.id);
+                            }}
                             title="Segna come Pagato"
                             aria-label="Segna ticket come pagato"
                         >
                             <Banknote className="w-3 h-3 mr-1" />
-                            Pagato
+                            Incassa
                         </Button>
                     )}
 
@@ -102,32 +115,44 @@ export function TicketItem({ ticket, isActive, onSelect, onForceClose, onMarkAsP
                     )}
                 </div>
             </div>
-        </button>
+        </div>
     );
 }
 
 function StatusBadge({ status }: { readonly status: string }) {
-    if (status === 'resolved') {
+    // Green: Resolved / Closed / Completed
+    if (['resolved', 'closed', 'completed'].includes(status)) {
         return (
             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
-                Resolved
+                Completato
             </span>
         );
     }
+    // Violet: In Progress
     if (status === 'in_progress') {
         return (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20">
                 In Corso
             </span>
         );
     }
-    if (status === 'assigned') {
+    // Blue: Open / Assigned
+    if (['open', 'assigned'].includes(status)) {
         return (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20">
-                Assegnato
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">
+                {status === 'assigned' ? 'Assegnato' : 'Aperto'}
             </span>
         );
     }
+    // Yellow: Pending
+    if (status === 'pending') {
+        return (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+                In Attesa
+            </span>
+        );
+    }
+    // Red: Cancelled
     if (status === 'cancelled') {
         return (
             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20">
@@ -135,9 +160,10 @@ function StatusBadge({ status }: { readonly status: string }) {
             </span>
         );
     }
+    // Default / Unknown
     return (
-        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">
-            {status === 'pending_verification' ? 'Da Verificare' : 'Nuovo'}
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20">
+            {status}
         </span>
     );
 }

@@ -1,4 +1,4 @@
-import Link from 'next/link';
+// lib/chat-copy.tsx
 import { Button } from '@/components/ui/button';
 import React from 'react'; // Aggiunto per correttezza
 
@@ -19,7 +19,7 @@ export const chatCopy = {
   error: (message: string) => `Ops! Qualcosa è andato storto nell'invio: ${message}`,
   cancel: "Nessun problema, ho annullato la richiesta. Se vuoi iniziare una nuova richiesta, descrivi il tuo nuovo problema.",
   off_topic: "Sono un assistente virtuale per le richieste di intervento. Se hai bisogno di aiuto per un problema in casa, descrivimelo e sarò felice di aiutarti.",
-  
+
   sent: (ticketId: string, isRegistered: boolean, onRedirect: () => void) => {
     if (isRegistered) {
       return (
@@ -32,16 +32,16 @@ export const chatCopy = {
         </div>
       );
     }
-    
+
     return (
       <div className="space-y-3">
         <p>✅ <strong>Fatto! Richiesta inviata.</strong></p>
         <p>Il tuo codice di riferimento è <strong>{ticketId}</strong>. Ti aggiorneremo non appena un tecnico prenderà in carico il lavoro.</p>
         <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-center">
-            <p className="text-sm font-semibold">Vuoi seguire la tua richiesta online?</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Contattaci su <a href="mailto:info@nikituttofare.com" className="font-semibold text-primary underline-offset-4 hover:underline">info@nikituttofare.com</a> per attivare il tuo accesso personale.
-            </p>
+          <p className="text-sm font-semibold">Vuoi seguire la tua richiesta online?</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Contattaci su <a href="mailto:info@nikituttofare.com" className="font-semibold text-primary underline-offset-4 hover:underline">info@nikituttofare.com</a> per attivare il tuo accesso personale.
+          </p>
         </div>
       </div>
     );

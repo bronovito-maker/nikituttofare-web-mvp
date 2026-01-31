@@ -30,7 +30,7 @@ export function MagicLinkModal({
     e.preventDefault();
     setError(null);
 
-    if (!email || !email.includes('@')) {
+    if (!email?.includes('@')) {
       setError('Inserisci un indirizzo email valido');
       return;
     }

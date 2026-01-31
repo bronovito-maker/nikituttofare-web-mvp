@@ -77,7 +77,7 @@ export function QuoteGeneratorModal({ isOpen, onClose, ticket }: QuoteGeneratorM
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
+        <dialog open className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-transparent" aria-modal="true">
             {/* Backdrop */}
             <button
                 type="button"
@@ -297,6 +297,6 @@ export function QuoteGeneratorModal({ isOpen, onClose, ticket }: QuoteGeneratorM
                     }
                 }
             `}</style>
-        </div>
+        </dialog>
     );
 }

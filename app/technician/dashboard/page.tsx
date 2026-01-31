@@ -23,7 +23,7 @@ export default async function TechnicianDashboard() {
         .eq('id', user.id)
         .single();
 
-    if (!profile || profile.role !== 'technician') {
+    if (profile?.role !== 'technician') {
         redirect('/dashboard');
     }
 

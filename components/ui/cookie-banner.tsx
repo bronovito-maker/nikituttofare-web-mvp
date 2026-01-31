@@ -44,7 +44,7 @@ export function CookieBanner() {
     setIsVisible(false);
 
     // Se analytics è accettato, abilita Vercel Analytics
-    if (prefs.analytics && typeof globalThis.window !== 'undefined') {
+    if (prefs.analytics && globalThis.window !== undefined) {
       // Vercel Analytics si attiva automaticamente se presente
       console.log('Analytics consent granted');
     }
