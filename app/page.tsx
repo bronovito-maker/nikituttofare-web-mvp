@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, Clock, Star, ArrowRight, FileCheck, FileSpreadsheet, QrCode } from 'lucide-react';
+import { ShieldCheck, Clock, Star, ArrowRight, FileCheck, FileSpreadsheet, QrCode, CalendarClock, Handshake } from 'lucide-react';
 import { RetroGrid } from '@/components/react-bits/RetroGrid';
 import { BlurText } from '@/components/react-bits/BlurText';
 import { ClientAnimationWrapper } from '@/components/ui/client-animation-wrapper';
@@ -68,14 +68,14 @@ export default function Home() {
                 <div className="space-y-4">
                   <BlurText
                     key={userType} // Force re-render on toggle
-                    text={userType === 'residential' ? "Un guasto ti sta" : "Manutenzione Hotel."}
-                    className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-foreground leading-[1.05]"
+                    text={userType === 'residential' ? "Un guasto ti sta" : "Impianti Sempre Operativi."}
+                    className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-foreground leading-[1.15] pb-1"
                     delay={0.05}
                   />
                   <BlurText
                     key={`${userType}-sub`}
-                    text={userType === 'residential' ? "rovinando la giornata?" : "Stagione Salva."}
-                    className={`text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r leading-[1.05] ${userType === 'residential'
+                    text={userType === 'residential' ? "rovinando la giornata?" : "Il Tuo Business non si Ferma Mai."}
+                    className={`text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r leading-[1.15] pb-1 ${userType === 'residential'
                       ? 'from-orange-600 via-red-500 to-orange-500'
                       : 'from-slate-700 via-slate-600 to-slate-500 dark:from-slate-300 dark:via-slate-400 dark:to-slate-500'
                       }`}
@@ -92,8 +92,9 @@ export default function Home() {
                       </>
                     ) : (
                       <>
-                        Dalla Notte Rosa al Capodanno, i tuoi impianti non si fermano mai. <br />
-                        Assistenza H24 per <strong>Hotel, Ristoranti e Stabilimenti</strong> della Riviera Romagnola.
+                        Mantieni la tua operatività al massimo con la nostra assistenza tecnica H24. <br />
+                        Soluzioni proattive e interventi rapidi per <strong>Hotel, Ristoranti e Stabilimenti</strong> della Riviera Romagnola, <br />
+                        garantendo continuità e conformità.
                       </>
                     )}
                   </p>
@@ -105,15 +106,15 @@ export default function Home() {
                       ? 'bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white shadow-orange-500/20'
                       : 'bg-foreground text-background hover:bg-foreground/90'
                       }`}>
-                      <Link href="/chat" className="flex items-center">
-                        {userType === 'residential' ? 'Chiedi a Niki AI' : 'Richiedi Demo Aziende'}
+                      <Link href={userType === 'residential' ? "/chat" : "/contact"} className="flex items-center">
+                        {userType === 'residential' ? 'Chiedi a Niki AI' : 'Richiedi una Consulenza Gratuita'}
                         <ArrowRight className="ml-2 h-5 w-5" />
                       </Link>
                     </Button>
 
                     {/* Secondary CTA for Desktop */}
                     <a href={COMPANY_PHONE_LINK} className="hidden sm:inline-flex items-center justify-center h-14 px-8 text-lg font-semibold rounded-full border border-border bg-card/50 hover:bg-muted transition-all">
-                      Chiama Tecnico
+                      {userType === 'residential' ? "Chiama Tecnico" : "Contattaci Subito"}
                     </a>
                   </div>
                 </ClientAnimationWrapper>
@@ -136,24 +137,24 @@ export default function Home() {
                     <div className="space-y-4">
                       <div className="flex items-center justify-between border-b pb-4">
                         <div>
-                          <p className="text-sm font-bold text-slate-500">ASSET REPORT</p>
-                          <p className="text-xl font-bold">Cella Frigorifera #3</p>
+                          <p className="text-sm font-bold text-slate-500">ASSET REPORT AZIENDALE</p>
+                          <p className="text-xl font-bold">Monitoraggio Impianti: OK</p>
                         </div>
                         <div className="p-2 bg-green-100 dark:bg-green-900 rounded text-green-700 dark:text-green-300 font-mono text-sm font-bold">
-                          HACCP OK
+                          COMPLIANCE ✅
                         </div>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-slate-500">Ultimo Intervento</span>
-                          <span className="font-medium">24 Gen 2026</span>
+                          <span className="text-slate-500">Prossima Manutenzione</span>
+                          <span className="font-medium">15 Apr 2024</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-slate-500">Tecnico</span>
-                          <span className="font-medium">Luca M. (Certified)</span>
+                          <span className="text-slate-500">Copertura</span>
+                          <span className="font-medium">H24/7 (Premium)</span>
                         </div>
                         <div className="h-32 bg-slate-200 dark:bg-slate-800 rounded-lg flex items-center justify-center text-slate-400">
-                          [Grafico Manutenzione]
+                          [Grafico Storico Interventi & Efficienza]
                         </div>
                       </div>
                     </div>
@@ -187,27 +188,36 @@ export default function Home() {
         {userType === 'business' && (
           <section className="py-16 sm:py-24 bg-card/50 border-y border-border">
             <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <div className="grid md:grid-cols-3 gap-8">
+              <div className="grid md:grid-cols-4 gap-8">
                 <div className="bg-background p-8 rounded-2xl border border-border shadow-sm hover:shadow-md transition-all">
                   <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 mb-6">
                     <FileCheck className="w-6 h-6" />
                   </div>
-                  <h3 className="text-xl font-bold mb-3">Compliance HACCP</h3>
+                  <h3 className="text-xl font-bold mb-3">Compliance HACCP Garantita</h3>
                   <p className="text-muted-foreground">Report automatici validi per controlli ASL generati dopo ogni intervento su impianti frigo e idraulici.</p>
                 </div>
                 <div className="bg-background p-8 rounded-2xl border border-border shadow-sm hover:shadow-md transition-all">
                   <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center text-purple-600 dark:text-purple-400 mb-6">
                     <QrCode className="w-6 h-6" />
                   </div>
-                  <h3 className="text-xl font-bold mb-3">Asset QR Code</h3>
-                  <p className="text-muted-foreground">Applichiamo un QR su ogni macchinario. Scansiona per vedere lo storico riparazioni e manuali.</p>
+                  <h3 className="text-xl font-bold mb-3">Gestione Asset Intelligente con QR</h3>
+                  <p className="text-muted-foreground">Applichiamo un QR su ogni macchinario. Scansiona per vedere lo storico riparazioni, schede tecniche e manuali.</p>
                 </div>
                 <div className="bg-background p-8 rounded-2xl border border-border shadow-sm hover:shadow-md transition-all">
                   <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-6">
                     <FileSpreadsheet className="w-6 h-6" />
                   </div>
-                  <h3 className="text-xl font-bold mb-3">Fatturazione Semplificata</h3>
+                  <h3 className="text-xl font-bold mb-3">Amministrazione Senza Stress</h3>
                   <p className="text-muted-foreground">Unico fornitore, un&apos;unica fattura a fine mese con dettaglio centri di costo per ogni struttura.</p>
+                </div>
+
+                {/* NEW B2B Feature */}
+                <div className="bg-background p-8 rounded-2xl border border-border shadow-sm hover:shadow-md transition-all">
+                  <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center text-orange-600 dark:text-orange-400 mb-6">
+                    <CalendarClock className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-3">Manutenzione Proattiva Programma</h3>
+                  <p className="text-muted-foreground">Piani di intervento programmati per prevenire guasti, ottimizzare i costi e garantire la continuità del servizio.</p>
                 </div>
               </div>
             </div>
@@ -236,14 +246,19 @@ export default function Home() {
         <DirectContact />
 
         {/* --- COMMON FEATURES --- */}
-        <section id="how-it-works" className="py-20 px-4 sm:px-6 bg-background">
+        <section id="common-features" className="py-20 px-4 sm:px-6 bg-background">
           <div className="max-w-7xl mx-auto">
             <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-foreground">
-                Siamo di qui, mica un call center.
+                {userType === 'residential' ? "Siamo di qui, mica un call center." : "Il Tuo Partner Tecnologico e Locale."}
               </h2>
               <p className="text-lg text-muted-foreground font-light px-2">
-                Conosciamo ogni via di Rimini e Riccione. Tecnologia per eliminare l&apos;ansia, artigiani per risolvere il problema.
+                {userType === 'residential' ? (
+                  <>Conosciamo ogni via di Rimini e Riccione. Tecnologia per eliminare l&apos;ansia, artigiani per risolvere il problema.</>
+                ) : (
+                  <>Uniamo l&apos;efficienza della tecnologia alla conoscenza profonda del territorio. <br />
+                    La soluzione ideale per la continuità operativa del tuo business in Romagna.</>
+                )}
               </p>
             </div>
 
@@ -252,25 +267,25 @@ export default function Home() {
                 icon={<Clock className="w-6 h-6 text-white" />}
                 iconBg="from-blue-600 to-blue-500"
                 number="01"
-                title="Da te in un attimo"
-                desc="I nostri tecnici sono già in zona. Non arriviamo da Bologna, siamo già qui."
-                features={["Rimini, Riccione, Santarcangelo", "Tracking GPS in tempo reale", "Priorità Emergenza"]}
+                title={userType === 'residential' ? "Da te in un attimo" : "Interventi Ultra-Rapidi H24"}
+                desc={userType === 'residential' ? "I nostri tecnici sono già in zona. Non arriviamo da Bologna, siamo già qui." : "Minimizza i tempi di inattività. I nostri tecnici sono strategicamente posizionati per garantire risposte immediate in tutta la Riviera."}
+                features={userType === 'residential' ? ["Rimini, Riccione, Santarcangelo", "Tracking GPS in tempo reale", "Priorità Emergenza"] : ["Disponibilità H24/7", "Tempo di Risposta Garantito", "Copertura Completa Riviera"]}
               />
               <PremiumFeatureCard
                 icon={<Star className="w-6 h-6 text-white" />}
                 iconBg="from-purple-600 to-purple-500"
                 number="02"
-                title="Prezzi Chiari"
-                desc="Niente 'faccio un prezzo a occhio'. Usiamo i listini ufficiali Emilia-Romagna. Quello che vedi è quello che paghi."
-                features={["Stima Costi Immediata", "Listini Regionali", "Pagamento In-App"]}
+                title={userType === 'residential' ? "Prezzi Chiari" : "Costi Trasparenti, Nessuna Sorpresa"}
+                desc={userType === 'residential' ? "Niente 'faccio un prezzo a occhio'. Usiamo i listini ufficiali Emilia-Romagna. Quello che vedi è quello che paghi." : "Preventivi dettagliati basati su listini ufficiali, con piani di manutenzione programmata per una gestione budget chiara e prevedibile."}
+                features={userType === 'residential' ? ["Stima Costi Immediata", "Listini Regionali", "Pagamento In-App"] : ["Preventivi Personalizzati", "Piani di Manutenzione", "Flessibilità di Pagamento"]}
               />
               <PremiumFeatureCard
                 icon={<ShieldCheck className="w-6 h-6 text-white" />}
                 iconBg="from-green-600 to-green-500"
                 number="03"
-                title="Lavori Fatti Bene"
-                desc="Siamo romagnoli: le cose o si fanno bene o non si fanno. E se sbagliamo, paghiamo noi."
-                features={["Assicurazione 1M€", "Rifacimento Gratuito", "Supporto h24"]}
+                title={userType === 'residential' ? "Lavori Fatti Bene" : "Affidabilità e Garanzia Totale"}
+                desc={userType === 'residential' ? "Siamo romagnoli: le cose o si fanno bene o non si fanno. E se sbagliamo, paghiamo noi." : "Standard qualitativi romagnoli: ogni intervento è coperto da assicurazione e garanzia, per la tua serenità operativa."}
+                features={userType === 'residential' ? ["Assicurazione 1M€", "Rifacimento Gratuito", "Supporto h24"] : ["Assicurazione Aziendale 1M€", "Tecnici Certificati", "Report Post-Intervento Dettagliati"]}
               />
             </div>
           </div>
