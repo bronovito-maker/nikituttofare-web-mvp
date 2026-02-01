@@ -44,7 +44,7 @@ export default async function TicketsPage() {
                     <div className="flex flex-col gap-2">
                         <h1 className="text-3xl font-bold tracking-tight">I Miei Interventi</h1>
                         <p className="text-muted-foreground">
-                            Gestisci le tue richieste d'intervento e controlla lo stato dei lavori.
+                            Gestisci le tue richieste d&apos;intervento e controlla lo stato dei lavori.
                         </p>
                     </div>
                 </div>

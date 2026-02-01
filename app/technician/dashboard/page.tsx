@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Briefcase, User, Calendar } from 'lucide-react';
+import { MapPin, Briefcase, User, Calendar, ArrowRight } from 'lucide-react';
 
 export default async function TechnicianDashboard() {
     const supabase = await createServerClient();
@@ -47,7 +47,7 @@ export default async function TechnicianDashboard() {
             {/* Welcome Section */}
             <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                    <h2 className="text-2xl font-bold tracking-tight text-foreground">Ciao, {(profile.full_name ?? '').split(' ')[0]}</h2>
+                    <h2 className="text-2xl font-bold tracking-tight text-foreground">Ciao, {profile.full_name?.split(' ')[0] ?? ''}</h2>
                     <p className="text-muted-foreground">Ecco il riepilogo della tua attività.</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -139,22 +139,3 @@ export default async function TechnicianDashboard() {
     );
 }
 
-function ArrowRight({ className }: Readonly<{ className?: string }>) {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={className}
-        >
-            <path d="M5 12h14" />
-            <path d="m12 5 7 7-7 7" />
-        </svg>
-    )
-}

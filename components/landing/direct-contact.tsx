@@ -36,10 +36,10 @@ export function DirectContact() {
                 <CardContent className="p-8 md:p-12 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
                     <div className="space-y-4 max-w-lg">
                         <h2 className="text-2xl md:text-3xl font-bold text-white">
-                            Hai un'urgenza o preferisci parlare con una persona?
+                            Hai un&apos;urgenza o preferisci parlare con una persona?
                         </h2>
                         <p className="text-slate-400 text-lg">
-                            Salta l'intelligenza artificiale e mettiti subito in contatto con noi.
+                            Salta l&apos;intelligenza artificiale e mettiti subito in contatto con noi.
                         </p>
                     </div>
 

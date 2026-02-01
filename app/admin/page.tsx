@@ -10,9 +10,11 @@ export default async function AdminDashboard() {
   const { data: { user }, error } = await supabase.auth.getUser();
 
   // 🔒 SECURITY CHECK
-  if (error || !user || user?.email !== 'bronovito@gmail.com') {
+  const isAdmin = user?.user_metadata?.role === 'admin' || user?.email === 'bronovito@gmail.com';
+
+  if (error || !user || !isAdmin) {
     return (
-      <div className="flex flex-col items-center justify-center min-vh-100 p-6 text-center space-y-4">
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center space-y-4">
         <h1 className="text-4xl font-bold text-red-600">403 Forbidden</h1>
         <p className="text-muted-foreground">Accesso riservato all&apos;amministrazione.</p>
         <Button asChild variant="outline">

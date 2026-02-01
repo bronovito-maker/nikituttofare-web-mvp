@@ -194,6 +194,7 @@ export function ChatMessages({ messages, isLoading }: Readonly<ChatMessagesProps
       onDragLeave={handleDragLeave}
       role="region"
       aria-label="Chat messages drop zone"
+      tabIndex={0}
     >
       {
         visibleMessages.map((msg, index) => (

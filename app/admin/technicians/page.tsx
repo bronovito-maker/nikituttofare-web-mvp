@@ -2,9 +2,25 @@ import { createServerClient } from '@/lib/supabase-server'
 import { AddTechnicianDialog } from '@/components/admin/add-technician-dialog'
 import { Badge } from '@/components/ui/badge'
 import { TechnicianActions } from '@/components/admin/technician-actions'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 export default async function AdminTechniciansPage() {
     const supabase = await createServerClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
+
+    const isAdmin = user?.user_metadata?.role === 'admin' || user?.email === 'bronovito@gmail.com'
+
+    if (error || !user || !isAdmin) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center space-y-4">
+                <h1 className="text-4xl font-bold text-red-600">403 Forbidden</h1>
+                <Button asChild variant="outline">
+                    <Link href="/">Torna alla Home</Link>
+                </Button>
+            </div>
+        )
+    }
 
     const { data: technicians } = await supabase
         .from('profiles')
@@ -37,7 +53,7 @@ export default async function AdminTechniciansPage() {
                     </div>
 
                     <div className="divide-y divide-border">
-                        {technicians?.map((tech: any) => {
+                        {technicians?.map((tech) => {
                             const isActive = tech.is_active !== false;
                             return (
                                 <div key={tech.id} className="p-4 flex flex-col md:grid md:grid-cols-5 gap-3 md:gap-4 text-foreground text-sm relative group hover:bg-secondary/50 transition-colors">

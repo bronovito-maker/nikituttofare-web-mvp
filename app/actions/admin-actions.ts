@@ -2,6 +2,8 @@
 
 import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
+import { RegisterTechnicianSchema, TechnicianStatusSchema, DeleteTechnicianSchema } from '@/lib/schemas'
+import { ZodError } from 'zod'
 
 const ADMIN_EMAIL = 'bronovito@gmail.com'
 
@@ -42,65 +44,70 @@ function normalizePhone(phone: string): string {
 // --- GESTIONE TECNICI ---
 
 export async function registerTechnician(formData: FormData) {
-  await checkAdmin()
-  const supabaseAdmin = createAdminClient()
+  try {
+    const rawData = {
+      fullName: formData.get('fullName'),
+      phone: formData.get('phone'),
+      pin: formData.get('pin')
+    }
 
-  const fullName = formData.get('fullName') as string
-  const phone = formData.get('phone') as string
-  const pin = formData.get('pin') as string
+    // Validate with Zod
+    const { fullName, phone, pin } = RegisterTechnicianSchema.parse(rawData);
 
-  if (!fullName || !phone || !pin) {
-    return { error: 'Nome, telefono e PIN sono obbligatori' }
-  }
+    await checkAdmin()
+    const supabaseAdmin = createAdminClient()
 
-  // Normalizza telefono per coerenza DB
-  const formattedPhone = normalizePhone(phone)
+    // Normalizza telefono per coerenza DB
+    const formattedPhone = normalizePhone(phone)
 
-  // 1. Create Auth User (Shadow Account)
-  // Email format: tecnico-[digits]@nikituttofare.it
-  const emailPhone = formattedPhone.replaceAll(/\D/g, '') // Solo cifre per email
-  const email = `tecnico-${emailPhone}@nikituttofare.it`
-  const password = `${pin}ntf` // Deterministic password based on PIN
+    // 1. Create Auth User (Shadow Account)
+    const emailPhone = formattedPhone.replaceAll(/\D/g, '') // Solo cifre per email
+    const email = `tecnico-${emailPhone}@nikituttofare.it`
+    const password = `${pin}ntf` // Deterministic password based on PIN
 
-  const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: { full_name: fullName, phone: formattedPhone, pin: pin } // Adding PIN to metadata for admin reference
-  })
-
-  if (authError) {
-    console.error('Error creating auth user:', authError)
-    return { error: `Errore creazione utente: ${authError.message}` }
-  }
-
-  if (!authUser.user) {
-    return { error: 'Errore imprevisto: utente non creato' }
-  }
-
-  // 2. Insert Profile
-  // Upsert to handle potential trigger-created profiles
-  const { error: profileError } = await supabaseAdmin
-    .from('profiles')
-    .upsert({
-      id: authUser.user.id,
-      email: email,
-      full_name: fullName,
-      phone: formattedPhone, // Save normalized phone
-      pin: Number.parseInt(pin),    // Save PIN to new column (User defined as number)
-      role: 'technician',
-      user_type: 'private',
-      is_active: true,
-      status: 'active'
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: fullName, phone: formattedPhone, pin: pin } // Adding PIN to metadata for admin reference
     })
 
-  if (profileError) {
-    console.error('Error creating profile:', profileError)
-    return { error: `Errore creazione profilo: ${profileError.message}` }
-  }
+    if (authError) {
+      console.error('Error creating auth user:', authError)
+      return { error: `Errore creazione utente: ${authError.message}` }
+    }
 
-  revalidatePath('/admin/technicians')
-  return { success: true }
+    if (!authUser.user) {
+      return { error: 'Errore imprevisto: utente non creato' }
+    }
+
+    // 2. Insert Profile
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .upsert({
+        id: authUser.user.id,
+        email: email,
+        full_name: fullName,
+        phone: formattedPhone, // Save normalized phone
+        pin: Number.parseInt(pin),    // Save PIN to new column (User defined as number)
+        role: 'technician',
+        user_type: 'private',
+        is_active: true,
+        status: 'active'
+      })
+
+    if (profileError) {
+      console.error('Error creating profile:', profileError)
+      return { error: `Errore creazione profilo: ${profileError.message}` }
+    }
+
+    revalidatePath('/admin/technicians')
+    return { success: true }
+  } catch (error) {
+    if (error instanceof ZodError) return { error: error.errors[0].message }
+    console.error(error)
+    return { error: 'Errore durante la registrazione' }
+  }
 }
 
 
@@ -157,14 +164,12 @@ export async function forceCloseTicket(ticketId: string): Promise<void> {
   await checkAdmin()
   const supabaseAdmin = createAdminClient()
 
-  // Update logic to 'completed' as used in schema
   const { error } = await supabaseAdmin
     .from('tickets')
     .update({
       status: 'resolved',
-      // @ts-ignore
       completed_at: new Date().toISOString()
-    } as any)
+    })
     .eq('id', ticketId)
 
   if (error) {
@@ -180,71 +185,79 @@ export async function forceCloseTicket(ticketId: string): Promise<void> {
 
 // --- GESTIONE AZIONI TECNICO ---
 
-export async function toggleTechnicianStatus(technicianId: string, isActive: boolean) {
-  await checkAdmin()
-  const supabaseAdmin = createAdminClient()
+export async function toggleTechnicianStatus(technicianIdIn: string, isActiveIn: boolean) {
+  try {
+    const { technicianId, isActive } = TechnicianStatusSchema.parse({ technicianId: technicianIdIn, isActive: isActiveIn });
 
-  const { error } = await supabaseAdmin
-    .from('profiles')
-    .update({ is_active: isActive } as any)
-    .eq('id', technicianId)
+    await checkAdmin()
+    const supabaseAdmin = createAdminClient()
 
-  if (error) {
-    console.error('Error toggling technician status:', error)
-    return { success: false, message: `Errore: ${error.message}` }
-  }
-
-  revalidatePath('/admin/technicians')
-  return { success: true, message: `Stato tecnico aggiornato: ${isActive ? 'Attivo' : 'Disattivato'}` }
-}
-
-export async function deleteTechnician(technicianId: string) {
-  await checkAdmin()
-  const supabaseAdmin = createAdminClient()
-
-  // 1. Security Check: Check for associated tickets
-  const { data: tickets, error: ticketsError } = await supabaseAdmin
-    .from('tickets')
-    .select('id')
-    .eq('assigned_technician_id', technicianId)
-    .limit(1)
-
-  if (ticketsError) {
-    console.error('Error checking tickets:', ticketsError)
-    return { success: false, message: 'Errore nel controllo dei ticket associati.' }
-  }
-
-  if (tickets && tickets.length > 0) {
-    return {
-      success: false,
-      message: 'Impossibile eliminare: il tecnico ha uno storico interventi. Procedi con la disattivazione.'
-    }
-  }
-
-  // 2. Safe to delete (No tickets associated)
-  // Deleting user from Auth is tricky with just Admin client depending on setup,
-  // but usually we delete from profiles first or auth first. 
-  // Standard Supabase: Delete user from auth.admin triggers cascade or we manage it manually.
-  // Here we delete the user from auth which will likely cascade to profile if set up, 
-  // OR we explicitly delete profile if no CASCADE. 
-  // Let's try deleting the User from Auth Management which is cleaner.
-
-  const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(technicianId)
-
-  if (deleteError) {
-    // Fallback: try deleting profile directly if auth deletion fails or isn't needed/possible
-    console.error('Error deleting auth user:', deleteError)
-
-    const { error: profileDeleteError } = await supabaseAdmin
+    const { error } = await supabaseAdmin
       .from('profiles')
-      .delete()
+      .update({ is_active: isActive })
       .eq('id', technicianId)
 
-    if (profileDeleteError) {
-      return { success: false, message: `Errore eliminazione: ${profileDeleteError.message}` }
+    if (error) {
+      console.error('Error toggling technician status:', error)
+      return { success: false, message: `Errore: ${error.message}` }
     }
-  }
 
-  revalidatePath('/admin/technicians')
-  return { success: true, message: 'Tecnico eliminato definitivamente.' }
+    revalidatePath('/admin/technicians')
+    return { success: true, message: `Stato tecnico aggiornato: ${isActive ? 'Attivo' : 'Disattivato'}` }
+  } catch (error) {
+    if (error instanceof ZodError) return { success: false, message: error.errors[0].message }
+    console.error(error)
+    return { success: false, message: 'Errore generico' }
+  }
+}
+
+export async function deleteTechnician(technicianIdIn: string) {
+  try {
+    const { technicianId } = DeleteTechnicianSchema.parse({ technicianId: technicianIdIn });
+
+    await checkAdmin()
+    const supabaseAdmin = createAdminClient()
+
+    // 1. Security Check: Check for associated tickets
+    const { data: tickets, error: ticketsError } = await supabaseAdmin
+      .from('tickets')
+      .select('id')
+      .eq('assigned_technician_id', technicianId)
+      .limit(1)
+
+    if (ticketsError) {
+      console.error('Error checking tickets:', ticketsError)
+      return { success: false, message: 'Errore nel controllo dei ticket associati.' }
+    }
+
+    if (tickets && tickets.length > 0) {
+      return {
+        success: false,
+        message: 'Impossibile eliminare: il tecnico ha uno storico interventi. Procedi con la disattivazione.'
+      }
+    }
+
+    // 2. Safe to delete (No tickets associated)
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(technicianId)
+
+    if (deleteError) {
+      console.error('Error deleting auth user:', deleteError)
+      // Fallback: try deleting profile directly if auth deletion fails
+      const { error: profileDeleteError } = await supabaseAdmin
+        .from('profiles')
+        .delete()
+        .eq('id', technicianId)
+
+      if (profileDeleteError) {
+        return { success: false, message: `Errore eliminazione: ${profileDeleteError.message}` }
+      }
+    }
+
+    revalidatePath('/admin/technicians')
+    return { success: true, message: 'Tecnico eliminato definitivamente.' }
+  } catch (error) {
+    if (error instanceof ZodError) return { success: false, message: error.errors[0].message }
+    console.error(error)
+    return { success: false, message: 'Errore durante l\'eliminazione' }
+  }
 }

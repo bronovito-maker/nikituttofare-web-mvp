@@ -37,7 +37,7 @@ import { useSearchParams } from 'next/navigation';
 
 function ChatContent() {
   // ✅ USA IL NUOVO HOOK N8N (Motore Semplice)
-  const { messages, sendMessage, isLoading, setMessages } = useN8NChat();
+  const { messages, sendMessage, isLoading, setMessages, suggestions } = useN8NChat();
   const router = useRouter();
   const searchParams = useSearchParams();
   const ticketId = searchParams.get('ticket_id');
@@ -301,7 +301,7 @@ function ChatContent() {
           {!isLoading && (
             <div className="mb-3 overflow-x-auto pb-1 scrollbar-none">
               <ChatSuggestions
-                suggestions={messages.length === 0 ? INITIAL_SUGGESTIONS : (messages[messages.length - 1]?.role === 'assistant' ? PROBLEM_FOLLOWUP_SUGGESTIONS : [])}
+                suggestions={messages.length === 0 ? INITIAL_SUGGESTIONS : (suggestions.length > 0 ? suggestions : PROBLEM_FOLLOWUP_SUGGESTIONS)}
                 onSelect={handleSuggestionClick}
                 disabled={isLoading}
               />

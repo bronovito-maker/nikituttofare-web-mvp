@@ -6,6 +6,7 @@
 import { useEffect } from 'react';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/logger';
+import Link from 'next/link';
 
 export default function GlobalError({
     error,
@@ -61,7 +62,7 @@ export default function GlobalError({
 
                     {/* Description */}
                     <p className="text-slate-300 mb-6">
-                        Ci scusiamo per l'inconveniente. Il nostro team è stato notificato
+                        Ci scusiamo per l&apos;inconveniente. Il nostro team è stato notificato
                         e stiamo lavorando per risolvere il problema.
                     </p>
 
@@ -80,12 +81,12 @@ export default function GlobalError({
                         >
                             🔄 Riprova
                         </button>
-                        <a
+                        <Link
                             href="/"
                             className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-colors border border-white/20"
                         >
                             🏠 Torna alla Home
-                        </a>
+                        </Link>
                     </div>
 
                     {/* Support Link */}

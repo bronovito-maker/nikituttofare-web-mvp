@@ -71,30 +71,29 @@ export async function middleware(request: NextRequest) {
     const isAuthRoute = pathname === '/login' || pathname === '/register';
     const isTechnicianAuthRoute = pathname === '/technician/login' || pathname === '/technician/register';
 
-    // Helper: Check if user is technician
+    // Helper: Check roles
     const isTechnicianUser = user?.user_metadata?.role === 'technician';
+    const isAdminUser = user?.user_metadata?.role === 'admin' || user?.email === 'bronovito@gmail.com';
 
     // 1. Technician Area Protection
     if (isTechnician) {
         const isPublicTechnicianRoute =
             isTechnicianAuthRoute ||
-            pathname.startsWith('/technician/job/'); // Public magic link access for accepting jobs
+            pathname.startsWith('/technician/job/'); // Public magic link access
 
         if (!isPublicTechnicianRoute) {
             // Must be logged in
             if (!user) {
-                // Redirect to tech login, preserving the return url
                 const loginUrl = new URL("/technician/login", request.url);
                 loginUrl.searchParams.set("next", pathname);
                 return NextResponse.redirect(loginUrl);
             }
 
-            // Must be a technician (role check)
-            // RELAXED CHECK: We rely on the Server Components (Page Level) to check the DB for the role.
-            // This prevents redirect loops if the user_metadata is missing the role but the DB has it.
-            // if (!isTechnicianUser) {
-            //     return NextResponse.redirect(new URL("/dashboard", request.url));
-            // }
+            // Must be a technician
+            if (!isTechnicianUser) {
+                // Logged in but not a technician: redirect to client dashboard
+                return NextResponse.redirect(new URL("/dashboard", request.url));
+            }
         }
 
         // If on Tech Login page but already logged in as Technician
@@ -121,8 +120,12 @@ export async function middleware(request: NextRequest) {
         if (!user) {
             return NextResponse.redirect(new URL("/login", request.url));
         }
-        // Note: We allow access here, RLS will handle data protection. 
-        // Ideally we would check for admin role here too.
+
+        // Strict Admin Check
+        if (!isAdminUser) {
+            // Unauthorized: Redirect to home (or 404)
+            return NextResponse.redirect(new URL("/", request.url));
+        }
     }
 
     // 4. Redirect logged-in users away from standard login
@@ -132,11 +135,12 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(new URL(nextParam, request.url));
         }
 
-        // If they are a technician, maybe they shouldn't be here? 
-        // But for now, standard behavior is redirect to main dashboard.
-        // If we want to be smart:
+        // Redirect based on role
         if (isTechnicianUser) {
             return NextResponse.redirect(new URL("/technician/dashboard", request.url));
+        }
+        if (isAdminUser) {
+            return NextResponse.redirect(new URL("/admin", request.url));
         }
         return NextResponse.redirect(new URL("/dashboard", request.url));
     }
