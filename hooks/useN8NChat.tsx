@@ -1,8 +1,10 @@
 // hooks/useN8NChat.tsx
 import { useState, useEffect } from 'react';
 
+import { Message } from '@/lib/types';
+
 export const useN8NChat = () => {
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [chatId, setChatId] = useState('');
   const [securityToken, setSecurityToken] = useState<string | null>(null);
@@ -12,13 +14,8 @@ export const useN8NChat = () => {
     globalThis.crypto.getRandomValues(array);
     setChatId(array[0].toString(36));
 
-    // Welcome message from Niki
-    const welcomeMsg = {
-      role: 'assistant',
-      content: 'Ciao! 👋 Sono Niki, il tuo assistente personale. Sono qui per aiutarti con qualsiasi problema domestico: idraulica, elettricità, serrature, climatizzazione... **Raccontami cosa sta succedendo** e troverò il tecnico giusto per te!',
-      id: 'welcome',
-    };
-    setMessages([welcomeMsg]);
+    // Welcome message removed to show Zero State
+    // setMessages([]);
 
     // Fetch Security Token
     fetch('/api/chat/token', { method: 'POST' })
@@ -33,7 +30,7 @@ export const useN8NChat = () => {
 
   const sendMessage = async (userMessage: string) => {
     // 1. Mostra subito il messaggio dell'utente
-    const newUserMsg = { role: 'user', content: userMessage, id: Date.now().toString() };
+    const newUserMsg: Message = { role: 'user', content: userMessage, id: Date.now().toString() };
     setMessages((prev) => [...prev, newUserMsg]);
     setIsLoading(true);
 
@@ -68,12 +65,13 @@ export const useN8NChat = () => {
       // 3. Mostra la risposta di n8n
       const aiText = data.text || "Risposta ricevuta";
 
-      const newAiMsg = { role: 'assistant', content: aiText, id: (Date.now() + 1).toString() };
+      const newAiMsg: Message = { role: 'assistant', content: aiText, id: (Date.now() + 1).toString() };
       setMessages((prev) => [...prev, newAiMsg]);
 
     } catch (error: any) {
       console.error('Chat Error:', error);
-      setMessages((prev) => [...prev, { role: 'assistant', content: `⚠️ ${error.message || "Si è verificato un errore."}`, id: Date.now().toString() }]);
+      const errorMsg: Message = { role: 'assistant', content: `⚠️ ${error.message || "Si è verificato un errore."}`, id: Date.now().toString() };
+      setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
     }

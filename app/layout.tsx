@@ -35,6 +35,9 @@ export const viewport: Viewport = {
   themeColor: "#0f172a",
 };
 
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -43,21 +46,21 @@ export default function RootLayout({
   return (
     <html lang="it" className={dmSans.variable} suppressHydrationWarning>
       <head>
-        {/* 
+        {/*
           GDPR TODO: Wrap future tracking scripts with CookieConsentProvider condition.
-          
+
           Example for Google Analytics:
-          
+
           import { useConsentCheck } from '@/components/providers/cookie-consent-provider';
-          
+
           function AnalyticsScript() {
             const analyticsAllowed = useConsentCheck('analytics');
             if (!analyticsAllowed) return null;
             return <Script src="https://..." />;
           }
-          
+
           For Meta Pixel / Marketing:
-          
+
           function MarketingScripts() {
             const marketingAllowed = useConsentCheck('marketing');
             if (!marketingAllowed) return null;
@@ -77,6 +80,8 @@ export default function RootLayout({
             {children}
             <CookieBanner />
             <Toaster />
+            <Analytics />
+            <SpeedInsights />
           </CookieConsentProvider>
         </ThemeProvider>
       </body>
