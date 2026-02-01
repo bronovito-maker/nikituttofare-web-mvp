@@ -84,7 +84,65 @@ export function MagicLinkModal({
           <X className="w-5 h-5 text-slate-500" />
         </button>
 
-        {!isSent ? (
+        {isSent ? (
+          /* Success State - CRITICAL: User must click email link! */
+          <div className="px-6 sm:px-8 py-10 text-center">
+            {/* Warning Icon instead of Success */}
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/25 mb-4">
+              <Mail className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-2">
+              ⚠️ Richiesta in Attesa!
+            </h2>
+            <p className="text-sm text-slate-600 mb-4">
+              Ti ho inviato una mail a <strong className="text-slate-800">{email}</strong>
+            </p>
+
+            {/* Critical Warning Box */}
+            <div className="p-5 bg-gradient-to-br from-red-50 to-amber-50 rounded-xl border-2 border-amber-300 text-left mb-6">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-amber-100 rounded-lg flex-shrink-0">
+                  <AlertCircle className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-amber-900 mb-2">
+                    🚨 DEVI CLICCARE IL LINK NELLA MAIL!
+                  </p>
+                  <p className="text-sm text-amber-800 leading-relaxed">
+                    La tua richiesta <strong>NON è ancora attiva</strong>.
+                    Per inviarla ai tecnici e ricevere assistenza,{' '}
+                    <strong>apri la mail e clicca sul link di conferma</strong>.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Steps */}
+            <div className="space-y-2 text-left mb-6">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Prossimi passi:</p>
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">1</span>
+                <span className="text-sm text-slate-700">Controlla la tua casella email (anche SPAM)</span>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">2</span>
+                <span className="text-sm text-slate-700">Clicca sul link &quot;Conferma Richiesta&quot;</span>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                <span className="w-6 h-6 rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">3</span>
+                <span className="text-sm text-green-800 font-medium">Un tecnico ti chiamerà entro 30-60 min</span>
+              </div>
+            </div>
+
+            <Button
+              onClick={onClose}
+              variant="outline"
+              className="w-full h-12 rounded-xl border-2 border-slate-300 text-slate-700 font-semibold"
+            >
+              Ho capito, controllo la mail
+            </Button>
+          </div>
+        ) : (
           <>
             {/* Header */}
             <div className="px-6 sm:px-8 pt-8 pb-6 text-center bg-gradient-to-b from-blue-50 to-white">
@@ -158,64 +216,6 @@ export function MagicLinkModal({
               </form>
             </div>
           </>
-        ) : (
-          /* Success State - CRITICAL: User must click email link! */
-          <div className="px-6 sm:px-8 py-10 text-center">
-            {/* Warning Icon instead of Success */}
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/25 mb-4">
-              <Mail className="w-8 h-8 text-white" />
-            </div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-2">
-              ⚠️ Richiesta in Attesa!
-            </h2>
-            <p className="text-sm text-slate-600 mb-4">
-              Ti ho inviato una mail a <strong className="text-slate-800">{email}</strong>
-            </p>
-
-            {/* Critical Warning Box */}
-            <div className="p-5 bg-gradient-to-br from-red-50 to-amber-50 rounded-xl border-2 border-amber-300 text-left mb-6">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-amber-100 rounded-lg flex-shrink-0">
-                  <AlertCircle className="w-5 h-5 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-base font-bold text-amber-900 mb-2">
-                    🚨 DEVI CLICCARE IL LINK NELLA MAIL!
-                  </p>
-                  <p className="text-sm text-amber-800 leading-relaxed">
-                    La tua richiesta <strong>NON è ancora attiva</strong>.
-                    Per inviarla ai tecnici e ricevere assistenza,{' '}
-                    <strong>apri la mail e clicca sul link di conferma</strong>.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Steps */}
-            <div className="space-y-2 text-left mb-6">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Prossimi passi:</p>
-              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">1</span>
-                <span className="text-sm text-slate-700">Controlla la tua casella email (anche SPAM)</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">2</span>
-                <span className="text-sm text-slate-700">Clicca sul link &quot;Conferma Richiesta&quot;</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                <span className="w-6 h-6 rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">3</span>
-                <span className="text-sm text-green-800 font-medium">Un tecnico ti chiamerà entro 30-60 min</span>
-              </div>
-            </div>
-
-            <Button
-              onClick={onClose}
-              variant="outline"
-              className="w-full h-12 rounded-xl border-2 border-slate-300 text-slate-700 font-semibold"
-            >
-              Ho capito, controllo la mail
-            </Button>
-          </div>
         )}
       </div>
     </div>

@@ -38,8 +38,8 @@ function MessageBubble({ message }: Readonly<{ message: ChatMessageData }>) {
       <div className={`max-w-[80%] sm:max-w-[70%] ${isUser ? 'order-1' : ''}`}>
         <div
           className={`px-4 py-3 rounded-2xl ${isUser
-              ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-br-md'
-              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-tl-md shadow-sm'
+            ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-br-md'
+            : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-tl-md shadow-sm'
             }`}
         >
           {/* Message Content */}
@@ -109,7 +109,7 @@ function AIResponseRenderer({ content }: Readonly<{ content: AIResponseType }>) 
         <div className="space-y-3">
           <div className="flex items-center gap-2 font-semibold text-green-700">
             <span className="text-lg">✅</span>
-            Prenotazione Confermata
+            <span>Prenotazione Confermata</span>
           </div>
           <div className="text-sm text-slate-700">
             {typeof content.content === 'string' ? content.content : stringifyContent(content.content)}
@@ -192,37 +192,45 @@ export function ChatMessages({ messages, isLoading }: Readonly<ChatMessagesProps
         }`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
+      role="region"
+      aria-label="Chat messages drop zone"
     >
-      {visibleMessages.map((msg, index) => (
-        <MessageBubble key={msg.id || `msg-${index}`} message={msg} />
-      ))}
+      {
+        visibleMessages.map((msg, index) => (
+          <MessageBubble key={msg.id || `msg-${index}`} message={msg} />
+        ))
+      }
 
       {/* Typing Indicator */}
-      {isLoading && (
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-500 rounded-full flex items-center justify-center">
-            <Bot className="w-4 h-4 text-white" />
-          </div>
-          <div className="bg-slate-100 rounded-2xl rounded-tl-md px-4 py-3">
-            <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+      {
+        isLoading && (
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-500 rounded-full flex items-center justify-center">
+              <Bot className="w-4 h-4 text-white" />
+            </div>
+            <div className="bg-slate-100 rounded-2xl rounded-tl-md px-4 py-3">
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {messages.length > 50 && (
-        <div className="text-center py-2">
-          <p className="text-xs text-slate-500">
-            Mostra solo gli ultimi 50 messaggi per prestazioni ottimali
-          </p>
-        </div>
-      )}
+      {
+        messages.length > 50 && (
+          <div className="text-center py-2">
+            <p className="text-xs text-slate-500">
+              Mostra solo gli ultimi 50 messaggi per prestazioni ottimali
+            </p>
+          </div>
+        )
+      }
 
       <div ref={messagesEndRef} />
-    </div>
+    </div >
   );
 }
 

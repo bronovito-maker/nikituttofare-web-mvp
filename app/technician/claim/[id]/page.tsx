@@ -22,7 +22,7 @@ export default async function ClaimPage({ params }: PageProps) {
 
     if (!user) {
         // Redirect to login with callback to this page
-        redirect(`/login?redirect=/technician/claim/${ticketId}`);
+        redirect(`/login?next=/technician/claim/${ticketId}`);
     }
 
     const { data: profile } = await supabase

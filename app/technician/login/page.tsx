@@ -20,7 +20,7 @@ function TechnicianLoginForm() {
   const supabase = createBrowserClient();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get('redirect') || '/technician/dashboard';
+  const redirectUrl = searchParams.get('next') || searchParams.get('redirect') || '/technician/dashboard';
 
   // 1. VERIFICA FORMATO TELEFONO
   const handlePhoneSubmit = async () => {

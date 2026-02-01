@@ -33,7 +33,11 @@ export default function LoginPage() {
 
     try {
       // Redirect to auth callback which will exchange code for session on server
-      const redirectTo = `${globalThis.location.origin}/auth/callback?next=/dashboard`;
+      // Check for 'next' or 'redirect' param in the URL
+      const params = new URLSearchParams(globalThis.location.search);
+      const nextParam = params.get('next') ?? params.get('redirect') ?? '/dashboard';
+
+      const redirectTo = `${globalThis.location.origin}/auth/callback?next=${encodeURIComponent(nextParam)}`;
       const { error: magicError } = await supabase.auth.signInWithOtp({
         email,
         options: {
