@@ -1,0 +1,13 @@
+{
+    "mcpServers": {
+        "clarity": {
+            "command": "node",
+            "args": [
+                "/Users/bronovito/Desktop/nikituttofare-web-mvp/mcp-servers/clarity-mcp-server/dist/index.js"
+            ],
+            "env": {
+                "CLARITY_API_TOKEN": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjQ4M0FCMDhFNUYwRDMxNjdEOTRFMTQ3M0FEQTk2RTcyRDkwRUYwRkYiLCJ0eXAiOiJKV1QifQ.eyJqdGkiOiJlMzhiY2NhOC01YTUwLTRhMTAtODBmMy04MmYyYThiMzllZWMiLCJzdWIiOiIzMTc4NDcwMDQ5NjY3NDE5Iiwic2NvcGUiOiJEYXRhLkV4cG9ydCIsIm5iZiI6MTc2OTk3MDQ1NywiZXhwIjo0OTIzNTcwNDU2LCJpYXQiOjE3Njk5NzA0NTYsImlzcyI6ImNsYXJpdHkiLCJhdWQiOiJjbGFyaXR5LmRhdGEtZXhwb3J0ZXIifQ.nTcxhPPSKUnIEPc4tbK0LyWmvVT8PBrYwzWBOrB-GhpaGAxtIPxMh5Bj9jY7PJWYw3xk0cOH725l4poLrSRRyP3j39zsmhk5GC-5OYw0z3Ndy7lbxcyaMcw2sKvo-1vGpTbgnqfU8oRp7UuY9ugiHSe30X84o0SXAodOfBGEpCykPNIe8X27kDXafQQFENZ7OCQiJc-pCn8ouE988J4Fabqg7dqg79Ht2lbuXmVDElRzg5USn9FUFq5ARqRd3PNtG2k7QG9hBWNEREFLtE2Q9DLLpi8etBh8C7FRIyC8QkJ_4fY6CieowVuvLAE0EJBPyv9gGmAr_LUpKG0J-9oGzQ"
+            }
+        }
+    }
+}

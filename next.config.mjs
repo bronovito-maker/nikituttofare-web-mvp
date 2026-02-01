@@ -34,6 +34,19 @@ const nextConfig = {
       },
     ],
   },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com https://www.clarity.ms https://c.bing.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://*.clarity.ms https://c.bing.com; font-src 'self' data:; connect-src 'self' https://*.sentry.io https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms https://c.bing.com; worker-src 'self' blob:; frame-src 'self' https://*.clarity.ms; object-src 'none'; base-uri 'self';",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default withSentryConfig(nextConfig, {
