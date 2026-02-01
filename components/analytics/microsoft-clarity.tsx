@@ -5,7 +5,13 @@ import Script from "next/script";
 export function MicrosoftClarity() {
     const clarityId = process.env.NEXT_PUBLIC_MICROSOFT_CLARITY_ID;
 
-    if (!clarityId) return null;
+    /* eslint-disable no-console */
+    if (!clarityId) {
+        console.warn("Microsoft Clarity: ID is missing");
+        return null;
+    }
+    console.log("Microsoft Clarity: ID found", clarityId);
+    /* eslint-enable no-console */
 
     return (
         <Script
