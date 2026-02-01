@@ -109,8 +109,11 @@ export async function registerTechnician(formData: FormData) {
 export async function verifyAndLinkTechnician(phone: string, userId: string) {
   const supabaseAdmin = createAdminClient()
 
+  console.log(`[verifyAndLinkTechnician] Start check for Phone: ${phone}, UserId: ${userId}`);
+
   // Normalizza l'input per cercare nel DB
   const formattedPhone = normalizePhone(phone)
+  console.log(`[verifyAndLinkTechnician] Normalized Phone: ${formattedPhone}`);
 
   // 1. Cerca se esiste un profilo tecnico con questo telefono
   const { data: profile, error } = await supabaseAdmin
@@ -121,8 +124,13 @@ export async function verifyAndLinkTechnician(phone: string, userId: string) {
     .single()
 
   if (error || !profile) {
+    console.error(`[verifyAndLinkTechnician] Profile not found or error. Error: ${error?.message}`);
+    // Fallback search: Try without +39 or with different format if the first failed?
+    // For now, strict match on normalized phone is best security.
     return { success: false, message: 'Nessun account tecnico trovato per questo numero.' }
   }
+
+  console.log(`[verifyAndLinkTechnician] Profile found: ${profile.id} (Role: ${profile.role})`);
 
   // 2. Se l'ID è diverso (es. creato via Admin vs Login OTP),
   // qui dovremmo gestire il merge o l'aggiornamento.

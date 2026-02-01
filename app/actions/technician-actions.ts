@@ -135,3 +135,52 @@ export async function addJobNote(ticketId: string, noteContent: string) {
     return { success: true }
 }
 
+
+export async function loginTechnician(phone: string, pin: string) {
+    const supabase = await createServerClient()
+
+    // 1. Normalizzazione rigorosa
+    // Rimuovi tutto ciò che non è numero o +
+    let cleanPhone = phone.replaceAll(/[^0-9+]/g, '')
+    // Se inizia per 39 o 3.. (senza +), forziamo +39 se sembra un cellulare IT
+    if (!cleanPhone.startsWith('+')) {
+        if (cleanPhone.startsWith('39')) {
+            cleanPhone = '+' + cleanPhone
+        } else {
+            // Assumo che se l'utente digita 333123... intenda +39333...
+            cleanPhone = '+39' + cleanPhone
+        }
+    }
+
+    console.log(`[loginTechnician] Attempting login for phone: ${cleanPhone}`)
+
+    // 2. Lookup su public.profiles per trovare l'email
+    // (L'email è l'identificativo reale per Supabase Auth)
+    const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('email, role')
+        .eq('phone', cleanPhone)
+        .eq('role', 'technician')
+        .single()
+
+    if (profileError || !profile || !profile.email) {
+        console.error(`[loginTechnician] Profile not found for phone ${cleanPhone}:`, profileError)
+        return { success: false, message: 'Numero non riconosciuto o non abilitato come tecnico.' }
+    }
+
+    console.log(`[loginTechnician] Found profile: ${profile.email}`)
+
+    // 3. Esegui Auth su Supabase (Server-Side)
+    // Questo imposta il cookie di sessione per il middleware/SSR
+    const { error: authError } = await supabase.auth.signInWithPassword({
+        email: profile.email,
+        password: `${pin}ntf` // La password è PIN + "ntf"
+    })
+
+    if (authError) {
+        console.error(`[loginTechnician] Auth failed for ${profile.email}:`, authError)
+        return { success: false, message: 'PIN non valido.' }
+    }
+
+    return { success: true }
+}

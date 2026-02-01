@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { verifyAndLinkTechnician } from '@/app/actions/admin-actions';
+import { loginTechnician } from '@/app/actions/technician-actions';
 import { HardHat, ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -45,28 +45,11 @@ function TechnicianLoginForm() {
     setError('');
 
     try {
-      // Ricostruisci le credenziali
-      const normalizedPhone = phone.replaceAll(/\D/g, '');
-      const email = `tecnico-${normalizedPhone}@nikituttofare.it`;
-      const password = `${pin}ntf`;
+      // Usa la Server Action che gestisce normalizzazione, lookup e auth (cookie di sessione)
+      const result = await loginTechnician(phone, pin);
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error || !data.user) {
-        setError('PIN non valido o tecnico non trovato.');
-        setLoading(false);
-        return;
-      }
-
-      // 3. CHECK WHITELIST / LINK
-      const linkResult = await verifyAndLinkTechnician(phone.trim(), data.user.id);
-
-      if (!linkResult.success) {
-        setError(linkResult.message || 'Accesso negato');
-        await supabase.auth.signOut();
+      if (!result.success) {
+        setError(result.message || 'Login fallito. Controlla numero e PIN.');
         setLoading(false);
         return;
       }
@@ -74,6 +57,7 @@ function TechnicianLoginForm() {
       // 4. SUCCESSO
       toast.success('Accesso effettuato!');
       router.push(redirectUrl);
+      router.refresh(); // Refresh per aggiornare lo stato di auth (cookie)
 
     } catch (err) {
       setError('Errore durante il login.');
