@@ -4,10 +4,19 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { Database } from '@/lib/database.types';
+
+type Ticket = Database['public']['Tables']['tickets']['Row'];
+
+interface MessageItem {
+    id: string;
+    role: string;
+    content: string;
+}
 
 interface TicketDetailViewProps {
-    ticket: any; // We will use a stricter type if available, typically Database['public']['Tables']['tickets']['Row']
-    messages?: any[];
+    ticket: Ticket;
+    messages?: MessageItem[];
     actionSlot?: React.ReactNode;
     bannerSlot?: React.ReactNode;
     backLink?: string;
@@ -173,8 +182,8 @@ export function TicketDetailView({
                                 <div className="space-y-3">
                                     {messages.map((msg) => (
                                         <div key={msg.id} className={`p-3 rounded-lg text-sm max-w-[90%] ${msg.role === 'assistant'
-                                                ? 'bg-background border border-border mr-auto rounded-tl-none'
-                                                : 'bg-primary/10 text-primary-foreground ml-auto rounded-tr-none dark:text-emerald-100'
+                                            ? 'bg-background border border-border mr-auto rounded-tl-none'
+                                            : 'bg-primary/10 text-primary-foreground ml-auto rounded-tr-none dark:text-emerald-100'
                                             }`}>
                                             <span className="font-bold block mb-1 opacity-50 uppercase text-[10px] tracking-wider">{msg.role === 'user' ? 'Cliente' : 'Niki AI'}</span>
                                             {msg.content}

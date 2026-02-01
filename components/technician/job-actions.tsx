@@ -27,9 +27,10 @@ export function TechnicianJobActions({ ticketId }: TechnicianJobActionsProps) {
                 // Fallback for unexpected structured response
                 toast.error('Impossibile accettare l\'incarico.');
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
-            toast.error(err.message || 'Errore durante l\'accettazione del lavoro.');
+            const message = err instanceof Error ? err.message : 'Errore durante l\'accettazione del lavoro.';
+            toast.error(message);
         } finally {
             setLoading(false);
         }

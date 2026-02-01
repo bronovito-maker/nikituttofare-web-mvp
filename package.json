@@ -17,7 +17,9 @@
     "test:ai:emergency": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/test-ai-responses.ts --urgency=emergency",
     "test:ai:category": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/test-ai-responses.ts --category",
     "check-deps": "node scripts/check-deps.js",
-    "generate-secret": "node scripts/generate-secret.js"
+    "generate-secret": "node scripts/generate-secret.js",
+    "sonar:check": "node scripts/sonar-check.mjs",
+    "security:test": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/security-penetration-test.ts"
   },
   "dependencies": {
     "@auth/core": "^0.34.1",

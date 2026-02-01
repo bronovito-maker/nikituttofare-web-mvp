@@ -71,6 +71,7 @@ export const useN8NChat = () => {
 
       // 3. Processa la risposta di n8n ed estrai suggerimenti
       let aiText = data.text || "Risposta ricevuta";
+      // Safe regex: Input is server response with max 10KB limit, simple pattern without nested quantifiers
       const suggestionsRegex = /<<([^>]+)>>/g; // Estrae "Suggerimento" da "<<Suggerimento>>"
 
       const foundSuggestions: string[] = [];
@@ -78,13 +79,13 @@ export const useN8NChat = () => {
 
       // Estrai tutti i match
       while ((match = suggestionsRegex.exec(aiText)) !== null) {
-        if (match[1] && match[1].trim()) {
+        if (match[1]?.trim()) {
           foundSuggestions.push(match[1].trim());
         }
       }
 
       // Rimuovi i tag dal testo visibile
-      aiText = aiText.replace(suggestionsRegex, '').trim();
+      aiText = aiText.replaceAll(suggestionsRegex, '').trim();
 
       // Aggiorna lo stato dei suggerimenti (se trovati, altrimenti svuota o mantieni logicamente - qui sovrascriviamo)
       if (foundSuggestions.length > 0) {
@@ -96,9 +97,10 @@ export const useN8NChat = () => {
       const newAiMsg: Message = { role: 'assistant', content: aiText, id: (Date.now() + 1).toString() };
       setMessages((prev) => [...prev, newAiMsg]);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Chat Error:', error);
-      const errorMsg: Message = { role: 'assistant', content: `⚠️ ${error.message || "Si è verificato un errore."}`, id: Date.now().toString() };
+      const errorMessage = error instanceof Error ? error.message : 'Si è verificato un errore.';
+      const errorMsg: Message = { role: 'assistant', content: `⚠️ ${errorMessage}`, id: Date.now().toString() };
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);

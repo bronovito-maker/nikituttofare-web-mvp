@@ -72,8 +72,8 @@ export async function POST(request: NextRequest) {
       success: boolean;
       error?: string;
       message?: string;
-      ticket?: any;
-      client?: any;
+      ticket?: Record<string, unknown>;
+      client?: Record<string, unknown>;
     } | null;
 
     if (!result?.success) {
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       client: result.client
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Technician accept error:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Dati non validi', details: error.flatten() }, { status: 400 });
