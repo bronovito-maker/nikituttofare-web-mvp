@@ -241,7 +241,7 @@ export function ImageUpload({
         <UploadContent state={state} progress={progress} errorMessage={errorMessage} />
       </button>
 
-      <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleFileSelect} className="hidden" disabled={disabled} />
+      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" disabled={disabled} />
 
 
 
