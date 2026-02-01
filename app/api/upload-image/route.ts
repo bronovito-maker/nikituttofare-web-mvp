@@ -30,6 +30,9 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await getCurrentUser();
+    if (!user?.id) {
+      return NextResponse.json({ error: 'Devi essere loggato per caricare immagini.' }, { status: 401 });
+    }
 
     const formData = await request.formData();
     const file = formData.get('file');
