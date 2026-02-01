@@ -40,10 +40,15 @@ export async function POST(req: NextRequest) {
 
     // 4. Prepare n8n connection
     const n8nSecret = process.env.N8N_WEBHOOK_SECRET;
+    const n8nToken = process.env.N8N_SECRET_TOKEN;
 
     if (!webhookUrl) {
       console.error("❌ ERRORE: N8N_WEBHOOK_URL mancante nel .env");
       return NextResponse.json({ error: "Configurazione Server Mancante" }, { status: 500 });
+    }
+
+    if (!n8nToken) {
+      console.warn("⚠️ WARNING: N8N_SECRET_TOKEN mancante. La chiamata a n8n potrebbe fallire se Header Auth è attivo.");
     }
 
     // Safety Fix: Normalize URL if protocol is missing
@@ -57,6 +62,7 @@ export async function POST(req: NextRequest) {
       headers: {
         "Content-Type": "application/json",
         "x-n8n-secret": n8nSecret || "",
+        "x-api-key": n8nToken || "",
       },
       body: JSON.stringify({
         message,

@@ -58,6 +58,7 @@ Dopo aver avviato n8n su Railway, devi istruire il Frontend su Vercel a parlare 
 | :--- | :--- |
 | `N8N_WEBHOOK_URL` | **URL di Produzione**: `https://<TUO-DOMINIO-RAILWAY>/webhook/<tuo-endpoint-chat>` <br> *Nota: Copialo direttamente dal nodo Webhook in n8n (tab Production).* |
 | `N8N_SIGNING_SECRET` | **MATCH OBBLIGATORIO**: Deve essere identico al segreto che imposti/leggi nel frontend o nel backend (se usi validazione HMAC). |
+| `N8N_SECRET_TOKEN` | **HEADER AUTH**: Token da inserire nel nodo Webhook di n8n (Credential Type: Header Auth). |
 
 ### Verifica Funzionale
 1.  Attiva il workflow su n8n (Switch **Active** in alto a destra su verde).
