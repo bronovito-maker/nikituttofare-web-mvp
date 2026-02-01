@@ -49,7 +49,7 @@ export default async function TicketsPage() {
                     </div>
                 </div>
 
-                <TicketsList tickets={tickets as any || []} />
+                <TicketsList tickets={tickets ?? []} />
             </main>
 
             <MobileNav />

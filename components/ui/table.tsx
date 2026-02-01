@@ -7,6 +7,7 @@ const Table = React.forwardRef<
   React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => (
   <div className="relative w-full overflow-auto">
+    {/* NOSONAR: S5256 - This is a composable UI component. Headers are provided by parent via TableHeader/TableHead. */}
     <table
       ref={ref}
       role="table"

@@ -9,20 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { Database } from '@/lib/database.types';
 
-// Simple Ticket Interface (adapt based on your actual DB schema)
-interface Ticket {
-    id: string;
-    created_at: string;
-    description: string;
-    status: 'new' | 'assigned' | 'in_progress' | 'resolved' | 'closed' | 'cancelled';
-    category: string;
-    city?: string;
-    address?: string;
-}
+// Use Database types for proper type safety
+type Ticket = Database['public']['Tables']['tickets']['Row'];
 
 interface TicketsListProps {
-    tickets: Ticket[];
+    readonly tickets: Ticket[];
 }
 
 export function TicketsList({ tickets }: TicketsListProps) {
