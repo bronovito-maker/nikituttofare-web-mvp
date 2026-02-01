@@ -4,17 +4,17 @@ import { Button } from '@/components/ui/button'
 import { MapPin, ArrowLeft, User, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { acceptJob } from '@/app/actions/technician-actions'
 import { formatDistanceToNow } from 'date-fns'
 import { it } from 'date-fns/locale'
+import { TechnicianJobActions } from '@/components/technician/job-actions';
 
 export default async function JobDetailPage({ params }: { params: Promise<Readonly<{ id: string }>> }) {
     const supabase = await createServerClient()
     const { id } = await params
 
-    // 1. Auth Check
+    // 1. Auth Check (con redirect corretto a /technician/login)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return redirect(`/login?next=/technician/job/${id}`)
+    if (!user) return redirect(`/technician/login?next=/technician/job/${id}`)
 
     // 2. Fetch Job Details
     const { data: ticket, error } = await supabase
@@ -35,7 +35,7 @@ export default async function JobDetailPage({ params }: { params: Promise<Readon
         )
     }
 
-    // 3. Fetch Context Messages (optional, helps technician understand context)
+    // 3. Context Messages
     const { data: messages } = await supabase
         .from('messages')
         .select('*')
@@ -87,17 +87,7 @@ export default async function JobDetailPage({ params }: { params: Promise<Readon
                 {/* Status Actions */}
                 <div className="mb-8">
                     {isAvailable && (
-                        <form action={async () => {
-                            'use server'
-                            await acceptJob(id)
-                        }}>
-                            <Button type="submit" size="lg" className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold h-12 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                                ACCETTA INCARICO
-                            </Button>
-                            <p className="text-center text-xs text-gray-500 mt-2">
-                                Cliccando accetti di intervenire entro 2 ore.
-                            </p>
-                        </form>
+                        <TechnicianJobActions ticketId={id} />
                     )}
 
                     {isAssignedToMe && (

@@ -38,7 +38,7 @@ export default function PrivacyPage() {
           </p>
           <p>
             Per qualsiasi richiesta relativa alla privacy, puoi contattarci a:{' '}
-            <a href="mailto:privacy@nikituttofare.com">privacy@nikituttofare.com</a>
+            <a href="mailto:bronovito@gmail.com">bronovito@gmail.com</a>
           </p>
 
           <h2>2. Dati Raccolti</h2>
@@ -104,7 +104,7 @@ export default function PrivacyPage() {
           </ul>
           <p>
             Per esercitare questi diritti, scrivi a:{' '}
-            <a href="mailto:privacy@nikituttofare.com">privacy@nikituttofare.com</a>
+            <a href="mailto:bronovito@gmail.com">bronovito@gmail.com</a>
           </p>
 
           <h2>9. Cookie</h2>
@@ -150,7 +150,7 @@ export default function PrivacyPage() {
 
           <p className="text-sm text-slate-500">
             Per qualsiasi domanda, contattaci:<br />
-            📧 <a href="mailto:privacy@nikituttofare.com">privacy@nikituttofare.com</a><br />
+            📧 <a href="mailto:bronovito@gmail.com">bronovito@gmail.com</a><br />
             📞 +39 346 102 7447
           </p>
         </article>

@@ -139,42 +139,41 @@ export async function addJobNote(ticketId: string, noteContent: string) {
 export async function loginTechnician(phone: string, pin: string) {
     const supabase = await createServerClient()
 
-    // 1. Normalizzazione rigorosa
-    // Rimuovi tutto ciò che non è numero o +
-    let cleanPhone = phone.replaceAll(/[^0-9+]/g, '')
-    // Se inizia per 39 o 3.. (senza +), forziamo +39 se sembra un cellulare IT
-    if (!cleanPhone.startsWith('+')) {
-        if (cleanPhone.startsWith('39')) {
-            cleanPhone = '+' + cleanPhone
-        } else {
-            // Assumo che se l'utente digita 333123... intenda +39333...
-            cleanPhone = '+39' + cleanPhone
-        }
-    }
+    // 1. Normalizzazione "Smart" (Richiesta Utente)
+    // Tieni solo i numeri
+    const cleanInput = phone.replace(/\D/g, '')
 
-    console.log(`[loginTechnician] Attempting login for phone: ${cleanPhone}`)
+    // Se manca il 39 iniziale, aggiungilo (assumiamo numeri italiani per ora)
+    // Logica: se input è 346... -> 39346...
+    // Se input è 39346... -> resta 39346...
+    const phoneToSearch = cleanInput.startsWith('39') ? cleanInput : `39${cleanInput}`
 
-    // 2. Lookup su public.profiles per trovare l'email
-    // (L'email è l'identificativo reale per Supabase Auth)
+    console.log(`[loginTechnician] Smart Match attempt: Input=${phone} -> Clean=${cleanInput} -> Search=${phoneToSearch}`)
+
+    // 2. Lookup su public.profiles (Smart Match)
+    // Cerca qualsiasi numero che FINISCE con la sequenza (per gestire il + o 00 davanti nel DB)
+    // O meglio, usiamo ilike con % davanti.
+    // DB: +39346...
+    // Search: 39346...
+    // Logic: ilike '%39346...' matches '+39346...'
     const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('email, role')
-        .eq('phone', cleanPhone)
         .eq('role', 'technician')
+        .ilike('phone', `%${phoneToSearch}`) // Cerca il numero indipendentemente dal formato esatto prefisso
         .single()
 
     if (profileError || !profile || !profile.email) {
-        console.error(`[loginTechnician] Profile not found for phone ${cleanPhone}:`, profileError)
-        return { success: false, message: 'Numero non riconosciuto o non abilitato come tecnico.' }
+        console.error(`[loginTechnician] Profile not found for search ${phoneToSearch}:`, profileError)
+        return { success: false, message: 'Numero non registrato.' }
     }
 
-    console.log(`[loginTechnician] Found profile: ${profile.email}`)
+    console.log(`[loginTechnician] Match found: ${profile.email}`)
 
     // 3. Esegui Auth su Supabase (Server-Side)
-    // Questo imposta il cookie di sessione per il middleware/SSR
     const { error: authError } = await supabase.auth.signInWithPassword({
         email: profile.email,
-        password: `${pin}ntf` // La password è PIN + "ntf"
+        password: `${pin}ntf` // Manteniamo la logica del suffisso se è così che sono stati creati
     })
 
     if (authError) {

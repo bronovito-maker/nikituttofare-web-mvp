@@ -28,8 +28,9 @@ function TechnicianLoginForm() {
     setError('');
 
     const cleanPhone = phone.trim();
-    if (!cleanPhone.startsWith('+39')) {
-      setError('Inserisci il prefisso +39');
+    // Validazione base: deve contenere almeno alcuni numeri
+    if (cleanPhone.replace(/\D/g, '').length < 8) {
+      setError('Inserisci un numero valido');
       setLoading(false);
       return;
     }
@@ -96,7 +97,7 @@ function TechnicianLoginForm() {
                 <div className="space-y-2">
                   <Input
                     type="tel"
-                    placeholder="+39 333 1234567"
+                    placeholder="333 1234567"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handlePhoneSubmit()}

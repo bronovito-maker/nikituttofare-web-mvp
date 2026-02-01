@@ -75,8 +75,8 @@ export default function TechnicianRegisterPage() {
                 <div className="max-w-4xl mx-auto text-center">
                     <p className="text-sm text-muted-foreground mb-4">
                         Hai domande? Scrivici a{' '}
-                        <a href="mailto:tecnici@nikituttofare.it" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
-                            tecnici@nikituttofare.it
+                        <a href="mailto:bronovito@gmail.com" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                            bronovito@gmail.com
                         </a>
                     </p>
                     <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground">

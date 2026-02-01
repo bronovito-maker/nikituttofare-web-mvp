@@ -99,6 +99,10 @@ export async function middleware(request: NextRequest) {
 
         // If on Tech Login page but already logged in as Technician
         if (isTechnicianAuthRoute && user && isTechnicianUser) {
+            const nextParam = nextUrl.searchParams.get('next');
+            if (nextParam) {
+                return NextResponse.redirect(new URL(nextParam, request.url));
+            }
             return NextResponse.redirect(new URL("/technician/dashboard", request.url));
         }
     }
@@ -123,6 +127,11 @@ export async function middleware(request: NextRequest) {
 
     // 4. Redirect logged-in users away from standard login
     if (isAuthRoute && user) {
+        const nextParam = nextUrl.searchParams.get('next');
+        if (nextParam) {
+            return NextResponse.redirect(new URL(nextParam, request.url));
+        }
+
         // If they are a technician, maybe they shouldn't be here? 
         // But for now, standard behavior is redirect to main dashboard.
         // If we want to be smart:

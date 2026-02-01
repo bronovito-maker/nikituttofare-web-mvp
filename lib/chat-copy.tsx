@@ -40,7 +40,7 @@ export const chatCopy = {
         <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-center">
           <p className="text-sm font-semibold">Vuoi seguire la tua richiesta online?</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Contattaci su <a href="mailto:info@nikituttofare.com" className="font-semibold text-primary underline-offset-4 hover:underline">info@nikituttofare.com</a> per attivare il tuo accesso personale.
+            Contattaci su <a href="mailto:bronovito@gmail.com" className="font-semibold text-primary underline-offset-4 hover:underline">bronovito@gmail.com</a> per attivare il tuo accesso personale.
           </p>
         </div>
       </div>

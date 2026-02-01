@@ -88,7 +88,7 @@ export default function Home() {
                     {userType === 'residential' ? (
                       <>
                         <span className="font-semibold text-foreground">Non aspettare che peggiori.</span> Descrivi il problema, <br />
-                        e in <span className="font-bold text-blue-600 dark:text-blue-400">18 minuti</span> un tecnico certificato è da te.
+                        con intervento garantito <span className="font-bold text-blue-600 dark:text-blue-400">entro 2 ore</span>.
                       </>
                     ) : (
                       <>

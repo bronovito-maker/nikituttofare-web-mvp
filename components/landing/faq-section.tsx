@@ -6,7 +6,7 @@ import { ChevronDown } from 'lucide-react';
 const FAQ_ITEMS = [
     {
         question: 'Come funziona la chatbot Niki?',
-        answer: 'Descrivi il tuo problema a Niki come se parlassi con un amico. L\'AI analizza la richiesta, identifica il tipo di intervento necessario e trova il tecnico disponibile più vicino a te. In media, hai un professionista a casa in 18 minuti.',
+        answer: 'Descrivi il tuo problema a Niki come se parlassi con un amico. L\'AI analizza la richiesta, identifica il tipo di intervento necessario e trova il tecnico disponibile più vicino a te. Garantiamo l\'intervento entro 2 ore.',
     },
     {
         question: 'Quanto costa un intervento?',

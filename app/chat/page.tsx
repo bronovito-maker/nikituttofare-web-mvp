@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, ComponentPropsWithoutRef } from 'react';
+import { useState, useRef, useEffect, useCallback, ComponentPropsWithoutRef, Suspense } from 'react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown
+import remarkBreaks from 'remark-breaks';
 import {
   Send,
   ArrowLeft,
@@ -32,10 +33,14 @@ import { ChatWelcome } from '@/components/chat/chat-welcome';
 
 // Quick action categories removed - moved to chat-welcome.tsx
 
-export default function ChatPage() {
+import { useSearchParams } from 'next/navigation';
+
+function ChatContent() {
   // ✅ USA IL NUOVO HOOK N8N (Motore Semplice)
-  const { messages, sendMessage, isLoading } = useN8NChat();
+  const { messages, sendMessage, isLoading, setMessages } = useN8NChat();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const ticketId = searchParams.get('ticket_id');
 
   // Stati UI locali
   const [input, setInput] = useState('');
@@ -48,9 +53,41 @@ export default function ChatPage() {
   // Auth state (Mantenuto per mostrare l'avatar utente)
   const [userInitials, setUserInitials] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userId, setUserId] = useState<string | undefined>(undefined);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load Ticket History
+  useEffect(() => {
+    if (!ticketId) return;
+
+    const loadHistory = async () => {
+      const supabase = createBrowserClient();
+      const { data: history, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('ticket_id', ticketId)
+        .order('created_at', { ascending: true });
+
+      if (history && history.length > 0) {
+        // Convert DB messages to Chat Interface format
+        const historyFormatted = history.map((msg: any) => ({
+          id: msg.id,
+          role: msg.sender_role === 'user' ? 'user' : 'assistant', // adapt based on DB column
+          content: msg.content,
+          created_at: msg.created_at
+        }));
+
+        // We cast to any because Message type might be stricter (check definition)
+        // But usually Message matches { role, content, id }
+        setMessages(historyFormatted as any);
+        setShowQuickActions(false);
+      }
+    };
+
+    loadHistory();
+  }, [ticketId, setMessages]);
 
   // Auth Effect (Solo per estetica avatar)
   useEffect(() => {
@@ -59,7 +96,7 @@ export default function ChatPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setIsAuthenticated(true);
-        // User email removed as unused variable
+        setUserId(user.id);
         const email = user.email || '';
         const name = user.user_metadata?.full_name || email.split('@')[0];
         const initials = name.split(' ')
@@ -85,6 +122,16 @@ export default function ChatPage() {
     }
   }, [messages.length]);
 
+  // CHECK AUTH GUARD
+  // Se l'ultimo messaggio dell'AI contiene "RIEPILOGO INTERVENTO" e l'utente non è loggato
+  const lastMessage = messages[messages.length - 1];
+  const isWaitingForConfirmation = lastMessage?.role === 'assistant' &&
+    typeof lastMessage.content === 'string' &&
+    lastMessage.content.toUpperCase().includes('RIEPILOGO INTERVENTO');
+
+  const shouldShowAuthGuard = isWaitingForConfirmation && !isAuthenticated;
+
+
   // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
@@ -107,18 +154,18 @@ export default function ChatPage() {
     setUploadedImageUrl(null);
     setError(null);
 
-    // 🔥 Chiama n8n tramite il nostro hook
-    await sendMessage(finalMessage);
+    // 🔥 Chiama n8n tramite il nostro hook (con userId se presente)
+    await sendMessage(finalMessage, userId);
 
     // Advance conversation step
     setConversationStep(prev => Math.min(prev + 1, 3));
 
-  }, [input, uploadedImageUrl, isLoading, isUploading, sendMessage]);
+  }, [input, uploadedImageUrl, isLoading, isUploading, sendMessage, userId]);
 
 
   // Handle suggestion click
   const handleSuggestionClick = async (suggestion: string) => {
-    await sendMessage(suggestion);
+    await sendMessage(suggestion, userId);
     setConversationStep(prev => Math.min(prev + 1, 3));
   };
 
@@ -277,61 +324,90 @@ export default function ChatPage() {
             </div>
           )}
 
-          <div className="flex items-end gap-2 sm:gap-3">
-            {/* Left Box: Upload */}
-            <div className="flex-shrink-0">
-              <ImageUpload
-                onUploadComplete={handleImageUploaded}
-                onUploadStart={handleUploadStart}
-                onError={handleUploadError}
-                disabled={isLoading}
-                isAuthenticated={isAuthenticated}
-                onAuthError={() => {
-                  toast("Serve un account per le foto", {
-                    description: "Per analizzare le tue immagini e garantirti la massima privacy, abbiamo bisogno che tu acceda. È questione di un attimo e potrai caricare tutte le foto che vuoi!",
-                    action: {
-                      label: "Accedi o Registrati",
-                      onClick: () => router.push('/login?redirect=/chat')
-                    },
-                    duration: 5000,
-                  });
-                }}
-              />
-            </div>
-
-            {/* Middle Box: Textarea */}
-            <div className="flex-1">
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Descrivi il problema..."
-                rows={1}
-                disabled={isLoading}
-                className="w-full px-4 py-3 bg-secondary/50 border-0 rounded-2xl text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-card transition-all resize-none min-h-[48px] max-h-[120px]"
-                style={{ fontSize: '16px' }}
-              />
-            </div>
-
-            {/* Right Box: Send Button (Now outside) */}
-            <div className="flex-shrink-0">
-              <button
-                onClick={handleSend}
-                disabled={(!input.trim() && !uploadedImageUrl) || isLoading || isUploading}
-                className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:from-blue-700 hover:to-blue-600 transition-all shadow-lg shadow-blue-500/25 active:scale-95"
+          {shouldShowAuthGuard ? (
+            <div className="flex flex-col items-center justify-center p-4 bg-secondary/30 rounded-2xl border border-blue-500/30 text-center space-y-3 animate-in fade-in slide-in-from-bottom-4">
+              <Key className="w-8 h-8 text-blue-500 mb-1" />
+              <h3 className="font-semibold text-foreground">Accesso Richiesto</h3>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Per confermare la richiesta e inviare un tecnico, devi accedere o registrarti.
+                Non preoccuparti, <strong>la chat verrà salvata</strong>.
+              </p>
+              <Button
+                onClick={() => router.push('/login?next=/chat')}
+                className="bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-500/20"
               >
-                {isLoading ? (
-                  <LoadingSpinner size="sm" className="text-white" />
-                ) : (
-                  <Send className="w-5 h-5" />
-                )}
-              </button>
+                Accedi per Confermare
+              </Button>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-end gap-2 sm:gap-3">
+              {/* Left Box: Upload */}
+              <div className="flex-shrink-0">
+                <ImageUpload
+                  onUploadComplete={handleImageUploaded}
+                  onUploadStart={handleUploadStart}
+                  onError={handleUploadError}
+                  disabled={isLoading}
+                  isAuthenticated={isAuthenticated}
+                  onAuthError={() => {
+                    toast("Serve un account per le foto", {
+                      description: "Per analizzare le tue immagini e garantirti la massima privacy, abbiamo bisogno che tu acceda. È questione di un attimo e potrai caricare tutte le foto che vuoi!",
+                      action: {
+                        label: "Accedi o Registrati",
+                        onClick: () => router.push('/login?redirect=/chat')
+                      },
+                      duration: 5000,
+                    });
+                  }}
+                />
+              </div>
+
+              {/* Middle Box: Textarea */}
+              <div className="flex-1">
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Descrivi il problema..."
+                  rows={1}
+                  disabled={isLoading}
+                  className="w-full px-4 py-3 bg-secondary/50 border-0 rounded-2xl text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-card transition-all resize-none min-h-[48px] max-h-[120px]"
+                  style={{ fontSize: '16px' }}
+                />
+              </div>
+
+              {/* Right Box: Send Button (Now outside) */}
+              <div className="flex-shrink-0">
+                <button
+                  onClick={handleSend}
+                  disabled={(!input.trim() && !uploadedImageUrl) || isLoading || isUploading}
+                  className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:from-blue-700 hover:to-blue-600 transition-all shadow-lg shadow-blue-500/25 active:scale-95"
+                >
+                  {isLoading ? (
+                    <LoadingSpinner size="sm" className="text-white" />
+                  ) : (
+                    <Send className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-[100dvh] items-center justify-center bg-background">
+        <LoadingSpinner size="lg" />
+      </div>
+    }>
+      <ChatContent />
+    </Suspense>
   );
 }
 
@@ -399,7 +475,7 @@ function MessageBubble({ message, isLast }: { readonly message: any; readonly is
 
         {textContent && (
           <div className={`text-sm sm:text-base leading-relaxed break-words markdown-content ${isUser ? 'text-white' : 'text-foreground'}`}>
-            <ReactMarkdown components={MARKDOWN_COMPONENTS}>
+            <ReactMarkdown remarkPlugins={[remarkBreaks]} components={MARKDOWN_COMPONENTS}>
               {textContent}
             </ReactMarkdown>
           </div>

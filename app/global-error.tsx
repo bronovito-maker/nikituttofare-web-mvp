@@ -91,7 +91,7 @@ export default function GlobalError({
                     {/* Support Link */}
                     <p className="text-xs text-slate-500 mt-8">
                         Se il problema persiste,{' '}
-                        <a href="mailto:support@nikituttofare.com" className="text-blue-400 hover:underline">
+                        <a href="mailto:bronovito@gmail.com" className="text-blue-400 hover:underline">
                             contatta il supporto
                         </a>
                     </p>

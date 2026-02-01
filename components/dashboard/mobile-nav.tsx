@@ -3,11 +3,14 @@
 import Link from 'next/link';
 import { Home, FileText, User } from 'lucide-react';
 
+import { usePathname } from 'next/navigation';
+
 export function MobileNav() {
+    const pathname = usePathname();
     const navItems = [
-        { icon: Home, label: 'Home', active: true, href: '/dashboard' },
-        { icon: FileText, label: 'Asset', active: false, href: '/dashboard/assets' },
-        { icon: User, label: 'Profilo', active: false, href: '/dashboard/profile' },
+        { icon: Home, label: 'Home', active: pathname === '/dashboard', href: '/dashboard' },
+        { icon: FileText, label: 'Interventi', active: pathname === '/dashboard/tickets', href: '/dashboard/tickets' },
+        { icon: User, label: 'Profilo', active: pathname === '/dashboard/profile', href: '/dashboard/profile' },
     ];
 
     return (

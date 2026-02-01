@@ -18,7 +18,7 @@ export function HowItWorks() {
         {
             icon: Wrench,
             title: 'Tecnico in Arrivo',
-            description: 'Un professionista certificato ti contatta e arriva in media in 18 minuti.',
+            description: 'Un professionista certificato ti contatta e interviene entro 2 ore.',
             lightIconBg: 'bg-orange-100 text-orange-600',
         },
         {

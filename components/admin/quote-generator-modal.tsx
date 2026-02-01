@@ -127,7 +127,7 @@ export function QuoteGeneratorModal({ isOpen, onClose, ticket }: QuoteGeneratorM
                                     <div className="mt-4 text-xs text-slate-600 space-y-0.5">
                                         <p>P.IVA: 12345678901</p>
                                         <p>Via Roma 123, Milano (MI)</p>
-                                        <p>info@nikituttofare.it</p>
+                                        <p>bronovito@gmail.com</p>
                                     </div>
                                 </div>
                                 <div className="text-right">

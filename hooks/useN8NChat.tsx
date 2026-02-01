@@ -1,7 +1,8 @@
 // hooks/useN8NChat.tsx
 import { useState, useEffect } from 'react';
-
 import { Message } from '@/lib/types';
+
+const CHAT_SESSION_KEY = 'chat_session_id';
 
 export const useN8NChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -10,12 +11,17 @@ export const useN8NChat = () => {
   const [securityToken, setSecurityToken] = useState<string | null>(null);
 
   useEffect(() => {
-    const array = new Uint32Array(1);
-    globalThis.crypto.getRandomValues(array);
-    setChatId(array[0].toString(36));
+    // 1. Session Persistence
+    let currentChatId = localStorage.getItem(CHAT_SESSION_KEY);
 
-    // Welcome message removed to show Zero State
-    // setMessages([]);
+    if (!currentChatId) {
+      const array = new Uint32Array(1);
+      globalThis.crypto.getRandomValues(array);
+      currentChatId = array[0].toString(36);
+      localStorage.setItem(CHAT_SESSION_KEY, currentChatId);
+    }
+
+    setChatId(currentChatId);
 
     // Fetch Security Token
     fetch('/api/chat/token', { method: 'POST' })
@@ -28,7 +34,7 @@ export const useN8NChat = () => {
       .catch(err => console.error("Failed to init chat security:", err));
   }, []);
 
-  const sendMessage = async (userMessage: string) => {
+  const sendMessage = async (userMessage: string, userId?: string) => {
     // 1. Mostra subito il messaggio dell'utente
     const newUserMsg: Message = { role: 'user', content: userMessage, id: Date.now().toString() };
     setMessages((prev) => [...prev, newUserMsg]);
@@ -36,9 +42,7 @@ export const useN8NChat = () => {
 
     try {
       if (!securityToken) {
-        // Silently try to refresh or just wait? For now throw error.
         console.warn("Security token missing, retrying fetch...");
-        // Simple retry logic could go here, but for MVP just fail safely
         throw new Error("Connessione sicura in fase di stabilimento... Riprova tra un secondo.");
       }
 
@@ -52,6 +56,7 @@ export const useN8NChat = () => {
         body: JSON.stringify({
           message: userMessage,
           chatId: chatId,
+          userId: userId // Passiamo l'ID utente se presente
         }),
       });
 
@@ -77,5 +82,5 @@ export const useN8NChat = () => {
     }
   };
 
-  return { messages, sendMessage, isLoading };
+  return { messages, sendMessage, isLoading, setMessages };
 };

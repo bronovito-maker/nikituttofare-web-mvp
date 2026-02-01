@@ -6,7 +6,7 @@ const BENEFITS = [
     {
         icon: Zap,
         title: 'Interventi Rapidi',
-        description: 'Tecnico da te in media 18 minuti. Non aspetti, risolvi.',
+        description: 'Intervento garantito entro 2 ore. Non aspetti, risolvi.',
         color: 'text-amber-500',
         bgColor: 'bg-amber-500/10',
     },
