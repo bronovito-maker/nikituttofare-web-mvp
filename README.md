@@ -1,101 +1,61 @@
-NTF Web MVP (Next.js, Next-Auth, Supabase)
-Questa applicazione è un MVP (Minimum Viable Product) per un servizio di assistenza domestica. L'obiettivo è fornire un'interfaccia mobile-first e intuitiva, basata su una chat, per raccogliere le richieste degli utenti. Le richieste vengono poi elaborate e inviate a un workflow di n8n per l'assegnazione a un tecnico tramite Telegram.
+# NikiTuttoFare (NTF) Web MVP
 
-L'applicazione include anche un'area utente protetta da autenticazione, dove gli utenti registrati possono visualizzare lo storico e lo stato delle loro richieste.
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-green)]()
+[![Stack](https://img.shields.io/badge/Stack-Next.js%20%7C%20Supabase%20%7C%20n8n-blue)]()
 
-Stack Tecnologico
-Framework: Next.js (App Router)
+Piattaforma di assistenza domestica "Conversational-First". Un MVP che trasforma semplici chat in interventi tecnici gestiti, utilizzando l'AI per l'analisi e l'automazione per il dispatching.
 
-Stile: Tailwind CSS con Shadcn UI per componenti pronti all'uso.
+---
 
-Autenticazione: Next-Auth v5 con un provider di credenziali (email/password).
+## 📚 Documentazione
 
-Database: Supabase utilizzato come backend.
+La documentazione è stata consolidata per chiarezza. Fai riferimento a questi file per dettagli specifici:
 
-Intelligenza Artificiale: Google AI (Gemini) per l'analisi e la categorizzazione delle richieste utente.
+*   **[🤖 Sistema Chat AI](docs/CHAT_SYSTEM.md)**: Come funziona l'intelligenza artificiale, la state machine della chat, e l'integrazione tecnica con Supabase. Leggi qui per capire il flusso "Price Gate" e la validazione.
+*   **[🔄 Workflow Operativi](docs/WORKFLOWS.md)**: I flussi di business completi. Gestione Clienti (Guest vs Logged), Logica dei Preventivi, Recupero Lead Persi e Assegnazione Tecnici.
+*   **[📏 Regole di Progetto](docs/PROJECT_RULES.md)**: Coding standards, Tech Stack strict, Design System e Security compliance.
 
-Deployment: Ottimizzato per Railway.
+---
 
-Funzionalità Principali
-Chatbot Intelligente (/chat): Un'interfaccia di chat guida l'utente attraverso la creazione di una richiesta di servizio. Il chatbot pone domande mirate per raccogliere tutti i dettagli necessari.
+## 🚀 Quick Start
 
-Registrazione e Login Utente (/register, /login): Un sistema di autenticazione completo che permette agli utenti di creare un account e accedere a un'area riservata.
+### Prerequisiti
+*   Node.js 18+
+*   Account Supabase
+*   Chiave API Google Gemini
 
-Dashboard Utente (/dashboard): Una volta autenticati, gli utenti possono visualizzare una lista di tutte le loro richieste, con lo stato di avanzamento in tempo reale.
+### Installazione
 
-Dettaglio Richiesta (/dashboard/[ticketId]): Ogni richiesta ha una pagina di dettaglio dedicata per una visione completa.
+1.  **Clona e installa:**
+    ```bash
+    git clone https://github.com/nikituttofare-web-mvp.git
+    cd nikituttofare-web-mvp
+    npm install
+    ```
 
-Profilo Utente (/profilo): Una sezione dove l'utente può gestire i propri dati (funzionalità in sviluppo).
+2.  **Configura Ambiente:**
+    Copia `.env.example` in `.env` e compila le variabili necessarie (Supabase URL/Key, Gemini Key).
 
-Architettura e Flusso Dati
-Intake via Chat: L'utente descrive il problema nella chat. La richiesta viene inviata all'endpoint /api/assist.
+3.  **Avvia:**
+    ```bash
+    npm run dev
+    ```
+    L'app sarà disponibile su `http://localhost:3000`.
 
-Analisi AI: L'API /api/assist interroga il modello AI di Google per analizzare il testo, categorizzare il servizio (es. "idraulico", "elettricista"), stimare l'urgenza e preparare un riassunto per il tecnico.
+---
 
-Raccolta Dati: La chat continua a raccogliere informazioni anagrafiche (nome, indirizzo, telefono, ecc.).
+## 🏗 Architettura in Pillole
 
-Invio a n8n: Una volta confermata, la richiesta completa (inclusi i dati analizzati dall'AI) viene inviata all'endpoint /api/contact, che a sua volta la inoltra a un webhook di n8n.
+1.  **Frontend:** Next.js 14 (App Router) con interfaccia "Generative UI" (Componenti React renderizzati da JSON AI).
+2.  **Backend:** Supabase gestisce Auth, Database (Postgres) e Realtime.
+3.  **AI Layer:** Google Gemini analizza l'intento utente e popola i campi strutturati.
+4.  **Automation:** n8n funge da orchestratore per notifiche Telegram e recupero Lead.
 
-Creazione del Lead: Il workflow di n8n processa i dati e crea un nuovo record nella tabella dei "Leads" su Supabase.
+---
 
-Visualizzazione su Dashboard: L'utente, se registrato, può vedere la richiesta appena creata nella sua dashboard, che legge i dati direttamente da Supabase tramite l'endpoint /api/requests.
+## 🔐 Admin Access
+L'accesso alla dashboard `/admin` è protetto da Middleware e RLS. Richiede un account con ruolo `admin` nella tabella `profiles`.
 
-Setup del Progetto
-Clona il repository:
+---
 
-Bash
-
-git clone https://github.com/nikituttofare-web-mvp.git
-cd nikituttofare-web-mvp
-Installa le dipendenze:
-
-Bash
-
-npm install
-Configura le variabili d'ambiente:
-Copia il file .env.example (o chiedi all'admin) in .env e compila:
-
-```bash
-cp .env.example .env
-```
-
-### Database & Auth (Supabase)
-Il progetto usa Supabase. Assicurati di avere le tabelle:
-- `tickets`: Richieste di intervento.
-- `messages`: Storico chat (con `chat_session_id` e link opzionale a `tickets`).
-- `profiles`: Dati utenti estesi.
-- `n8n_chat_histories`: Memoria per l'integrazione n8n.
-
-L'autenticazione supporta:
-- **Magic Link** (Email)
-- **Google OAuth** (Opzionale)
-- **Guest Access** (Anonimo per chat iniziale)
-
-### Avvio Sviluppo
-```bash
-npm run dev
-```
-L'app sarà su `http://localhost:3000`.
-
-### Admin Access
-Per accedere alla dashboard `/admin`, l'utente deve avere l'email `bronovito@gmail.com` (hardcoded check) o ruolo admin nel DB.
-
-Deploy su Railway
-Questo progetto è configurato per un deploy semplice e veloce su Railway.
-
-Crea un Nuovo Progetto: Collega il tuo account GitHub e seleziona questo repository.
-
-Aggiungi le Variabili d'Ambiente: Nel pannello di configurazione del progetto su Railway, aggiungi tutte le variabili definite nel tuo file .env.
-
-Comando di Avvio: Railway dovrebbe rilevare automaticamente che si tratta di un'app Next.js e usare npm run start (dopo aver eseguito npm run build in automatico).
-
-Porta: La porta di default è 3000.
-
-## Admin Dashboard (/admin)
-Una potente interfaccia per gestire le richieste e coordinare i tecnici, accessibile solo agli amministratori autorizzati.
-
-- **Ticket Feed**: Visualizzazione in tempo reale di tutte le richieste, con indicatori di urgenza e stato.
-- **Cognitive Chat**: Interfaccia di chat avanzata che permette all'admin di monitorare le conversazioni dell'AI e intervenire manualmente (Handoff).
-- **Autopilot**: Modalità in cui l'AI gestisce la conversazione. L'admin può disattivarla in qualsiasi momento per prendere il controllo.
-- **Quick Actions**: Azioni rapide per inviare preventivi, link di pagamento o richieste foto (In sviluppo).
-- **Realtime Updates**: La dashboard si aggiorna istantaneamente all'arrivo di nuovi messaggi o ticket.
+*Project by [Your Team/Name]*
