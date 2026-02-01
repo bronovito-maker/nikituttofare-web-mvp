@@ -1,14 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyChatToken } from "@/lib/chat-security";
+import { z } from "zod";
+
+// Zod Schema for validation
+const chatSchema = z.object({
+  message: z.string().min(1, "Messaggio vuoto").max(2000, "Messaggio troppo lungo"),
+  chatId: z.string().min(1, "ChatID mancante")
+});
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Leggi il messaggio dal client
-    const body = await req.json();
-    const { message, chatId } = body;
+    // 1. Validate Token (HMAC check)
+    // Client sends it in 'x-chat-token' header
+    const token = req.headers.get("x-chat-token");
 
-    // 2. Prepara l'URL e la Password
+    if (!verifyChatToken(token)) {
+      return NextResponse.json(
+        { error: "Token di sicurezza non valido o scaduto. Ricarica la pagina." },
+        { status: 401 }
+      );
+    }
+
+    // 2. Read Client Payload
+    const body = await req.json();
+
+    // 3. Zod Validation
+    const validation = chatSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: "Dati non validi", details: validation.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { message, chatId } = validation.data;
+
+    // 4. Prepare n8n connection
     const n8nUrl = process.env.N8N_WEBHOOK_URL;
-    // Usa la password semplice che hai messo su n8n
     const n8nSecret = process.env.N8N_WEBHOOK_SECRET;
 
     if (!n8nUrl) {
@@ -16,18 +44,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Configurazione Server Mancante" }, { status: 500 });
     }
 
-    // 3. Invia la richiesta a n8n (Metodo Standard Header Auth)
+    // 5. Forward to n8n
     const response = await fetch(n8nUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        // Qui inviamo la password nell'header che n8n si aspetta per "Header Auth"
         "x-n8n-secret": n8nSecret || "",
       },
       body: JSON.stringify({
         message,
         chatId,
-        // Aggiungiamo un timestamp per debug, male non fa
         timestamp: new Date().toISOString()
       }),
     });
@@ -37,9 +63,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ text: "Errore di comunicazione con l'assistente." }, { status: 502 });
     }
 
-    // 4. Restituisci la risposta al frontend
+    // 6. Return response
     const data = await response.json();
-    // Gestisce vari formati di risposta di n8n
     const text = data.text || data.output || data.message || "Risposta ricevuta.";
 
     return NextResponse.json({ text });

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { getCurrentUser } from '@/lib/supabase-helpers';
 import { notifyNewTicket } from '@/lib/notifications';
 import { createAdminClient } from '@/lib/supabase-server';
@@ -11,11 +12,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
     }
 
-    const { ticketId } = await request.json();
+    // Zod Validation
+    const schema = z.object({
+      ticketId: z.string().uuid("ID ticket non valido"),
+    });
 
-    if (!ticketId) {
-      return NextResponse.json({ error: 'Ticket ID richiesto' }, { status: 400 });
+    const body = await request.json();
+    const validation = schema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Dati non validi', details: validation.error.flatten() },
+        { status: 400 }
+      );
     }
+
+    const { ticketId } = validation.data;
 
     // Verifica che il ticket appartenga all'utente e sia in stato pending_verification
     const supabase = createAdminClient();
