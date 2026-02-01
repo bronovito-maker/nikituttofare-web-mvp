@@ -71,7 +71,7 @@ export const useN8NChat = () => {
 
       // 3. Processa la risposta di n8n ed estrai suggerimenti
       let aiText = data.text || "Risposta ricevuta";
-      const suggestionsRegex = /<<([^>>]+)>>/g; // Estrae "Suggerimento" da "<<Suggerimento>>"
+      const suggestionsRegex = /<<([^>]+)>>/g; // Estrae "Suggerimento" da "<<Suggerimento>>"
 
       const foundSuggestions: string[] = [];
       let match;

@@ -138,7 +138,7 @@ async function runPenetrationTest() {
             // Create Victim
             const { data: victim } = await adminClient.auth.admin.createUser({
                 email: `victim_${Date.now()}@test.com`,
-                password: 'password123',
+                password: 'password123', // NOSONAR: S2068 - Intentional weak password for ephemeral test user (deleted immediately)
                 email_confirm: true,
                 user_metadata: { role: 'user', full_name: 'Victim User' }
             });
@@ -147,7 +147,7 @@ async function runPenetrationTest() {
             // Create Attacker
             const { data: attacker } = await adminClient.auth.admin.createUser({
                 email: `attacker_${Date.now()}@test.com`,
-                password: 'password123',
+                password: 'password123', // NOSONAR: S2068 - Intentional weak password for ephemeral test user (deleted immediately)
                 email_confirm: true,
                 user_metadata: { role: 'user', full_name: 'Attacker User' }
             });
@@ -171,7 +171,7 @@ async function runPenetrationTest() {
             // Login as Attacker
             const { data: authData } = await adminClient.auth.signInWithPassword({
                 email: attacker.user!.email!,
-                password: 'password123'
+                password: 'password123' // NOSONAR: S2068 - Intentional weak password for test authentication
             });
 
             if (!authData.session) throw new Error("Attacker login failed");
