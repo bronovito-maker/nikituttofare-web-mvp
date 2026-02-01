@@ -35,6 +35,7 @@ Configura le seguenti variabili nel tab *Variables* del servizio n8n. **Queste s
 | `N8N_PORT` | `5678` |
 | `N8N_PROTOCOL` | `https` |
 | `WEBHOOK_URL` | `https://${N8N_HOST}/` (Assicura che i link dei webhook nell'UI siano corretti). |
+| `N8N_PROXY_HOPS` | `1` (Risolve errore `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR` su Railway). |
 | `N8N_BASIC_AUTH_ACTIVE`| `true` (Protegge l'accesso alla dashboard n8n). |
 | `N8N_BASIC_AUTH_USER` | Tuo username amministratore. |
 | `N8N_BASIC_AUTH_PASSWORD`| Tua password amministratore. |

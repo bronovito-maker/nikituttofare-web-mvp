@@ -9,6 +9,9 @@ const chatSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  // Variable to hold the URL for error logging purposes
+  let webhookUrl = process.env.N8N_WEBHOOK_URL || '';
+
   try {
     // 1. Validate Token (HMAC check)
     // Client sends it in 'x-chat-token' header
@@ -36,16 +39,20 @@ export async function POST(req: NextRequest) {
     const { message, chatId } = validation.data;
 
     // 4. Prepare n8n connection
-    const n8nUrl = process.env.N8N_WEBHOOK_URL;
     const n8nSecret = process.env.N8N_WEBHOOK_SECRET;
 
-    if (!n8nUrl) {
+    if (!webhookUrl) {
       console.error("❌ ERRORE: N8N_WEBHOOK_URL mancante nel .env");
       return NextResponse.json({ error: "Configurazione Server Mancante" }, { status: 500 });
     }
 
+    // Safety Fix: Normalize URL if protocol is missing
+    if (!webhookUrl.startsWith('http')) {
+      webhookUrl = `https://${webhookUrl}`;
+    }
+
     // 5. Forward to n8n
-    const response = await fetch(n8nUrl, {
+    const response = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -70,6 +77,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ text });
 
   } catch (error) {
+    console.error(`❌ Errore chiamata n8n su URL: ${webhookUrl}`);
     console.error("❌ Errore Proxy:", error);
     return NextResponse.json({ text: "Errore interno del server." }, { status: 500 });
   }
