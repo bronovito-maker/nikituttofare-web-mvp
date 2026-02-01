@@ -42,7 +42,7 @@ export function FAQAccordion({
                 <div className="space-y-3">
                     {items.map((item, index) => (
                         <div
-                            key={index}
+                            key={item.question}
                             className="bg-card border border-border rounded-2xl overflow-hidden transition-all duration-300"
                         >
                             <button

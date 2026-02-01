@@ -182,12 +182,12 @@ async function main() {
         console.log('\n' + '='.repeat(60));
 
         // Exit code based on quality gate
-        if (status !== 'OK') {
-            console.log(`${colors.red}❌ Quality Gate FAILED${colors.reset}\n`);
-            process.exit(1);
-        } else {
+        if (status === 'OK') {
             console.log(`${colors.green}✅ Quality Gate PASSED${colors.reset}\n`);
             process.exit(0);
+        } else {
+            console.log(`${colors.red}❌ Quality Gate FAILED${colors.reset}\n`);
+            process.exit(1);
         }
 
     } catch (error) {
