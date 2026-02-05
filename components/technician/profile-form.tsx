@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { updateTechnicianProfile, ProfileState } from '@/app/actions/profile-actions';
-import { User, Phone, Mail, MapPin, Save, Briefcase, Loader2 } from 'lucide-react';
+import { User, Phone, Mail, MapPin, Save, Briefcase, Loader2, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 interface ProfileFormProps {
     initialData: {
@@ -73,11 +74,11 @@ export function ProfileForm({ initialData }: Readonly<ProfileFormProps>) {
                 errors={state.errors}
             />
 
-            <div className="pt-4">
+            <div className="pt-4 flex flex-col sm:flex-row gap-4">
                 <Button
                     type="submit"
                     disabled={isPending}
-                    className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold h-11 shadow-lg shadow-orange-900/20 disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-bold h-11 shadow-lg shadow-orange-900/20 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                     {isPending ? (
                         <>
@@ -90,6 +91,17 @@ export function ProfileForm({ initialData }: Readonly<ProfileFormProps>) {
                             Salva Modifiche
                         </>
                     )}
+                </Button>
+
+                <Button
+                    asChild
+                    variant="ghost"
+                    className="flex-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 h-11 border border-red-500/20"
+                >
+                    <Link href="/auth/signout">
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Esci dall'account
+                    </Link>
                 </Button>
             </div>
         </form>

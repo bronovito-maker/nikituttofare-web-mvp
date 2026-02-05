@@ -30,10 +30,10 @@ export default function SignOutPage() {
                 setError(signOutError.message);
             } else {
                 setIsSignedOut(true);
-                // Redirect to home after 2 seconds
+                // Redirect to home after 1 second
                 setTimeout(() => {
                     router.push('/');
-                }, 2000);
+                }, 1000);
             }
         } catch (err) {
             console.error('Sign out error:', err);
@@ -43,16 +43,17 @@ export default function SignOutPage() {
         }
     };
 
-    // Check if user is logged in on mount
+    // Auto sign out on mount
     useEffect(() => {
-        const checkUser = async () => {
+        const performSignOut = async () => {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                // Already logged out
+            if (user) {
+                await handleSignOut();
+            } else {
                 setIsSignedOut(true);
             }
         };
-        checkUser();
+        performSignOut();
     }, [supabase]);
 
     return (

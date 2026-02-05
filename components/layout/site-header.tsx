@@ -6,8 +6,10 @@ import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { UserTypeToggle } from '@/components/landing/user-type-toggle';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, LayoutDashboard, LogOut } from 'lucide-react';
 import { MobileNav } from '@/components/layout/mobile-nav';
+import { createBrowserClient } from '@/lib/supabase-browser';
+import { useEffect, useState } from 'react';
 
 type UserType = 'residential' | 'business';
 
@@ -20,6 +22,18 @@ interface SiteHeaderProps {
 export function SiteHeader({ userType, onUserTypeChange, showUserTypeToggle = false }: Readonly<SiteHeaderProps>) {
     const pathname = usePathname();
     const isAboutPage = pathname === '/about';
+    const [user, setUser] = useState<any>(null);
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    useEffect(() => {
+        const checkUser = async () => {
+            const supabase = createBrowserClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+            setIsLoaded(true);
+        };
+        checkUser();
+    }, []);
 
     return (
         <header className="sticky top-0 z-[9999] w-full border-b border-border bg-background shadow-sm">
@@ -83,9 +97,28 @@ export function SiteHeader({ userType, onUserTypeChange, showUserTypeToggle = fa
 
                     <div className="hidden md:flex items-center gap-2">
                         <ThemeToggle />
-                        <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs sm:text-sm rounded-full px-5 shadow-lg transition-all hover:scale-105">
-                            <Link href="/login">Area Riservata</Link>
-                        </Button>
+                        {isLoaded && (
+                            user ? (
+                                <div className="flex items-center gap-2">
+                                    <Button asChild variant="ghost" size="sm" className="text-xs sm:text-sm rounded-full px-4">
+                                        <Link href={user.user_metadata?.role === 'technician' ? "/technician/dashboard" : "/dashboard"}>
+                                            <LayoutDashboard className="w-4 h-4 mr-2" />
+                                            Dashboard
+                                        </Link>
+                                    </Button>
+                                    <Button asChild variant="outline" size="sm" className="text-xs sm:text-sm rounded-full px-4 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700">
+                                        <Link href="/auth/signout">
+                                            <LogOut className="w-4 h-4 mr-2" />
+                                            Esci
+                                        </Link>
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs sm:text-sm rounded-full px-5 shadow-lg transition-all hover:scale-105">
+                                    <Link href="/login">Area Riservata</Link>
+                                </Button>
+                            )
+                        )}
                     </div>
 
                     <div className="md:hidden">

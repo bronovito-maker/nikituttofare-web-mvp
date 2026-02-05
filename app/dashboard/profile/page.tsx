@@ -7,12 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { updateProfile } from '@/app/actions/profile-actions';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, Save } from 'lucide-react';
 import { useFormStatus } from 'react-dom';
 import { createBrowserClient } from '@/lib/supabase-browser';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/layout/site-header';
+import { LogOut, Loader2, ArrowLeft, Save } from 'lucide-react';
 
 function SubmitButton() {
     const { pending } = useFormStatus();
@@ -116,6 +116,7 @@ function ProfileForm({ user, profile }: Readonly<ProfilePageProps>) {
 
 
 
+
 export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<any>(null);
@@ -159,17 +160,30 @@ export default function ProfilePage() {
             <SiteHeader />
 
             <div className="container py-8 max-w-4xl px-4 md:px-6">
-                <div className="mb-8 pt-4">
-                    <Link
-                        href="/"
-                        className="inline-flex items-center text-sm text-gray-400 hover:text-white transition-colors mb-6 group"
-                    >
-                        <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-                        Torna alla Home
-                    </Link>
+                <div className="mb-8 pt-4 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+                    <div>
+                        <Link
+                            href="/"
+                            className="inline-flex items-center text-sm text-gray-400 hover:text-white transition-colors mb-6 group"
+                        >
+                            <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+                            Torna alla Home
+                        </Link>
 
-                    <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-2">Il Mio Account</h1>
-                    <p className="text-gray-400">Bentornato, {profile?.full_name?.split(' ')[0] || 'Utente'}.</p>
+                        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-2">Il Mio Account</h1>
+                        <p className="text-gray-400">Bentornato, {profile?.full_name?.split(' ')[0] || 'Utente'}.</p>
+                    </div>
+
+                    <Button
+                        asChild
+                        variant="ghost"
+                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10 self-start md:self-auto h-12 px-6 rounded-xl border border-red-500/20"
+                    >
+                        <Link href="/auth/signout">
+                            <LogOut className="w-5 h-5 mr-2" />
+                            Esci dall'account
+                        </Link>
+                    </Button>
                 </div>
 
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">

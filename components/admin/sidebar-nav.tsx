@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { createBrowserClient } from '@/lib/supabase-browser';
 import { useTheme } from 'next-themes';
 
 import {
@@ -22,7 +21,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 export function SidebarNav({ expanded = false, onLinkClick }: { readonly expanded?: boolean, readonly onLinkClick?: () => void }) {
     const pathname = usePathname();
     const router = useRouter();
-    const supabase = createBrowserClient();
     const { theme, setTheme } = useTheme();
 
     const navItems = [
@@ -33,10 +31,8 @@ export function SidebarNav({ expanded = false, onLinkClick }: { readonly expande
         { icon: Settings, label: 'Settings', href: '/admin/settings' },
     ];
 
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
-        router.refresh(); // Pulisce la cache
-        window.location.href = '/login'; // Redirect forzato
+    const handleLogout = () => {
+        router.push('/auth/signout');
     };
 
 

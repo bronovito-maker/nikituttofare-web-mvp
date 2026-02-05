@@ -4,20 +4,27 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Home, Info, MessageSquare, LogIn, HardHat } from 'lucide-react';
-import { ThemeToggle } from '@/components/ui/theme-toggle'; // Keeping if needed elsewhere, but replacing usage here
+import { Menu, Home, Info, MessageSquare, LogIn, HardHat, LogOut, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
 import { Sun, Moon } from 'lucide-react';
+import { createBrowserClient } from '@/lib/supabase-browser';
 
 export function MobileNav() {
     const [isOpen, setIsOpen] = useState(false);
     const pathname = usePathname();
     const { setTheme, resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
+    const [user, setUser] = useState<any>(null);
 
     useEffect(() => {
         setMounted(true);
+        const checkUser = async () => {
+            const supabase = createBrowserClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+        };
+        checkUser();
     }, []);
 
     // Close menu when route changes
@@ -37,13 +44,21 @@ export function MobileNav() {
         };
     }, [isOpen]);
 
-    const menuItems = [
+    const baseMenuItems = [
         { href: '/', label: 'Home', icon: Home },
         { href: '/about', label: 'Chi Siamo', icon: Info },
         { href: '/chat', label: 'Parla con Niki', icon: MessageSquare },
+    ];
+
+    const authMenuItems = user ? [
+        { href: user.user_metadata?.role === 'technician' ? "/technician/dashboard" : "/dashboard", label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/auth/signout', label: 'Esci', icon: LogOut, className: 'text-red-500' },
+    ] : [
         { href: '/login', label: 'Area Clienti', icon: LogIn },
         { href: '/technician/login', label: 'Area Tecnici', icon: HardHat },
     ];
+
+    const menuItems = [...baseMenuItems, ...authMenuItems];
 
     return (
         <>
@@ -83,7 +98,7 @@ export function MobileNav() {
                             </div>
 
                             <nav className="flex-1 px-6 py-4 space-y-4 overflow-y-auto">
-                                {menuItems.map((item) => {
+                                {menuItems.map((item: any) => {
                                     const Icon = item.icon;
                                     const isActive = pathname === item.href;
                                     return (
@@ -93,10 +108,10 @@ export function MobileNav() {
                                             onClick={() => setIsOpen(false)}
                                             className={`flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-200 group ${isActive
                                                 ? 'bg-primary/10 text-primary font-bold'
-                                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                                : item.className || 'text-muted-foreground hover:bg-muted hover:text-foreground'
                                                 }`}
                                         >
-                                            <Icon className={`w-6 h-6 ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'} transition-colors`} />
+                                            <Icon className={`w-6 h-6 ${isActive ? 'text-primary' : (item.className ? 'text-current' : 'text-muted-foreground group-hover:text-foreground')} transition-colors`} />
                                             <span className="text-lg font-bold">{item.label}</span>
                                         </Link>
                                     );
@@ -123,7 +138,7 @@ export function MobileNav() {
                                     </Button>
                                 </div>
                                 <p className="text-xs text-center text-slate-500">
-                                    © 2026 NikiTuttoFare
+                                    © {new Date().getFullYear()} NikiTuttoFare
                                 </p>
                             </div>
                         </motion.div>

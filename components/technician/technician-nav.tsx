@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { Menu, Home, MapPin, Briefcase, User, LogOut } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { createBrowserClient } from '@/lib/supabase-browser';
 import { useState } from 'react';
 
 export function TechnicianNav() {
@@ -22,10 +21,8 @@ export function TechnicianNav() {
         { href: '/technician/profile', label: 'Profilo', icon: User },
     ];
 
-    const handleSignOut = async () => {
-        const supabase = createBrowserClient();
-        await supabase.auth.signOut();
-        router.push('/technician/login');
+    const handleSignOut = () => {
+        router.push('/auth/signout');
     };
 
     return (
