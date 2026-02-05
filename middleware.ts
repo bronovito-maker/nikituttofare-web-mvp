@@ -45,6 +45,7 @@ export async function middleware(request: NextRequest) {
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: https://mqgkominidcysyakcbio.supabase.co https://*.openstreetmap.org;
     font-src 'self' data:;
+    connect-src 'self' https://mqgkominidcysyakcbio.supabase.co https://*.sentry.io https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms https://c.bing.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
