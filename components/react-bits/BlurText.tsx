@@ -23,10 +23,10 @@ export function BlurText({
     setIsMounted(true);
   }, []);
 
-  // Fallback for SSR - show text immediately without animation
+  // Fallback for SSR - show text immediately without animation to prevent LCP delay
   if (!isMounted) {
     return (
-      <h1 className={cn("drop-shadow-sm", className)}>
+      <h1 className={cn("drop-shadow-sm opacity-100", className)}>
         {text}
       </h1>
     );
@@ -34,9 +34,9 @@ export function BlurText({
 
   return (
     <motion.h1
-      initial={{ filter: "blur(10px)", opacity: 0, y: 20 }}
+      initial={{ filter: "blur(4px)", opacity: 0.8, y: 10 }}
       animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
-      transition={{ duration: duration, delay: delay, ease: "easeOut" }}
+      transition={{ duration: 0.6, delay: delay, ease: "easeOut" }}
       className={cn("drop-shadow-sm", className)}
     >
       {text}

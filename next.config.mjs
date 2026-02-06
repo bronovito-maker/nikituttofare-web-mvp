@@ -18,6 +18,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
+    optimizeCss: true,
   },
 
   // Gestisci errori di caricamento .env

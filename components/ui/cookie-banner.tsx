@@ -27,8 +27,8 @@ export function CookieBanner() {
     // Controlla se l'utente ha già espresso una preferenza
     const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
     if (!consent) {
-      // Mostra il banner dopo un breve delay per non essere invasivo
-      const timer = setTimeout(() => setIsVisible(true), 1500);
+      // Mostra il banner dopo un delay più lungo per lasciare priorità al rendering del Hero (LCP)
+      const timer = setTimeout(() => setIsVisible(true), 3500);
       return () => clearTimeout(timer);
     }
   }, []);

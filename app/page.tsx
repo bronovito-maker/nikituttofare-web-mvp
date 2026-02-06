@@ -4,18 +4,21 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, Clock, Star, ArrowRight, FileCheck, FileSpreadsheet, QrCode, CalendarClock, Handshake } from 'lucide-react';
-import { RetroGrid } from '@/components/react-bits/RetroGrid';
 import { BlurText } from '@/components/react-bits/BlurText';
 import { ClientAnimationWrapper } from '@/components/ui/client-animation-wrapper';
 import { COMPANY_PHONE_LINK } from '@/lib/constants';
+import dynamic from 'next/dynamic';
+
+const RetroGrid = dynamic(() => import('@/components/react-bits/RetroGrid').then(mod => mod.RetroGrid), {
+  ssr: false,
+  loading: () => <div className="absolute inset-0 bg-slate-950/5" />
+});
 
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { StickyActionNav } from '@/components/landing/sticky-action-nav';
 import { UrgencyStats } from '@/components/landing/urgency-stats';
 import { TechnicianPreview } from '@/components/landing/technician-preview';
-
-import dynamic from 'next/dynamic';
 
 // Dynamic imports for below-the-fold components
 const PriceComparison = dynamic(() => import('@/components/landing/price-comparison').then(mod => mod.PriceComparison));

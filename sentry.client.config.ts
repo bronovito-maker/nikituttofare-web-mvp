@@ -11,14 +11,14 @@ Sentry.init({
     debug: process.env.NODE_ENV === 'development',
 
     // Adjust this value in production, or use tracesSampler for greater control
-    tracesSampleRate: 1.0,
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
     // Setting this option to true will print useful information to the console while you're setting up Sentry.
     // enabled: process.env.NODE_ENV === 'production', // Uncomment to disable in dev
 
-    // Capture Replay for 10% of all sessions,
+    // Capture Replay for 5% of all sessions in production,
     // plus for 100% of sessions with an error
-    replaysSessionSampleRate: 0.1,
+    replaysSessionSampleRate: process.env.NODE_ENV === 'production' ? 0.05 : 0.1,
     replaysOnErrorSampleRate: 1.0,
 
     // You can remove this option if you're not planning to use the Sentry Session Replay feature:

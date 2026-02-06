@@ -49,7 +49,7 @@ export function SiteHeader({ userType, onUserTypeChange, showUserTypeToggle = fa
                 <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                     <Link href="/" className="flex items-center gap-2 sm:gap-3">
                         <div className="relative h-9 sm:h-11 w-9 sm:w-11 overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow flex-shrink-0">
-                            <Image src="/logo_ntf.png" alt="NTF Logo" fill className="object-cover" />
+                            <Image src="/logo_ntf.png" alt="NTF Logo" fill className="object-cover" priority />
                         </div>
                         <div className="flex flex-col">
                             <span className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-foreground leading-none">

@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { CookieConsentProvider } from "@/components/providers/cookie-consent-provider";
 import { CookieBanner } from "@/components/ui/cookie-banner";
 import { AutoThemeWatcher } from "@/components/providers/auto-theme-watcher";
+import { AnimationProvider } from "@/components/providers/animation-provider";
 import { Toaster } from "sonner";
 
 const dmSans = DM_Sans({
@@ -51,13 +52,13 @@ export default function RootLayout({
     <html lang="it" className={dmSans.variable} suppressHydrationWarning>
       <head>
         {/* Performance Optimization: Preconnect to critical origins */}
-        <link rel="preconnect" href="https://o4510796370214912.ingest.de.sentry.io" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://mqgkominidcysyakcbio.supabase.co" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://o4510796370214912.ingest.de.sentry.io" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://www.clarity.ms" />
 
         {/* Fallback DNS Prefetch */}
-        <link rel="dns-prefetch" href="https://o4510796370214912.ingest.de.sentry.io" />
         <link rel="dns-prefetch" href="https://mqgkominidcysyakcbio.supabase.co" />
+        <link rel="dns-prefetch" href="https://o4510796370214912.ingest.de.sentry.io" />
 
         {/*
           GDPR TODO: Wrap future tracking scripts with CookieConsentProvider condition.
@@ -72,13 +73,15 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <CookieConsentProvider>
-            <AutoThemeWatcher />
-            {children}
-            <CookieBanner />
-            <Toaster />
-            <Analytics />
-            <SpeedInsights />
-            <MicrosoftClarity />
+            <AnimationProvider>
+              <AutoThemeWatcher />
+              {children}
+              <CookieBanner />
+              <Toaster />
+              <Analytics />
+              <SpeedInsights />
+              <MicrosoftClarity />
+            </AnimationProvider>
           </CookieConsentProvider>
         </ThemeProvider>
       </body>
