@@ -50,6 +50,15 @@ export default function RootLayout({
   return (
     <html lang="it" className={dmSans.variable} suppressHydrationWarning>
       <head>
+        {/* Performance Optimization: Preconnect to critical origins */}
+        <link rel="preconnect" href="https://o4510796370214912.ingest.de.sentry.io" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://mqgkominidcysyakcbio.supabase.co" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://www.clarity.ms" />
+
+        {/* Fallback DNS Prefetch */}
+        <link rel="dns-prefetch" href="https://o4510796370214912.ingest.de.sentry.io" />
+        <link rel="dns-prefetch" href="https://mqgkominidcysyakcbio.supabase.co" />
+
         {/*
           GDPR TODO: Wrap future tracking scripts with CookieConsentProvider condition.
           ...

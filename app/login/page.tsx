@@ -178,11 +178,10 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {/* Guest Access - CTA Principale */}
                 <button
                   type="button"
                   onClick={handleGuestAccess}
-                  className="w-full btn-urgent h-12 sm:h-14 rounded-xl text-base group"
+                  className="w-full inline-flex items-center justify-center px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-lg shadow-orange-200/50 hover:from-orange-700 hover:to-orange-600 hover:shadow-xl hover:scale-105 active:scale-100 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 h-12 sm:h-14 text-base group"
                 >
                   Richiedi Intervento Ora
                   <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />

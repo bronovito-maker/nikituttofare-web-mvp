@@ -11,18 +11,21 @@ import { COMPANY_PHONE_LINK } from '@/lib/constants';
 
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
-
 import { StickyActionNav } from '@/components/landing/sticky-action-nav';
-import { TechnicianPreview } from '@/components/landing/technician-preview';
-import { PriceComparison } from '@/components/landing/price-comparison';
-import { HowItWorks } from '@/components/landing/how-it-works';
-import { DirectContact } from '@/components/landing/direct-contact';
 import { UrgencyStats } from '@/components/landing/urgency-stats';
-import { TestimonialCarousel } from '@/components/landing/testimonial-carousel';
-import { WhyChooseUs } from '@/components/landing/why-choose-us';
-import { TechnicianCTA } from '@/components/landing/technician-cta';
-import { TrustBadges } from '@/components/landing/trust-badges';
-import { FAQSection } from '@/components/landing/faq-section';
+import { TechnicianPreview } from '@/components/landing/technician-preview';
+
+import dynamic from 'next/dynamic';
+
+// Dynamic imports for below-the-fold components
+const PriceComparison = dynamic(() => import('@/components/landing/price-comparison').then(mod => mod.PriceComparison));
+const HowItWorks = dynamic(() => import('@/components/landing/how-it-works').then(mod => mod.HowItWorks));
+const DirectContact = dynamic(() => import('@/components/landing/direct-contact').then(mod => mod.DirectContact));
+const TestimonialCarousel = dynamic(() => import('@/components/landing/testimonial-carousel').then(mod => mod.TestimonialCarousel));
+const WhyChooseUs = dynamic(() => import('@/components/landing/why-choose-us').then(mod => mod.WhyChooseUs));
+const TechnicianCTA = dynamic(() => import('@/components/landing/technician-cta').then(mod => mod.TechnicianCTA));
+const TrustBadges = dynamic(() => import('@/components/landing/trust-badges').then(mod => mod.TrustBadges));
+const FAQSection = dynamic(() => import('@/components/landing/faq-section').then(mod => mod.FAQSection));
 
 type UserType = 'residential' | 'business';
 

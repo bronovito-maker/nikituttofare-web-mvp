@@ -15,7 +15,6 @@ export function UserTypeToggle({ value, onChange }: UserTypeToggleProps) {
         <div className="relative flex items-center bg-muted/50 p-1 rounded-full border border-border">
             {/* Active Indicator Background */}
             <motion.div
-                layout
                 className="absolute inset-y-1 bg-background rounded-full shadow-sm border border-border/50"
                 initial={false}
                 animate={{

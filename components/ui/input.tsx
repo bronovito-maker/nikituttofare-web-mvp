@@ -2,6 +2,7 @@
 
 import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
+import styles from './input.module.css';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -28,7 +29,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             type={type}
             ref={ref}
             className={cn(
-              'input-premium',
+              styles.inputPremium,
               icon && 'pl-11',
               error && 'border-red-300 focus:border-red-500 focus:ring-red-500/20',
               className

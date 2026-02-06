@@ -18,7 +18,7 @@ export function TechnicianPreview() {
                         <span> In zona <strong>Marina Centro</strong> (5 min)</span>
                     </div>
                     <div className="text-xs text-muted-foreground font-mono">
-                        ETA: 18 min
+                        ETA: 84 min
                     </div>
                 </div>
 

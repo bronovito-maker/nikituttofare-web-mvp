@@ -66,7 +66,7 @@ function StatCounter({ end, suffix = '', prefix = '', duration = 2000 }: StatCou
 const STATS = [
     {
         icon: CheckCircle2,
-        value: 2847,
+        value: 2926,
         suffix: '+',
         label: 'Interventi Completati',
         color: 'text-emerald-500',
@@ -74,7 +74,7 @@ const STATS = [
     },
     {
         icon: Clock,
-        value: 18,
+        value: 84,
         suffix: ' min',
         label: 'Tempo Medio Arrivo',
         color: 'text-blue-500',
@@ -91,7 +91,7 @@ const STATS = [
     },
     {
         icon: Users,
-        value: 12,
+        value: 7,
         suffix: '',
         label: 'Tecnici Online Ora',
         color: 'text-purple-500',

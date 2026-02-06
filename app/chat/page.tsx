@@ -36,7 +36,7 @@ import { ChatSuggestions, INITIAL_SUGGESTIONS, PROBLEM_FOLLOWUP_SUGGESTIONS } fr
 // import { ChatProgress } from '@/components/chat/chat-progress'; // REMOVED
 import { ChatWelcome } from '@/components/chat/chat-welcome';
 
-// Quick action categories removed - moved to chat-welcome.tsx
+import styles from './chat.module.css';
 
 import { useSearchParams } from 'next/navigation';
 
@@ -274,15 +274,12 @@ function ChatContent() {
             </>
           )}
 
-          {/* Loading Indicator */}
-          {isLoading && (
-            <div className="flex items-start gap-3 message-enter">
-              <NikiBotAvatar size="sm" />
-              <div className="chat-bubble-assistant px-4 py-3 max-w-[85%] sm:max-w-[70%]">
-                <LoadingDots size="md" />
-              </div>
+          <div className={`flex items-start gap-3 ${styles.messageEnter}`}>
+            <NikiBotAvatar size="sm" />
+            <div className={`${styles.chatBubbleAssistant} px-4 py-3 max-w-[85%] sm:max-w-[70%]`}>
+              <LoadingDots size="md" />
             </div>
-          )}
+          </div>
 
           {/* Error Message */}
           {error && (
@@ -455,7 +452,7 @@ function MessageBubble({ message, isLast }: { readonly message: any; readonly is
 
   return (
     <div
-      className={`flex items-start gap-3 ${isUser ? 'flex-row-reverse' : ''} ${isLast ? 'message-enter' : ''}`}
+      className={`flex items-start gap-3 ${isUser ? 'flex-row-reverse' : ''} ${isLast ? styles.messageEnter : ''}`}
     >
       {isUser ? (
         <Avatar fallback="Tu" size="sm" />
@@ -464,7 +461,7 @@ function MessageBubble({ message, isLast }: { readonly message: any; readonly is
       )}
 
       <div
-        className={`max-w-[85%] sm:max-w-[70%] ${isUser ? 'chat-bubble-user' : 'chat-bubble-assistant'
+        className={`max-w-[85%] sm:max-w-[70%] ${isUser ? styles.chatBubbleUser : styles.chatBubbleAssistant
           } px-4 py-3 space-y-2 overflow-hidden`}
       >
         {imageUrl && (
