@@ -7,16 +7,30 @@ import { UserTypeProvider } from '@/components/landing/user-type-context';
 import { HeroContent } from '@/components/landing/hero-content';
 import { UserSpecificSections } from '@/components/landing/user-specific-sections';
 import { CommonFeatures } from '@/components/landing/common-features';
-import { RetroGridWrapper } from '@/components/landing/retro-grid-wrapper';
 
 // Dynamic imports for below-the-fold components (non-critical)
-const HowItWorks = dynamic(() => import('@/components/landing/how-it-works').then(mod => mod.HowItWorks));
-const DirectContact = dynamic(() => import('@/components/landing/direct-contact').then(mod => mod.DirectContact));
-const TestimonialCarousel = dynamic(() => import('@/components/landing/testimonial-carousel').then(mod => mod.TestimonialCarousel));
-const WhyChooseUs = dynamic(() => import('@/components/landing/why-choose-us').then(mod => mod.WhyChooseUs));
-const TechnicianCTA = dynamic(() => import('@/components/landing/technician-cta').then(mod => mod.TechnicianCTA));
-const TrustBadges = dynamic(() => import('@/components/landing/trust-badges').then(mod => mod.TrustBadges));
-const FAQSection = dynamic(() => import('@/components/landing/faq-section').then(mod => mod.FAQSection));
+// Loading fallbacks prevent CLS during hydration
+const HowItWorks = dynamic(() => import('@/components/landing/how-it-works').then(mod => mod.HowItWorks), {
+  loading: () => <div className="min-h-[500px]" />
+});
+const DirectContact = dynamic(() => import('@/components/landing/direct-contact').then(mod => mod.DirectContact), {
+  loading: () => <div className="min-h-[300px]" />
+});
+const TestimonialCarousel = dynamic(() => import('@/components/landing/testimonial-carousel').then(mod => mod.TestimonialCarousel), {
+  loading: () => <div className="min-h-[400px]" />
+});
+const WhyChooseUs = dynamic(() => import('@/components/landing/why-choose-us').then(mod => mod.WhyChooseUs), {
+  loading: () => <div className="min-h-[600px]" />
+});
+const TechnicianCTA = dynamic(() => import('@/components/landing/technician-cta').then(mod => mod.TechnicianCTA), {
+  loading: () => <div className="min-h-[400px]" />
+});
+const TrustBadges = dynamic(() => import('@/components/landing/trust-badges').then(mod => mod.TrustBadges), {
+  loading: () => <div className="min-h-[200px]" />
+});
+const FAQSection = dynamic(() => import('@/components/landing/faq-section').then(mod => mod.FAQSection), {
+  loading: () => <div className="min-h-[600px]" />
+});
 
 export default function Home() {
   return (
@@ -30,8 +44,8 @@ export default function Home() {
 
           {/* --- HERO SECTION --- */}
           <section className="relative py-12 sm:py-20 lg:py-32 px-4 sm:px-6 overflow-hidden">
-            <RetroGridWrapper className="absolute inset-0 z-0 opacity-20" />
-            <div className="relative z-10 max-w-6xl mx-auto">
+            {/* RetroGrid removed for performance - saves ~50ms TBT */}
+            <div className="relative max-w-6xl mx-auto">
               <HeroContent />
             </div>
           </section>

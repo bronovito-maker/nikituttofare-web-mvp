@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { BlurText } from '@/components/react-bits/BlurText';
-import { ClientAnimationWrapper } from '@/components/ui/client-animation-wrapper';
 import { COMPANY_PHONE_LINK } from '@/lib/constants';
 import { TechnicianPreview } from '@/components/landing/technician-preview';
 import { useUserType } from './user-type-context';
@@ -44,25 +43,23 @@ export function HeroContent() {
           />
         </div>
 
-        <ClientAnimationWrapper delay={0.4} duration={0.8} className="max-md:!opacity-100 max-md:!translate-y-0">
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0 leading-relaxed font-light">
-            {userType === 'residential' ? (
-              <>
-                <span className="font-semibold text-foreground">Non aspettare che peggiori.</span> Descrivi il problema, <br />
-                con intervento garantito <span className="font-bold text-blue-600 dark:text-blue-400">entro 2 ore</span>.
-              </>
-            ) : (
-              <>
-                Mantieni la tua operatività al massimo con la nostra assistenza tecnica H24. <br />
-                Soluzioni proattive e interventi rapidi per <strong>Hotel, Ristoranti e Stabilimenti</strong> della Riviera Romagnola, <br />
-                garantendo continuità e conformità.
-              </>
-            )}
-          </p>
-        </ClientAnimationWrapper>
+        {/* CSS-only animation for performance (no JS hydration overhead) */}
+        <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0 leading-relaxed font-light md:opacity-0 md:animate-lcp-entry max-md:!opacity-100" style={{ animationDelay: '0.4s' }}>
+          {userType === 'residential' ? (
+            <>
+              <span className="font-semibold text-foreground">Non aspettare che peggiori.</span> Descrivi il problema, <br />
+              con intervento garantito <span className="font-bold text-blue-600 dark:text-blue-400">entro 2 ore</span>.
+            </>
+          ) : (
+            <>
+              Mantieni la tua operatività al massimo con la nostra assistenza tecnica H24. <br />
+              Soluzioni proattive e interventi rapidi per <strong>Hotel, Ristoranti e Stabilimenti</strong> della Riviera Romagnola, <br />
+              garantendo continuità e conformità.
+            </>
+          )}
+        </p>
 
-        <ClientAnimationWrapper delay={0.6} duration={0.8} className="max-md:!opacity-100 max-md:!translate-y-0">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4 md:opacity-0 md:animate-lcp-entry max-md:!opacity-100" style={{ animationDelay: '0.6s' }}>
             <Button asChild className={`h-14 px-8 text-lg rounded-full font-bold shadow-xl transition-all hover:scale-105 ${userType === 'residential'
               ? 'bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white shadow-orange-500/20'
               : 'bg-foreground text-background hover:bg-foreground/90'
@@ -74,11 +71,10 @@ export function HeroContent() {
             </Button>
 
             {/* Secondary CTA for Desktop */}
-            <a href={COMPANY_PHONE_LINK} className="hidden sm:inline-flex items-center justify-center h-14 px-8 text-lg font-semibold rounded-full border border-border bg-card/50 hover:bg-muted transition-all">
-              {userType === 'residential' ? "Chiama Tecnico" : "Contattaci Subito"}
-            </a>
-          </div>
-        </ClientAnimationWrapper>
+          <a href={COMPANY_PHONE_LINK} className="hidden sm:inline-flex items-center justify-center h-14 px-8 text-lg font-semibold rounded-full border border-border bg-card/50 hover:bg-muted transition-all">
+            {userType === 'residential' ? "Chiama Tecnico" : "Contattaci Subito"}
+          </a>
+        </div>
       </div>
 
       {/* Visual Content - Right Column */}

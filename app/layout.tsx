@@ -38,10 +38,8 @@ export const viewport: Viewport = {
   themeColor: "#0f172a",
 };
 
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/next";
-
-import { MicrosoftClarity } from "@/components/analytics/microsoft-clarity"; // Add import
+import { MicrosoftClarity } from "@/components/analytics/microsoft-clarity";
+import { VercelAnalyticsLazy } from "@/components/analytics/vercel-analytics-lazy";
 
 export default function RootLayout({
   children,
@@ -82,8 +80,7 @@ export default function RootLayout({
               {children}
               <CookieBanner />
               <Toaster />
-              <Analytics />
-              <SpeedInsights />
+              <VercelAnalyticsLazy />
               <MicrosoftClarity />
             </AnimationProvider>
           </CookieConsentProvider>
