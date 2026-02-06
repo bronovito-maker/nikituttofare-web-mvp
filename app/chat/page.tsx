@@ -24,6 +24,7 @@ import { NikiBotAvatar, Avatar } from '@/components/ui/avatar';
 import { LoadingDots, LoadingSpinner } from '@/components/ui/loading-dots';
 import { ClientAnimationWrapper } from '@/components/ui/client-animation-wrapper';
 import { ImageUpload, ImagePreview } from '@/components/ui/image-upload';
+import { AIThinkingAnimation } from '@/components/chat/ai-thinking-animation';
 import { createBrowserClient } from '@/lib/supabase-browser';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -274,11 +275,8 @@ function ChatContent() {
             </>
           )}
 
-          <div className={`flex items-start gap-3 ${styles.messageEnter}`}>
-            <NikiBotAvatar size="sm" />
-            <div className={`${styles.chatBubbleAssistant} px-4 py-3 max-w-[85%] sm:max-w-[70%]`}>
-              <LoadingDots size="md" />
-            </div>
+          <div className={styles.messageEnter}>
+            <AIThinkingAnimation variant="random" interval={4000} />
           </div>
 
           {/* Error Message */}

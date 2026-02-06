@@ -4,6 +4,7 @@ import { useRef, useEffect, useState, useCallback, memo, useMemo } from 'react';
 import { Bot, User } from 'lucide-react';
 import Image from 'next/image';
 import { AIResponseType } from '@/lib/ai-structures';
+import { AIThinkingAnimation } from './ai-thinking-animation';
 
 // Helper function to safely stringify content
 function stringifyContent(content: unknown): string {
@@ -216,23 +217,8 @@ export function ChatMessages({ messages, isLoading }: Readonly<ChatMessagesProps
         ))
       }
 
-      {/* Typing Indicator */}
-      {
-        isLoading && (
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-500 rounded-full flex items-center justify-center">
-              <Bot className="w-4 h-4 text-white" />
-            </div>
-            <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl rounded-tl-md px-4 py-3">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-              </div>
-            </div>
-          </div>
-        )
-      }
+      {/* AI Thinking Animation - alternates between 5 different animations */}
+      {isLoading && <AIThinkingAnimation variant="random" interval={4000} />}
 
       {
         messages.length > 50 && (

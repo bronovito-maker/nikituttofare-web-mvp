@@ -8,10 +8,12 @@
 }
 
 .chatBubbleAssistant {
-    @apply bg-white text-slate-900 border border-slate-100;
+    @apply bg-white border border-slate-100;
     @apply rounded-2xl rounded-bl-md;
     @apply shadow-sm;
-    @apply dark:bg-slate-800 dark:text-slate-50 dark:border-slate-700;
+    /* Dark mode: background più chiaro per migliore contrasto */
+    @apply dark:bg-slate-800 dark:border-slate-700;
+    /* Il colore del testo è gestito dall'inline className nel componente */
 }
 
 .messageEnter {
