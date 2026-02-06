@@ -5,7 +5,6 @@ import {
   ThinkingDots,
   WaveBars,
   ShimmerEffect,
-  PulseRings,
   TypingEffect
 } from '@/components/chat/ai-thinking-animation';
 import { Bot } from 'lucide-react';
@@ -32,6 +31,9 @@ export default function AnimationsDemoPage() {
           <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800">
             <AIThinkingAnimation variant="random" interval={4000} />
           </div>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            ✨ Alterna tra 4 animazioni: Dots → Wave → Shimmer → Typing
+          </p>
           <pre className="bg-slate-800 text-slate-50 p-4 rounded-lg overflow-x-auto text-sm">
             {`<AIThinkingAnimation variant="random" interval={4000} />`}
           </pre>
@@ -40,7 +42,7 @@ export default function AnimationsDemoPage() {
         {/* Individual Animations */}
         <section className="space-y-6">
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
-            🎯 Animazioni Individuali
+            🎯 4 Animazioni Disponibili
           </h2>
 
           {/* Animation 1: Dots */}
@@ -82,23 +84,10 @@ export default function AnimationsDemoPage() {
             </p>
           </div>
 
-          {/* Animation 4: Pulse */}
+          {/* Animation 4: Typing */}
           <div className="space-y-2">
             <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-              4. Pulse Rings (Anelli Concentrici)
-            </h3>
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800">
-              <AIThinkingAnimation variant="pulse" />
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              ✅ Perfetto per: Connessione in corso, sincronizzazione
-            </p>
-          </div>
-
-          {/* Animation 5: Typing */}
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-              5. Typing Effect (Macchina da scrivere)
+              4. Typing Effect (Macchina da scrivere)
             </h3>
             <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800">
               <AIThinkingAnimation variant="typing" />
@@ -155,7 +144,7 @@ export default function AnimationsDemoPage() {
             <div>
               <span className="font-mono text-sm text-blue-700 dark:text-blue-400">variant:</span>
               <span className="ml-2 text-slate-700 dark:text-slate-300">
-                'dots' | 'wave' | 'shimmer' | 'pulse' | 'typing' | 'random'
+                'dots' | 'wave' | 'shimmer' | 'typing' | 'random'
               </span>
             </div>
             <div>

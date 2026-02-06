@@ -186,6 +186,24 @@
     @apply text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-orange-500;
   }
 
+  /* Chat Markdown Content - Force Contrast */
+  .markdown-content p,
+  .markdown-content span,
+  .markdown-content div,
+  .markdown-content li {
+    color: inherit !important;
+  }
+
+  .markdown-content strong,
+  .markdown-content b {
+    font-weight: 700;
+    color: inherit !important;
+  }
+
+  .markdown-content a {
+    @apply text-blue-600 dark:text-blue-400 underline;
+  }
+
   /* Surgical LCP Optimization: NO animation on mobile, instant paint */
   @media (min-width: 768px) {
     .animate-lcp-entry {

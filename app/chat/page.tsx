@@ -275,9 +275,12 @@ function ChatContent() {
             </>
           )}
 
-          <div className={styles.messageEnter}>
-            <AIThinkingAnimation variant="random" interval={4000} />
-          </div>
+          {/* AI Thinking Animation - ONLY when loading */}
+          {isLoading && (
+            <div className={styles.messageEnter}>
+              <AIThinkingAnimation variant="random" interval={4000} />
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (
@@ -474,7 +477,7 @@ function MessageBubble({ message, isLast }: { readonly message: any; readonly is
         )}
 
         {textContent && (
-          <div className={`text-sm sm:text-base leading-relaxed break-words markdown-content ${isUser ? 'text-white' : 'text-slate-900 dark:text-slate-50'}`}>
+          <div className={`text-sm sm:text-base leading-relaxed break-words markdown-content ${isUser ? '!text-white' : '!text-slate-900 dark:!text-slate-50'}`}>
             <Suspense fallback={<div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-full rounded"></div>}>
               <ReactMarkdown components={MARKDOWN_COMPONENTS}>
                 {textContent}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Bot } from 'lucide-react';
 
-type AnimationType = 'dots' | 'wave' | 'shimmer' | 'pulse' | 'typing';
+type AnimationType = 'dots' | 'wave' | 'shimmer' | 'typing';
 
 interface AIThinkingAnimationProps {
   variant?: AnimationType | 'random';
@@ -23,7 +23,7 @@ export function AIThinkingAnimation({
       return;
     }
 
-    const animations: AnimationType[] = ['dots', 'wave', 'shimmer', 'pulse', 'typing'];
+    const animations: AnimationType[] = ['dots', 'wave', 'shimmer', 'typing'];
     let currentIndex = 0;
 
     const intervalId = setInterval(() => {
@@ -46,7 +46,6 @@ export function AIThinkingAnimation({
         {currentAnimation === 'dots' && <ThinkingDots />}
         {currentAnimation === 'wave' && <WaveBars />}
         {currentAnimation === 'shimmer' && <ShimmerEffect />}
-        {currentAnimation === 'pulse' && <PulseRings />}
         {currentAnimation === 'typing' && <TypingEffect />}
       </div>
     </div>
@@ -173,4 +172,4 @@ function TypingEffect() {
 }
 
 // Export individual animations for direct use
-export { ThinkingDots, WaveBars, ShimmerEffect, PulseRings, TypingEffect };
+export { ThinkingDots, WaveBars, ShimmerEffect, TypingEffect };
