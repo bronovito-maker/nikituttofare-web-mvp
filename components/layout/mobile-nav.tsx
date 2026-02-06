@@ -20,9 +20,15 @@ export function MobileNav() {
     useEffect(() => {
         setMounted(true);
         const checkUser = async () => {
-            const supabase = createBrowserClient();
-            const { data: { user } } = await supabase.auth.getUser();
-            setUser(user);
+            try {
+                const supabase = createBrowserClient();
+                const { data, error } = await supabase.auth.getUser();
+                if (!error && data?.user) {
+                    setUser(data.user);
+                }
+            } catch (err) {
+                console.error("Error fetching user in MobileNav:", err);
+            }
         };
         checkUser();
     }, []);

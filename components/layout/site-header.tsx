@@ -22,15 +22,22 @@ interface SiteHeaderProps {
 export function SiteHeader({ userType, onUserTypeChange, showUserTypeToggle = false }: Readonly<SiteHeaderProps>) {
     const pathname = usePathname();
     const isAboutPage = pathname === '/about';
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<any>(null); // Keeping any for now to match current types, but adding safety
     const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
         const checkUser = async () => {
-            const supabase = createBrowserClient();
-            const { data: { user } } = await supabase.auth.getUser();
-            setUser(user);
-            setIsLoaded(true);
+            try {
+                const supabase = createBrowserClient();
+                const { data, error } = await supabase.auth.getUser();
+                if (!error && data?.user) {
+                    setUser(data.user);
+                }
+            } catch (err) {
+                console.error("Error fetching user in SiteHeader:", err);
+            } finally {
+                setIsLoaded(true);
+            }
         };
         checkUser();
     }, []);
