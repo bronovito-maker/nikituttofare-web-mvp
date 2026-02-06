@@ -1,7 +1,7 @@
 'use client';
 
 import { Building2, Home } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
 type UserType = 'residential' | 'business';
 
@@ -14,7 +14,7 @@ export function UserTypeToggle({ value, onChange }: UserTypeToggleProps) {
     return (
         <div className="relative flex items-center bg-muted/50 p-1 rounded-full border border-border">
             {/* Active Indicator Background */}
-            <motion.div
+            <m.div
                 className="absolute inset-y-1 bg-background rounded-full shadow-sm border border-border/50"
                 initial={false}
                 animate={{

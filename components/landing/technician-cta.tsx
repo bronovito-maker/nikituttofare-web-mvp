@@ -72,18 +72,18 @@ export function TechnicianCTA() {
                             {/* Mock Dashboard */}
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm text-slate-400">Dashboard Tecnico</span>
+                                    <span className="text-sm text-slate-300">Dashboard Tecnico</span>
                                     <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded">ONLINE</span>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="bg-slate-700/50 rounded-xl p-4">
                                         <p className="text-2xl font-black text-white">12</p>
-                                        <p className="text-xs text-slate-400">Lavori questo mese</p>
+                                        <p className="text-xs text-slate-300">Lavori questo mese</p>
                                     </div>
                                     <div className="bg-slate-700/50 rounded-xl p-4">
                                         <p className="text-2xl font-black text-emerald-400">€2.4k</p>
-                                        <p className="text-xs text-slate-400">Guadagno</p>
+                                        <p className="text-xs text-slate-300">Guadagno</p>
                                     </div>
                                 </div>
 
@@ -96,7 +96,7 @@ export function TechnicianCTA() {
                                         <span className="text-sm font-medium text-blue-300">Nuovo Lavoro Disponibile</span>
                                     </div>
                                     <p className="text-white font-semibold">Perdita Tubo — Rimini Centro</p>
-                                    <p className="text-xs text-slate-400">2 km da te • €85 stimato</p>
+                                    <p className="text-xs text-slate-300">2 km da te • €85 stimato</p>
                                 </div>
                             </div>
                         </div>

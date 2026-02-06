@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 import { Menu, Home, Info, MessageSquare, LogIn, HardHat, LogOut, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
@@ -82,7 +82,7 @@ export function MobileNav() {
                 {isOpen && (
                     <>
                         {/* Backdrop - z-[10000] to be above Header (z-9999) */}
-                        <motion.div
+                        <m.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
@@ -92,7 +92,7 @@ export function MobileNav() {
                         />
 
                         {/* Drawer - z-[10001] to be above Backdrop */}
-                        <motion.div
+                        <m.div
                             initial={{ x: '100%' }}
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
@@ -147,7 +147,7 @@ export function MobileNav() {
                                     © {new Date().getFullYear()} NikiTuttoFare
                                 </p>
                             </div>
-                        </motion.div>
+                        </m.div>
                     </>
                 )}
             </AnimatePresence>

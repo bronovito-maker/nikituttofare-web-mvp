@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { ReactNode, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -27,13 +27,13 @@ export function ClientAnimationWrapper({
   }
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration, delay, ease: 'easeOut' }}
       className={className}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }

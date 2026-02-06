@@ -38,14 +38,14 @@ export function DirectContact() {
                         <h2 className="text-2xl md:text-3xl font-bold text-white">
                             Hai un&apos;urgenza o preferisci parlare con una persona?
                         </h2>
-                        <p className="text-slate-400 text-lg">
+                        <p className="text-slate-300 text-lg">
                             Salta l&apos;intelligenza artificiale e mettiti subito in contatto con noi.
                         </p>
                     </div>
 
                     <div className="flex flex-col gap-4 w-full md:w-auto">
-                        {/* WhatsApp Button */}
-                        <Button asChild size="lg" className="bg-[#25D366] hover:bg-[#128C7E] text-white border-0 font-semibold h-auto py-4">
+                        {/* WhatsApp Button - using dark text for better contrast */}
+                        <Button asChild size="lg" className="bg-[#25D366] hover:bg-[#128C7E] text-slate-900 border-0 font-bold h-auto py-4">
                             <Link href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2">
                                 <WhatsappIcon className="h-5 w-5 shrink-0" />
                                 <span>WhatsApp Diretto</span>
@@ -60,7 +60,7 @@ export function DirectContact() {
                                     <span>Chiama il Numero Rosso</span>
                                 </Link>
                             </Button>
-                            <span className="text-xs text-slate-500 font-medium tracking-wide">
+                            <span className="text-xs text-slate-300 font-medium tracking-wide">
                                 H24 • Rispondiamo sempre
                             </span>
                         </div>
