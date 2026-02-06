@@ -137,9 +137,9 @@ export function TestimonialCarousel() {
                         <button
                             key={index}
                             onClick={() => goTo(index)}
-                            className={`w-2 h-2 rounded-full transition-all duration-300 ${index === current
-                                    ? 'bg-blue-500 w-8'
-                                    : 'bg-border hover:bg-muted-foreground'
+                            className={`touch-target-expansion rounded-full transition-all duration-300 ${index === current
+                                ? 'bg-blue-500 w-8 h-2'
+                                : 'bg-border hover:bg-muted-foreground w-2 h-2'
                                 }`}
                             aria-label={`Vai a testimonial ${index + 1}`}
                         />

@@ -23,23 +23,17 @@ export function BlurText({
     setIsMounted(true);
   }, []);
 
-  // Fallback for SSR - show text immediately without animation to prevent LCP delay
-  if (!isMounted) {
-    return (
-      <h1 className={cn("drop-shadow-sm opacity-100", className)}>
-        {text}
-      </h1>
-    );
-  }
-
+  // SSR & Initial Hydration: Use CSS animation to ensure the browser
+  // discovers and paints the element immediately without waiting for Framer Motion JS.
   return (
-    <motion.h1
-      initial={{ filter: "blur(4px)", opacity: 0.8, y: 10 }}
-      animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: delay, ease: "easeOut" }}
-      className={cn("drop-shadow-sm", className)}
+    <h1
+      className={cn(
+        "drop-shadow-sm opacity-0 animate-lcp-entry",
+        className
+      )}
+      style={{ animationDelay: `${delay}s` }}
     >
       {text}
-    </motion.h1>
+    </h1>
   );
 }

@@ -20,6 +20,7 @@ const nextConfig = {
     },
     optimizeCss: true,
   },
+  productionBrowserSourceMaps: false, // Prevents "Unexpected token N" in browser console
 
   // Gestisci errori di caricamento .env
   onDemandEntries: {
@@ -49,7 +50,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms https://c.bing.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://*.clarity.ms https://c.bing.com https://*.supabase.co https://*.openstreetmap.org; font-src 'self' data:; connect-src 'self' https://*.sentry.io https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms https://c.bing.com https://*.supabase.co; worker-src 'self' blob:; frame-src 'self' https://*.clarity.ms; object-src 'none'; base-uri 'self';",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms https://c.bing.com https://t.clarity.ms; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://*.clarity.ms https://c.bing.com https://*.supabase.co https://*.openstreetmap.org https://c.clarity.ms; font-src 'self' data:; connect-src 'self' https://*.sentry.io https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms https://c.bing.com https://*.supabase.co https://t.clarity.ms; worker-src 'self' blob:; frame-src 'self' https://*.clarity.ms; object-src 'none'; base-uri 'self';",
           },
         ],
       },
