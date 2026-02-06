@@ -10,16 +10,15 @@ import { MessageCircle, LayoutDashboard, LogOut } from 'lucide-react';
 import { MobileNav } from '@/components/layout/mobile-nav';
 import { createBrowserClient } from '@/lib/supabase-browser';
 import { useEffect, useState } from 'react';
-
-type UserType = 'residential' | 'business';
+import { useUserType } from '@/components/landing/user-type-context';
 
 interface SiteHeaderProps {
-    userType?: UserType;
-    onUserTypeChange?: (type: UserType) => void;
     showUserTypeToggle?: boolean;
 }
 
-export function SiteHeader({ userType, onUserTypeChange, showUserTypeToggle = false }: Readonly<SiteHeaderProps>) {
+export function SiteHeader({ showUserTypeToggle = false }: Readonly<SiteHeaderProps>) {
+    // Use context for user type state
+    const { userType, setUserType } = showUserTypeToggle ? useUserType() : { userType: 'residential' as const, setUserType: () => {} };
     const pathname = usePathname();
     const isAboutPage = pathname === '/about';
     const [user, setUser] = useState<any>(null); // Keeping any for now to match current types, but adding safety
@@ -62,9 +61,9 @@ export function SiteHeader({ userType, onUserTypeChange, showUserTypeToggle = fa
                 </div>
 
                 {/* Center Toggle - Desktop (Only if enabled) */}
-                {showUserTypeToggle && userType && onUserTypeChange && (
+                {showUserTypeToggle && (
                     <div className="hidden md:flex flex-1 justify-center px-4">
-                        <UserTypeToggle value={userType} onChange={onUserTypeChange} />
+                        <UserTypeToggle value={userType} onChange={setUserType} />
                     </div>
                 )}
 
@@ -135,9 +134,9 @@ export function SiteHeader({ userType, onUserTypeChange, showUserTypeToggle = fa
             </div>
 
             {/* Mobile Toggle Row (Only if enabled) */}
-            {showUserTypeToggle && userType && onUserTypeChange && (
+            {showUserTypeToggle && (
                 <div className="md:hidden border-t border-border bg-card/50 p-2 flex justify-center">
-                    <UserTypeToggle value={userType} onChange={onUserTypeChange} />
+                    <UserTypeToggle value={userType} onChange={setUserType} />
                 </div>
             )}
         </header>
