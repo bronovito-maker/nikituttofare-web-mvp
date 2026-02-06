@@ -101,12 +101,12 @@ function AIResponseRenderer({ content }: Readonly<{ content: AIResponseType }>) 
       const summaryData = content.content as Record<string, unknown>;
       return (
         <div className="space-y-3">
-          <div className="font-semibold text-slate-900">📋 Riepilogo Prenotazione</div>
+          <div className="font-semibold text-slate-900 dark:text-slate-50">📋 Riepilogo Prenotazione</div>
           <div className="space-y-2 text-sm">
             {summaryData && Object.entries(summaryData).map(([key, value]) => (
               <div key={key} className="flex justify-between">
-                <span className="text-slate-600 capitalize">{key}:</span>
-                <span className="font-medium">{String(value)}</span>
+                <span className="text-slate-600 dark:text-slate-400 capitalize">{key}:</span>
+                <span className="font-medium text-slate-900 dark:text-slate-50">{String(value)}</span>
               </div>
             ))}
           </div>
@@ -117,11 +117,11 @@ function AIResponseRenderer({ content }: Readonly<{ content: AIResponseType }>) 
     case 'confirmation':
       return (
         <div className="space-y-3">
-          <div className="flex items-center gap-2 font-semibold text-green-700">
+          <div className="flex items-center gap-2 font-semibold text-green-700 dark:text-green-400">
             <span className="text-lg">✅</span>
             <span>Prenotazione Confermata</span>
           </div>
-          <div className="text-sm text-slate-700">
+          <div className="text-sm text-slate-700 dark:text-slate-300">
             {typeof content.content === 'string' ? content.content : stringifyContent(content.content)}
           </div>
         </div>
@@ -129,7 +129,7 @@ function AIResponseRenderer({ content }: Readonly<{ content: AIResponseType }>) 
 
     case 'text':
       return (
-        <div className="whitespace-pre-wrap">
+        <div className="whitespace-pre-wrap text-slate-900 dark:text-slate-50">
           {typeof content.content === 'string' ? content.content : stringifyContent(content.content)}
         </div>
       );
@@ -138,9 +138,9 @@ function AIResponseRenderer({ content }: Readonly<{ content: AIResponseType }>) 
       const formContent = content.content as { fields?: Array<{ name: string; label: string }> };
       return (
         <div className="space-y-2">
-          <div className="text-sm font-medium">Compila i seguenti campi:</div>
+          <div className="text-sm font-medium text-slate-900 dark:text-slate-50">Compila i seguenti campi:</div>
           {formContent?.fields?.map((field) => (
-            <div key={field.name} className="text-sm text-slate-600">
+            <div key={field.name} className="text-sm text-slate-600 dark:text-slate-400">
               • {field.label}
             </div>
           ))}
@@ -151,8 +151,8 @@ function AIResponseRenderer({ content }: Readonly<{ content: AIResponseType }>) 
     case 'recap':
       return (
         <div className="space-y-2">
-          <div className="font-semibold">📝 Riepilogo</div>
-          <div className="text-sm">
+          <div className="font-semibold text-slate-900 dark:text-slate-50">📝 Riepilogo</div>
+          <div className="text-sm text-slate-900 dark:text-slate-50">
             {typeof content.content === 'string' ? content.content : stringifyContent(content.content)}
           </div>
         </div>
@@ -160,7 +160,7 @@ function AIResponseRenderer({ content }: Readonly<{ content: AIResponseType }>) 
 
     default:
       return (
-        <div className="whitespace-pre-wrap">
+        <div className="whitespace-pre-wrap text-slate-900 dark:text-slate-50">
           {typeof content.content === 'string'
             ? content.content
             : stringifyContent(content.content) || 'Risposta ricevuta'}
@@ -223,11 +223,11 @@ export function ChatMessages({ messages, isLoading }: Readonly<ChatMessagesProps
             <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-500 rounded-full flex items-center justify-center">
               <Bot className="w-4 h-4 text-white" />
             </div>
-            <div className="bg-slate-100 rounded-2xl rounded-tl-md px-4 py-3">
+            <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl rounded-tl-md px-4 py-3">
               <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
               </div>
             </div>
           </div>

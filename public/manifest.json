@@ -1,0 +1,21 @@
+{
+  "name": "NikiTuttoFare - Pronto Intervento H24",
+  "short_name": "NikiTuttoFare",
+  "description": "Idraulici, Elettricisti e Fabbri a Rimini e Riccione. Intervento garantito in 60 minuti.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo_ntf.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "lifestyle"],
+  "lang": "it",
+  "dir": "ltr"
+}

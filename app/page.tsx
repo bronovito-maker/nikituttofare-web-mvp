@@ -43,25 +43,39 @@ export default function Home() {
           <UserSpecificSections />
 
           {/* --- HOW IT WORKS --- */}
-          <HowItWorks />
+          <div className="min-h-[500px]">
+            <HowItWorks />
+          </div>
 
           {/* --- TESTIMONIALS --- */}
-          <TestimonialCarousel />
+          <div className="min-h-[400px]">
+            <TestimonialCarousel />
+          </div>
 
           {/* --- WHY CHOOSE US --- */}
-          <WhyChooseUs />
+          <div className="min-h-[600px]">
+            <WhyChooseUs />
+          </div>
 
           {/* --- TRUST BADGES --- */}
-          <TrustBadges />
+          <div className="min-h-[200px]">
+            <TrustBadges />
+          </div>
 
           {/* --- TECHNICIAN CTA --- */}
-          <TechnicianCTA />
+          <div className="min-h-[400px]">
+            <TechnicianCTA />
+          </div>
 
           {/* --- FAQ --- */}
-          <FAQSection />
+          <div className="min-h-[600px]">
+            <FAQSection />
+          </div>
 
           {/* --- DIRECT CONTACT --- */}
-          <DirectContact />
+          <div className="min-h-[300px]">
+            <DirectContact />
+          </div>
 
           {/* --- COMMON FEATURES --- */}
           <CommonFeatures />

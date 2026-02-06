@@ -51,6 +51,10 @@ export default function RootLayout({
   return (
     <html lang="it" className={dmSans.variable} suppressHydrationWarning>
       <head>
+        {/* PWA Manifest */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
         {/* Performance Optimization: Preconnect to critical origins */}
         <link rel="preconnect" href="https://mqgkominidcysyakcbio.supabase.co" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://o4510796370214912.ingest.de.sentry.io" crossOrigin="anonymous" />

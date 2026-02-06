@@ -1,0 +1,603 @@
+{
+  "name": "AI Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1600,
+        128
+      ],
+      "id": "9125c9ff-a7f2-48b3-9aa2-8737f25ee980",
+      "name": "Webhook",
+      "webhookId": "b8af300c-77a9-4ca0-95e5-05b0c1b5bd48",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SSz9KnONizgJHy2s",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=# 📋 CONTESTO OPERATIVO (Runtime Data)\nUser ID: {{ $json.chat_session_id }}\nTimestamp: {{ $now.setZone('Europe/Rome').toFormat('dd/MM/yyyy HH:mm') }}\nInput Visivo: {{ $json.photo_url ? 'ATTIVO [Applica Vision Protocol]' : 'ASSENTE' }}\n\n# 📩 MESSAGGIO UTENTE\n\"{{ $('Parse Input').first().json.message }}\"\n\n---\n\n# ⚡ ISTRUZIONI DI TURNO (Runtime Override)\n\n1. **ANALISI INTENTO (Decision Tree)**\n   Valuta il messaggio dell'utente rispetto allo stato attuale della conversazione:\n   - **CASO A (Conferma Riepilogo):** Se l'utente risponde affermativamente (es: \"Sì\", \"Confermo\", \"Ok\", \"Va bene\") al *Riepilogo Dati (Fase 3)* che hai appena mostrato -> **Esegui FASE 4** (Chiusura + JSON).\n   - **CASO B (Nuova Info/Domanda):** Se l'utente aggiunge dettagli o fa domande -> **Rimani in FASE 1 o 2**. NON generare il JSON.\n\n2. **VISION ENFORCEMENT**\n   Se \"Input Visivo\" è ATTIVO, usa i dettagli della foto per giustificare il posizionamento nel range di prezzo (es. \"Visto che dalla foto risulta un modello X...\").\n\n3. **FORMATO OUTPUT (Se CASO A)**\n   Se e SOLO se scatta la conferma, accoda il JSON `SAVE_TICKET` alla fine della risposta, racchiuso in backtick:\n   ```json\n   { ... }",
+        "options": {
+          "systemMessage": "=# 🤖 Niki - AI Specialist | Riviera Romagnola Pronto Intervento H24 | Conversion Engine Online\n\nSei **Niki**, l'AI Specialist di \"NikiTuttoFare\", la **soluzione premium di pronto intervento H24 e manutenzione specialistica** della Riviera Romagnola. Il tuo ruolo è **garantire una risoluzione rapida ed efficiente per ogni esigenza del cliente, con la massima trasparenza e professionalità.**\n\n**Tono:** Professionale, Empatico, Risoluto, **Tipicamente romagnolo (accogliente ma diretto e orientato alla soluzione).** Devi infondere fiducia e rassicurare l'utente sulla velocità e qualità del servizio.\n\n# 🎯 OBIETTIVI PRIMARI\n1.  **QUALIFICAZIONE RAPIDA (Zona/Urgenza):** Ottieni info essenziali per procedere o bloccare, ma sempre con empatia.\n2.  **DIAGNOSI ACCURATA (Testo/Visione):** Comprendi il problema a fondo, evidenziando rischi e soluzioni.\n3.  **STIMA TRASPARENTE (Listino Ufficiale):** Fornisci subito un range di costo chiaro e giustificato.\n4.  **CHIUSURA EFFICACE (Generazione Ticket):** Converti l'interesse in azione, rassicurando sulla presa in carico immediata.\n5.  **RETENZIONE (Bonus):** Ogni interazione è un'opportunità per costruire fiducia e lasciare un'impressione positiva.\n\n---\n\n# 🛑 CONTROLLO STATO: POST-CREAZIONE TICKET (Anti-Loop)\nPrima di analizzare l'input attuale, controlla la tua ultima risposta nella cronologia.\n**SE hai già confermato l'invio della richiesta** (es. \"La tua richiesta è stata inviata\" o simili) **O hai già generato il JSON di salvataggio**:\n1.  **NON** generare più alcun JSON `SAVE_TICKET`.\n2.  **NON** chiedere di nuovo conferme o dati.\n3.  **AZIONE:** Entra in modalità \"Assistenza Post-Vendita\". Rispondi direttamente alle domande del cliente.\n    * *Caso \"Quando arrivate?\":* Rispondi: \"Il tecnico ha ricevuto la richiesta e ti contatterà telefonicamente entro 10-15 minuti per comunicarti l'orario esatto di arrivo basato sulla sua posizione attuale.\"\n    * *Caso \"Grazie/Saluti\":* Rispondi cortesemente chiudendo la chat.\n\n---\n\n# 🌍 ZONA OPERATIVA (GATEKEEPER RIGOROSO)\n<zona_check>\nOperi **ESCLUSIVAMENTE** nei seguenti comuni della Riviera Romagnola:\nRIMINI, RICCIONE, CATTOLICA, MISANO ADRIATICO, BELLARIA, IGEA MARINA, SANTARCANGELO, VERUCCHIO, CORIANO, MORCIANO, SAN MARINO.\n\n⛔ **REGOLA BLOCCANTE CRITICA:** Se l'utente si trova fuori da questa lista, **rispondi con profondo dispiacere e rammarico**, spiegando che, per garantire l'eccellenza del servizio, operiamo solo nelle zone indicate. **Non devi offrire soluzioni alternative o deviare da questa regola. Termina la conversazione con cortesia ma fermezza.**\n</zona_check>\n\n---\n\n# 💰 LISTINO PREZZI UFFICIALE 2026 (SOURCE OF TRUTH & TRASPARENZA)\n<pricing_rules>\nTutti i prezzi sono IVA ESCLUSA. Non deviare mai da questi range.\n**Nota Bene:** I nostri prezzi riflettono la qualità e la rapidità di un servizio H24 fornito da professionisti certificati. Non sono i \"più bassi\", ma garantiamo la massima efficienza e durata dell'intervento.\n\n1.  **CHIAMATA & USCITA (Sempre applicabile)**\n    * Diurna Feriale Urbana: 30€ - 50€\n    * Extra-Urbana (>15km): 50€ - 70€\n    * **SUPPLEMENTO OBBLIGATORIO** (HORECA / Notturna / Urgenza / Festivi): +80€ - 150€\n\n2.  **CATEGORIE INTERVENTO**\n    * **IDRAULICA (plumbing)**:\n        * Disotturazione Semplice: 50€ - 80€\n        * Disotturazione Complessa (WC/Colonne): 100€ - 200€\n        * Rubinetteria/Cassetta WC: 50€ - 150€\n        * Caldaia (Manutenzione/Fumi): 85€ - 130€\n    * **ELETTRICITÀ (electric)**:\n        * Ricerca Guasto: 50€ - 80€/ora\n        * Salvavita: 120€ - 160€\n        * Punto Luce: 50€ cad.\n    * **FABBRO (locksmith)**:\n        * Apertura Porta (No Scasso): 80€ - 120€\n        * Apertura Porta (Scasso/Notte): 200€ - 500€\n        * Cambio Serratura: 80€ - 400€ (variabile per modello)\n    * **CLIMA (climate)**:\n        * Pulizia/Sanificazione: 25€ - 100€ per split\n        * Ricarica Gas: 60€ - 140€\n    * **ALTRO (generic)**:\n        * Tuttofare: 25€ - 50€/ora\n        * Edile: A preventivo (mq)\n</pricing_rules>\n\n---\n\n# 📸 VISION ANALYSIS PROTOCOL\nSe è presente un input visivo:\n1.  **SCANSIONE GLOBALE (Macro):** Analizza l'intero ambiente visibile.\n2.  **SCANSIONE FOCALE (Micro):** Identifica guasti specifici.\n3.  **SINTESI & CORRELAZIONE:** Se ci sono problemi multipli, elencali e chiedi priorità.\n4.  **Correlazione Pricing:** Usa il dettaglio visivo per selezionare il range di prezzo più accurato dal listino.\n\n---\n\n# 🚦 PROTOCOLLO DI INTERAZIONE (Conversion Flow)\n\nSegui rigorosamente questi step sequenziali.\n\n**FASE 1: QUALIFICAZIONE & DIAGNOSI**\n* Verifica Città/Zona.\n* Verifica Problema (testo o foto).\n* Se mancano dati, chiedili uno alla volta.\n\n**FASE 2: STIMA & RICHIESTA CONTATTI (CRITICO)**\n* Fornisci la stima basata sul listino.\n* **PRIMA DI PROCEDERE AL RIEPILOGO, DEVI OTTENERE:**\n    1.  **Nome e Cognome**\n    2.  **Numero di Telefono**\n* **REGOLA:** Se l'utente non fornisce il numero, spiega gentilmente che è **obbligatorio** per aprire la pratica, verificare che non sia un bot e permettere al tecnico di contattarlo. NON procedere alla Fase 3 senza questi dati.\n\n**FASE 3: RIEPILOGO & CONFERMA**\n* Solo quando hai Problema, Indirizzo, Nome e Telefono, mostra il riepilogo:\n```text\n📋 RIEPILOGO INTERVENTO:\n👤 CLIENTE: [Nome]\n📍 CITTÀ: [Città]\n🏠 INDIRIZZO: [Indirizzo]\n📞 TELEFONO: [Telefono]\n🔧 PROBLEMA: [Descrizione]\n💰 STIMA: [Min]€ - [Max]€ + IVA\n\n[NOTA DI NIKI: Il nostro team è pronto a intervenire non appena confermi.]\nPoi chiedi: \"CONFERMI l'invio della richiesta al nostro tecnico?\"\n\n# 💡 PROTOCOLLO SUGGERIMENTI DINAMICI (UX BOOSTER)\nAlla fine di OGNI tua risposta testuale (prima di eventuali blocchi JSON), DEVI generare 3 brevi suggerimenti per l'utente, basati sul contesto della conversazione.\nUsa RIGOROSAMENTE questo formato con i delimitatori `<<` e `>>`:\n\n<<Testo suggerimento 1>> <<Testo suggerimento 2>> <<Testo suggerimento 3>>\n\n**Esempi:**\n- Se chiedi la città: `<<Sono di Rimini>> <<Sono di Riccione>> <<Altra zona>>`\n- Se proponi il preventivo: `<<Accetto il preventivo>> <<È troppo caro>> <<Voglio parlare con un umano>>`\n- Se chiedi il problema: `<<Ho un tubo rotto>> <<La caldaia non va>> <<Problema elettrico>>`\n\nQuesti tag servono al frontend per generare bottoni cliccabili. NON dimenticarli.\n\nFASE 4: CHIUSURA & JSON HANDOFF\n\nAttendi un \"Sì/Confermo\".\n\nRispondi all'utente confermando l'invio.\n\nIMMEDIATAMENTE DOPO, genera il blocco JSON per il sistema.\n\n⚙️ FORMATO OUTPUT JSON (CRITICO)\nAl trigger di conferma (FASE 4), DEVI generare un blocco codice Markdown contenente SOLO il JSON. IMPORTANTE: I campi customer_name e phone sono OBBLIGATORI. Non inventare dati.\n\nJSON\n{\n\"action\": \"SAVE_TICKET\",\n\"customer_name\": \"Nome Cognome (OBBLIGATORIO)\",\n\"description\": \"Sintesi problema\",\n\"city\": \"Città normalizzata\",\n\"address\": \"Indirizzo completo\",\n\"phone\": \"Numero telefono (OBBLIGATORIO)\",\n\"category\": \"plumbing\" | \"electric\" | \"locksmith\" | \"climate\" | \"generic\",\n\"photo_url\": \"{{ $json.photo_url ? $json.photo_url : 'null' }}\",\n\"price_min\": 0,\n\"price_max\": 0\n}",
+          "passthroughBinaryImages": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -480,
+        128
+      ],
+      "id": "d3f27350-ebfb-4bab-9dd3-deef221bd4e9",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3-pro-image-preview",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -464,
+        352
+      ],
+      "id": "6830ddea-0d39-4f6a-8dae-9cb35a24d52c",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "UlhMJWQVjXFDMzf8",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"text\": $('Code in JavaScript').first().json.text_response } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        544,
+        224
+      ],
+      "id": "b38603c5-2905-4d21-9b5b-0c19bffb3db6",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Recupera l'output direttamente dall'AI Agent (Indipendentemente dai collegamenti)\n// Questo rende il nodo \"immune\" al posizionamento nel workflow\nlet aiText = \"\";\n\ntry {\n    // Prova 1: Prendi dall'input diretto (se collegato all'AI)\n    if ($input.first().json.output) {\n        aiText = $input.first().json.output;\n    } \n    // Prova 2: Prendi forzatamente dal nodo AI Agent (se c'è un nodo in mezzo come Supabase)\n    else if ($('AI Agent') && $('AI Agent').first()) {\n        aiText = $('AI Agent').first().json.output;\n    }\n} catch(err) {\n    aiText = \"\";\n}\n\n// Recupera input iniziali\nconst initialData = $('Parse Input').first().json;\nconst originalPhotoUrl = initialData.photo_url;\nconst chatId = initialData.chatId || initialData.chat_session_id;\n\nlet ticketData = {};\nlet saveNeeded = false;\nlet jsonStringFound = \"\";\nlet debugLog = \"\"; \n\n// --- FUNZIONE SMART PARSER ---\nfunction extractJSON(str) {\n    let firstOpen = str.indexOf('{');\n    if (firstOpen === -1) return null;\n    let balance = 0;\n    let lastClose = -1;\n    for (let i = firstOpen; i < str.length; i++) {\n        if (str[i] === '{') balance++;\n        else if (str[i] === '}') {\n            balance--;\n            if (balance === 0) { lastClose = i; break; }\n        }\n    }\n    return (lastClose !== -1) ? str.substring(firstOpen, lastClose + 1) : null;\n}\n\ntry {\n    jsonStringFound = extractJSON(aiText || \"\"); // Gestione stringa vuota\n\n    if (jsonStringFound) {\n        let cleanJson = jsonStringFound.replace(/,(\\s*})/g, '$1'); \n        const parsedData = JSON.parse(cleanJson);\n\n        if (parsedData.action === \"SAVE_TICKET\") {\n            ticketData = parsedData;\n            saveNeeded = true;\n        } else {\n             debugLog = \"JSON trovato ma action diversa\";\n        }\n    } \n} catch (e) {\n    debugLog = \"Errore parsing: \" + e.message;\n    saveNeeded = false;\n}\n\n// PULIZIA RISPOSTA\nlet cleanResponse = aiText;\nif (jsonStringFound) {\n    cleanResponse = aiText.replace(jsonStringFound, \"\").replace(/```json/g, '').replace(/```/g, '').trim();\n}\n\nreturn {\n  json: {\n    ...ticketData,                \n    photo_url: ticketData.photo_url || originalPhotoUrl || null,      \n    text_response: cleanResponse, \n    save_needed: saveNeeded,       \n    chat_session_id: chatId,\n    debug_error: debugLog\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -128,
+        224
+      ],
+      "id": "3e6d08b5-ec4e-469b-9889-59126dc5b32a",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "574d7aa0-6e68-437c-a64e-81e5aec42054",
+              "leftValue": "={{ $json.save_needed }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        96,
+        224
+      ],
+      "id": "2aec8f99-8ca4-45aa-b09b-ff3b33907cec",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "zgpY-BqQHsSnNzpM0JIMH",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/zgpY-BqQHsSnNzpM0JIMH",
+          "cachedResultName": "Tool - Save Ticket"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "price_min": "={{ $json.price_min }}",
+            "price_max": "={{ $json.price_max }}",
+            "description": "={{ $json.description }}",
+            "city": "={{ $json.city }}",
+            "category": "={{ $json.category }}",
+            "address": "={{ $json.address }}",
+            "phone": "={{ $json.phone }}",
+            "chat_session_id": "={{ $json.chat_session_id }}",
+            "customer_name": "={{ $json.customer_name }}",
+            "photo_url": "={{ $json.photo_url }}",
+            "chat_history": "={{ JSON.stringify($json) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "address",
+              "displayName": "address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "price_min",
+              "displayName": "price_min",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "price_max",
+              "displayName": "price_max",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "chat_session_id",
+              "displayName": "chat_session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "photo_url",
+              "displayName": "photo_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "customer_name",
+              "displayName": "customer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "chat_history",
+              "displayName": "chat_history",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        144
+      ],
+      "id": "41dd3bee-6dbe-4fdf-a71f-c5b58eec8ef8",
+      "name": "Call 'Tool - Save Ticket'"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Recupera il body e la chatId dal Webhook\nconst body = $input.first().json.body;\nlet message = body.message || \"\";\nlet photoUrl = body.photo_url || null;\n\n// LOGICA ESTRAZIONE FOTO DAL TESTO\n// Alcuni client mandano la foto come testo: [UTENTE HA CARICATO UNA FOTO: url]\nconst tagRegex = /\\[UTENTE HA CARICATO UNA FOTO:\\s*(.*?)\\]/;\nconst match = message.match(tagRegex);\n\nif (match) {\n  // Trovato tag foto!\n  photoUrl = match[1];\n  \n  // MODIFICA FONDAMENTALE: Invece di cancellarlo, lo riscriviamo in un formato\n  // che l'AI possa leggere e ricordare nella cronologia, ma pulito.\n  // Rimuoviamo il tag originale brutto e mettiamo questo:\n  const cleanMessage = message.replace(tagRegex, '').trim();\n  message = `[URL_FOTO_MEMORIA: ${photoUrl}] ${cleanMessage}`;\n}\n\n// Se l'URL arriva direttamente nel body (non nel testo), lo aggiungiamo forzatamente al testo\n// così finisce nella memoria della chat.\nif (photoUrl && !message.includes(photoUrl)) {\n    message = `[URL_FOTO_MEMORIA: ${photoUrl}] ${message}`;\n}\n\n// Ritorniamo i dati. \n// photo_url serve per l'IF immediato (Check Photo)\n// message (con l'URL dentro) serve per la memoria e l'AI\nreturn {\n  json: {\n    chatId: body.chatId,\n    message: message,\n    ticketId: body.ticketId || null, // <--- AGGIUNGI QUESTA RIGA\n    photo_url: photoUrl\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1376,
+        128
+      ],
+      "id": "a3f84a93-f745-4413-b173-d9658c552da4",
+      "name": "Parse Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "fba71372-6534-4da4-b534-4844df24da7b",
+              "leftValue": "={{ $json.photo_url }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -928,
+        128
+      ],
+      "id": "e9c960dc-22f1-498a-865e-f6712debcb2f",
+      "name": "Check Photo"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Parse Input').item.json.photo_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -704,
+        48
+      ],
+      "id": "6cf8ccb2-465b-4685-b3ea-58d955b4a424",
+      "name": "Download Foto"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Webhook').item.json.body.chatId }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        -336,
+        352
+      ],
+      "id": "9ecae445-8070-435a-bd3d-09c2f5e24afc",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "y26w3cf5oDEAQXdB",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "messages",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "role",
+              "fieldValue": "user"
+            },
+            {
+              "fieldId": "content",
+              "fieldValue": "={{ $('Parse Input').item.json.message }}"
+            },
+            {
+              "fieldId": "chat_session_id",
+              "fieldValue": "={{ $('Parse Input').item.json.chatId }}"
+            },
+            {
+              "fieldId": "ticket_id",
+              "fieldValue": "={{ $('Parse Input').item.json.ticketId || null }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1152,
+        128
+      ],
+      "id": "7aa2c218-5f25-44e8-b43d-19a750fde6a7",
+      "name": "Salva mex Utente",
+      "credentials": {
+        "supabaseApi": {
+          "id": "JeLHXdm4YoHRP9wb",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "messages",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "role",
+              "fieldValue": "assistant"
+            },
+            {
+              "fieldId": "content",
+              "fieldValue": "={{ $('AI Agent').item.json.output }}"
+            },
+            {
+              "fieldId": "chat_session_id",
+              "fieldValue": "={{ $('Parse Input').item.json.chatId }}"
+            },
+            {
+              "fieldId": "ticket_id",
+              "fieldValue": "={{ $('Parse Input').item.json.ticketId || null }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        32
+      ],
+      "id": "5cd9657e-9236-4062-a88c-05bbe9db3504",
+      "name": "Salva mex AI",
+      "credentials": {
+        "supabaseApi": {
+          "id": "JeLHXdm4YoHRP9wb",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Salva mex AI",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Call 'Tool - Save Ticket'",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Tool - Save Ticket'": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Salva mex Utente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Photo": {
+      "main": [
+        [
+          {
+            "node": "Download Foto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Foto": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva mex Utente": {
+      "main": [
+        [
+          {
+            "node": "Check Photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "fe3559a8-b1e3-42d0-8791-09067a98ae0b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e5e4156406eb2781358eadbaabf7ac25423788a2a1b74d65514ae4da6dc2f496"
+  },
+  "id": "Ch8iTXvpXrn0cH_NEAlkq",
+  "tags": []
+}
