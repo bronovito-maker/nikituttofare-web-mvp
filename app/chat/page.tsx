@@ -462,7 +462,7 @@ function MessageBubble({ message, isLast }: { readonly message: any; readonly is
       )}
 
       <div
-        className={`max-w-[85%] sm:max-w-[70%] ${isUser ? styles.chatBubbleUser : styles.chatBubbleAssistant
+        className={`max-w-[85%] sm:max-w-[70%] ${isUser ? styles.chatBubbleUser : `${styles.chatBubbleAssistant} bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800`
           } px-4 py-3 space-y-2 overflow-hidden`}
       >
         {imageUrl && (
