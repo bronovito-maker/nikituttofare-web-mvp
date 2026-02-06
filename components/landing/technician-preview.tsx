@@ -55,8 +55,8 @@ export function TechnicianPreview() {
                 </div>
             </div>
 
-            {/* Decor elements */}
-            <div className="absolute -inset-0.5 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl blur-lg opacity-50 -z-10" />
+            {/* Decor elements - Hidden on mobile to prevent paint flash/reload feeling */}
+            <div className="hidden md:block absolute -inset-0.5 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl blur-lg opacity-50 -z-10" />
         </div >
     );
 }
