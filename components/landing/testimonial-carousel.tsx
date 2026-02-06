@@ -131,13 +131,13 @@ export function TestimonialCarousel() {
                     </button>
                 </div>
 
-                {/* Dots */}
-                <div className="flex justify-center gap-2 mt-8">
+                {/* Dots with improved touch targets */}
+                <div className="flex justify-center gap-4 mt-8">
                     {TESTIMONIALS.map((_, index) => (
                         <button
                             key={index}
                             onClick={() => goTo(index)}
-                            className={`touch-target-expansion rounded-full transition-all duration-300 ${index === current
+                            className={`touch-target-expansion relative rounded-full transition-all duration-300 ${index === current
                                 ? 'bg-blue-500 w-8 h-2'
                                 : 'bg-border hover:bg-muted-foreground w-2 h-2'
                                 }`}

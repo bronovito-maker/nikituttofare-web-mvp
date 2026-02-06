@@ -75,7 +75,7 @@ export default function Home() {
                   <BlurText
                     key={userType} // Force re-render on toggle
                     text={userType === 'residential' ? "Un guasto ti sta" : "Impianti Sempre Operativi."}
-                    className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-foreground leading-[1.15] pb-1"
+                    className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-foreground leading-[1.15] pb-1 max-md:opacity-100 max-md:animate-none max-md:filter-none"
                     delay={0.05}
                   />
                   <BlurText
@@ -84,7 +84,7 @@ export default function Home() {
                     className={`text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r leading-[1.15] pb-1 ${userType === 'residential'
                       ? 'from-orange-600 via-red-500 to-orange-500'
                       : 'from-slate-700 via-slate-600 to-slate-500 dark:from-slate-300 dark:via-slate-400 dark:to-slate-500'
-                      }`}
+                      } max-md:opacity-100 max-md:animate-none max-md:filter-none`}
                     delay={0.25}
                   />
                 </div>
