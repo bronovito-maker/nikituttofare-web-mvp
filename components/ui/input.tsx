@@ -30,7 +30,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             className={cn(
               styles.inputPremium,
-              icon && 'pl-11',
+              icon && '!pl-12',
               error && 'border-red-300 focus:border-red-500 focus:ring-red-500/20',
               className
             )}

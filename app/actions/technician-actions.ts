@@ -1,6 +1,6 @@
 'use server'
 
-import { createServerClient } from '@/lib/supabase-server'
+import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { TechnicianLoginSchema, TicketActionSchema, AddNoteSchema } from '@/lib/schemas'
 import { ZodError } from 'zod'
@@ -170,28 +170,31 @@ export async function loginTechnician(phoneIn: string, pinIn: string) {
     try {
         const { phone, pin } = TechnicianLoginSchema.parse({ phone: phoneIn, pin: pinIn });
 
-        const supabase = await createServerClient()
+        // Use Admin client for initial lookup (bypass RLS to find associated email)
+        const admin = createAdminClient()
 
-        // 1. Normalizzazione "Smart"
+        // 1. Smart Normalization: keep only digits
         const cleanInput = phone.replace(/\D/g, '')
-        const phoneToSearch = cleanInput.startsWith('39') ? cleanInput : `39${cleanInput}`
+        // We look for the last 10 digits to be flexible with country codes (+39, 0039, etc.)
+        const lastDigits = cleanInput.slice(-10)
 
-        console.log(`[loginTechnician] Smart Match attempt clean=${cleanInput} search=${phoneToSearch}`)
+        console.log(`[loginTechnician] Smart Match attempt clean=${cleanInput} search digits=${lastDigits}`)
 
-        // 2. Lookup su public.profiles
-        const { data: profile, error: profileError } = await supabase
+        // 2. Lookup on public.profiles using admin client
+        const { data: profile, error: profileError } = await admin
             .from('profiles')
             .select('email, role')
             .eq('role', 'technician')
-            .ilike('phone', `%${phoneToSearch}`)
+            .ilike('phone', `%${lastDigits}`)
             .single()
 
         if (profileError || !profile || !profile.email) {
-            console.error(`[loginTechnician] Profile not found for search ${phoneToSearch}:`, profileError)
-            return { success: false, message: 'Numero non registrato.' }
+            console.error(`[loginTechnician] Profile not found for search %${lastDigits}:`, profileError)
+            return { success: false, message: 'Numero non registrato o non autorizzato come tecnico.' }
         }
 
-        // 3. Esegui Auth su Supabase
+        // 3. Perform Auth with server client to set session cookies
+        const supabase = await createServerClient()
         const { error: authError } = await supabase.auth.signInWithPassword({
             email: profile.email,
             password: `${pin}ntf`
