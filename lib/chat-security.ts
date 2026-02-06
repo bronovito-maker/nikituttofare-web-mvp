@@ -1,4 +1,4 @@
-import { createHmac, randomBytes } from 'crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
 
 // Secret key for signing tokens. 
 // In production, this should be a long random string in .env (e.g. N8N_SIGNING_SECRET).
@@ -50,8 +50,15 @@ export function verifyChatToken(token: string | null | undefined): boolean {
     const payloadStr = Buffer.from(b64Payload, 'base64').toString('utf-8');
     const expectedSignature = createHmac('sha256', SIGNING_KEY).update(payloadStr).digest('hex');
 
-    // 2. Timing Safe Compare
-    if (signature !== expectedSignature) return false;
+    // 2. Timing Safe Compare - protects against timing attacks
+    // Convert both strings to buffers for constant-time comparison
+    const signatureBuffer = Buffer.from(signature, 'utf-8');
+    const expectedSignatureBuffer = Buffer.from(expectedSignature, 'utf-8');
+
+    // timingSafeEqual requires buffers of equal length
+    if (signatureBuffer.length !== expectedSignatureBuffer.length) return false;
+
+    if (!timingSafeEqual(signatureBuffer, expectedSignatureBuffer)) return false;
 
     // 3. Parse and Check Expiration
     try {

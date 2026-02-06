@@ -23,7 +23,18 @@ export function AddTechnicianDialog() {
             if (result.error) {
                 toast.error(result.error)
             } else {
-                toast.success('Tecnico registrato con successo')
+                // Show generated credentials to admin
+                toast.success(
+                    <div className="flex flex-col gap-2">
+                        <p className="font-semibold">Tecnico registrato con successo!</p>
+                        <div className="text-sm space-y-1">
+                            <p><strong>Email:</strong> {result.email}</p>
+                            <p><strong>Password:</strong> <code className="bg-gray-800 px-2 py-1 rounded">{result.password}</code></p>
+                            <p className="text-yellow-300 text-xs mt-2">⚠️ Salva queste credenziali! Non saranno più visibili.</p>
+                        </div>
+                    </div>,
+                    { duration: 15000 } // Show for 15 seconds
+                )
                 setOpen(false)
             }
         } catch (error) {

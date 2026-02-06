@@ -50,21 +50,41 @@ const createNewTicket = async (content: string, photo?: string): Promise<string 
   }
 };
 
-const saveMessage = async (ticketId: string, message: CustomMessage): Promise<void> => {
-  try {
-    await fetch('/api/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ticketId,
-        role: message.role,
-        content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content),
-        imageUrl: message.photo,
-      }),
-    });
-  } catch (error) {
-    console.error("Failed to save message:", error);
+const saveMessage = async (ticketId: string, message: CustomMessage, retries = 2): Promise<void> => {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ticketId,
+          role: message.role,
+          content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content),
+          imageUrl: message.photo,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Failed to save message' }));
+        throw new Error(errorData.error || 'Failed to save message');
+      }
+
+      return; // Success
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error saving message');
+      console.error(`Failed to save message (attempt ${attempt + 1}/${retries + 1}):`, error);
+
+      // Wait before retry (exponential backoff: 500ms, 1000ms)
+      if (attempt < retries) {
+        await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+      }
+    }
   }
+
+  // All retries failed, throw error
+  throw lastError || new Error('Failed to save message after retries');
 };
 
 const fetchAiResponse = async (messages: CustomMessage[], lockedSlots?: any): Promise<AIResponseType> => {
@@ -154,7 +174,12 @@ const processAndAppendAiResponse = async (
   appendMessage(assistantMessage);
 
   if (ticketId && aiResponse.type === 'text') {
-    await saveMessage(ticketId, assistantMessage);
+    try {
+      await saveMessage(ticketId, assistantMessage);
+    } catch (saveError) {
+      // Log but don't fail the whole conversation
+      console.error('Failed to persist AI response:', saveError);
+    }
   }
 
   onMessage?.(assistantMessage);
@@ -203,7 +228,14 @@ export const useChat = (options?: { onMessage?: (message: CustomMessage) => void
       }
 
       if (ticketId) {
-        await saveMessage(ticketId, userMessage);
+        try {
+          await saveMessage(ticketId, userMessage);
+        } catch (saveError) {
+          // Log but continue - user message is already displayed
+          console.error('Failed to persist user message:', saveError);
+          // Optionally notify user via onError callback
+          options?.onError?.('⚠️ Messaggio non salvato sul server, ma la conversazione continua.');
+        }
       }
 
       await processAndAppendAiResponse(updatedMessages, lockedSlots, ticketId, appendMessage, options?.onMessage);

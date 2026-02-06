@@ -29,4 +29,24 @@ Sentry.init({
             blockAllMedia: true,
         }),
     ],
+
+    // Filter out known Next.js bugs
+    beforeSend(event, hint) {
+        const error = hint.originalException;
+
+        // Ignore Next.js 16.x Turbopack InvariantError bug
+        // Bug: https://github.com/vercel/next.js/issues/xxxxx
+        // This is a known Next.js bug that doesn't affect functionality
+        if (error && typeof error === 'object' && 'message' in error) {
+            const message = String(error.message);
+            if (
+                message.includes('Expected a request ID to be defined') ||
+                message.includes('self.__next_r')
+            ) {
+                return null; // Don't send to Sentry
+            }
+        }
+
+        return event;
+    },
 });

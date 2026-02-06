@@ -4,6 +4,7 @@ import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { RegisterTechnicianSchema, TechnicianStatusSchema, DeleteTechnicianSchema } from '@/lib/schemas'
 import { ZodError } from 'zod'
+import { randomBytes } from 'crypto'
 
 const ADMIN_EMAIL = 'bronovito@gmail.com'
 
@@ -63,13 +64,15 @@ export async function registerTechnician(formData: FormData) {
     // 1. Create Auth User (Shadow Account)
     const emailPhone = formattedPhone.replaceAll(/\D/g, '') // Solo cifre per email
     const email = `tecnico-${emailPhone}@nikituttofare.it`
-    const password = `${pin}ntf` // Deterministic password based on PIN
+
+    // Generate cryptographically secure random password (16 chars alphanumeric)
+    const password = randomBytes(12).toString('base64').slice(0, 16).replace(/[+/=]/g, '')
 
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      user_metadata: { full_name: fullName, phone: formattedPhone, pin: pin } // Adding PIN to metadata for admin reference
+      user_metadata: { full_name: fullName, phone: formattedPhone } // PIN removed for security
     })
 
     if (authError) {
@@ -102,7 +105,8 @@ export async function registerTechnician(formData: FormData) {
     }
 
     revalidatePath('/admin/technicians')
-    return { success: true }
+    // Return generated password so admin can communicate it to technician
+    return { success: true, password, email }
   } catch (error) {
     if (error instanceof ZodError) return { error: error.errors[0].message }
     console.error(error)

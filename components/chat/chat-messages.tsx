@@ -1,7 +1,8 @@
 'use client';
 
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, memo, useMemo } from 'react';
 import { Bot, User } from 'lucide-react';
+import Image from 'next/image';
 import { AIResponseType } from '@/lib/ai-structures';
 
 // Helper function to safely stringify content
@@ -23,8 +24,8 @@ interface ChatMessageData {
   photo?: string;
 }
 
-// Message Bubble Component
-function MessageBubble({ message }: Readonly<{ message: ChatMessageData }>) {
+// Message Bubble Component - Memoized to prevent unnecessary re-renders
+const MessageBubble = memo(function MessageBubble({ message }: Readonly<{ message: ChatMessageData }>) {
   const isUser = message.role === 'user';
 
   return (
@@ -53,12 +54,16 @@ function MessageBubble({ message }: Readonly<{ message: ChatMessageData }>) {
 
           {/* Photo Attachment */}
           {message.photo && (
-            <div className="mt-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+            <div className="mt-3 relative w-full max-w-sm">
+              <Image
                 src={message.photo}
                 alt="User uploaded content"
+                width={400}
+                height={300}
+                className="rounded-lg object-cover w-full h-auto"
                 loading="lazy"
+                quality={75}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 400px"
               />
             </div>
           )}
@@ -80,7 +85,12 @@ function MessageBubble({ message }: Readonly<{ message: ChatMessageData }>) {
       )}
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if message content actually changed
+  return prevProps.message.id === nextProps.message.id &&
+         prevProps.message.content === nextProps.message.content &&
+         prevProps.message.photo === nextProps.message.photo;
+});
 
 // AI Response Renderer
 function AIResponseRenderer({ content }: Readonly<{ content: AIResponseType }>) {
@@ -174,7 +184,11 @@ export function ChatMessages({ messages, isLoading }: Readonly<ChatMessagesProps
   }, [messages]);
 
   // Virtual scrolling for performance with many messages
-  const visibleMessages = messages.slice(-50);
+  // Memoize to avoid unnecessary recalculations
+  const visibleMessages = useMemo(() => {
+    // Show last 50 messages for optimal mobile performance
+    return messages.slice(-50);
+  }, [messages]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();

@@ -2,8 +2,13 @@
 
 import { useState, useRef, useEffect, useCallback, ComponentPropsWithoutRef, Suspense } from 'react';
 import Link from 'next/link';
-import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown
-import remarkBreaks from 'remark-breaks';
+import dynamic from 'next/dynamic';
+
+// Dynamic import ReactMarkdown to reduce initial bundle size
+const ReactMarkdown = dynamic(() => import('react-markdown'), {
+  loading: () => <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-full rounded"></div>,
+  ssr: false,
+});
 import {
   Send,
   ArrowLeft,
@@ -475,9 +480,11 @@ function MessageBubble({ message, isLast }: { readonly message: any; readonly is
 
         {textContent && (
           <div className={`text-sm sm:text-base leading-relaxed break-words markdown-content ${isUser ? 'text-white' : 'text-foreground'}`}>
-            <ReactMarkdown remarkPlugins={[remarkBreaks]} components={MARKDOWN_COMPONENTS}>
-              {textContent}
-            </ReactMarkdown>
+            <Suspense fallback={<div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-full rounded"></div>}>
+              <ReactMarkdown components={MARKDOWN_COMPONENTS}>
+                {textContent}
+              </ReactMarkdown>
+            </Suspense>
           </div>
         )}
       </div>

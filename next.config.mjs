@@ -13,6 +13,13 @@ const nextConfig = {
   outputFileTracingRoot: path.join(__dirname),
   output: "standalone", // <--- AGGIUNGI QUESTA RIGA (Fix 404 Vercel)
 
+  // Workaround per InvariantError di Turbopack in Next.js 16.1.6
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+  },
+
   // Gestisci errori di caricamento .env
   onDemandEntries: {
     // period (in ms) where the server will keep pages in the buffer

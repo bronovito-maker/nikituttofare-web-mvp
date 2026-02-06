@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
     // =========================================================================
     const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com;
+    script-src 'self' https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms;
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: https://mqgkominidcysyakcbio.supabase.co https://*.openstreetmap.org;
     font-src 'self' data:;

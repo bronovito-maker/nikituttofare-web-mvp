@@ -9,7 +9,7 @@ export const TechnicianLoginSchema = z.object({
         .min(5, "Il numero di telefono è troppo corto")
         .regex(/^\+?[0-9\s]+$/, "Il numero contiene caratteri non validi (ammessi solo cifre e +)"),
     pin: z.string()
-        .length(5, "Il PIN deve essere esattamente di 5 cifre")
+        .length(6, "Il PIN deve essere esattamente di 6 cifre")
         .regex(/^\d+$/, "Il PIN deve contenere solo numeri")
 });
 
@@ -33,7 +33,7 @@ export const RegisterTechnicianSchema = z.object({
         .min(5, "Il numero di telefono è troppo corto")
         .regex(/^\+?[0-9\s]+$/, "Il numero contiene caratteri non validi (ammessi solo cifre e +)"),
     pin: z.string()
-        .length(5, "Il PIN deve essere esattamente di 5 cifre")
+        .length(6, "Il PIN deve essere esattamente di 6 cifre")
         .regex(/^\d+$/, "Il PIN deve contenere solo numeri")
 });
 

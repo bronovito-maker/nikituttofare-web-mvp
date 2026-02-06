@@ -30,5 +30,5 @@ export default async function DashboardPage() {
     .eq('id', user.id)
     .single();
 
-  return <CustomerDashboard initialTickets={tickets || []} userProfile={profile} />;
+  return <CustomerDashboard initialTickets={tickets || []} userProfile={profile ?? undefined} />;
 }

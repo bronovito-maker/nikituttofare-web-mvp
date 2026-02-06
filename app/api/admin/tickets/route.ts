@@ -12,6 +12,20 @@ type TicketFilters = {
   search?: string;
 };
 
+// Sanitize search string to prevent SQL injection and DoS attacks
+function sanitizeSearchInput(input: string | undefined): string | undefined {
+  if (!input) return undefined;
+
+  // Limit length to prevent DoS
+  const truncated = input.slice(0, 100);
+
+  // Escape special SQL LIKE characters: %, _, \
+  // This prevents wildcard injection
+  const escaped = truncated.replace(/[%_\\]/g, '\\$&');
+
+  return escaped;
+}
+
 // Zod schema for validating PATCH request body
 const patchTicketSchema = z.object({
   ticketId: z.string().uuid(),
@@ -33,7 +47,7 @@ export async function GET(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    if (profileError || profile?.role !== 'admin') {
+    if (profileError || !profile || profile.role !== 'admin') {
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 });
     }
 
@@ -44,7 +58,7 @@ export async function GET(request: NextRequest) {
       status: searchParams.get('status') || undefined,
       category: searchParams.get('category') || undefined,
       priority: searchParams.get('priority') || undefined,
-      search: searchParams.get('search') || undefined,
+      search: sanitizeSearchInput(searchParams.get('search') || undefined),
     };
 
     let query = adminClient
@@ -108,7 +122,7 @@ export async function PATCH(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    if (profileError || profile?.role !== 'admin') {
+    if (profileError || !profile || profile.role !== 'admin') {
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 });
     }
 

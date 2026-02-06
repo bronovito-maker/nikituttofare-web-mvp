@@ -7,10 +7,14 @@ import { DigitalPassportPreview } from '@/components/dashboard/digital-passport-
 import { HeroTile } from '@/components/dashboard/hero-tile';
 import { ActionTile } from '@/components/dashboard/action-tile';
 import { LoyaltyTile } from '@/components/dashboard/loyalty-tile';
+import type { Database } from '@/lib/database.types';
+
+type Ticket = Database['public']['Tables']['tickets']['Row'];
+type Profile = Database['public']['Tables']['profiles']['Row'];
 
 interface CustomerDashboardProps {
-    readonly initialTickets: any[]; // Using loose type for speed without blocking on complex DB types
-    readonly userProfile?: any;
+    readonly initialTickets: Ticket[];
+    readonly userProfile?: Profile;
 }
 
 export function CustomerDashboard({ initialTickets, userProfile }: CustomerDashboardProps) {
