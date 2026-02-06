@@ -25,8 +25,101 @@ const nextConfig = {
       bodySizeLimit: '2mb',
     },
     optimizeCss: true,
-    optimizePackageImports: ['lucide-react', 'framer-motion', 'date-fns', 'recharts'],
+    optimizePackageImports: ['lucide-react', 'framer-motion', 'date-fns', 'recharts', '@radix-ui/react-icons'],
   },
+
+  // Performance: Enable SWC minification (faster than Terser)
+  swcMinify: true,
+
+  // Compiler optimizations
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+
+  // Webpack optimizations for production
+  webpack: (config, { isServer, webpack }) => {
+    // Production optimizations
+    if (!isServer && config.mode === 'production') {
+      // Split vendor chunks more aggressively
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            // Separate React/Next.js framework
+            framework: {
+              name: 'framework',
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
+              priority: 40,
+              enforce: true,
+            },
+            // Separate large UI libraries
+            lib: {
+              test: /[\\/]node_modules[\\/](@radix-ui|framer-motion|sonner)[\\/]/,
+              name: 'lib',
+              priority: 30,
+              reuseExistingChunk: true,
+            },
+            // Supabase + Auth
+            supabase: {
+              test: /[\\/]node_modules[\\/](@supabase|@auth)[\\/]/,
+              name: 'supabase',
+              priority: 25,
+              reuseExistingChunk: true,
+            },
+            // Icons (lucide-react is heavy)
+            icons: {
+              test: /[\\/]node_modules[\\/](lucide-react)[\\/]/,
+              name: 'icons',
+              priority: 20,
+              reuseExistingChunk: true,
+            },
+            // Commons (shared across 2+ pages)
+            commons: {
+              name: 'commons',
+              minChunks: 2,
+              priority: 10,
+              reuseExistingChunk: true,
+            },
+          },
+          maxInitialRequests: 25,
+          minSize: 20000,
+        },
+      };
+
+      // Terser minification with aggressive settings
+      config.optimization.minimize = true;
+      config.optimization.minimizer = config.optimization.minimizer.map(plugin => {
+        if (plugin.constructor.name === 'TerserPlugin') {
+          plugin.options.terserOptions = {
+            ...plugin.options.terserOptions,
+            compress: {
+              ...plugin.options.terserOptions?.compress,
+              drop_console: true,
+              drop_debugger: true,
+              pure_funcs: ['console.log', 'console.info'],
+              passes: 2,
+            },
+            mangle: {
+              safari10: true,
+            },
+          };
+        }
+        return plugin;
+      });
+    }
+
+    return config;
+  },
+
+  // Note: modularizeImports for lucide-react conflicts with optimizePackageImports
+  // optimizePackageImports already handles lucide-react tree-shaking
+
   productionBrowserSourceMaps: false, // Prevents "Unexpected token N" in browser console
 
   // Gestisci errori di caricamento .env

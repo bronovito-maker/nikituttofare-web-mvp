@@ -20,7 +20,6 @@ export function SiteFooter() {
                     <p className="text-xs">
                         Attivi su: Rimini • Riccione • Cattolica • Misano • Bellaria • Santarcangelo • San Marino
                     </p>
-                    <p className="text-xs opacity-50">P.IVA 1234567890</p>
                 </div>
             </div>
         </footer>

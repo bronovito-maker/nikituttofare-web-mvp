@@ -2,11 +2,19 @@ import dynamic from 'next/dynamic';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { StickyActionNav } from '@/components/landing/sticky-action-nav';
-import { UrgencyStats } from '@/components/landing/urgency-stats';
 import { UserTypeProvider } from '@/components/landing/user-type-context';
 import { HeroContent } from '@/components/landing/hero-content';
-import { UserSpecificSections } from '@/components/landing/user-specific-sections';
-import { CommonFeatures } from '@/components/landing/common-features';
+
+// Lazy load below-the-fold sections
+const UrgencyStats = dynamic(() => import('@/components/landing/urgency-stats').then(mod => ({ default: mod.UrgencyStats })), {
+  loading: () => <div className="min-h-[200px]" />
+});
+const UserSpecificSections = dynamic(() => import('@/components/landing/user-specific-sections').then(mod => ({ default: mod.UserSpecificSections })), {
+  loading: () => <div className="min-h-[400px]" />
+});
+const CommonFeatures = dynamic(() => import('@/components/landing/common-features').then(mod => ({ default: mod.CommonFeatures })), {
+  loading: () => <div className="min-h-[600px]" />
+});
 
 // Dynamic imports for below-the-fold components (non-critical)
 // Loading fallbacks prevent CLS during hydration

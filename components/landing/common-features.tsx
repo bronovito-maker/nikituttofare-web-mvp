@@ -72,10 +72,10 @@ function PremiumFeatureCard({
 }) {
   return (
     <div className="group relative p-8 bg-card rounded-2xl border border-border transition-all duration-500 hover:shadow-2xl hover:shadow-slate-300/20 dark:hover:shadow-slate-900/30 hover:border-slate-300 dark:hover:border-slate-600 hover:-translate-y-2">
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10" />
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-transparent dark:from-slate-800/30 dark:to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10" />
 
       <div className="mb-6 inline-flex">
-        <span className="text-5xl font-black text-muted/50 group-hover:text-muted transition-colors">
+        <span className="text-5xl font-black text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-400 transition-colors">
           {number}
         </span>
       </div>
@@ -87,14 +87,14 @@ function PremiumFeatureCard({
       <h3 className="text-2xl font-bold text-card-foreground mb-3 group-hover:text-primary transition-colors leading-tight">
         {title}
       </h3>
-      <p className="text-muted-foreground leading-relaxed mb-6 group-hover:text-foreground transition-colors">
+      <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-6 group-hover:text-foreground transition-colors">
         {desc}
       </p>
 
       <div className="space-y-2 pt-6 border-t border-border group-hover:border-accent transition-colors">
         {features.map((feature) => (
-          <div key={feature} className="flex items-center gap-2 text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground group-hover:bg-accent transition-colors flex-shrink-0" />
+          <div key={feature} className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 group-hover:text-foreground transition-colors">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500 group-hover:bg-primary transition-colors flex-shrink-0" />
             {feature}
           </div>
         ))}

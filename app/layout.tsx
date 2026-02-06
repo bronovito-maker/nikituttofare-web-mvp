@@ -40,6 +40,7 @@ export const viewport: Viewport = {
 
 import { MicrosoftClarity } from "@/components/analytics/microsoft-clarity";
 import { VercelAnalyticsLazy } from "@/components/analytics/vercel-analytics-lazy";
+import { MetaPixel } from "@/components/analytics/meta-pixel";
 
 export default function RootLayout({
   children,
@@ -57,14 +58,17 @@ export default function RootLayout({
         <link rel="preconnect" href="https://mqgkominidcysyakcbio.supabase.co" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://o4510796370214912.ingest.de.sentry.io" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://www.clarity.ms" />
+        <link rel="preconnect" href="https://connect.facebook.net" />
 
         {/* Fallback DNS Prefetch */}
         <link rel="dns-prefetch" href="https://mqgkominidcysyakcbio.supabase.co" />
         <link rel="dns-prefetch" href="https://o4510796370214912.ingest.de.sentry.io" />
+        <link rel="dns-prefetch" href="https://connect.facebook.net" />
 
         {/*
-          GDPR TODO: Wrap future tracking scripts with CookieConsentProvider condition.
-          ...
+          GDPR Compliance: Analytics scripts (Clarity, Meta Pixel, Vercel Analytics)
+          are loaded conditionally based on CookieConsentProvider preferences.
+          See components/providers/cookie-consent-provider.tsx
         */}
       </head>
       <body className={`${dmSans.className} antialiased`} suppressHydrationWarning>
@@ -82,6 +86,7 @@ export default function RootLayout({
               <Toaster />
               <VercelAnalyticsLazy />
               <MicrosoftClarity />
+              <MetaPixel />
             </AnimationProvider>
           </CookieConsentProvider>
         </ThemeProvider>

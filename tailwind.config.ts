@@ -10,6 +10,14 @@ const config = {
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
   ],
+  // Safelist for dynamic classes (prevents purging)
+  safelist: [
+    // Gradient colors for feature cards
+    'from-blue-600', 'to-blue-500',
+    'from-purple-600', 'to-purple-500',
+    'from-green-600', 'to-green-500',
+    'from-orange-600', 'to-orange-500',
+  ],
   prefix: "",
   theme: {
   	container: {
