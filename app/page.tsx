@@ -89,7 +89,7 @@ export default function Home() {
                   />
                 </div>
 
-                <ClientAnimationWrapper delay={0.4} duration={0.8}>
+                <ClientAnimationWrapper delay={0.4} duration={0.8} className="max-md:!opacity-100 max-md:!translate-y-0">
                   <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0 leading-relaxed font-light">
                     {userType === 'residential' ? (
                       <>
@@ -106,7 +106,7 @@ export default function Home() {
                   </p>
                 </ClientAnimationWrapper>
 
-                <ClientAnimationWrapper delay={0.6} duration={0.8}>
+                <ClientAnimationWrapper delay={0.6} duration={0.8} className="max-md:!opacity-100 max-md:!translate-y-0">
                   <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
                     <Button asChild className={`h-14 px-8 text-lg rounded-full font-bold shadow-xl transition-all hover:scale-105 ${userType === 'residential'
                       ? 'bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white shadow-orange-500/20'

@@ -1,18 +1,19 @@
-'use client';
-
 import { motion } from 'framer-motion';
 import { ReactNode, useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 
 interface ClientAnimationWrapperProps {
   readonly children: ReactNode;
   readonly delay?: number;
   duration?: number;
+  readonly className?: string;
 }
 
 export function ClientAnimationWrapper({
   children,
   delay = 0,
   duration = 0.7,
+  className,
 }: ClientAnimationWrapperProps) {
   const [isMounted, setIsMounted] = useState(false);
 
@@ -22,7 +23,7 @@ export function ClientAnimationWrapper({
 
   // Fallback for SSR - show content immediately without animation
   if (!isMounted) {
-    return <div>{children}</div>;
+    return <div className={className}>{children}</div>;
   }
 
   return (
@@ -30,6 +31,7 @@ export function ClientAnimationWrapper({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration, delay, ease: 'easeOut' }}
+      className={className}
     >
       {children}
     </motion.div>
