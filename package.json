@@ -13,7 +13,7 @@
     "audit": "eslint . && tsc --noEmit && npm audit && echo 'Generating Sonar Report...'",
     "postbuild": "next-sitemap",
     "test": "vitest",
-    "test:ai": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/test-ai-responses.ts",
+    "test:ai": "npx ts-node --compiler-options '{\"module\":\"ESNext\"}' scripts/test-ai-responses.ts",
     "test:ai:emergency": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/test-ai-responses.ts --urgency=emergency",
     "test:ai:category": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/test-ai-responses.ts --category",
     "check-deps": "node scripts/check-deps.js",

@@ -100,7 +100,7 @@ export function ProfileForm({ initialData }: Readonly<ProfileFormProps>) {
                 >
                     <Link href="/auth/signout">
                         <LogOut className="w-4 h-4 mr-2" />
-                        Esci dall'account
+                        Esci dall&apos;account
                     </Link>
                 </Button>
             </div>

@@ -181,7 +181,7 @@ export default function ProfilePage() {
                     >
                         <Link href="/auth/signout">
                             <LogOut className="w-5 h-5 mr-2" />
-                            Esci dall'account
+                            Esci dall&apos;account
                         </Link>
                     </Button>
                 </div>

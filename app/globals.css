@@ -186,11 +186,22 @@
     @apply text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-orange-500;
   }
 
-  /* Surgical LCP Optimization: CSS-only entry animation */
-  .animate-lcp-entry {
-    animation: lcp-entry 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards;
-    will-change: transform, opacity;
-    /* Removed filter from will-change to save memory */
+  /* Surgical LCP Optimization: NO animation on mobile, instant paint */
+  @media (min-width: 768px) {
+    .animate-lcp-entry {
+      animation: lcp-entry 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+      will-change: transform, opacity;
+    }
+  }
+
+  /* Mobile: Instant visibility (CRITICAL for LCP) */
+  @media (max-width: 767px) {
+    .animate-lcp-entry {
+      opacity: 1 !important;
+      transform: none !important;
+      filter: none !important;
+      animation: none !important;
+    }
   }
 
   @keyframes lcp-entry {

@@ -1,8 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
 
 interface BlurTextProps {
   text: string;
@@ -15,23 +13,22 @@ export function BlurText({
   text,
   className,
   delay = 0,
-  duration = 1,
 }: BlurTextProps) {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  // SSR & Initial Hydration: Use CSS animation to ensure the browser
-  // discovers and paints the element immediately without waiting for Framer Motion JS.
+  // SSR-safe: Pure CSS animation, no JS delay on mobile
   return (
     <h1
       className={cn(
-        "drop-shadow-sm opacity-0 animate-lcp-entry",
+        "drop-shadow-sm",
+        // Desktop: animated entry
+        "md:opacity-0 md:animate-lcp-entry",
+        // Mobile: instant visibility (LCP optimization)
+        "max-md:!opacity-100",
         className
       )}
-      style={{ animationDelay: `${delay}s` }}
+      style={{
+        // Only apply delay on desktop
+        animationDelay: delay > 0 ? `${delay}s` : undefined
+      }}
     >
       {text}
     </h1>

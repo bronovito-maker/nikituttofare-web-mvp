@@ -7,7 +7,7 @@ export function PriceComparison() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 xs:gap-8 max-w-4xl mx-auto">
 
             {/* Old Way Side */}
-            <div className="relative p-6 xs:p-8 rounded-3xl bg-card border border-border/50 opacity-80 scale-95 md:scale-100 filter grayscale md:grayscale-0 hover:grayscale-0 transition-all duration-500">
+            <div className="relative p-6 xs:p-8 rounded-3xl bg-card/90 border border-border shadow-sm scale-95 md:scale-100 filter grayscale md:grayscale-0 hover:grayscale-0 transition-all duration-500">
                 <div className="absolute top-4 left-4 text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Il solito &quot;pezzo di carta&quot;
                 </div>
