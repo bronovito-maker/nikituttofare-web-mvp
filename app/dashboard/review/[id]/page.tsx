@@ -20,13 +20,12 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
   const { id } = await params;
 
   // Fetch ticket
-  // Note: Type cast needed until Supabase types are regenerated
   const { data: ticket, error } = await supabase
     .from('tickets')
     .select('*')
     .eq('id', id)
     .eq('user_id', user.id)
-    .single() as any;
+    .single();
 
   // Redirect if ticket not found or not owned by user
   if (error || !ticket) {

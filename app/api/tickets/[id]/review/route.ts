@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
 import { z } from 'zod';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 const ReviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
@@ -19,6 +20,31 @@ export async function POST(
       return NextResponse.json(
         { error: 'Non autorizzato' },
         { status: 401 }
+      );
+    }
+
+    // Rate limiting: Max 5 reviews per hour per user (anti-spam)
+    const rateLimitResult = checkRateLimit(`review:${user.id}`, RATE_LIMITS.reviews);
+
+    if (!rateLimitResult.success) {
+      const resetInMinutes = Math.ceil(
+        (rateLimitResult.resetTime - Date.now()) / 1000 / 60
+      );
+      return NextResponse.json(
+        {
+          error: 'Troppe recensioni in poco tempo',
+          details: `Riprova tra ${resetInMinutes} minut${resetInMinutes === 1 ? 'o' : 'i'}`,
+          resetTime: rateLimitResult.resetTime,
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)),
+            'X-RateLimit-Limit': '5',
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': String(rateLimitResult.resetTime),
+          },
+        }
       );
     }
 
@@ -42,12 +68,11 @@ export async function POST(
     const { rating, review } = validation.data;
 
     // Fetch ticket and verify ownership + status
-    // Note: Type cast needed until Supabase types are regenerated with new columns
     const { data: ticket, error: fetchError } = await supabase
       .from('tickets')
       .select('id, user_id, status, rating')
       .eq('id', id)
-      .single() as any;
+      .single();
 
     if (fetchError || !ticket) {
       return NextResponse.json(
@@ -87,14 +112,13 @@ export async function POST(
     }
 
     // Save review
-    // Note: Type cast needed until Supabase types are regenerated
     const { error: updateError } = await supabase
       .from('tickets')
       .update({
         rating,
         review_text: review || null,
         review_created_at: new Date().toISOString(),
-      } as any)
+      })
       .eq('id', id);
 
     if (updateError) {
@@ -102,16 +126,25 @@ export async function POST(
       throw new Error('Errore durante il salvataggio della recensione');
     }
 
-    // Success response
-    return NextResponse.json({
-      success: true,
-      message: 'Recensione salvata con successo',
-      data: {
-        ticketId: id,
-        rating,
-        hasReview: !!review,
+    // Success response with rate limit headers
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Recensione salvata con successo',
+        data: {
+          ticketId: id,
+          rating,
+          hasReview: !!review,
+        },
       },
-    });
+      {
+        headers: {
+          'X-RateLimit-Limit': '5',
+          'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+          'X-RateLimit-Reset': String(rateLimitResult.resetTime),
+        },
+      }
+    );
   } catch (error) {
     console.error('Review API error:', error);
     return NextResponse.json(
@@ -143,13 +176,12 @@ export async function GET(
     // Unwrap params (Next.js 15+)
     const { id } = await params;
 
-    // Note: Type cast needed until Supabase types are regenerated
     const { data: ticket, error } = await supabase
       .from('tickets')
       .select('id, rating, review_text, review_created_at')
       .eq('id', id)
       .eq('user_id', user.id)
-      .single() as any;
+      .single();
 
     if (error || !ticket) {
       return NextResponse.json(

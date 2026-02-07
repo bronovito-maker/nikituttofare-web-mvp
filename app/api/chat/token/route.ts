@@ -7,8 +7,8 @@ export async function POST(req: NextRequest) {
     // 1. Rate Limiting specific for token generation to prevent abuse
     const clientId = getClientIdentifier(req);
     const rateLimitResult = checkRateLimit(`token:${clientId}`, {
-        windowSeconds: 60, // 1 minute
-        limit: 10 // Max 10 tokens per minute per IP
+        windowMs: 60 * 1000, // 1 minute
+        maxRequests: 10 // Max 10 tokens per minute per IP
     });
 
     if (!rateLimitResult.success) {

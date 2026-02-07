@@ -32,16 +32,15 @@ export default async function ConversationsPage() {
   }
 
   // Get last message for each ticket separately (Supabase limitation)
-  // Note: Type cast needed until Supabase types are regenerated
   const ticketsWithLastMessage = await Promise.all(
     (tickets || []).map(async (ticket) => {
       const { data: lastMsg } = await supabase
         .from('messages')
-        .select('content, created_at, sender_role')
+        .select('content, created_at, role')
         .eq('ticket_id', ticket.id)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single() as any;
+        .single();
 
       return {
         ...ticket,
@@ -49,7 +48,7 @@ export default async function ConversationsPage() {
         messageCount: ticket.messages?.[0]?.count || 0,
       };
     })
-  ) as any;
+  );
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24 md:pb-8">

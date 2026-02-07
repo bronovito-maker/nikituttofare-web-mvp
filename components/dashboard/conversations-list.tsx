@@ -13,13 +13,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import type { Database } from '@/lib/database.types';
 
-// Note: Extended with new rating fields (will be in DB after migration)
 type Ticket = Database['public']['Tables']['tickets']['Row'] & {
   lastMessage?: {
     content: string;
     created_at: string;
-    sender_role: string;
-  };
+    role: string;
+  } | null;
   messageCount: number;
   rating?: number | null;
   review_text?: string | null;
@@ -287,7 +286,7 @@ function ConversationCard({
             <div className="pt-3 border-t border-border">
               <p className="text-xs text-muted-foreground line-clamp-2">
                 <span className="font-medium">
-                  {ticket.lastMessage.sender_role === 'user' ? 'Tu' : 'Niki'}:
+                  {ticket.lastMessage.role === 'user' ? 'Tu' : 'Niki'}:
                 </span>{' '}
                 {ticket.lastMessage.content}
               </p>

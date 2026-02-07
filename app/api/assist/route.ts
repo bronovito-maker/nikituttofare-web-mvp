@@ -635,6 +635,12 @@ export async function POST(request: NextRequest) {
   try {
     const checks = await preliminaryChecks(request)
     if (checks.error) return checks.error
+
+    // TypeScript type narrowing - checks.data is guaranteed to exist here
+    if (!checks.data) {
+      return NextResponse.json({ error: 'Invalid state' }, { status: 500 })
+    }
+
     const {
       messages,
       existingTicketId,

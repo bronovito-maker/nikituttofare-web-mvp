@@ -1,168 +1,185 @@
 /**
- * Rate Limiting per API
- * 
- * Protezione base contro abusi. In produzione, considera Upstash Redis
- * per rate limiting distribuito su edge functions.
+ * Simple in-memory rate limiter for API endpoints
+ * For production with multiple servers, consider Redis-based solution
  */
 
-interface RateLimitEntry {
+interface RateLimitStore {
   count: number;
   resetTime: number;
 }
 
-// In-memory store (funziona per single-instance, non per edge/serverless distribuito)
-const rateLimitStore = new Map<string, RateLimitEntry>();
+const rateLimitMap = new Map<string, RateLimitStore>();
 
-// Cleanup automatico ogni 5 minuti
-if (typeof setInterval !== 'undefined') {
-  setInterval(() => {
-    const now = Date.now();
-    for (const [key, entry] of rateLimitStore.entries()) {
-      if (now > entry.resetTime) {
-        rateLimitStore.delete(key);
-      }
-    }
-  }, 5 * 60 * 1000);
+interface RateLimitConfig {
+  /**
+   * Maximum number of requests allowed in the time window
+   */
+  maxRequests: number;
+  /**
+   * Time window in milliseconds
+   */
+  windowMs: number;
 }
 
-export interface RateLimitConfig {
-  /** Numero massimo di richieste nel periodo */
-  limit: number;
-  /** Periodo in secondi */
-  windowSeconds: number;
-}
-
-export interface RateLimitResult {
+interface RateLimitResult {
   success: boolean;
   remaining: number;
-  resetIn: number;
-  limit: number;
+  resetTime: number;
+  error?: string;
 }
 
 /**
- * Verifica e aggiorna il rate limit per un identificatore
+ * Check if a request is within rate limit
+ * @param key - Unique identifier for the rate limit (e.g., "review:user_id")
+ * @param config - Rate limit configuration
+ * @returns Rate limit result with success status and remaining requests
  */
 export function checkRateLimit(
-  identifier: string,
+  key: string,
   config: RateLimitConfig
 ): RateLimitResult {
   const now = Date.now();
-  const windowMs = config.windowSeconds * 1000;
-  const key = identifier;
+  const stored = rateLimitMap.get(key);
 
-  let entry = rateLimitStore.get(key);
-
-  // Se non esiste o è scaduto, crea nuovo entry
-  if (!entry || now > entry.resetTime) {
-    entry = {
+  // If no stored data or window expired, create new entry
+  if (!stored || now > stored.resetTime) {
+    const resetTime = now + config.windowMs;
+    rateLimitMap.set(key, {
       count: 1,
-      resetTime: now + windowMs,
-    };
-    rateLimitStore.set(key, entry);
+      resetTime,
+    });
 
     return {
       success: true,
-      remaining: config.limit - 1,
-      resetIn: config.windowSeconds,
-      limit: config.limit,
+      remaining: config.maxRequests - 1,
+      resetTime,
     };
   }
 
-  // Incrementa il contatore
-  entry.count++;
-
-  // Verifica se ha superato il limite
-  if (entry.count > config.limit) {
+  // Check if limit exceeded
+  if (stored.count >= config.maxRequests) {
     return {
       success: false,
       remaining: 0,
-      resetIn: Math.ceil((entry.resetTime - now) / 1000),
-      limit: config.limit,
+      resetTime: stored.resetTime,
+      error: 'Rate limit exceeded',
     };
   }
 
+  // Increment count
+  stored.count += 1;
+  rateLimitMap.set(key, stored);
+
   return {
     success: true,
-    remaining: config.limit - entry.count,
-    resetIn: Math.ceil((entry.resetTime - now) / 1000),
-    limit: config.limit,
+    remaining: config.maxRequests - stored.count,
+    resetTime: stored.resetTime,
   };
 }
 
 /**
- * Ottiene un identificatore univoco dalla request
- * Usa IP + User-Agent come fallback per utenti non autenticati
+ * Clear rate limit for a specific key (useful for testing)
  */
-export function getClientIdentifier(request: Request, userId?: string): string {
-  if (userId) {
-    return `user:${userId}`;
-  }
-
-  // Estrai IP da headers (Vercel, Cloudflare, etc.)
-  const forwardedFor = request.headers.get('x-forwarded-for');
-  const realIp = request.headers.get('x-real-ip');
-  const cfIp = request.headers.get('cf-connecting-ip');
-  
-  const ip = cfIp || realIp || forwardedFor?.split(',')[0]?.trim() || 'unknown';
-  const userAgent = request.headers.get('user-agent') || 'unknown';
-  
-  // Hash semplice per privacy
-  return `anon:${ip}:${userAgent.slice(0, 50)}`;
+export function clearRateLimit(key: string): void {
+  rateLimitMap.delete(key);
 }
 
 /**
- * Configurazioni predefinite per diversi endpoint
+ * Clean up expired entries (call periodically to prevent memory leaks)
  */
-export const RATE_LIMITS = {
-  // Chat AI - più restrittivo (costa soldi!)
-  assist: {
-    limit: 20,        // 20 richieste
-    windowSeconds: 60, // per minuto
-  } as RateLimitConfig,
+export function cleanupExpiredRateLimits(): void {
+  const now = Date.now();
+  for (const [key, stored] of rateLimitMap.entries()) {
+    if (now > stored.resetTime) {
+      rateLimitMap.delete(key);
+    }
+  }
+}
 
-  // Creazione ticket
-  tickets: {
-    limit: 10,        // 10 ticket
-    windowSeconds: 300, // per 5 minuti
-  } as RateLimitConfig,
-
-  // Upload immagini
-  upload: {
-    limit: 10,        // 10 upload
-    windowSeconds: 300, // per 5 minuti
-  } as RateLimitConfig,
-
-  // Auth (magic link)
-  auth: {
-    limit: 5,         // 5 tentativi
-    windowSeconds: 300, // per 5 minuti
-  } as RateLimitConfig,
-
-  // API generiche
-  default: {
-    limit: 100,       // 100 richieste
-    windowSeconds: 60, // per minuto
-  } as RateLimitConfig,
-} as const;
+// Auto-cleanup every 5 minutes
+if (typeof globalThis !== 'undefined' && typeof setInterval !== 'undefined') {
+  setInterval(cleanupExpiredRateLimits, 5 * 60 * 1000);
+}
 
 /**
- * Helper per creare response di rate limit exceeded
+ * Get client identifier from request (IP address or forwarded IP)
+ * @param request - Next.js request object
+ * @returns Client identifier string
  */
-export function rateLimitExceededResponse(result: RateLimitResult): Response {
-  return new Response(
-    JSON.stringify({
-      error: 'Troppe richieste. Riprova tra poco.',
-      retryAfter: result.resetIn,
-    }),
+export function getClientIdentifier(request: { headers: Headers; ip?: string }): string {
+  // Try to get real IP from headers (for proxies/load balancers)
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+
+  const realIp = request.headers.get('x-real-ip');
+  if (realIp) {
+    return realIp;
+  }
+
+  // Fallback to request IP or unknown
+  return request.ip || 'unknown';
+}
+
+/**
+ * Create standardized rate limit exceeded response
+ * @param result - Rate limit check result
+ * @returns NextResponse with 429 status and retry headers
+ */
+export function rateLimitExceededResponse(result: RateLimitResult) {
+  const { NextResponse } = require('next/server');
+  const resetInSeconds = Math.ceil((result.resetTime - Date.now()) / 1000);
+  const resetInMinutes = Math.ceil(resetInSeconds / 60);
+
+  return NextResponse.json(
+    {
+      error: 'Troppe richieste',
+      message: `Limite richieste raggiunto. Riprova tra ${resetInMinutes} minut${resetInMinutes === 1 ? 'o' : 'i'}.`,
+      retryAfter: resetInSeconds,
+    },
     {
       status: 429,
       headers: {
-        'Content-Type': 'application/json',
-        'Retry-After': result.resetIn.toString(),
-        'X-RateLimit-Limit': result.limit.toString(),
+        'Retry-After': String(resetInSeconds),
+        'X-RateLimit-Limit': '0',
         'X-RateLimit-Remaining': '0',
-        'X-RateLimit-Reset': result.resetIn.toString(),
+        'X-RateLimit-Reset': String(Math.floor(result.resetTime / 1000)),
       },
     }
   );
 }
+
+/**
+ * Predefined rate limit configurations for different endpoints
+ */
+export const RATE_LIMITS = {
+  /**
+   * AI assistant chat endpoint - 30 requests per minute
+   */
+  assist: {
+    maxRequests: 30,
+    windowMs: 60 * 1000,
+  },
+  /**
+   * Ticket creation - 10 tickets per hour
+   */
+  tickets: {
+    maxRequests: 10,
+    windowMs: 60 * 60 * 1000,
+  },
+  /**
+   * Image upload - 20 uploads per hour
+   */
+  upload: {
+    maxRequests: 20,
+    windowMs: 60 * 60 * 1000,
+  },
+  /**
+   * Review submission - 5 reviews per hour
+   */
+  reviews: {
+    maxRequests: 5,
+    windowMs: 60 * 60 * 1000,
+  },
+} as const;

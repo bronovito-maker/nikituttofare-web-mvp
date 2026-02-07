@@ -262,6 +262,10 @@ export async function createTicket({
       price_range_max: null,
       price_range_min: null,
       ai_paused: false,
+      meta_data: null,
+      rating: null,
+      review_text: null,
+      review_created_at: null,
     };
   }
 }
