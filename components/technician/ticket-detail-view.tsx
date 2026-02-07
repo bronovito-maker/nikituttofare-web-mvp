@@ -1,12 +1,19 @@
-import { MapPin, Calendar, Clock, Banknote, ArrowLeft, MessageCircle, User } from 'lucide-react';
+import { useState } from 'react';
+import { MapPin, Calendar, Clock, Banknote, ArrowLeft, MessageCircle, User, Maximize2, X, Phone, MessageSquare, Wrench, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Database } from '@/lib/database.types';
+import { cn } from '@/lib/utils';
 
-type Ticket = Database['public']['Tables']['tickets']['Row'];
+type Ticket = Database['public']['Tables']['tickets']['Row'] & {
+    meta_data?: {
+        ai_suggested_tools?: string[];
+        [key: string]: any;
+    } | null;
+};
 
 interface MessageItem {
     id: string;
@@ -31,6 +38,8 @@ export function TicketDetailView({
     backLink = "/technician",
     showCustomerDetails = false
 }: TicketDetailViewProps) {
+    const [isZoomed, setIsZoomed] = useState(false);
+
     // Format Date
     const dateStr = new Date(ticket.created_at).toLocaleString('it-IT', {
         day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
@@ -42,6 +51,13 @@ export function TicketDetailView({
     const priceDisplay = ticket.price_range_min && ticket.price_range_max
         ? `€${ticket.price_range_min} - €${ticket.price_range_max}`
         : (ticket.price_range_max ? `Fino a €${ticket.price_range_max}` : 'Da concordare');
+
+    const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${ticket.address || ''} ${ticket.city || ''}`)}`;
+    const whatsappUrl = ticket.contact_phone
+        ? `https://wa.me/${ticket.contact_phone}?text=${encodeURIComponent(`Ciao ${ticket.customer_name || ''}, sono il tecnico di Niki Tuttofare. Sto arrivando per l'intervento: ${ticket.category}.`)}`
+        : null;
+
+    const suggestedTools = (ticket.meta_data as any)?.ai_suggested_tools || [];
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8">
@@ -65,15 +81,23 @@ export function TicketDetailView({
                 {/* Main Ticket Card */}
                 <div className="bg-card text-card-foreground rounded-xl border shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-                    {/* Map/Image Placeholder Area */}
-                    <div className="w-full h-48 bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center group">
+                    {/* Photo Area with Zoom */}
+                    <div
+                        className="w-full h-56 bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center group cursor-pointer overflow-hidden"
+                        onClick={() => ticket.photo_url && setIsZoomed(true)}
+                    >
                         {ticket.photo_url ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                                src={ticket.photo_url}
-                                alt="Problema"
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                            />
+                            <>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                    src={ticket.photo_url}
+                                    alt="Problema"
+                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <Maximize2 className="w-8 h-8 text-white drop-shadow-lg" />
+                                </div>
+                            </>
                         ) : (
                             <div className="text-center text-slate-400">
                                 <MapPin className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -103,70 +127,123 @@ export function TicketDetailView({
                         <div className="h-px bg-border" />
 
                         {/* Meta Details Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
-                            <div className="flex items-start gap-3">
-                                <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+                            <div className="flex items-start gap-3 group">
+                                <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
                                     <MapPin className="w-5 h-5" />
                                 </div>
-                                <div>
-                                    <p className="text-sm font-medium text-muted-foreground">Località</p>
-                                    <p className="font-semibold text-sm">{ticket.address || 'Indirizzo non specificato'}</p>
-                                    {ticket.city && <p className="text-xs text-muted-foreground">{ticket.city}</p>}
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Località</p>
+                                    <a
+                                        href={googleMapsUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="group/link block"
+                                    >
+                                        <p className="font-semibold text-sm group-hover/link:text-blue-500 transition-colors underline decoration-blue-500/30 underline-offset-4">
+                                            {ticket.address || 'Indirizzo non specificato'}
+                                        </p>
+                                        {ticket.city && <p className="text-xs text-muted-foreground mt-0.5">{ticket.city}</p>}
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-500 mt-1 uppercase">
+                                            Apri in Maps <ExternalLink className="w-3 h-3" />
+                                        </span>
+                                    </a>
                                 </div>
                             </div>
 
                             <div className="flex items-start gap-3">
-                                <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">
+                                <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">
                                     <Banknote className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-muted-foreground">Budget Stimato</p>
-                                    <p className="font-semibold text-sm">
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Budget Stimato</p>
+                                    <p className="font-bold text-sm text-foreground">
                                         {priceDisplay}
                                     </p>
                                 </div>
                             </div>
 
                             <div className="flex items-start gap-3">
-                                <div className="p-2 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400">
+                                <div className="p-2.5 rounded-xl bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400">
                                     <Calendar className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-muted-foreground">Data Richiesta</p>
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Data Richiesta</p>
                                     <p className="font-semibold text-sm">{dateStr}</p>
                                 </div>
                             </div>
 
                             <div className="flex items-start gap-3">
-                                <div className="p-2 rounded-lg bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400">
+                                <div className="p-2.5 rounded-xl bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400">
                                     <Clock className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-muted-foreground">Urgenza</p>
-                                    <p className="font-semibold capitalize text-sm">{ticket.priority || 'standard'}</p>
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Urgenza</p>
+                                    <Badge variant={ticket.priority === 'high' || ticket.priority === 'urgent' ? 'destructive' : 'secondary'} className="uppercase text-[10px]">
+                                        {ticket.priority || 'standard'}
+                                    </Badge>
                                 </div>
                             </div>
-
                         </div>
+
+                        {/* AI Suggested Tools Section (Meta Data) */}
+                        {suggestedTools && suggestedTools.length > 0 && (
+                            <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-500">
+                                <div className="bg-amber-500/5 dark:bg-amber-500/10 rounded-2xl p-5 border border-amber-500/20">
+                                    <h3 className="text-xs font-bold text-amber-600 dark:text-amber-400 mb-4 flex items-center gap-2 uppercase tracking-widest">
+                                        <Wrench className="w-4 h-4" /> Attrezzi Consigliati (AI)
+                                    </h3>
+                                    <div className="flex flex-wrap gap-2">
+                                        {suggestedTools.map((tool: string, idx: number) => (
+                                            <Badge key={idx} variant="outline" className="bg-background/50 border-amber-500/20 text-amber-700 dark:text-amber-300 py-1.5 px-3">
+                                                {tool}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Customer Details Block (Only if claimed) */}
                     {showCustomerDetails && (
-                        <div className="px-6 pb-6 animate-in fade-in duration-700">
-                            <div className="bg-secondary/30 rounded-xl p-4 border border-border">
-                                <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-                                    <User className="w-4 h-4" /> DATI CLIENTE
-                                </h3>
-                                <div>
-                                    <p className="font-semibold text-foreground">{ticket.customer_name || 'Cliente Guest'}</p>
-                                    <p className="text-primary font-medium text-sm mt-1 flex items-center gap-2">
-                                        {ticket.contact_phone ? (
-                                            <a href={`tel:${ticket.contact_phone}`} className="hover:underline">
-                                                +{ticket.contact_phone}
-                                            </a>
-                                        ) : 'Telefono non disponibile'}
-                                    </p>
+                        <div className="px-6 pb-6 animate-in fade-in duration-1000">
+                            <div className="bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl p-6 border border-border space-y-5">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-xs font-bold text-muted-foreground flex items-center gap-2 uppercase tracking-widest">
+                                        <User className="w-4 h-4" /> Dati Cliente
+                                    </h3>
+                                    <Badge variant="outline" className="text-[10px] font-bold uppercase py-0.5">Visibile solo a te</Badge>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div>
+                                        <p className="text-xl font-bold text-foreground">{ticket.customer_name || 'Cliente Guest'}</p>
+                                        <p className="text-sm text-muted-foreground mt-0.5">Contatto verificato</p>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        {ticket.contact_phone && (
+                                            <>
+                                                <Button asChild size="lg" className="rounded-xl flex-1 sm:flex-none bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20">
+                                                    <a href={`tel:${ticket.contact_phone}`}>
+                                                        <Phone className="w-4 h-4 mr-2" /> Chiama
+                                                    </a>
+                                                </Button>
+                                                {whatsappUrl && (
+                                                    <Button asChild variant="outline" size="lg" className="rounded-xl flex-1 sm:flex-none border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 content-center dark:hover:bg-emerald-500/10">
+                                                        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                                                            <MessageSquare className="w-4 h-4 mr-2" /> WhatsApp
+                                                        </a>
+                                                    </Button>
+                                                )}
+                                            </>
+                                        )}
+                                        {!ticket.contact_phone && (
+                                            <span className="text-sm text-red-500 font-medium italic">Telefono non fornito</span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -176,16 +253,20 @@ export function TicketDetailView({
                     {messages && messages.length > 0 && (
                         <div className="border-t border-border bg-muted/20">
                             <div className="p-4 sm:p-6">
-                                <h3 className="text-sm font-semibold text-muted-foreground mb-4 flex items-center gap-2">
-                                    <MessageCircle className="w-4 h-4" /> ESTRATTO CONVERSAZIONE
+                                <h3 className="text-xs font-bold text-muted-foreground mb-5 flex items-center gap-2 uppercase tracking-widest">
+                                    <MessageCircle className="w-4 h-4" /> Sommario Problema (Chat)
                                 </h3>
-                                <div className="space-y-3">
+                                <div className="space-y-4">
                                     {messages.map((msg) => (
-                                        <div key={msg.id} className={`p-3 rounded-lg text-sm max-w-[90%] ${msg.role === 'assistant'
-                                            ? 'bg-background border border-border mr-auto rounded-tl-none'
-                                            : 'bg-primary/10 text-primary-foreground ml-auto rounded-tr-none dark:text-emerald-100'
-                                            }`}>
-                                            <span className="font-bold block mb-1 opacity-50 uppercase text-[10px] tracking-wider">{msg.role === 'user' ? 'Cliente' : 'Niki AI'}</span>
+                                        <div key={msg.id} className={cn(
+                                            "p-4 rounded-2xl text-sm max-w-[90%] transition-colors",
+                                            msg.role === 'assistant'
+                                                ? 'bg-background border border-border mr-auto rounded-tl-none shadow-sm'
+                                                : 'bg-primary/5 border border-primary/10 ml-auto rounded-tr-none text-slate-700 dark:text-slate-200'
+                                        )}>
+                                            <span className="font-bold block mb-1.5 opacity-40 uppercase text-[9px] tracking-widest">
+                                                {msg.role === 'user' ? 'Cliente' : 'Niki AI'}
+                                            </span>
                                             {msg.content}
                                         </div>
                                     ))}
@@ -196,13 +277,34 @@ export function TicketDetailView({
 
                     {/* Action Footer */}
                     {actionSlot && (
-                        <div className="p-6 bg-muted/30 border-t flex flex-col sm:flex-row items-center justify-between gap-4 sticky bottom-0 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+                        <div className="p-6 bg-muted/40 border-t flex flex-col sm:flex-row items-center justify-between gap-4 sticky bottom-0 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80 md:bg-transparent md:border-t-0">
                             {actionSlot}
                         </div>
                     )}
 
                 </div>
             </div>
+
+            {/* Lightbox / Zoom Portal */}
+            {isZoomed && ticket.photo_url && (
+                <div
+                    className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300"
+                    onClick={() => setIsZoomed(false)}
+                >
+                    <button
+                        className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                        onClick={(e) => { e.stopPropagation(); setIsZoomed(false); }}
+                    >
+                        <X className="w-8 h-8" />
+                    </button>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={ticket.photo_url}
+                        alt="Zoom"
+                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-500"
+                    />
+                </div>
+            )}
         </div>
     );
 }
