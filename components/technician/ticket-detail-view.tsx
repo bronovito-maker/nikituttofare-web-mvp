@@ -59,8 +59,18 @@ export function TicketDetailView({
         ? `https://wa.me/${ticket.contact_phone}?text=${encodeURIComponent(`Ciao ${ticket.customer_name || ''}, sono il tecnico di Niki Tuttofare. Sto arrivando per l'intervento: ${ticket.category}.`)}`
         : null;
 
-    const suggestedTools = Array.isArray((ticket.meta_data as any)?.ai_suggested_tools)
-        ? (ticket.meta_data as any).ai_suggested_tools
+    // Parse meta_data if it's a JSON string
+    let parsedMetaData = ticket.meta_data;
+    if (typeof ticket.meta_data === 'string') {
+        try {
+            parsedMetaData = JSON.parse(ticket.meta_data);
+        } catch {
+            parsedMetaData = null;
+        }
+    }
+
+    const suggestedTools = Array.isArray(parsedMetaData?.ai_suggested_tools)
+        ? parsedMetaData.ai_suggested_tools
         : [];
 
     return (
