@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { MapPin, Calendar, Clock, Banknote, ArrowLeft, MessageCircle, User, Maximize2, X, Phone, MessageSquare, Wrench, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
