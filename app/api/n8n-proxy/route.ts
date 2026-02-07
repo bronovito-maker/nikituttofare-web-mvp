@@ -5,7 +5,8 @@ import { z } from "zod";
 // Zod Schema for validation
 const chatSchema = z.object({
   message: z.string().min(1, "Messaggio vuoto").max(2000, "Messaggio troppo lungo"),
-  chatId: z.string().min(1, "ChatID mancante")
+  chatId: z.string().min(1, "ChatID mancante"),
+  userId: z.string().optional()
 });
 
 export async function POST(req: NextRequest) {
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { message, chatId } = validation.data;
+    const { message, chatId, userId } = validation.data;
 
     // 4. Prepare n8n connection
     const n8nSecret = process.env.N8N_WEBHOOK_SECRET;
@@ -67,6 +68,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         message,
         chatId,
+        userId,
         timestamp: new Date().toISOString()
       }),
     });

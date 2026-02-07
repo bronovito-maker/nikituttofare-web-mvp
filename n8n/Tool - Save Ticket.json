@@ -39,6 +39,9 @@
             },
             {
               "name": "chat_history"
+            },
+            {
+              "name": "ai_suggested_tools"
             }
           ]
         }
@@ -236,6 +239,10 @@
             {
               "fieldId": "customer_name",
               "fieldValue": "={{ $json.customer_name }}"
+            },
+            {
+              "fieldId": "meta_data",
+              "fieldValue": "=  {{ JSON.stringify({ ai_suggested_tools: $json.ai_suggested_tools }) }}"
             }
           ]
         }
@@ -429,7 +436,7 @@
     "executionOrder": "v1",
     "availableInMCP": false
   },
-  "versionId": "420f1f69-81d6-4c0c-9f33-eccc6c5c352e",
+  "versionId": "76de1235-1d9b-4468-a669-9546fee11056",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "e5e4156406eb2781358eadbaabf7ac25423788a2a1b74d65514ae4da6dc2f496"
