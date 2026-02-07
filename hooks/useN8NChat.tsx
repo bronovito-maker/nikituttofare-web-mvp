@@ -107,5 +107,16 @@ export const useN8NChat = () => {
     }
   };
 
-  return { messages, sendMessage, isLoading, setMessages, suggestions };
+  const clearSession = () => {
+    localStorage.removeItem(CHAT_SESSION_KEY);
+    const array = new Uint32Array(1);
+    globalThis.crypto.getRandomValues(array);
+    const newChatId = array[0].toString(36);
+    localStorage.setItem(CHAT_SESSION_KEY, newChatId);
+    setChatId(newChatId);
+    setMessages([]);
+    setSuggestions([]);
+  };
+
+  return { messages, sendMessage, isLoading, setMessages, suggestions, clearSession };
 };

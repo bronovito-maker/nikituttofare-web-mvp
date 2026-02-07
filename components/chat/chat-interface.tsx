@@ -9,6 +9,7 @@ import { LoadingSpinner } from '../ui/loading-dots';
 interface ChatMessagesProps {
   messages: Message[];
   isLoading: boolean;
+  onClearSession?: () => void;
 }
 
 const ChatMessages = dynamic<ChatMessagesProps>(() => import('./chat-messages').then(mod => mod.default), {
@@ -25,9 +26,10 @@ const ChatMessages = dynamic<ChatMessagesProps>(() => import('./chat-messages').
 interface ChatInterfaceProps {
   readonly messages: Message[];
   readonly isLoading: boolean;
+  readonly onClearSession?: () => void;
 }
 
-export function ChatInterface({ messages, isLoading }: ChatInterfaceProps) {
+export function ChatInterface({ messages, isLoading, onClearSession }: ChatInterfaceProps) {
   // PULIZIA MESSAGGI (FRONTEND):
   // Rimuove il tag tecnico [UTENTE HA CARICATO...] dal testo visibile all'utente.
   // Usiamo useMemo per non ricalcolare ad ogni render se i messaggi non cambiano.
@@ -51,6 +53,17 @@ export function ChatInterface({ messages, isLoading }: ChatInterfaceProps) {
     });
   }, [messages]);
 
+  const ChatMessages = dynamic<ChatMessagesProps>(() => import('./chat-messages').then(mod => mod.default), {
+    loading: () => (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center space-y-2">
+          <LoadingSpinner />
+          <p className="text-sm text-slate-500">Caricamento chat...</p>
+        </div>
+      </div>
+    ),
+  });
+
   return (
     <Suspense fallback={
       <div className="flex-1 flex items-center justify-center">
@@ -60,7 +73,7 @@ export function ChatInterface({ messages, isLoading }: ChatInterfaceProps) {
       </div>
     }>
       {/* Passiamo i messaggi puliti invece di quelli grezzi */}
-  <ChatMessages messages={cleanMessages} isLoading={isLoading} />
+      <ChatMessages messages={cleanMessages} isLoading={isLoading} onClearSession={onClearSession} />
     </Suspense>
   );
 }

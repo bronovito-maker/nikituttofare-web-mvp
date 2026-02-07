@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback, memo, useMemo } from 'react';
-import { Bot, User } from 'lucide-react';
+import { Bot, User, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { AIResponseType } from '@/lib/ai-structures';
 import { AIThinkingAnimation } from './ai-thinking-animation';
@@ -89,8 +89,8 @@ const MessageBubble = memo(function MessageBubble({ message }: Readonly<{ messag
 }, (prevProps, nextProps) => {
   // Custom comparison: only re-render if message content actually changed
   return prevProps.message.id === nextProps.message.id &&
-         prevProps.message.content === nextProps.message.content &&
-         prevProps.message.photo === nextProps.message.photo;
+    prevProps.message.content === nextProps.message.content &&
+    prevProps.message.photo === nextProps.message.photo;
 });
 
 // AI Response Renderer
@@ -173,9 +173,10 @@ function AIResponseRenderer({ content }: Readonly<{ content: AIResponseType }>) 
 interface ChatMessagesProps {
   messages: ChatMessageData[];
   isLoading: boolean;
+  onClearSession?: () => void;
 }
 
-export function ChatMessages({ messages, isLoading }: Readonly<ChatMessagesProps>) {
+export function ChatMessages({ messages, isLoading, onClearSession }: Readonly<ChatMessagesProps>) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -211,6 +212,20 @@ export function ChatMessages({ messages, isLoading }: Readonly<ChatMessagesProps
       aria-label="Chat messages"
       aria-live="polite"
     >
+      {/* Header Action: Clear Chat */}
+      {onClearSession && messages.length > 0 && (
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={onClearSession}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-red-600 bg-slate-100 hover:bg-red-50 rounded-full transition-colors border border-slate-200 hover:border-red-200 shadow-sm"
+            title="Inizia una nuova conversazione"
+          >
+            <Trash2 className="w-3 h-3" />
+            Nuova Richiesta
+          </button>
+        </div>
+      )}
+
       {
         visibleMessages.map((msg, index) => (
           <MessageBubble key={msg.id || `msg-${index}`} message={msg} />
