@@ -13,11 +13,14 @@ import {
   Send,
   ArrowLeft,
   Phone,
+  Trash2,
   Wrench,
   Zap,
   Key,
   Thermometer,
-  AlertCircle
+  AlertCircle,
+  CheckCircle2,
+  Star
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NikiBotAvatar, Avatar } from '@/components/ui/avatar';
@@ -43,10 +46,11 @@ import { useSearchParams } from 'next/navigation';
 
 function ChatContent() {
   // ✅ USA IL NUOVO HOOK N8N (Motore Semplice)
-  const { messages, sendMessage, isLoading, setMessages, suggestions } = useN8NChat();
+  const { messages, sendMessage, isLoading, setMessages, suggestions, clearSession } = useN8NChat();
   const router = useRouter();
   const searchParams = useSearchParams();
   const ticketId = searchParams.get('ticket_id');
+  const isReadonly = searchParams.get('readonly') === 'true';
 
   // Stati UI locali
   const [input, setInput] = useState('');
@@ -55,6 +59,7 @@ function ChatContent() {
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [conversationStep, setConversationStep] = useState(0);
+  const [ticketData, setTicketData] = useState<any>(null);
 
   // Auth state (Mantenuto per mostrare l'avatar utente)
   const [userInitials, setUserInitials] = useState<string | null>(null);
@@ -64,12 +69,25 @@ function ChatContent() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load Ticket History
+  // Load Ticket History and Data
   useEffect(() => {
     if (!ticketId) return;
 
-    const loadHistory = async () => {
+    const loadTicketData = async () => {
       const supabase = createBrowserClient();
+
+      // Carica dati del ticket
+      const { data: ticket } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('id', ticketId)
+        .single();
+
+      if (ticket) {
+        setTicketData(ticket);
+      }
+
+      // Carica storico messaggi
       const { data: history, error } = await supabase
         .from('messages')
         .select('*')
@@ -92,7 +110,7 @@ function ChatContent() {
       }
     };
 
-    loadHistory();
+    loadTicketData();
   }, [ticketId, setMessages]);
 
   // Auth Effect (Solo per estetica avatar)
@@ -235,6 +253,19 @@ function ChatContent() {
               </div>
             )}
 
+            {messages.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearSession}
+                className="text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-full px-3"
+                title="Inizia una nuova conversazione"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                <span className="hidden xs:inline">Nuova Chat</span>
+              </Button>
+            )}
+
             <Button
               asChild
               size="sm"
@@ -327,7 +358,37 @@ function ChatContent() {
             </div>
           )}
 
-          {shouldShowAuthGuard ? (
+          {isReadonly || ['resolved', 'closed', 'cancelled'].includes(ticketData?.status) ? (
+            <div className="flex flex-col items-center justify-center p-4 bg-secondary/30 rounded-2xl border border-border text-center space-y-3 animate-in fade-in slide-in-from-bottom-4">
+              <CheckCircle2 className="w-8 h-8 text-green-500 mb-1" />
+              <h3 className="font-semibold text-foreground">Conversazione Conclusa</h3>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Questo intervento è stato completato. Non puoi inviare nuovi messaggi.
+              </p>
+              {ticketData?.status === 'resolved' && !ticketData?.rating && (
+                <Button
+                  onClick={() => router.push(`/dashboard/review/${ticketId}`)}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold shadow-lg shadow-yellow-500/20"
+                >
+                  <Star className="w-4 h-4 mr-2" />
+                  Lascia una Recensione
+                </Button>
+              )}
+              {ticketData?.rating && (
+                <div className="flex items-center gap-1 text-yellow-500">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-5 h-5 ${i < ticketData.rating ? 'fill-current' : ''}`}
+                    />
+                  ))}
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    Hai lasciato {ticketData.rating} stelle
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : shouldShowAuthGuard ? (
             <div className="flex flex-col items-center justify-center p-4 bg-secondary/30 rounded-2xl border border-blue-500/30 text-center space-y-3 animate-in fade-in slide-in-from-bottom-4">
               <Key className="w-8 h-8 text-blue-500 mb-1" />
               <h3 className="font-semibold text-foreground">Accesso Richiesto</h3>

@@ -12,10 +12,23 @@ export const useN8NChat = () => {
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
   useEffect(() => {
-    // 1. Session Persistence
-    let currentChatId = localStorage.getItem(CHAT_SESSION_KEY);
+    // 1. Session Persistence - FIX: Genera nuovo ID se NON stiamo caricando uno storico
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasTicketId = urlParams.has('ticket_id');
 
-    if (!currentChatId) {
+    let currentChatId: string;
+
+    if (hasTicketId) {
+      // Se stiamo visualizzando uno storico, mantieni il vecchio ID
+      currentChatId = localStorage.getItem(CHAT_SESSION_KEY) || '';
+      if (!currentChatId) {
+        const array = new Uint32Array(1);
+        globalThis.crypto.getRandomValues(array);
+        currentChatId = array[0].toString(36);
+        localStorage.setItem(CHAT_SESSION_KEY, currentChatId);
+      }
+    } else {
+      // Nuova chat: SEMPRE genera un nuovo ID
       const array = new Uint32Array(1);
       globalThis.crypto.getRandomValues(array);
       currentChatId = array[0].toString(36);
@@ -108,6 +121,15 @@ export const useN8NChat = () => {
   };
 
   const clearSession = () => {
+    // Conferma solo se ci sono messaggi significativi
+    if (messages.length > 2) {
+      const confirmed = window.confirm(
+        'Vuoi davvero iniziare una nuova conversazione? La chat attuale sarà salvata automaticamente nel tuo storico.'
+      );
+      if (!confirmed) return;
+    }
+
+    // Reset completo
     localStorage.removeItem(CHAT_SESSION_KEY);
     const array = new Uint32Array(1);
     globalThis.crypto.getRandomValues(array);
@@ -116,6 +138,9 @@ export const useN8NChat = () => {
     setChatId(newChatId);
     setMessages([]);
     setSuggestions([]);
+
+    // Ricarica la pagina per garantire reset completo (incluso stato n8n)
+    window.location.href = '/chat';
   };
 
   return { messages, sendMessage, isLoading, setMessages, suggestions, clearSession };
