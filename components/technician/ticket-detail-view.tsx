@@ -57,7 +57,9 @@ export function TicketDetailView({
         ? `https://wa.me/${ticket.contact_phone}?text=${encodeURIComponent(`Ciao ${ticket.customer_name || ''}, sono il tecnico di Niki Tuttofare. Sto arrivando per l'intervento: ${ticket.category}.`)}`
         : null;
 
-    const suggestedTools = (ticket.meta_data as any)?.ai_suggested_tools || [];
+    const suggestedTools = Array.isArray((ticket.meta_data as any)?.ai_suggested_tools)
+        ? (ticket.meta_data as any).ai_suggested_tools
+        : [];
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8">
