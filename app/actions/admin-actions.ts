@@ -84,10 +84,11 @@ export async function registerTechnician(formData: FormData) {
       return { error: 'Errore imprevisto: utente non creato' }
     }
 
-    // 2. Insert Profile
+    // 2. Insert Profile (use insert instead of upsert for new users)
+    // Note: Type cast needed because Supabase types don't allow manual id in insert
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .upsert({
+      .insert({
         id: authUser.user.id,
         email: email,
         full_name: fullName,
@@ -97,7 +98,7 @@ export async function registerTechnician(formData: FormData) {
         user_type: 'private',
         is_active: true,
         status: 'active'
-      })
+      } as any)
 
     if (profileError) {
       console.error('Error creating profile:', profileError)

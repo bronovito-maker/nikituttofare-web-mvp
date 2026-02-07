@@ -105,7 +105,7 @@ export default async function ClaimPage({ params }: PageProps) {
 
     return (
         <TicketDetailView
-            ticket={ticket}
+            ticket={ticket as any}
             bannerSlot={banner}
             actionSlot={action}
             backLink="/technician/claim"

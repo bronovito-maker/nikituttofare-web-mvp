@@ -76,7 +76,7 @@ export default async function JobDetailPage({ params }: { params: Promise<Readon
 
     return (
         <TicketDetailView
-            ticket={ticket}
+            ticket={ticket as any}
             messages={messages || []}
             bannerSlot={banner}
             actionSlot={action}
