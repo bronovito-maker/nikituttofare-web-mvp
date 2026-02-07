@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, FileText, User } from 'lucide-react';
+import { Home, FileText, User, MessageSquare } from 'lucide-react';
 
 import { usePathname } from 'next/navigation';
 
@@ -9,6 +9,7 @@ export function MobileNav() {
     const pathname = usePathname();
     const navItems = [
         { icon: Home, label: 'Home', active: pathname === '/dashboard', href: '/dashboard' },
+        { icon: MessageSquare, label: 'Chat', active: pathname === '/dashboard/conversations', href: '/dashboard/conversations' },
         { icon: FileText, label: 'Interventi', active: pathname === '/dashboard/tickets', href: '/dashboard/tickets' },
         { icon: User, label: 'Profilo', active: pathname === '/dashboard/profile', href: '/dashboard/profile' },
     ];

@@ -7,6 +7,7 @@ import { DigitalPassportPreview } from '@/components/dashboard/digital-passport-
 import { HeroTile } from '@/components/dashboard/hero-tile';
 import { ActionTile } from '@/components/dashboard/action-tile';
 import { LoyaltyTile } from '@/components/dashboard/loyalty-tile';
+import { ConversationsTile } from '@/components/dashboard/conversations-tile';
 import type { Database } from '@/lib/database.types';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
@@ -23,6 +24,12 @@ export function CustomerDashboard({ initialTickets, userProfile }: CustomerDashb
 
     // Find the most relevant active ticket (New > Assigned > In Progress)
     const activeTicket = tickets.find(t => ['new', 'assigned', 'in_progress'].includes(t.status));
+
+    // Calculate conversation stats
+    const totalConversations = tickets.length;
+    const activeConversations = tickets.filter(t =>
+        ['new', 'assigned', 'in_progress', 'pending_verification', 'confirmed'].includes(t.status)
+    ).length;
 
 
 
@@ -45,8 +52,16 @@ export function CustomerDashboard({ initialTickets, userProfile }: CustomerDashb
                         <ActionTile />
                     </div>
 
-                    {/* Tile C: Loyalty (Spans half on mobile, 4 cols on desktop) */}
+                    {/* Tile C: Conversations (NEW - Spans half on mobile, 4 cols on desktop) */}
                     <div className="md:col-span-4">
+                        <ConversationsTile
+                            totalConversations={totalConversations}
+                            activeConversations={activeConversations}
+                        />
+                    </div>
+
+                    {/* Tile D: Loyalty (Spans full width on mobile, 12 cols on desktop) */}
+                    <div className="md:col-span-12">
                         <LoyaltyTile points={userProfile?.loyalty_points || 0} />
                     </div>
                 </div>
