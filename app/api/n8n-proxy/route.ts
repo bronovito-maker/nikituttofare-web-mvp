@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyChatToken } from "@/lib/chat-security";
 import { z } from "zod";
+import { createServerClient } from "@/lib/supabase-server";
 
 // Zod Schema for validation
 const chatSchema = z.object({
@@ -15,7 +16,6 @@ export async function POST(req: NextRequest) {
 
   try {
     // 1. Validate Token (HMAC check)
-    // Client sends it in 'x-chat-token' header
     const token = req.headers.get("x-chat-token");
 
     if (!verifyChatToken(token)) {
@@ -37,9 +37,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { message, chatId, userId } = validation.data;
+    const { message, chatId } = validation.data;
 
-    // 4. Prepare n8n connection
+    // 4. Securely get userId from Supabase Session (priority over client body)
+    const supabase = await createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id || validation.data.userId;
+
+    console.log(`[Proxy] ChatId: ${chatId}, Session UserId: ${user?.id}, Client UserId: ${validation.data.userId}, Final UserId: ${userId}`);
+
+    // 5. Prepare n8n connection
     const n8nSecret = process.env.N8N_WEBHOOK_SECRET;
     const n8nToken = process.env.N8N_SECRET_TOKEN;
 

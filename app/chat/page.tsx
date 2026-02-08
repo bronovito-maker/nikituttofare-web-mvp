@@ -291,7 +291,7 @@ function ChatContent() {
           {/* Welcome / Hero - Only shown if no messages */}
           {messages.length === 0 ? (
             <ChatWelcome onOptionSelect={async (msg) => {
-              await sendMessage(msg);
+              await sendMessage(msg, userId);
             }} />
           ) : (
             <>
