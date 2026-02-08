@@ -6,16 +6,21 @@ import { Button } from '@/components/ui/button';
 import { acceptJob } from '@/app/actions/technician-actions';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface TechnicianJobActionsProps {
     ticketId: string;
+    status?: 'available' | 'assigned';
 }
 
-export function TechnicianJobActions({ ticketId }: TechnicianJobActionsProps) {
+export function TechnicianJobActions({ ticketId, status = 'available' }: TechnicianJobActionsProps) {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
+    const isAssigned = status === 'assigned';
+
     const handleAccept = async () => {
+        if (isAssigned) return;
         setLoading(true);
         try {
             const result = await acceptJob(ticketId);
@@ -24,7 +29,6 @@ export function TechnicianJobActions({ ticketId }: TechnicianJobActionsProps) {
                 toast.success(result.message || 'Incarico accettato con successo!');
                 router.refresh();
             } else {
-                // Fallback for unexpected structured response
                 toast.error('Impossibile accettare l\'incarico.');
             }
         } catch (err: unknown) {
@@ -40,16 +44,23 @@ export function TechnicianJobActions({ ticketId }: TechnicianJobActionsProps) {
         <div className="w-full">
             <Button
                 onClick={handleAccept}
-                disabled={loading}
+                disabled={loading || isAssigned}
                 size="lg"
-                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold h-12 shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+                className={cn(
+                    "w-full font-bold h-12 transition-all duration-300",
+                    isAssigned
+                        ? "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border-none shadow-none"
+                        : "bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.2)] active:scale-[0.98]"
+                )}
             >
                 {loading ? <Loader2 className="animate-spin mr-2" /> : null}
-                ACCETTA INCARICO
+                {isAssigned ? 'GIÀ ASSEGNATO' : 'ACCETTA INCARICO'}
             </Button>
-            <p className="text-center text-xs text-gray-500 mt-2">
-                Cliccando accetti di intervenire entro 2 ore.
-            </p>
+            {!isAssigned && (
+                <p className="text-center text-[10px] text-gray-500 mt-2 uppercase tracking-widest font-bold opacity-60">
+                    Accettando ti impegni a intervenire H24
+                </p>
+            )}
         </div>
     );
 }

@@ -60,9 +60,6 @@ export default async function JobDetailPage({ params }: { params: Promise<Readon
                 </div>
             </div>
         );
-        // Actions for assigned job (e.g. Complete, Note) could go here or remain in TechnicianJobActions if it supports it?
-        // TechnicianJobActions seems to be for "claim"?
-        // Let's assume for now we just show the banner.
     } else if (isAssignedToOther) {
         banner = (
             <div className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center gap-3">
@@ -70,8 +67,9 @@ export default async function JobDetailPage({ params }: { params: Promise<Readon
                 <p className="text-red-900 dark:text-red-100 font-medium">Assegnato ad altro tecnico</p>
             </div>
         );
+        action = <TechnicianJobActions ticketId={id} status="assigned" />;
     } else if (isAvailable) {
-        action = <TechnicianJobActions ticketId={id} />;
+        action = <TechnicianJobActions ticketId={id} status="available" />;
     }
 
     return (

@@ -59,19 +59,24 @@ export function TicketDetailView({
         ? `https://wa.me/${ticket.contact_phone}?text=${encodeURIComponent(`Ciao ${ticket.customer_name || ''}, sono il tecnico di Niki Tuttofare. Sto arrivando per l'intervento: ${ticket.category}.`)}`
         : null;
 
-    // Parse meta_data if it's a JSON string
-    let parsedMetaData = ticket.meta_data;
-    if (typeof ticket.meta_data === 'string') {
-        try {
-            parsedMetaData = JSON.parse(ticket.meta_data);
-        } catch {
-            parsedMetaData = null;
-        }
-    }
+    // Parse meta_data robustly
+    let suggestedTools: string[] = [];
+    try {
+        const meta = typeof ticket.meta_data === 'string'
+            ? JSON.parse(ticket.meta_data)
+            : ticket.meta_data;
 
-    const suggestedTools = Array.isArray(parsedMetaData?.ai_suggested_tools)
-        ? parsedMetaData.ai_suggested_tools
-        : [];
+        if (meta && typeof meta === 'object') {
+            const tools = (meta as any).ai_suggested_tools;
+            if (Array.isArray(tools)) {
+                suggestedTools = tools;
+            } else if (typeof tools === 'string') {
+                suggestedTools = tools.split(',').map((t: string) => t.trim()).filter(Boolean);
+            }
+        }
+    } catch (e) {
+        console.error("Error parsing meta_data:", e);
+    }
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8">
@@ -100,7 +105,7 @@ export function TicketDetailView({
                         className="w-full h-56 bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center group cursor-pointer overflow-hidden"
                         onClick={() => ticket.photo_url && setIsZoomed(true)}
                     >
-                        {ticket.photo_url ? (
+                        {ticket.photo_url && ticket.photo_url !== 'null' && ticket.photo_url !== '' ? (
                             <>
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
@@ -113,9 +118,14 @@ export function TicketDetailView({
                                 </div>
                             </>
                         ) : (
-                            <div className="text-center text-slate-400">
-                                <MapPin className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                                <span className="text-sm font-medium">Nessuna foto allegata</span>
+                            <div className="text-center flex flex-col items-center justify-center">
+                                <div className="w-20 h-20 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center mb-3">
+                                    <MapPin className="w-8 h-8 text-slate-400" />
+                                </div>
+                                <span className="text-lg font-black tracking-tighter text-slate-300 dark:text-slate-600 uppercase italic">
+                                    NO FOTO
+                                </span>
+                                <span className="text-xs text-slate-400 mt-1">Nessuna immagine allegata</span>
                             </div>
                         )}
                         <div className="absolute top-4 right-4 flex gap-2">
