@@ -60,6 +60,7 @@ export default async function JobDetailPage({ params }: { params: Promise<Readon
                 </div>
             </div>
         );
+        action = <TechnicianJobActions ticketId={id} status="mine" />;
     } else if (isAssignedToOther) {
         banner = (
             <div className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center gap-3">

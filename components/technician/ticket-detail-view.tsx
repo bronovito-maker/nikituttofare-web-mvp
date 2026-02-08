@@ -62,12 +62,32 @@ export function TicketDetailView({
     // Parse meta_data robustly
     let suggestedTools: string[] = [];
     try {
-        const meta = typeof ticket.meta_data === 'string'
-            ? JSON.parse(ticket.meta_data)
-            : ticket.meta_data;
+        // Handle double-stringified metadata that sometimes happens with n8n/Postgres
+        let meta = ticket.meta_data;
+        if (typeof meta === 'string') {
+            try {
+                meta = JSON.parse(meta);
+            } catch (e) {
+                // If it's not valid JSON, leave it as string
+            }
+        }
 
         if (meta && typeof meta === 'object') {
-            const tools = (meta as any).ai_suggested_tools;
+            let tools = (meta as any).ai_suggested_tools;
+
+            // If tools is a string that looks like a JSON array/object, parse it
+            if (typeof tools === 'string' && (tools.startsWith('[') || tools.startsWith('{'))) {
+                try {
+                    const parsedTools = JSON.parse(tools);
+                    if (Array.isArray(parsedTools)) {
+                        tools = parsedTools;
+                    } else if (parsedTools && typeof parsedTools === 'object' && parsedTools.ai_suggested_tools) {
+                        // Handle extreme nesting: {"ai_suggested_tools": ["..."]}
+                        tools = parsedTools.ai_suggested_tools;
+                    }
+                } catch (e) { }
+            }
+
             if (Array.isArray(tools)) {
                 suggestedTools = tools;
             } else if (typeof tools === 'string') {

@@ -55,7 +55,8 @@ export async function acceptJob(ticketIdIn: string) {
         }
 
         // 4. Assign Job
-        const { error: updateError } = await supabase
+        console.log(`[acceptJob] Attempting update for ticket ${ticketId} with technician ${user.id}`);
+        const { error: updateError, data: updateData } = await supabase
             .from('tickets')
             .update({
                 assigned_technician_id: user.id,
@@ -64,11 +65,19 @@ export async function acceptJob(ticketIdIn: string) {
             })
             .eq('id', ticketId)
             .is('assigned_technician_id', null)
+            .select();
 
         if (updateError) {
-            console.error('Error accepting job:', updateError)
-            throw new Error('Impossibile accettare il lavoro. Riprova.')
+            console.error('[acceptJob] Update error:', updateError);
+            throw new Error(`Impossibile accettare il lavoro: ${updateError.message}`);
         }
+
+        if (!updateData || updateData.length === 0) {
+            console.warn('[acceptJob] Update successful but 0 rows affected. Was the ticket already taken?');
+            throw new Error('Questo lavoro è appena stato preso da un altro tecnico (concurrency).');
+        }
+
+        console.log('[acceptJob] Successfully assigned ticket:', updateData[0].id);
 
         revalidatePath('/technician')
         revalidatePath(`/technician/job/${ticketId}`)
