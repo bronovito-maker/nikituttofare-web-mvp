@@ -5,6 +5,8 @@ import { Bot, User, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { AIResponseType } from '@/lib/ai-structures';
 import { AIThinkingAnimation } from './ai-thinking-animation';
+import ReactMarkdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
 
 // Helper function to safely stringify content
 function stringifyContent(content: unknown): string {
@@ -97,17 +99,37 @@ const MessageBubble = memo(function MessageBubble({ message }: Readonly<{ messag
 function AIResponseRenderer({ content }: Readonly<{ content: AIResponseType }>) {
   if (!content || typeof content !== 'object') return null;
 
+  const renderMarkdown = (text: string) => (
+    <div className="markdown-content prose dark:prose-invert max-w-none text-sm leading-relaxed space-y-1">
+      <ReactMarkdown
+        remarkPlugins={[remarkBreaks]}
+        components={{
+          ul: ({ children }) => <ul className="list-disc pl-4 space-y-1 mb-2">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal pl-4 space-y-1 mb-2">{children}</ol>,
+          li: ({ children }) => <li className="leading-normal">{children}</li>,
+          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+          strong: ({ children }) => <strong className="font-bold text-blue-600 dark:text-blue-400">{children}</strong>,
+        }}
+      >
+        {text}
+      </ReactMarkdown>
+    </div>
+  );
+
   switch (content.type) {
     case 'booking_summary': {
       const summaryData = content.content as Record<string, unknown>;
       return (
         <div className="space-y-3">
-          <div className="font-semibold text-slate-900 dark:text-slate-50">📋 Riepilogo Prenotazione</div>
-          <div className="space-y-2 text-sm">
+          <div className="font-semibold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+            <span>📋</span>
+            <span>Riepilogo Prenotazione</span>
+          </div>
+          <div className="space-y-2 text-sm bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
             {summaryData && Object.entries(summaryData).map(([key, value]) => (
-              <div key={key} className="flex justify-between">
-                <span className="text-slate-600 dark:text-slate-400 capitalize">{key}:</span>
-                <span className="font-medium text-slate-900 dark:text-slate-50">{String(value)}</span>
+              <div key={key} className="flex justify-between border-b border-slate-200/50 dark:border-slate-700/50 last:border-0 pb-1.5 last:pb-0">
+                <span className="text-slate-600 dark:text-slate-400 capitalize font-medium">{key.replace('_', ' ')}:</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-50 text-right">{String(value)}</span>
               </div>
             ))}
           </div>
@@ -118,55 +140,48 @@ function AIResponseRenderer({ content }: Readonly<{ content: AIResponseType }>) 
     case 'confirmation':
       return (
         <div className="space-y-3">
-          <div className="flex items-center gap-2 font-semibold text-green-700 dark:text-green-400">
+          <div className="flex items-center gap-2 font-bold text-green-600 dark:text-green-400">
             <span className="text-lg">✅</span>
-            <span>Prenotazione Confermata</span>
+            <span>Richiesta Presa in Carico</span>
           </div>
-          <div className="text-sm text-slate-700 dark:text-slate-300">
-            {typeof content.content === 'string' ? content.content : stringifyContent(content.content)}
+          <div className="text-sm">
+            {renderMarkdown(typeof content.content === 'string' ? content.content : stringifyContent(content.content))}
           </div>
         </div>
       );
 
     case 'text':
-      return (
-        <div className="whitespace-pre-wrap text-slate-900 dark:text-slate-50">
-          {typeof content.content === 'string' ? content.content : stringifyContent(content.content)}
-        </div>
-      );
+      return renderMarkdown(typeof content.content === 'string' ? content.content : stringifyContent(content.content));
 
     case 'form': {
       const formContent = content.content as { fields?: Array<{ name: string; label: string }> };
       return (
-        <div className="space-y-2">
-          <div className="text-sm font-medium text-slate-900 dark:text-slate-50">Compila i seguenti campi:</div>
-          {formContent?.fields?.map((field) => (
-            <div key={field.name} className="text-sm text-slate-600 dark:text-slate-400">
-              • {field.label}
-            </div>
-          ))}
+        <div className="space-y-3">
+          <div className="text-sm font-semibold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+            <span>📝</span>
+            <span>Compila questi dati:</span>
+          </div>
+          <div className="grid gap-2">
+            {formContent?.fields?.map((field) => (
+              <div key={field.name} className="text-xs bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700">
+                <span className="text-slate-500 mr-2">•</span>
+                <span className="font-medium">{field.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       );
     }
 
     case 'recap':
       return (
-        <div className="space-y-2">
-          <div className="font-semibold text-slate-900 dark:text-slate-50">📝 Riepilogo</div>
-          <div className="text-sm text-slate-900 dark:text-slate-50">
-            {typeof content.content === 'string' ? content.content : stringifyContent(content.content)}
-          </div>
+        <div className="space-y-2 border-l-4 border-blue-500 pl-4 py-1">
+          {renderMarkdown(typeof content.content === 'string' ? content.content : stringifyContent(content.content))}
         </div>
       );
 
     default:
-      return (
-        <div className="whitespace-pre-wrap text-slate-900 dark:text-slate-50">
-          {typeof content.content === 'string'
-            ? content.content
-            : stringifyContent(content.content) || 'Risposta ricevuta'}
-        </div>
-      );
+      return renderMarkdown(typeof content.content === 'string' ? content.content : stringifyContent(content.content));
   }
 }
 

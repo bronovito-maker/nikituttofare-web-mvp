@@ -18,7 +18,7 @@ interface SiteHeaderProps {
 
 export function SiteHeader({ showUserTypeToggle = false }: Readonly<SiteHeaderProps>) {
     // Use context for user type state
-    const { userType, setUserType } = showUserTypeToggle ? useUserType() : { userType: 'residential' as const, setUserType: () => {} };
+    const { userType, setUserType } = showUserTypeToggle ? useUserType() : { userType: 'residential' as const, setUserType: () => { } };
     const pathname = usePathname();
     const isAboutPage = pathname === '/about';
     const [user, setUser] = useState<any>(null); // Keeping any for now to match current types, but adding safety
@@ -71,6 +71,12 @@ export function SiteHeader({ showUserTypeToggle = false }: Readonly<SiteHeaderPr
                 <div className="flex items-center gap-2 sm:gap-4">
                     {/* Navigation Links or Contextual CTA */}
                     <nav className="hidden md:flex items-center gap-4 mr-2">
+                        <Link
+                            href="/contact"
+                            className={`text-sm font-medium transition-colors ${pathname === '/contact' ? 'text-blue-600 font-bold' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                            Contatti
+                        </Link>
                         {isAboutPage ? (
                             <Button
                                 asChild
@@ -85,7 +91,7 @@ export function SiteHeader({ showUserTypeToggle = false }: Readonly<SiteHeaderPr
                         ) : (
                             <Link
                                 href="/about"
-                                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                className={`text-sm font-medium transition-colors ${pathname === '/about' ? 'text-blue-600 font-bold' : 'text-muted-foreground hover:text-foreground'}`}
                             >
                                 Chi Siamo
                             </Link>
