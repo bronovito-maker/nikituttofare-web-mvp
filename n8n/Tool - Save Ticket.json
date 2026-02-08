@@ -42,6 +42,9 @@
             },
             {
               "name": "ai_suggested_tools"
+            },
+            {
+              "name": "user_id"
             }
           ]
         }
@@ -243,6 +246,10 @@
             {
               "fieldId": "meta_data",
               "fieldValue": "=  {{ JSON.stringify({ ai_suggested_tools: $json.ai_suggested_tools }) }}"
+            },
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $json.user_id }}"
             }
           ]
         }
@@ -436,7 +443,7 @@
     "executionOrder": "v1",
     "availableInMCP": false
   },
-  "versionId": "76de1235-1d9b-4468-a669-9546fee11056",
+  "versionId": "9586e752-2178-43b9-986b-b437a1cf1a84",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "e5e4156406eb2781358eadbaabf7ac25423788a2a1b74d65514ae4da6dc2f496"

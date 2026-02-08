@@ -93,6 +93,13 @@ export function TicketDetailView({
             } else if (typeof tools === 'string') {
                 suggestedTools = tools.split(',').map((t: string) => t.trim()).filter(Boolean);
             }
+
+            // Final cleanup pass for each tool: remove quotes, braces, brackets, and potential JSON keys
+            suggestedTools = suggestedTools.map(tool =>
+                tool.replace(/["'{}[\]]/g, '') // Remove quotes, braces, brackets
+                    .replace(/^ai_suggested_tools:\s*/i, '') // Remove key if it leaked in
+                    .trim()
+            ).filter(Boolean);
         }
     } catch (e) {
         console.error("Error parsing meta_data:", e);
@@ -267,18 +274,26 @@ export function TicketDetailView({
                                         <p className="text-sm text-muted-foreground mt-0.5">Contatto verificato</p>
                                     </div>
 
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-row items-center gap-3 w-full">
                                         {ticket.contact_phone && (
                                             <>
-                                                <Button asChild size="lg" className="rounded-xl flex-1 sm:flex-none bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20">
+                                                <Button
+                                                    asChild
+                                                    size="lg"
+                                                    className="rounded-xl flex-1 bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20 h-14 text-base font-bold"
+                                                >
                                                     <a href={`tel:${ticket.contact_phone}`}>
-                                                        <Phone className="w-4 h-4 mr-2" /> Chiama
+                                                        <Phone className="w-5 h-5 mr-2" /> Chiama
                                                     </a>
                                                 </Button>
                                                 {whatsappUrl && (
-                                                    <Button asChild variant="outline" size="lg" className="rounded-xl flex-1 sm:flex-none border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 content-center dark:hover:bg-emerald-500/10">
+                                                    <Button
+                                                        asChild
+                                                        size="lg"
+                                                        className="rounded-xl flex-1 bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 h-14 text-base font-bold border-none"
+                                                    >
                                                         <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                                                            <MessageSquare className="w-4 h-4 mr-2" /> WhatsApp
+                                                            <MessageSquare className="w-5 h-5 mr-2" /> WhatsApp
                                                         </a>
                                                     </Button>
                                                 )}
