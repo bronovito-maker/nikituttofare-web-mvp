@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import type { Database } from '@/lib/database.types';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'] & {
@@ -201,6 +202,17 @@ function EmptyState({
   );
 }
 
+const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  new: { label: 'Richiesta Inviata', color: 'bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-500/30' },
+  pending_verification: { label: 'In Verifica', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-200 dark:border-yellow-500/30' },
+  confirmed: { label: 'Confermato', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-500/30' },
+  assigned: { label: 'Tecnico Assegnato', color: 'bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-500/30' },
+  in_progress: { label: 'Intervento in Corso', color: 'bg-orange-500/10 text-orange-600 border-orange-200 dark:border-orange-500/30' },
+  resolved: { label: 'Risolto', color: 'bg-green-500/10 text-green-600 border-green-200 dark:border-green-500/30' },
+  closed: { label: 'Chiuso', color: 'bg-zinc-500/10 text-zinc-600 border-zinc-200 dark:border-zinc-500/30' },
+  cancelled: { label: 'Annullato', color: 'bg-red-500/10 text-red-600 border-red-200 dark:border-red-500/30' },
+};
+
 function ConversationCard({
   ticket,
   onDelete,
@@ -213,79 +225,81 @@ function ConversationCard({
   const isResolved = ['resolved', 'closed'].includes(ticket.status);
   const isCancelled = ticket.status === 'cancelled';
   const needsReview = isResolved && !ticket.rating;
+  const statusInfo = STATUS_LABELS[ticket.status] || { label: ticket.status, color: 'bg-gray-500/10 text-gray-600' };
 
   return (
-    <Card className="overflow-hidden border-border transition-all hover:shadow-lg hover:border-blue-500/30 group relative">
+    <Card className="overflow-hidden border-border bg-card transition-all hover:shadow-md hover:border-brand/40 group relative">
       <CardContent className="p-0">
         <Link
           href={`/chat?ticket_id=${ticket.id}${isResolved || isCancelled ? '&readonly=true' : ''}`}
           className="block p-5 space-y-4"
         >
-          {/* Header */}
-          <div className="flex items-start justify-between gap-3">
+          {/* Header: Category & Status */}
+          <div className="flex items-center justify-between gap-2">
             <Badge
-              variant={isResolved ? 'default' : isCancelled ? 'destructive' : 'secondary'}
-              className="uppercase text-xs font-medium"
+              variant="secondary"
+              className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-none px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
             >
               {CATEGORY_LABELS[ticket.category || 'generic']}
             </Badge>
 
-            {needsReview && (
-              <Badge variant="outline" className="border-yellow-500 text-yellow-600 bg-yellow-50 dark:bg-yellow-950/20">
-                <Star className="w-3 h-3 mr-1" />
-                Da recensire
-              </Badge>
-            )}
-
-            {ticket.rating && (
-              <div className="flex items-center gap-0.5">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-3.5 h-3.5 ${
-                      i < ticket.rating! ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
+            <Badge
+              variant="outline"
+              className={cn("px-2 py-0.5 text-[10px] font-semibold border", statusInfo.color)}
+            >
+              {statusInfo.label}
+            </Badge>
           </div>
 
-          {/* Title */}
-          <div>
-            <h3 className="font-semibold text-base line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors">
-              {ticket.description || 'Conversazione senza titolo'}
+          {/* Description */}
+          <div className="space-y-1.5 flex-1 mt-1">
+            <h3 className="font-bold text-base leading-snug line-clamp-3 text-foreground group-hover:text-brand transition-colors">
+              <span className="text-muted-foreground/70 text-xs font-bold uppercase tracking-widest block mb-1">
+                📝 Riepilogo Intervento:
+              </span>
+              {ticket.description || 'Richiesta senza descrizione'}
             </h3>
             {ticket.city && (
-              <p className="text-sm text-muted-foreground">
-                📍 {ticket.city}
-                {ticket.address && ` • ${ticket.address.substring(0, 30)}${ticket.address.length > 30 ? '...' : ''}`}
+              <p className="text-sm text-muted-foreground flex items-center gap-1.5 font-medium">
+                <span className="text-red-500 text-xs">📍</span> {ticket.city}
+                {ticket.address && (
+                  <span className="opacity-60 font-normal">
+                    • {ticket.address.substring(0, 25)}{ticket.address.length > 25 ? '...' : ''}
+                  </span>
+                )}
               </p>
             )}
           </div>
 
-          {/* Metadata */}
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>{ticket.messageCount || 0} messaggi</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" />
-              <span>
+          {/* Stats & Time */}
+          <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground/80 pt-1">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1">
+                <MessageSquare className="w-3 h-3" />
+                {ticket.messageCount || 0} messaggi
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
                 {formatDistanceToNow(new Date(ticket.created_at), {
                   addSuffix: true,
                   locale: it,
                 })}
               </span>
             </div>
+
+            {ticket.rating && (
+              <div className="flex items-center gap-0.5 text-yellow-500 bg-yellow-500/5 px-1.5 py-0.5 rounded-full border border-yellow-500/10">
+                <Star className="w-3 h-3 fill-current" />
+                <span className="text-[10px] font-bold">{ticket.rating}</span>
+              </div>
+            )}
           </div>
 
-          {/* Last Message Preview */}
+          {/* Last Message (Optional cleanup) */}
           {ticket.lastMessage && (
-            <div className="pt-3 border-t border-border">
-              <p className="text-xs text-muted-foreground line-clamp-2">
-                <span className="font-medium">
+            <div className="pt-3 border-t border-border/50">
+              <p className="text-[11px] text-muted-foreground line-clamp-1 italic italic">
+                <span className="font-semibold not-italic">
                   {ticket.lastMessage.role === 'user' ? 'Tu' : 'Niki'}:
                 </span>{' '}
                 {ticket.lastMessage.content}
@@ -294,35 +308,35 @@ function ConversationCard({
           )}
         </Link>
 
-        {/* Actions Footer */}
-        <div className="px-5 pb-4 pt-2 flex items-center justify-between gap-2 border-t border-border bg-secondary/20">
-          <Button asChild variant="outline" size="sm" className="flex-1">
-            <Link href={`/chat?ticket_id=${ticket.id}${isResolved || isCancelled ? '&readonly=true' : ''}`}>
-              Apri Chat
-            </Link>
-          </Button>
+        {/* Action Button Strip */}
+        <div className="flex items-center gap-px border-t border-border bg-muted/30">
+          <Link
+            href={`/chat?ticket_id=${ticket.id}${isResolved || isCancelled ? '&readonly=true' : ''}`}
+            className="flex-1 py-3 text-center text-sm font-bold bg-background hover:bg-muted transition-colors text-foreground flex items-center justify-center gap-2"
+          >
+            Apri Chat
+          </Link>
 
           {needsReview && (
-            <Button asChild size="sm" className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white">
-              <Link href={`/dashboard/review/${ticket.id}`}>
-                <Star className="w-3.5 h-3.5 mr-1.5" />
-                Recensisci
-              </Link>
-            </Button>
+            <Link
+              href={`/dashboard/review/${ticket.id}`}
+              className="flex-1 py-3 text-center text-sm font-bold bg-yellow-500 hover:bg-yellow-600 text-white transition-colors flex items-center justify-center gap-2"
+            >
+              <Star className="w-4 h-4" />
+              Recensisci
+            </Link>
           )}
 
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
             onClick={(e) => {
               e.preventDefault();
               onDelete(ticket.id);
             }}
             disabled={isDeleting}
-            className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 px-2"
+            className="px-4 h-11 text-red-500/70 hover:text-red-600 hover:bg-red-500/5 transition-colors disabled:opacity-50 border-l border-border"
           >
             <Trash2 className="w-4 h-4" />
-          </Button>
+          </button>
         </div>
       </CardContent>
     </Card>
