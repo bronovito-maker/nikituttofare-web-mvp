@@ -74,7 +74,7 @@ const STATS = [
     },
     {
         icon: Clock,
-        value: 84,
+        value: 45,
         suffix: ' min',
         label: 'Tempo Medio Arrivo',
         color: 'text-blue-500',
@@ -100,12 +100,39 @@ const STATS = [
     },
 ];
 
+const START_DATE = new Date('2026-02-08T22:00:00Z');
+const BASE_INTERVENTIONS = 69;
+const HOURS_INCREMENT = 12;
+
 export function UrgencyStats() {
+    const [stats, setStats] = useState(STATS);
+
+    useEffect(() => {
+        const updateDynamicStats = () => {
+            const now = new Date();
+            const diffMs = now.getTime() - START_DATE.getTime();
+            const diffHours = diffMs / (1000 * 60 * 60);
+            const increment = Math.max(0, Math.floor(diffHours / HOURS_INCREMENT));
+            const currentInterventions = BASE_INTERVENTIONS + increment;
+
+            setStats(prev => prev.map(s =>
+                s.label === 'Interventi Completati'
+                    ? { ...s, value: currentInterventions }
+                    : s
+            ));
+        };
+
+        updateDynamicStats();
+        // Check every hour to keep it fresh
+        const interval = setInterval(updateDynamicStats, 60 * 60 * 1000);
+        return () => clearInterval(interval);
+    }, []);
+
     return (
         <div className="w-full py-8 sm:py-12">
             <div className="max-w-6xl mx-auto px-4">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-                    {STATS.map((stat) => {
+                    {stats.map((stat) => {
                         const Icon = stat.icon;
                         return (
                             <div
