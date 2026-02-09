@@ -82,8 +82,18 @@ export const useN8NChat = () => {
 
       const data = await response.json();
 
+      // Meta Pixel Lead Tracking
+      if (data.save_needed && typeof window !== 'undefined' && (window as any).fbq) {
+        (window as any).fbq('track', 'Lead', {
+          content_category: data.category || 'generic',
+          content_name: 'Richiesta Pronto Intervento',
+          value: data.price_min || 0,
+          currency: 'EUR'
+        });
+      }
+
       // 3. Processa la risposta di n8n ed estrai suggerimenti
-      let aiText = data.text || "Risposta ricevuta";
+      let aiText = data.text || data.text_response || "Risposta ricevuta";
       // Safe regex: Input is server response with max 10KB limit, simple pattern without nested quantifiers
       const suggestionsRegex = /<<([^>]+)>>/g; // Estrae "Suggerimento" da "<<Suggerimento>>"
 

@@ -5,7 +5,7 @@ import Script from 'next/script';
 import { useConsentCheck } from '@/components/providers/cookie-consent-provider';
 
 export function MetaPixel() {
-  const pixelId = '3282093615283286'; // Meta Pixel ID
+  const pixelId = '930612862873643'; // Meta Pixel ID
   const [shouldLoad, setShouldLoad] = useState(false);
   const marketingAllowed = useConsentCheck('marketing');
 
