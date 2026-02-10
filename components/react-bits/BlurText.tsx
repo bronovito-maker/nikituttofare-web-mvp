@@ -7,16 +7,18 @@ interface BlurTextProps {
   className?: string;
   delay?: number;
   duration?: number;
+  as?: 'h1' | 'h2' | 'h3' | 'p' | 'span';
 }
 
 export function BlurText({
   text,
   className,
   delay = 0,
+  as: Component = 'h1',
 }: BlurTextProps) {
   // SSR-safe: Pure CSS animation, no JS delay on mobile
   return (
-    <h1
+    <Component
       className={cn(
         "drop-shadow-sm",
         // Desktop: animated entry
@@ -31,6 +33,6 @@ export function BlurText({
       }}
     >
       {text}
-    </h1>
+    </Component>
   );
 }

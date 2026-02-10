@@ -28,13 +28,15 @@ export function HeroContent() {
         <div className="space-y-4">
           <BlurText
             key={userType} // Force re-render on toggle
-            text={userType === 'residential' ? "Un guasto ti sta" : "Impianti Sempre Operativi."}
+            text={userType === 'residential' ? "Niki Tuttofare: Pronto Intervento" : "Impianti Sempre Operativi."}
+            as="h1"
             className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-foreground leading-[1.15] pb-1 max-md:opacity-100 max-md:animate-none max-md:filter-none"
             delay={0.05}
           />
           <BlurText
             key={`${userType}-sub`}
-            text={userType === 'residential' ? "rovinando la giornata?" : "Il Tuo Business non si Ferma Mai."}
+            text={userType === 'residential' ? "a Rimini, Riccione e Misano." : "Il Tuo Business non si Ferma Mai."}
+            as="h2"
             className={`text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r leading-[1.15] pb-1 ${userType === 'residential'
               ? 'from-orange-600 via-red-500 to-orange-500'
               : 'from-slate-700 via-slate-600 to-slate-500 dark:from-slate-300 dark:via-slate-400 dark:to-slate-500'
@@ -47,8 +49,8 @@ export function HeroContent() {
         <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0 leading-relaxed font-light md:opacity-0 md:animate-lcp-entry max-md:!opacity-100" style={{ animationDelay: '0.4s' }}>
           {userType === 'residential' ? (
             <>
-              <span className="font-semibold text-foreground">Non aspettare che peggiori.</span> Descrivi il problema, <br />
-              con intervento garantito <span className="font-bold text-blue-600 dark:text-blue-400">entro 2 ore</span>.
+              <span className="font-semibold text-foreground">Non aspettare che peggiori.</span> Il miglior servizio di <br />
+              <strong>tuttofare a Rimini, Riccione e Misano Adriatico</strong>, con intervento garantito <span className="font-bold text-blue-600 dark:text-blue-400">entro 2 ore</span>.
             </>
           ) : (
             <>
@@ -65,7 +67,7 @@ export function HeroContent() {
             : 'bg-foreground text-background hover:bg-foreground/90'
             }`}>
             <Link href={userType === 'residential' ? "/chat" : "/contact"} className="flex items-center">
-              {userType === 'residential' ? 'Preventivo Immediato' : 'Richiedi una Consulenza Gratuita'}
+              {userType === 'residential' ? 'Preventivo IMMEDIATO' : 'Richiedi una Consulenza Gratuita'}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>

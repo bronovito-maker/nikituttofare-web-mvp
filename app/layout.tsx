@@ -16,9 +16,9 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "NikiTuttoFare - Pronto Intervento H24",
-  description: "Idraulici, Elettricisti e Fabbri a Rimini e Riccione. Intervento garantito in 60 minuti.",
-  keywords: ["pronto intervento", "idraulico", "elettricista", "fabbro", "Rimini", "Riccione", "H24"],
+  title: "NikiTuttoFare - Pronto Intervento H24 Rimini, Riccione e Misano",
+  description: "Il tuo tuttofare di fiducia a Rimini, Riccione e Misano Adriatico. Idraulici, Elettricisti e Fabbri esperti. Intervento garantito in 2 ore.",
+  keywords: ["tuttofare Rimini", "tuttofare Riccione", "pronto intervento", "idraulico Rimini", "elettricista Riccione", "fabbro Misano", "H24", "riparazioni casa"],
   authors: [{ name: "NikiTuttoFare" }],
   openGraph: {
     title: "NikiTuttoFare - Pronto Intervento H24",
