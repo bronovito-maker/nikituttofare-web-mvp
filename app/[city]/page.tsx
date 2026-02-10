@@ -111,7 +111,10 @@ export default async function CityPage({ params }: { params: Promise<Readonly<{ 
                                     <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                         {service.name}
                                     </h3>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-sm text-muted-foreground mt-2 italic flex-1">
+                                        &quot;{service.examples}&quot;
+                                    </p>
+                                    <p className="text-[10px] uppercase tracking-widest text-blue-600/50 dark:text-blue-400/50 mt-4 font-bold">
                                         Disponibile a {city.name}
                                     </p>
                                 </Card>

@@ -9,6 +9,7 @@ export interface Service {
     name: string;
     slug: string;
     priority: number;
+    examples: string;
 }
 
 // Phase 1: Core Cities (Romagna)
@@ -27,14 +28,14 @@ export const SEO_CITIES: City[] = [
 
 // Phase 1: Core Services
 export const SEO_SERVICES: Service[] = [
-    { name: 'Idraulico', slug: 'idraulico', priority: 0.9 },
-    { name: 'Elettricista', slug: 'elettricista', priority: 0.9 },
-    { name: 'Fabbro', slug: 'fabbro', priority: 0.8 },
-    { name: 'Tapparellista', slug: 'tapparellista', priority: 0.7 },
-    { name: 'Condizionamento', slug: 'condizionamento', priority: 0.8 },
-    { name: 'Caldaie', slug: 'caldaie', priority: 0.8 },
-    { name: 'Spurgo', slug: 'spurgo', priority: 0.7 },
-    { name: 'Antennista', slug: 'antennista', priority: 0.6 },
+    { name: 'Idraulico', slug: 'idraulico', priority: 0.9, examples: 'Sostituzione rubinetti, perdite scarichi, silicone doccia.' },
+    { name: 'Elettricista', slug: 'elettricista', priority: 0.9, examples: 'Cambio prese, installazione luci smart, quadri elettrici.' },
+    { name: 'Fabbro', slug: 'fabbro', priority: 0.8, examples: 'Serrature bloccate, apertura porte, installazione defender.' },
+    { name: 'Tapparellista', slug: 'tapparellista', priority: 0.7, examples: 'Cinghie rotte, rulli bloccati, motorizzazioni.' },
+    { name: 'Condizionamento', slug: 'condizionamento', priority: 0.8, examples: 'Ricarica gas, pulizia filtri, installazione split.' },
+    { name: 'Caldaie', slug: 'caldaie', priority: 0.8, examples: 'Manutenzione annuale, analisi fumi, riparazione guasti.' },
+    { name: 'Spurgo', slug: 'spurgo', priority: 0.7, examples: 'Pulizia fosse biologiche, stasatura scarichi cucina.' },
+    { name: 'Antennista', slug: 'antennista', priority: 0.6, examples: 'Puntamento parabola, ricezione canali TV, impianti WiFi.' },
 ];
 
 // Simulation of DB Fetch

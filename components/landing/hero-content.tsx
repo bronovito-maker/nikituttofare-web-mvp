@@ -50,7 +50,8 @@ export function HeroContent() {
           {userType === 'residential' ? (
             <>
               <span className="font-semibold text-foreground">Non aspettare che peggiori.</span> Il miglior servizio di <br />
-              <strong>tuttofare a Rimini, Riccione e Misano Adriatico</strong>, con intervento garantito <span className="font-bold text-blue-600 dark:text-blue-400">entro 2 ore</span>.
+              <strong>tuttofare a Rimini, Riccione e Misano Adriatico</strong>, con intervento garantito <span className="font-bold text-blue-600 dark:text-blue-400">entro 2 ore</span>
+              <span className="text-blue-600 dark:text-blue-400 md:hidden font-medium"> a Riccione e zone limitrofe</span>.
             </>
           ) : (
             <>

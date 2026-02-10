@@ -39,6 +39,9 @@ const TrustBadges = dynamic(() => import('@/components/landing/trust-badges').th
 const FAQSection = dynamic(() => import('@/components/landing/faq-section').then(mod => mod.FAQSection), {
   loading: () => <div className="min-h-[600px]" />
 });
+const ServicesGrid = dynamic(() => import('@/components/landing/services-grid').then(mod => ({ default: mod.ServicesGrid })), {
+  loading: () => <div className="min-h-[600px]" />
+});
 
 export default function Home() {
   return (
@@ -63,6 +66,9 @@ export default function Home() {
 
           {/* --- USER-SPECIFIC SECTIONS (Residential/Business) --- */}
           <UserSpecificSections />
+
+          {/* --- TERRA-TERRA SERVICES GRID --- */}
+          <ServicesGrid />
 
           {/* --- HOW IT WORKS --- */}
           <div className="min-h-[500px]">
