@@ -28,7 +28,7 @@ export function StickyActionNav() {
                 >
                     <Link href="/chat" className="flex flex-col items-center justify-center gap-0.5">
                         <Sparkles className="h-5 w-5" />
-                        <span className="text-xs font-bold">Avvia Diagnosi AI</span>
+                        <span className="text-xs font-bold">Preventivo Immediato</span>
                     </Link>
                 </Button>
             </div>

@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { fetchSeoData } from '@/lib/seo-data';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = 'https://nikituttofare.it';
+    const baseUrl = 'https://nikituttofare.com';
     const { cities, services } = await fetchSeoData();
 
     // 1. Static Routes

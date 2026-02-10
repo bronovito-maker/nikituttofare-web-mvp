@@ -18,7 +18,7 @@ export function ActionTile() {
 
                     <div className="space-y-1">
                         <h3 className="text-lg font-bold text-foreground">Nuova Richiesta</h3>
-                        <p className="text-xs text-muted-foreground font-medium">Chatta con Niki AI</p>
+                        <p className="text-xs text-muted-foreground font-medium">Preventivo Immediato</p>
                     </div>
 
                     <div className="w-full h-1 bg-gradient-to-r from-transparent via-blue-500/50 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />

@@ -48,7 +48,7 @@ export function PriceComparison() {
                 </div>
 
                 <div className="absolute top-4 left-4 text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                    Preventivo Niki AI
+                    Preventivo Immediato
                 </div>
 
                 {/* Digital Receipt Mock */}
