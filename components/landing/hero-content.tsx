@@ -28,14 +28,14 @@ export function HeroContent() {
         <div className="space-y-4">
           <BlurText
             key={userType} // Force re-render on toggle
-            text={userType === 'residential' ? "Niki Tuttofare: Pronto Intervento" : "Impianti Sempre Operativi."}
+            text={userType === 'residential' ? "Niki Tuttofare Pronto Intervento" : "Impianti Sempre Operativi."}
             as="h1"
             className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-foreground leading-[1.15] pb-1 max-md:opacity-100 max-md:animate-none max-md:filter-none"
             delay={0.05}
           />
           <BlurText
             key={`${userType}-sub`}
-            text={userType === 'residential' ? "a Rimini, Riccione e Misano." : "Il Tuo Business non si Ferma Mai."}
+            text={userType === 'residential' ? "Un guasto ti sta rovinando la giornata?" : "Il Tuo Business non si Ferma Mai."}
             as="h2"
             className={`text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r leading-[1.15] pb-1 ${userType === 'residential'
               ? 'from-orange-600 via-red-500 to-orange-500'
