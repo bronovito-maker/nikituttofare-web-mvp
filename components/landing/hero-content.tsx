@@ -63,15 +63,23 @@ export function HeroContent() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4 md:opacity-0 md:animate-lcp-entry max-md:!opacity-100" style={{ animationDelay: '0.6s' }}>
-          <Button asChild className={`h-14 px-8 text-lg rounded-full font-bold shadow-xl transition-all hover:scale-105 ${userType === 'residential'
-            ? 'bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white shadow-orange-500/20'
-            : 'bg-foreground text-background hover:bg-foreground/90'
-            }`}>
-            <Link href={userType === 'residential' ? "/chat" : "/contact"} className="flex items-center">
-              {userType === 'residential' ? 'Preventivo IMMEDIATO' : 'Richiedi una Consulenza Gratuita'}
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-          </Button>
+          <div className="flex flex-col items-center lg:items-start gap-2">
+            <Button asChild className={`h-14 px-8 text-lg rounded-full font-bold shadow-xl transition-all hover:scale-105 ${userType === 'residential'
+              ? 'bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white shadow-orange-500/20'
+              : 'bg-foreground text-background hover:bg-foreground/90'
+              }`}>
+              <Link href={userType === 'residential' ? "/chat" : "/contact"} className="flex items-center">
+                {userType === 'residential' ? 'Preventivo IMMEDIATO' : 'Richiedi una Consulenza Gratuita'}
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+            {userType === 'residential' && (
+              <p className="text-[10px] sm:text-xs text-muted-foreground/60 font-medium tracking-wide flex items-center gap-1.5 ml-1">
+                <span className="w-1 h-1 rounded-full bg-orange-500/40" />
+                Senza impegno
+              </p>
+            )}
+          </div>
 
           {/* Secondary CTA for Desktop */}
           <a href={COMPANY_PHONE_LINK} className="hidden sm:inline-flex items-center justify-center h-14 px-8 text-lg font-semibold rounded-full border border-border bg-card/50 hover:bg-muted transition-all">

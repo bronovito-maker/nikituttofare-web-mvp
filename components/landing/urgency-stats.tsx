@@ -91,7 +91,7 @@ const STATS = [
     },
     {
         icon: Users,
-        value: 7,
+        value: 1,
         suffix: '',
         label: 'Tecnici Online Ora',
         color: 'text-purple-500',

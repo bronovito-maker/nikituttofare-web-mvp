@@ -67,7 +67,7 @@ export function PriceComparison() {
                         <div>
                             <span className="font-semibold text-foreground">Manodopera (45 min)</span>
                             <p className="text-xs text-emerald-600 flex items-center gap-1">
-                                <Check className="w-3 h-3" /> Tariffa Regionale 2025
+                                <Check className="w-3 h-3" /> Tariffa Regionale 2026
                             </p>
                         </div>
                         <span className="font-mono font-medium">€ 45,00</span>
