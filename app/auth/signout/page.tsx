@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -19,7 +19,7 @@ export default function SignOutPage() {
     const [isSignedOut, setIsSignedOut] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleSignOut = async () => {
+    const handleSignOut = useCallback(async () => {
         setIsLoading(true);
         setError(null);
 
@@ -41,7 +41,7 @@ export default function SignOutPage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [supabase, router]);
 
     // Auto sign out on mount
     useEffect(() => {
@@ -54,7 +54,7 @@ export default function SignOutPage() {
             }
         };
         performSignOut();
-    }, [supabase]);
+    }, [supabase, handleSignOut]);
 
     return (
         <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">

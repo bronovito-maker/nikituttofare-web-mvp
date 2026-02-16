@@ -8,8 +8,26 @@ import { COMPANY_PHONE_LINK } from '@/lib/constants';
 import { TechnicianPreview } from '@/components/landing/technician-preview';
 import { useUserType } from './user-type-context';
 
-export function HeroContent() {
+interface HeroContentProps {
+  cityName?: string;
+  serviceName?: string;
+}
+
+export function HeroContent({ cityName, serviceName }: HeroContentProps) {
   const { userType } = useUserType();
+
+  // Dynamic strings based on location/service
+  const mainTitle = serviceName
+    ? `${serviceName} a ${cityName || 'Rimini'}`
+    : cityName
+      ? `Niki Tuttofare a ${cityName}`
+      : userType === 'residential'
+        ? "Niki Tuttofare Pronto Intervento"
+        : "Impianti Sempre Operativi.";
+
+  const subTitle = userType === 'residential'
+    ? "Un guasto ti sta rovinando la giornata?"
+    : "Il Tuo Business non si Ferma Mai.";
 
   return (
     <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
@@ -21,21 +39,21 @@ export function HeroContent() {
             ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300'
             : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
             }`}>
-            {userType === 'residential' ? '✓ Pronto Intervento H24' : '✓ Partner Horeca & Corporate'}
+            {userType === 'residential' ? `✓ Pronto Intervento H24 ${cityName ? `a ${cityName}` : ''}` : '✓ Partner Horeca & Corporate'}
           </span>
         </div>
 
         <div className="space-y-4">
           <BlurText
-            key={userType} // Force re-render on toggle
-            text={userType === 'residential' ? "Niki Tuttofare Pronto Intervento" : "Impianti Sempre Operativi."}
+            key={`${userType}-${cityName}-${serviceName}`} // Force re-render on toggle/context change
+            text={mainTitle}
             as="h1"
             className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-foreground leading-[1.15] pb-1 max-md:opacity-100 max-md:animate-none max-md:filter-none"
             delay={0.05}
           />
           <BlurText
             key={`${userType}-sub`}
-            text={userType === 'residential' ? "Un guasto ti sta rovinando la giornata?" : "Il Tuo Business non si Ferma Mai."}
+            text={subTitle}
             as="h2"
             className={`text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r leading-[1.15] pb-1 ${userType === 'residential'
               ? 'from-orange-600 via-red-500 to-orange-500'
@@ -50,8 +68,8 @@ export function HeroContent() {
           {userType === 'residential' ? (
             <>
               <span className="font-semibold text-foreground">Non aspettare che peggiori.</span> Il miglior servizio di <br />
-              <strong>tuttofare a Rimini, Riccione e Misano Adriatico</strong>, con intervento garantito <span className="font-bold text-blue-600 dark:text-blue-400">entro 2 ore</span>
-              <span className="text-blue-600 dark:text-blue-400 md:hidden font-medium"> a Riccione e zone limitrofe</span>.
+              <strong>tuttofare {cityName ? 'nella tua zona' : 'a Rimini, Riccione e Misano Adriatico'}</strong>, con intervento garantito <span className="font-bold text-blue-600 dark:text-blue-400">entro 2 ore</span>
+              {cityName && <span className="text-blue-600 dark:text-blue-400 md:hidden font-medium"> a {cityName}</span>}.
             </>
           ) : (
             <>
@@ -96,7 +114,7 @@ export function HeroContent() {
             {/* Floating Trust Badge */}
             <div className="absolute top-20 -left-10 bg-card/90 backdrop-blur-md p-4 rounded-xl shadow-lg border border-border border-l-4 border-l-green-500 max-w-[200px]">
               <p className="text-xs font-bold text-muted-foreground uppercase opacity-70 mb-1">Garanzia</p>
-              <p className="text-sm font-semibold leading-tight">Copertura danni fino a 1.000.000€ su ogni intervento.</p>
+              <p className="text-sm font-semibold leading-tight">Copertura completa e assicurata su ogni intervento.</p>
             </div>
           </div>
         ) : (

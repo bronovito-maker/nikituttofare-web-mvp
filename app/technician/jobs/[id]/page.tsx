@@ -4,6 +4,7 @@ import { Textarea } from '@/components/ui/textarea'
 
 import { Phone, MapPin, CheckCircle, ArrowLeft, Navigation, Banknote, CreditCard } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { completeJob, addJobNote } from '@/app/actions/technician-actions'
 import { markTicketAsPaid, type PaymentMethod } from '@/app/actions/payment-actions'
@@ -107,8 +108,14 @@ export default async function JobOperationalPage({ params }: { params: Promise<R
                     <div className="bg-card rounded-xl p-4 border border-border">
                         <p className="text-foreground leading-relaxed">{ticket.description}</p>
                         {ticket.photo_url && (
-                            <div className="mt-4 rounded-lg overflow-hidden border border-border">
-                                <img src={ticket.photo_url} alt="Foto guasto" className="w-full h-auto" />
+                            <div className="mt-4 rounded-lg overflow-hidden border border-border relative aspect-video w-full">
+                                <Image
+                                    src={ticket.photo_url}
+                                    alt="Foto guasto"
+                                    fill
+                                    className="object-contain"
+                                    sizes="(max-width: 768px) 100vw, 800px"
+                                />
                             </div>
                         )}
                     </div>

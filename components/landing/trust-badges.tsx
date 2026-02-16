@@ -21,7 +21,7 @@ const BADGES = [
     {
         icon: BadgeCheck,
         title: 'Assicurazione',
-        subtitle: 'Copertura fino a 1M€',
+        subtitle: 'Lavoro Protetto e Sicuro',
     },
 ];
 

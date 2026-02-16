@@ -11,7 +11,7 @@ export const QUICK_ACTIONS = [
         icon: Wrench,
         color: 'from-blue-600 to-blue-500',
         shadowColor: 'shadow-blue-500/25',
-        message: 'Ciao Niki, ho bisogno di un idraulico.'
+        message: 'Ciao, ho bisogno di un idraulico.'
     },
     {
         id: 'electric',
@@ -19,7 +19,7 @@ export const QUICK_ACTIONS = [
         icon: Zap,
         color: 'from-yellow-500 to-orange-500',
         shadowColor: 'shadow-orange-500/25',
-        message: 'Ciao Niki, ho bisogno di un elettricista.'
+        message: 'Ciao, ho bisogno di un elettricista.'
     },
     {
         id: 'locksmith',
@@ -27,7 +27,7 @@ export const QUICK_ACTIONS = [
         icon: Key,
         color: 'from-slate-700 to-slate-600',
         shadowColor: 'shadow-slate-500/25',
-        message: 'Ciao Niki, ho bisogno di un fabbro urgente.'
+        message: 'Ciao, ho bisogno di un fabbro urgente.'
     },
     {
         id: 'climate',
@@ -35,7 +35,7 @@ export const QUICK_ACTIONS = [
         icon: Thermometer,
         color: 'from-cyan-500 to-blue-500',
         shadowColor: 'shadow-cyan-500/25',
-        message: 'Ciao Niki, ho un problema con il climatizzatore.'
+        message: 'Ciao, ho un problema con il climatizzatore.'
     }
 ];
 
@@ -56,7 +56,7 @@ export function ChatWelcome({ onOptionSelect }: ChatWelcomeProps) {
                             Ciao! Come posso aiutarti?
                         </h2>
                         <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto">
-                            Sono il nuovo cervello di Niki. Descrivi il problema e ti aiuterò subito.
+                            Siamo qui per aiutarti a risolvere ogni guasto tecnico. Descrivi il tuo problema e ti assisteremo in tempo reale per inviare un tecnico.
                         </p>
                     </div>
                 </div>

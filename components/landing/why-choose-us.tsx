@@ -14,7 +14,7 @@ const BENEFITS: readonly BenefitItem[] = [
     {
         icon: ShieldCheck,
         title: 'Tecnici Verificati',
-        description: 'Ogni professionista è certificato e assicurato fino a 1M€.',
+        description: 'Ogni professionista è certificato e assicurato.',
         color: 'text-emerald-500',
         bgColor: 'bg-emerald-500/10',
     },

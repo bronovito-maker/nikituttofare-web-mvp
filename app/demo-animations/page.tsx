@@ -19,7 +19,7 @@ export default function AnimationsDemoPage() {
             🎨 AI Thinking Animations
           </h1>
           <p className="text-lg text-slate-600 dark:text-slate-400">
-            Animazioni moderne e fluide per indicare che l'AI sta elaborando
+            Animazioni moderne e fluide per indicare che l&apos;AI sta elaborando
           </p>
         </div>
 
@@ -105,21 +105,21 @@ export default function AnimationsDemoPage() {
           </h2>
           <div className="bg-slate-900 text-slate-50 p-6 rounded-2xl space-y-4 overflow-x-auto">
             <div>
-              <p className="text-slate-400 text-sm mb-2">// 1. Modalità Random (consigliata)</p>
+              <p className="text-slate-400 text-sm mb-2">{"// 1. Modalità Random (consigliata)"}</p>
               <code className="text-blue-400">
                 {`<AIThinkingAnimation variant="random" interval={4000} />`}
               </code>
             </div>
 
             <div>
-              <p className="text-slate-400 text-sm mb-2">// 2. Animazione Specifica</p>
+              <p className="text-slate-400 text-sm mb-2">{"// 2. Animazione Specifica"}</p>
               <code className="text-green-400">
                 {`<AIThinkingAnimation variant="dots" />`}
               </code>
             </div>
 
             <div>
-              <p className="text-slate-400 text-sm mb-2">// 3. Componente Standalone</p>
+              <p className="text-slate-400 text-sm mb-2">{"// 3. Componente Standalone"}</p>
               <code className="text-purple-400">
                 {`import { ThinkingDots } from '@/components/chat/ai-thinking-animation';
 <ThinkingDots />`}
@@ -127,7 +127,7 @@ export default function AnimationsDemoPage() {
             </div>
 
             <div>
-              <p className="text-slate-400 text-sm mb-2">// 4. Nella Chat</p>
+              <p className="text-slate-400 text-sm mb-2">{"// 4. Nella Chat"}</p>
               <code className="text-orange-400">
                 {`{isLoading && <AIThinkingAnimation variant="random" interval={4000} />}`}
               </code>
@@ -144,7 +144,7 @@ export default function AnimationsDemoPage() {
             <div>
               <span className="font-mono text-sm text-blue-700 dark:text-blue-400">variant:</span>
               <span className="ml-2 text-slate-700 dark:text-slate-300">
-                'dots' | 'wave' | 'shimmer' | 'typing' | 'random'
+                &apos;dots&apos; | &apos;wave&apos; | &apos;shimmer&apos; | &apos;typing&apos; | &apos;random&apos;
               </span>
             </div>
             <div>

@@ -14,11 +14,10 @@ import { useUserType } from '@/components/landing/user-type-context';
 
 interface SiteHeaderProps {
     showUserTypeToggle?: boolean;
+    cityName?: string;
 }
 
-export function SiteHeader({ showUserTypeToggle = false }: Readonly<SiteHeaderProps>) {
-    // Use context for user type state
-    const { userType, setUserType } = showUserTypeToggle ? useUserType() : { userType: 'residential' as const, setUserType: () => { } };
+export function SiteHeader({ showUserTypeToggle = false, cityName }: Readonly<SiteHeaderProps>) {
     const pathname = usePathname();
     const isAboutPage = pathname === '/about';
     const [user, setUser] = useState<any>(null); // Keeping any for now to match current types, but adding safety
@@ -63,7 +62,7 @@ export function SiteHeader({ showUserTypeToggle = false }: Readonly<SiteHeaderPr
                 {/* Center Toggle - Desktop (Only if enabled) */}
                 {showUserTypeToggle && (
                     <div className="hidden md:flex flex-1 justify-center px-4">
-                        <UserTypeToggle value={userType} onChange={setUserType} />
+                        <HeaderUserTypeToggle />
                     </div>
                 )}
 
@@ -104,7 +103,7 @@ export function SiteHeader({ showUserTypeToggle = false }: Readonly<SiteHeaderPr
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
                         </span>
-                        <span className="hidden xl:inline">Tecnici attivi su <strong>Rimini e Provincia</strong></span>
+                        <span className="hidden xl:inline">Tecnici attivi su <strong>{cityName ? `${cityName} e Provincia` : 'Rimini e Provincia'}</strong></span>
                     </div>
 
                     <div className="hidden md:flex items-center gap-2">
@@ -142,9 +141,14 @@ export function SiteHeader({ showUserTypeToggle = false }: Readonly<SiteHeaderPr
             {/* Mobile Toggle Row (Only if enabled) */}
             {showUserTypeToggle && (
                 <div className="md:hidden border-t border-border bg-card/50 p-2 flex justify-center">
-                    <UserTypeToggle value={userType} onChange={setUserType} />
+                    <HeaderUserTypeToggle />
                 </div>
             )}
         </header>
     );
+}
+
+function HeaderUserTypeToggle() {
+    const { userType, setUserType } = useUserType();
+    return <UserTypeToggle value={userType} onChange={setUserType} />;
 }

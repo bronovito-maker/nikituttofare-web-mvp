@@ -13,7 +13,7 @@ const FAQ_ITEMS: FAQItem[] = [
     },
     {
         question: 'Come vengono selezionati i tecnici?',
-        answer: 'Ogni tecnico della nostra rete è verificato, certificato e assicurato fino a 1.000.000€. Controlliamo le credenziali, le recensioni e monitoriamo la qualità di ogni intervento.',
+        answer: 'Ogni tecnico della nostra rete è verificato, certificato e assicurato. Controlliamo le credenziali, le recensioni e monitoriamo la qualità di ogni intervento.',
     },
     {
         question: 'Quali zone coprite?',

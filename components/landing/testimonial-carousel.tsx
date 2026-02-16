@@ -75,7 +75,7 @@ export function TestimonialCarousel() {
                         Cosa Dicono i Clienti
                     </h2>
                     <p className="text-muted-foreground text-lg">
-                        Oltre 2.800 interventi completati con successo
+                        Oltre 100+ interventi completati con successo
                     </p>
                 </div>
 

@@ -104,7 +104,11 @@ const START_DATE = new Date('2026-02-08T22:00:00Z');
 const BASE_INTERVENTIONS = 69;
 const HOURS_INCREMENT = 12;
 
-export function UrgencyStats() {
+interface UrgencyStatsProps {
+    readonly cityName?: string;
+}
+
+export function UrgencyStats({ cityName }: UrgencyStatsProps) {
     const [stats, setStats] = useState(STATS);
 
     useEffect(() => {
@@ -115,18 +119,23 @@ export function UrgencyStats() {
             const increment = Math.max(0, Math.floor(diffHours / HOURS_INCREMENT));
             const currentInterventions = BASE_INTERVENTIONS + increment;
 
-            setStats(prev => prev.map(s =>
-                s.label === 'Interventi Completati'
-                    ? { ...s, value: currentInterventions }
-                    : s
-            ));
+            setStats(prev => prev.map(s => {
+                if (s.label === 'Interventi Completati' || s.label.startsWith('Interventi a')) {
+                    return {
+                        ...s,
+                        value: currentInterventions,
+                        label: cityName ? `Interventi a ${cityName}` : 'Interventi Completati'
+                    };
+                }
+                return s;
+            }));
         };
 
         updateDynamicStats();
         // Check every hour to keep it fresh
         const interval = setInterval(updateDynamicStats, 60 * 60 * 1000);
         return () => clearInterval(interval);
-    }, []);
+    }, [cityName]);
 
     return (
         <div className="w-full py-8 sm:py-12">

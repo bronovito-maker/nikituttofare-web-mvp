@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 import { RetroGrid } from '@/components/react-bits/RetroGrid';
 import { BlurText } from '@/components/react-bits/BlurText';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -174,10 +175,12 @@ export default function AboutPage() {
                         {/* Right: Visual / Image Real */}
                         <div className="order-1 md:order-2 relative h-auto aspect-[4/5] md:aspect-[3/4] w-full max-w-md mx-auto rounded-[2.5rem] overflow-hidden group shadow-2xl shadow-blue-900/10 border border-border">
                             {/* Real Team Photo */}
-                            <img
+                            <Image
                                 src="/team-photo.png"
                                 alt="Il Team NikiTuttoFare"
-                                className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                                fill
+                                className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                                sizes="(max-width: 768px) 100vw, 500px"
                             />
 
                             {/* Overlay Gradient */}
