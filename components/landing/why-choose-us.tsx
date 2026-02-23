@@ -1,48 +1,34 @@
 'use client';
 
-import { Zap, ShieldCheck, Clock, Smartphone, Bot, FileCheck } from 'lucide-react';
+import { Zap, ShieldCheck, FileCheck, Smartphone, Star } from 'lucide-react';
 import { BenefitsGrid, type BenefitItem } from '@/components/ui/benefits-grid';
 
 const BENEFITS: readonly BenefitItem[] = [
     {
-        icon: Zap,
-        title: 'Interventi Rapidi',
-        description: 'Intervento garantito entro 2 ore. Non aspetti, risolvi.',
+        icon: Smartphone,
+        title: 'Rapporto Diretto',
+        description: "Niente call center o attese infinite. Parli direttamente con me o con il mio assistente digitale per fissare l'intervento. Ci metto la faccia e la firma su ogni lavoro.",
         color: 'text-amber-500',
         bgColor: 'bg-amber-500/10',
     },
     {
-        icon: ShieldCheck,
-        title: 'Tecnici Verificati',
-        description: 'Ogni professionista è certificato e assicurato.',
+        icon: FileCheck,
+        title: 'Onestà Certificata',
+        description: 'Uso il listino prezzi ufficiale per garantirti la massima trasparenza. Niente prezzi inventati sul momento: sai sempre quanto spendi prima di iniziare.',
         color: 'text-emerald-500',
         bgColor: 'bg-emerald-500/10',
     },
     {
-        icon: Clock,
-        title: 'Tracciamento Live',
-        description: 'Segui lo stato del tuo ticket in tempo reale, dal primo messaggio alla fattura.',
+        icon: ShieldCheck,
+        title: 'Pulizia e Rispetto',
+        description: 'Entro in casa tua con il massimo rispetto. Al termine di ogni intervento, lascio tutto pulito e ordinato. La tua casa merita cura, non disordine.',
         color: 'text-blue-500',
         bgColor: 'bg-blue-500/10',
     },
     {
-        icon: FileCheck,
-        title: 'Passaporto Digitale',
-        description: 'Storico completo di ogni riparazione sui tuoi asset. Mai più "quando l\'ho cambiato?".',
-        color: 'text-purple-500',
-        bgColor: 'bg-purple-500/10',
-    },
-    {
-        icon: Bot,
-        title: 'AI Sempre Attiva',
-        description: 'Niki risponde 24/7. Descrivi il problema, al resto pensiamo noi.',
-        color: 'text-cyan-500',
-        bgColor: 'bg-cyan-500/10',
-    },
-    {
-        icon: Smartphone,
-        title: 'Tutto da Mobile',
-        description: 'Niente app da scaricare. Chat, pagamenti, fatture: tutto dal browser.',
+        icon: Zap,
+        title: 'Velocità Locale',
+        description: 'Conoscendo bene Rimini, Riccione e dintorni, riesco a garantirti un intervento entro 2 ore per le emergenze. Sono il tuo vicino di casa esperto di fiducia.',
         color: 'text-orange-500',
         bgColor: 'bg-orange-500/10',
     },
@@ -50,10 +36,20 @@ const BENEFITS: readonly BenefitItem[] = [
 
 export function WhyChooseUs() {
     return (
-        <BenefitsGrid
-            items={BENEFITS}
-            title={<>Perché Scegliere <span className="text-gradient">NikiTuttoFare</span></>}
-            subtitle="Non siamo il solito servizio di manutenzione. Siamo tecnologia al servizio della tua tranquillità."
-        />
+        <div className="relative">
+            <BenefitsGrid
+                items={BENEFITS}
+                title={
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-full">
+                            <Star className="w-3 h-3 text-blue-600 fill-blue-600" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-400">Artigiano 4.0</span>
+                        </div>
+                        <>Perché affidarti a me?</>
+                    </div>
+                }
+                subtitle="Dimentica i soliti call center. Per ogni guasto in casa, hai un professionista romagnolo che ci mette la faccia."
+            />
+        </div>
     );
 }

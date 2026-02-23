@@ -34,8 +34,13 @@ const MessageBubble = memo(function MessageBubble({ message }: Readonly<{ messag
   return (
     <div className={`flex items-start gap-3 ${isUser ? 'justify-end' : ''}`}>
       {!isUser && (
-        <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-500 rounded-full flex items-center justify-center">
-          <Bot className="w-4 h-4 text-white" />
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest ml-1">
+            Assistente di Niki
+          </span>
+          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-500 rounded-full flex items-center justify-center">
+            <Bot className="w-4 h-4 text-white" />
+          </div>
         </div>
       )}
 

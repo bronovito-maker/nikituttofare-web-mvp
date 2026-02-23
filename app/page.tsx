@@ -4,6 +4,8 @@ import { SiteFooter } from '@/components/layout/site-footer';
 import { StickyActionNav } from '@/components/landing/sticky-action-nav';
 import { UserTypeProvider } from '@/components/landing/user-type-context';
 import { HeroContent } from '@/components/landing/hero-content';
+import { RecentWorks } from '@/components/landing/recent-works';
+import { BioSection } from '@/components/landing/bio-section';
 
 // Lazy load below-the-fold sections
 const UrgencyStats = dynamic(() => import('@/components/landing/urgency-stats').then(mod => ({ default: mod.UrgencyStats })), {
@@ -61,8 +63,14 @@ export default function Home() {
             </div>
           </section>
 
+          {/* --- RECENT WORKS --- */}
+          <RecentWorks />
+
           {/* --- URGENCY STATS --- */}
           <UrgencyStats />
+
+          {/* --- BIO SECTION --- */}
+          <BioSection />
 
           {/* --- USER-SPECIFIC SECTIONS (Residential/Business) --- */}
           <UserSpecificSections />

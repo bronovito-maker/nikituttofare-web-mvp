@@ -38,8 +38,8 @@ export function TechnicianCTA() {
                         </h2>
 
                         <p className="text-lg text-slate-300 leading-relaxed">
-                            Entra nella rete di tecnici d&apos;élite della Riviera Romagnola.
-                            Tu fai il tuo lavoro, noi ti portiamo i clienti e gestiamo tutto il resto.
+                            Entra a far parte di NikiTuttoFare e servi la Riviera Romagnola insieme a me.
+                            Tu fai il tuo lavoro, io mi occupo di portarti i clienti e gestire tutto il resto.
                         </p>
 
                         <ul className="space-y-3">
@@ -59,7 +59,7 @@ export function TechnicianCTA() {
                         <div className="pt-4">
                             <Button asChild size="lg" className="bg-white text-slate-900 hover:bg-slate-100 font-bold rounded-full px-8 h-14 text-lg shadow-xl">
                                 <Link href="/technician/register" className="flex items-center gap-2">
-                                    Diventa Tecnico NikiTuttoFare
+                                    Inizia a Collaborare con Me
                                     <ArrowRight className="w-5 h-5" />
                                 </Link>
                             </Button>

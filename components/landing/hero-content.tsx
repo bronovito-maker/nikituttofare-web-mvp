@@ -16,51 +16,64 @@ interface HeroContentProps {
 export function HeroContent({ cityName, serviceName }: HeroContentProps) {
   const { userType } = useUserType();
 
-  // Dynamic strings based on location/service
-  const mainTitle = serviceName
-    ? `${serviceName} a ${cityName || 'Rimini'}`
-    : cityName
-      ? `Niki Tuttofare a ${cityName}`
-      : userType === 'residential'
-        ? "Niki Tuttofare Pronto Intervento"
-        : "Impianti Sempre Operativi.";
+  const mainTitle = userType === 'residential'
+    ? "Ciao, sono Nikita. Il tuo tuttofare di fiducia a Rimini e dintorni."
+    : "Impianti Sempre Operativi.";
 
   const subTitle = userType === 'residential'
-    ? "Un guasto ti sta rovinando la giornata?"
+    ? "Risolvo i tuoi guasti in casa in meno di 2 ore. Trasparenza totale, pulizia e garanzia sui lavori."
     : "Il Tuo Business non si Ferma Mai.";
+
+  const hookTitle = "Un guasto ti sta rovinando la giornata?";
 
   return (
     <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
       {/* Text Content */}
       <div className="text-center lg:text-left space-y-6 sm:space-y-8">
-        {/* Badge */}
-        <div className="inline-flex items-center justify-center lg:justify-start">
-          <span className={`px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-wider shadow-sm transition-colors ${userType === 'residential'
-            ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300'
-            : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-            }`}>
-            {userType === 'residential' ? `✓ Pronto Intervento H24 ${cityName ? `a ${cityName}` : ''}` : '✓ Partner Horeca & Corporate'}
-          </span>
+        {/* Profile + Hook */}
+        <div className="flex flex-col lg:flex-row items-center lg:items-end gap-4 lg:gap-6 justify-center lg:justify-start">
+          {userType === 'residential' && (
+            <div className="relative group">
+              <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-orange-500/20 shadow-xl shadow-orange-500/10 rotate-3 transition-transform group-hover:rotate-0">
+                <img
+                  src="/team-photo.png"
+                  alt="Nikita Bronovs"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="absolute -bottom-2 -right-2 bg-green-500 rounded-full p-1 border-2 border-background shadow-lg">
+                <span className="block w-2.5 h-2.5 bg-white rounded-full animate-pulse" />
+              </div>
+            </div>
+          )}
+          <div className="space-y-2 text-center lg:text-left">
+            <div className="inline-flex items-center justify-center lg:justify-start">
+              <span className={`px-3 py-1.5 rounded-full border text-[10px] font-bold uppercase tracking-widest shadow-sm transition-colors ${userType === 'residential'
+                ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800/50 text-orange-700 dark:text-orange-400'
+                : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                }`}>
+                {userType === 'residential' ? `✓ Pronto Intervento H24` : '✓ Partner Horeca & Corporate'}
+              </span>
+            </div>
+            {userType === 'residential' && (
+              <p className="text-orange-600 dark:text-orange-400 font-bold text-lg md:text-xl tracking-tight animate-pulse">
+                {hookTitle}
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="space-y-4">
           <BlurText
-            key={`${userType}-${cityName}-${serviceName}`} // Force re-render on toggle/context change
+            key={`${userType}-personal-title`}
             text={mainTitle}
             as="h1"
-            className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-foreground leading-[1.15] pb-1 max-md:opacity-100 max-md:animate-none max-md:filter-none"
+            className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-foreground leading-[1.1] pb-1 max-md:opacity-100 max-md:animate-none max-md:filter-none"
             delay={0.05}
           />
-          <BlurText
-            key={`${userType}-sub`}
-            text={subTitle}
-            as="h2"
-            className={`text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r leading-[1.15] pb-1 ${userType === 'residential'
-              ? 'from-orange-600 via-red-500 to-orange-500'
-              : 'from-slate-700 via-slate-600 to-slate-500 dark:from-slate-300 dark:via-slate-400 dark:to-slate-500'
-              } max-md:opacity-100 max-md:animate-none max-md:filter-none`}
-            delay={0.25}
-          />
+          <p className="text-lg sm:text-2xl font-medium text-muted-foreground leading-relaxed max-w-2xl mx-auto lg:mx-0">
+            {subTitle}
+          </p>
         </div>
 
         {/* CSS-only animation for performance (no JS hydration overhead) */}
@@ -73,7 +86,7 @@ export function HeroContent({ cityName, serviceName }: HeroContentProps) {
             </>
           ) : (
             <>
-              Mantieni la tua operatività al massimo con la nostra assistenza tecnica H24. <br />
+              Mantieni la tua operatività al massimo con la mia assistenza tecnica H24. <br />
               Soluzioni proattive e interventi rapidi per <strong>Hotel, Ristoranti e Stabilimenti</strong> della Riviera Romagnola, <br />
               garantendo continuità e conformità.
             </>
@@ -82,26 +95,31 @@ export function HeroContent({ cityName, serviceName }: HeroContentProps) {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4 md:opacity-0 md:animate-lcp-entry max-md:!opacity-100" style={{ animationDelay: '0.6s' }}>
           <div className="flex flex-col items-center lg:items-start gap-2">
-            <Button asChild className={`h-14 px-8 text-lg rounded-full font-bold shadow-xl transition-all hover:scale-105 ${userType === 'residential'
-              ? 'bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white shadow-orange-500/20'
+            <Button asChild className={`h-16 px-10 text-xl rounded-full font-bold shadow-2xl transition-all hover:scale-105 active:scale-95 ${userType === 'residential'
+              ? 'bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white shadow-orange-500/30'
               : 'bg-foreground text-background hover:bg-foreground/90'
               }`}>
               <Link href={userType === 'residential' ? "/chat" : "/contact"} className="flex items-center">
-                {userType === 'residential' ? 'Preventivo IMMEDIATO' : 'Richiedi una Consulenza Gratuita'}
-                <ArrowRight className="ml-2 h-5 w-5" />
+                {userType === 'residential' ? 'Chiedi al mio assistente personale' : 'Richiedi una Consulenza Gratuita'}
+                <ArrowRight className="ml-2 h-6 w-6" />
               </Link>
             </Button>
             {userType === 'residential' && (
-              <p className="text-[10px] sm:text-xs text-muted-foreground/60 font-medium tracking-wide flex items-center gap-1.5 ml-1">
-                <span className="w-1 h-1 rounded-full bg-orange-500/40" />
-                Senza impegno
+              <p className="text-xs text-muted-foreground/80 font-medium tracking-wide flex items-center gap-1.5 ml-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                Disponibile ora a Rimini e dintorni
               </p>
             )}
           </div>
 
-          {/* Secondary CTA for Desktop */}
-          <a href={COMPANY_PHONE_LINK} className="hidden sm:inline-flex items-center justify-center h-14 px-8 text-lg font-semibold rounded-full border border-border bg-card/50 hover:bg-muted transition-all">
-            {userType === 'residential' ? "Chiama Tecnico" : "Contattaci Subito"}
+          {/* Secondary CTA - WhatsApp */}
+          <a
+            href="https://wa.me/393793394421"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center h-16 px-10 text-xl font-bold rounded-full border-2 border-green-500/30 bg-green-50/50 dark:bg-green-950/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-950/40 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-green-500/5"
+          >
+            Scrivimi su WhatsApp
           </a>
         </div>
       </div>
@@ -114,7 +132,7 @@ export function HeroContent({ cityName, serviceName }: HeroContentProps) {
             {/* Floating Trust Badge */}
             <div className="absolute top-20 -left-10 bg-card/90 backdrop-blur-md p-4 rounded-xl shadow-lg border border-border border-l-4 border-l-green-500 max-w-[200px]">
               <p className="text-xs font-bold text-muted-foreground uppercase opacity-70 mb-1">Garanzia</p>
-              <p className="text-sm font-semibold leading-tight">Copertura completa e assicurata su ogni intervento.</p>
+              <p className="text-sm font-semibold leading-tight">Copertura completa e garantita su ogni intervento.</p>
             </div>
           </div>
         ) : (
@@ -132,15 +150,22 @@ export function HeroContent({ cityName, serviceName }: HeroContentProps) {
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Prossima Manutenzione</span>
-                  <span className="font-medium">15 Apr 2024</span>
+                  <span className="text-slate-500">Verifica Semestrale</span>
+                  <span className="font-medium">Programmabile</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-500">Copertura</span>
                   <span className="font-medium">H24/7 (Premium)</span>
                 </div>
-                <div className="h-32 bg-slate-200 dark:bg-slate-800 rounded-lg flex items-center justify-center text-slate-400">
-                  [Grafico Storico Interventi & Efficienza]
+                <div className="h-32 bg-slate-200 dark:bg-slate-800 rounded-lg flex flex-col items-center justify-center text-slate-400 gap-2">
+                  <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Efficienza Operativa</span>
+                  <div className="flex items-end gap-1 h-12">
+                    <div className="w-4 bg-blue-500/40 h-[60%] rounded-t-sm" />
+                    <div className="w-4 bg-blue-500/60 h-[80%] rounded-t-sm" />
+                    <div className="w-4 bg-blue-500/80 h-[100%] rounded-t-sm animate-pulse" />
+                    <div className="w-4 bg-blue-500/40 h-[70%] rounded-t-sm" />
+                    <div className="w-4 bg-blue-500/60 h-[90%] rounded-t-sm" />
+                  </div>
                 </div>
               </div>
             </div>

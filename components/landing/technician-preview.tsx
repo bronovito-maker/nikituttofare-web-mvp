@@ -26,9 +26,9 @@ export function TechnicianPreview() {
                 <div className="flex items-center gap-4">
                     <div className="relative w-14 h-14">
                         <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-background shadow-md">
-                            {/* Placeholder avatar */}
-                            <div className="w-full h-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xl">
-                                👨‍🔧
+                            {/* Nikita's avatar placeholder - consistent with hero */}
+                            <div className="w-full h-full bg-slate-200 dark:bg-slate-700 flex items-center overflow-hidden">
+                                <img src="/team-photo.png" alt="Nikita" className="w-full h-full object-cover" />
                             </div>
                         </div>
                         <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5">
@@ -38,14 +38,14 @@ export function TechnicianPreview() {
 
                     <div>
                         <h4 className="font-bold text-base text-foreground leading-tight">
-                            Marco B.
+                            Nikita B.
                         </h4>
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                            <span className="font-semibold text-foreground">4.9</span>
-                            <span>(142 interventi)</span>
+                            <span className="font-semibold text-foreground">5.0</span>
+                            <span>(480+ interventi)</span>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">Specialista Caldaie • Certificato F-Gas</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Specialista Manutenzioni • Rimini</p>
                     </div>
                 </div>
 

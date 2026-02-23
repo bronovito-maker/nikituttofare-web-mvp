@@ -83,11 +83,11 @@ export function PriceComparison() {
                 <ul className="mt-6 space-y-3">
                     <li className="flex items-center gap-3 text-sm font-medium text-foreground">
                         <div className="bg-green-100 dark:bg-green-900/30 p-1 rounded-full"><Check className="w-3 h-3 text-green-600" /></div>
-                        <span>Prezzi Listino Emilia-Romagna</span>
+                        <span>Prezzi Chiari Emilia-Romagna</span>
                     </li>
                     <li className="flex items-center gap-3 text-sm font-medium text-foreground">
                         <div className="bg-green-100 dark:bg-green-900/30 p-1 rounded-full"><Check className="w-3 h-3 text-green-600" /></div>
-                        <span>Pagamento digitale tracciato</span>
+                        <span>Trasparenza totale NikiTuttoFare</span>
                     </li>
                 </ul>
             </div>

@@ -11,7 +11,7 @@ export function CommonFeatures() {
       <div className="max-w-7xl mx-auto">
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-foreground">
-            {userType === 'residential' ? "Siamo di qui, mica un call center." : "Il Tuo Partner Tecnologico e Locale."}
+            {userType === 'residential' ? "Sono di qui, mica un call center." : "Il Tuo Partner Tecnologico e Locale."}
           </h2>
           <p className="text-lg text-muted-foreground font-light px-2">
             {userType === 'residential' ? (
@@ -29,7 +29,7 @@ export function CommonFeatures() {
             iconBg="from-blue-600 to-blue-500"
             number="01"
             title={userType === 'residential' ? "Da te in un attimo" : "Interventi Ultra-Rapidi H24"}
-            desc={userType === 'residential' ? "I nostri tecnici sono già in zona. Non arriviamo da Bologna, siamo già qui." : "Minimizza i tempi di inattività. I nostri tecnici sono strategicamente posizionati per garantire risposte immediate in tutta la Riviera."}
+            desc={userType === 'residential' ? "Abito e lavoro qui. Non arrivo da Bologna, sono già in zona pronto a intervenire." : "Minimizza i tempi di inattività. Grazie alla mia organizzazione digitale, garantisco risposte immediate in tutta la Riviera."}
             features={userType === 'residential' ? ["Rimini, Riccione, Santarcangelo", "Tracking GPS in tempo reale", "Priorità Emergenza"] : ["Disponibilità H24/7", "Tempo di Risposta Garantito", "Copertura Completa Riviera"]}
           />
           <PremiumFeatureCard
@@ -45,8 +45,8 @@ export function CommonFeatures() {
             iconBg="from-green-600 to-green-500"
             number="03"
             title={userType === 'residential' ? "Lavori Fatti Bene" : "Affidabilità e Garanzia Totale"}
-            desc={userType === 'residential' ? "Siamo romagnoli: le cose o si fanno bene o non si fanno. E se sbagliamo, paghiamo noi." : "Standard qualitativi romagnoli: ogni intervento è coperto da assicurazione e garanzia, per la tua serenità operativa."}
-            features={userType === 'residential' ? ["Assicurazione 1M€", "Rifacimento Gratuito", "Supporto h24"] : ["Assicurazione Aziendale 1M€", "Tecnici Certificati", "Report Post-Intervento Dettagliati"]}
+            desc={userType === 'residential' ? "Sono romagnolo: le cose o si fanno bene o non si fanno. E se sbaglio, ci metto la faccia e sistemo io." : "Ogni mio intervento è garantito personalmente: ci metto la faccia per la tua serenità operativa, con standard qualitativi romagnoli."}
+            features={userType === 'residential' ? ["Lavoro Garantito", "Rifacimento Gratuito", "Supporto h24"] : ["Lavoro Garantito", "Firma Certificata", "Report Post-Intervento Dettagliati"]}
           />
         </div>
       </div>

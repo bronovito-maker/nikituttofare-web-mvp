@@ -51,12 +51,15 @@ export function ChatWelcome({ onOptionSelect }: ChatWelcomeProps) {
                     <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-600 to-cyan-500 shadow-xl shadow-blue-500/25">
                         <Wrench className="w-10 h-10 text-white" />
                     </div>
-                    <div className="space-y-2 px-4">
-                        <h2 className="text-2xl sm:text-3xl font-black text-foreground">
-                            Ciao! Come posso aiutarti?
+                    <div className="space-y-4 px-4">
+                        <h2 className="text-2xl sm:text-3xl font-black text-foreground leading-tight">
+                            L&apos;assistente digitale di Niki
                         </h2>
-                        <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto">
-                            Siamo qui per aiutarti a risolvere ogni guasto tecnico. Descrivi il tuo problema e ti assisteremo in tempo reale per inviare un tecnico.
+                        <p className="text-muted-foreground text-sm sm:text-lg max-w-lg mx-auto leading-relaxed">
+                            Lui è sui cantieri o a casa di un cliente in questo momento, ma io sono qui per farti un <strong>preventivo immediato</strong>, prenotare un appuntamento o rispondere ai tuoi dubbi tecnici.
+                        </p>
+                        <p className="text-muted-foreground text-xs sm:text-sm font-medium">
+                            Risparmia tempo e prova la mia velocità, oppure se preferisci scrivigli direttamente su WhatsApp!
                         </p>
                     </div>
                 </div>

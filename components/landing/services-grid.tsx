@@ -22,10 +22,10 @@ export function ServicesGrid() {
             <div className="max-w-7xl mx-auto">
                 <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
                     <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-foreground">
-                        Cosa risolviamo <span className="text-blue-600 dark:text-blue-400">oggi</span>?
+                        Cosa risolvo per te <span className="text-blue-600 dark:text-blue-400">oggi</span>?
                     </h2>
                     <p className="text-lg text-muted-foreground font-light">
-                        Non solo grandi impianti. Siamo qui per risolvere i piccoli problemi che ti bloccano la giornata.
+                        Non solo grandi impianti. Sono qui per risolvere i piccoli problemi che ti bloccano la giornata.
                     </p>
                 </div>
 

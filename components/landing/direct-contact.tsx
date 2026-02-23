@@ -39,7 +39,7 @@ export function DirectContact() {
                             Hai un&apos;urgenza o preferisci parlare con una persona?
                         </h2>
                         <p className="text-slate-300 text-lg">
-                            Salta l&apos;intelligenza artificiale e mettiti subito in contatto con noi.
+                            Salta l&apos;intelligenza artificiale e mettiti subito in contatto con me.
                         </p>
                     </div>
 

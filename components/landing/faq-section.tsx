@@ -5,7 +5,7 @@ import { FAQAccordion, type FAQItem } from '@/components/ui/faq-accordion';
 const FAQ_ITEMS: FAQItem[] = [
     {
         question: 'Come funziona la chatbot Niki?',
-        answer: 'Descrivi il tuo problema a Niki come se parlassi con un amico. L\'AI analizza la richiesta, identifica il tipo di intervento necessario e trova il tecnico disponibile più vicino a te. Garantiamo l\'intervento entro 2 ore.',
+        answer: "Descrivi il tuo problema a Niki come se parlassi con un amico. L'AI analizza la richiesta, identifica il tipo di intervento e organizza il mio arrivo prioritario da te. Di solito sono lì in meno di 2 ore.",
     },
     {
         question: 'Quanto costa un intervento?',
@@ -13,11 +13,11 @@ const FAQ_ITEMS: FAQItem[] = [
     },
     {
         question: 'Come vengono selezionati i tecnici?',
-        answer: 'Ogni tecnico della nostra rete è verificato, certificato e assicurato. Controlliamo le credenziali, le recensioni e monitoriamo la qualità di ogni intervento.',
+        answer: 'Sono io a intervenire personalmente. Sono un professionista certificato e assicurato. Metto la mia firma su ogni lavoro e ne garantisco la qualità totale.',
     },
     {
         question: 'Quali zone coprite?',
-        answer: 'Attualmente operiamo su Rimini, Riccione, Cattolica, Santarcangelo, Bellaria e tutta la Riviera Romagnola. Stiamo espandendo — contattaci se vuoi il servizio nella tua zona.',
+        answer: 'Attualmente intervengo personalmente su Rimini, Riccione, Cattolica, Santarcangelo, Bellaria e tutta la Riviera Romagnola.',
     },
     {
         question: 'Posso richiedere un preventivo senza impegno?',

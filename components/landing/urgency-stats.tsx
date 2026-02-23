@@ -93,7 +93,7 @@ const STATS = [
         icon: Users,
         value: 1,
         suffix: '',
-        label: 'Tecnici Online Ora',
+        label: "Pronto all'Intervento",
         color: 'text-purple-500',
         bgColor: 'bg-purple-500/10',
         pulse: true,
@@ -138,8 +138,37 @@ export function UrgencyStats({ cityName }: UrgencyStatsProps) {
     }, [cityName]);
 
     return (
-        <div className="w-full py-8 sm:py-12">
-            <div className="max-w-6xl mx-auto px-4">
+        <div className="w-full py-10 sm:py-16">
+            <div className="max-w-6xl mx-auto px-4 space-y-8 sm:space-y-12">
+                {/* Nikita Live Status Bar - Personal & Friendly */}
+                <div className="relative group overflow-hidden bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800/50 rounded-3xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                        <div className="flex items-center gap-4">
+                            <div className="relative flex-shrink-0">
+                                <span className="relative flex h-4 w-4">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 shadow-sm border-2 border-white dark:border-slate-900"></span>
+                                </span>
+                            </div>
+                            <p className="text-emerald-900 dark:text-emerald-100 font-bold text-base sm:text-lg leading-tight text-center md:text-left">
+                                Nikita è operativo: <span className="font-medium opacity-90">oggi sono tra Rimini e Riccione. Scrivimi ora per un intervento rapido!</span>
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => document.getElementById('chat-trigger')?.click()}
+                            className="w-full md:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black uppercase tracking-wider rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+                        >
+                            Controlla disponibilità
+                        </button>
+                    </div>
+
+                    {/* Subtle design element */}
+                    <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <CheckCircle2 className="w-32 h-32 text-emerald-600" />
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
                     {stats.map((stat) => {
                         const Icon = stat.icon;

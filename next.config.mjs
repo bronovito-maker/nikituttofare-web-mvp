@@ -28,8 +28,6 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', 'framer-motion', 'date-fns', 'recharts', '@radix-ui/react-icons'],
   },
 
-  // Performance: Enable SWC minification (faster than Terser)
-  swcMinify: true,
 
   // Compiler optimizations
   compiler: {
@@ -215,8 +213,6 @@ export default bundleAnalyzer(withSentryConfig(nextConfig, {
   // Hide source maps from public access (security best practice)
   hideSourceMaps: true,
 
-  // Disable source map generation during development (faster builds)
-  disableLogger: true,
 
   // Uncomment to route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
   // This can increase your server load as well as your hosting bill.

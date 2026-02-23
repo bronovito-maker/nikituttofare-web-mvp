@@ -20,8 +20,8 @@ const BADGES = [
     },
     {
         icon: BadgeCheck,
-        title: 'Assicurazione',
-        subtitle: 'Lavoro Protetto e Sicuro',
+        title: 'Qualità Garantita',
+        subtitle: 'Lavoro Certificato e Sicuro',
     },
 ];
 

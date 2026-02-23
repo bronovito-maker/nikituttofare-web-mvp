@@ -12,13 +12,13 @@ export function HowItWorks() {
         {
             icon: Sparkles,
             title: 'Analisi Istantanea',
-            description: "L'AI capisce l'urgenza, categorizza e trova il tecnico giusto in zona.",
+            description: "L'AI analizza il guasto, mi invia i dettagli e organizza il mio intervento prioritario.",
             lightIconBg: 'bg-purple-100 text-purple-600',
         },
         {
             icon: Wrench,
-            title: 'Tecnico in Arrivo',
-            description: 'Un professionista certificato ti contatta e interviene entro 2 ore.',
+            title: 'Arrivo da te',
+            description: 'Ti contatto in pochi minuti e intervengo personalmente entro 2 ore.',
             lightIconBg: 'bg-orange-100 text-orange-600',
         },
         {
