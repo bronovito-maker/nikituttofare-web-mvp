@@ -2,6 +2,7 @@
 
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 import { CheckCircle2, Home, MapPin, Settings, Zap } from 'lucide-react';
 
 const RECENT_WORKS = [
@@ -85,13 +86,13 @@ export function RecentWorks() {
                     ))}
                 </div>
                 <div className="mt-16 text-center">
-                    <button
-                        onClick={() => document.getElementById('chat-trigger')?.click() || (window.location.href = '/chat')}
+                    <Link
+                        href="/chat"
                         className="inline-flex items-center gap-2 px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white rounded-full font-bold text-lg shadow-xl shadow-orange-500/20 transition-all hover:scale-105 active:scale-95 group"
                     >
                         Vuoi un risultato così a casa tua? Chiedi il costo all&apos;assistente di Nikita
                         <Zap className="w-5 h-5 fill-current group-hover:animate-pulse" />
-                    </button>
+                    </Link>
                 </div>
             </div>
         </section>

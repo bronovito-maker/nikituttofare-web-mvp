@@ -404,7 +404,7 @@ function ChatContent() {
               </Button>
             </div>
           ) : (
-            <div className="flex items-end gap-2 sm:gap-3">
+            <div className="flex items-center gap-1 bg-secondary/40 dark:bg-slate-900/40 border border-border rounded-2xl p-1 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-card focus-within:border-blue-500/30 transition-all duration-300">
               {/* Left Box: Upload */}
               <div className="flex-shrink-0">
                 <ImageUpload
@@ -413,6 +413,7 @@ function ChatContent() {
                   onError={handleUploadError}
                   disabled={isLoading}
                   isAuthenticated={isAuthenticated}
+                  variant="minimal"
                   onAuthError={() => {
                     toast("Serve un account per le foto", {
                       description: "Per analizzare le tue immagini e garantirti la massima privacy, abbiamo bisogno che tu acceda. È questione di un attimo e potrai caricare tutte le foto che vuoi!",
@@ -436,22 +437,22 @@ function ChatContent() {
                   placeholder="Descrivi il problema..."
                   rows={1}
                   disabled={isLoading}
-                  className="w-full px-4 py-3 bg-secondary/50 border-0 rounded-2xl text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-card transition-all resize-none min-h-[48px] max-h-[120px]"
+                  className="w-full px-1.5 py-[10px] bg-transparent border-0 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 transition-all resize-none min-h-[40px] max-h-[120px] leading-[20px] m-0"
                   style={{ fontSize: '16px' }}
                 />
               </div>
 
-              {/* Right Box: Send Button (Now outside) */}
-              <div className="flex-shrink-0">
+              {/* Right Box: Send Button */}
+              <div className="flex-shrink-0 pr-1">
                 <button
                   onClick={handleSend}
                   disabled={(!input.trim() && !uploadedImageUrl) || isLoading || isUploading}
-                  className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:from-blue-700 hover:to-blue-600 transition-all shadow-lg shadow-blue-500/25 active:scale-95"
+                  className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white flex items-center justify-center disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed hover:from-blue-700 hover:to-blue-600 transition-all shadow-md shadow-blue-500/10 active:scale-95"
                 >
                   {isLoading ? (
                     <LoadingSpinner size="sm" className="text-white" />
                   ) : (
-                    <Send className="w-5 h-5" />
+                    <Send className="w-4 h-4" />
                   )}
                 </button>
               </div>

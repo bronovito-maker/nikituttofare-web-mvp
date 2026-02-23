@@ -68,27 +68,25 @@ export function HeroContent({ cityName, serviceName }: HeroContentProps) {
             key={`${userType}-personal-title`}
             text={mainTitle}
             as="h1"
-            className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-foreground leading-[1.1] pb-1 max-md:opacity-100 max-md:animate-none max-md:filter-none"
+            className="text-3xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-foreground leading-[1.1] pb-1 max-md:opacity-100 max-md:animate-none max-md:filter-none text-balance"
             delay={0.05}
           />
-          <p className="text-lg sm:text-2xl font-medium text-muted-foreground leading-relaxed max-w-2xl mx-auto lg:mx-0">
+          <p className="text-lg sm:text-2xl font-medium text-muted-foreground leading-relaxed max-w-2xl mx-auto lg:mx-0 text-balance">
             {subTitle}
           </p>
         </div>
 
         {/* CSS-only animation for performance (no JS hydration overhead) */}
-        <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0 leading-relaxed font-light md:opacity-0 md:animate-lcp-entry max-md:!opacity-100" style={{ animationDelay: '0.4s' }}>
+        <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0 leading-relaxed font-light md:opacity-0 md:animate-lcp-entry max-md:!opacity-100 text-balance" style={{ animationDelay: '0.4s' }}>
           {userType === 'residential' ? (
             <>
-              <span className="font-semibold text-foreground">Non aspettare che peggiori.</span> Il miglior servizio di <br />
-              <strong>tuttofare {cityName ? 'nella tua zona' : 'a Rimini, Riccione e Misano Adriatico'}</strong>, con intervento garantito <span className="font-bold text-blue-600 dark:text-blue-400">entro 2 ore</span>
+              <span className="font-semibold text-foreground">Non aspettare che peggiori.</span> Il miglior servizio di{' '}
+              <strong>tuttofare {cityName ? 'nella tua zona' : 'a Rimini e dintorni'}</strong>, con intervento garantito <span className="font-bold text-blue-600 dark:text-blue-400">entro 2 ore</span>
               {cityName && <span className="text-blue-600 dark:text-blue-400 md:hidden font-medium"> a {cityName}</span>}.
             </>
           ) : (
             <>
-              Mantieni la tua operatività al massimo con la mia assistenza tecnica H24. <br />
-              Soluzioni proattive e interventi rapidi per <strong>Hotel, Ristoranti e Stabilimenti</strong> della Riviera Romagnola, <br />
-              garantendo continuità e conformità.
+              Mantieni la tua operatività al massimo con la mia assistenza tecnica H24. Soluzioni proattive e interventi rapidi per <strong>Hotel, Ristoranti e Stabilimenti</strong> della Riviera Romagnola, garantendo continuità e conformità.
             </>
           )}
         </p>

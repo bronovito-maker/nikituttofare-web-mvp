@@ -12,6 +12,7 @@ interface ImageUploadProps {
   className?: string;
   isAuthenticated?: boolean;
   onAuthError?: () => void;
+  variant?: 'default' | 'minimal';
 }
 
 type UploadState = 'idle' | 'selecting' | 'compressing' | 'uploading' | 'success' | 'error';
@@ -134,7 +135,8 @@ export function ImageUpload({
   disabled = false,
   className = '',
   isAuthenticated = true,
-  onAuthError
+  onAuthError,
+  variant = 'default'
 }: Readonly<ImageUploadProps>) {
   const [state, setState] = useState<UploadState>('idle');
   const [progress, setProgress] = useState(0);
@@ -222,6 +224,7 @@ export function ImageUpload({
 
   // Compute button background class based on state
   const getButtonBgClass = () => {
+    if (variant === 'minimal') return 'bg-transparent hover:bg-slate-200/50 dark:hover:bg-slate-800/50';
     if (state === 'error') return 'bg-red-50 hover:bg-red-100';
     if (state === 'success') return 'bg-green-50';
     return 'bg-slate-100 hover:bg-slate-200';
@@ -236,7 +239,7 @@ export function ImageUpload({
         type="button"
         onClick={handleClick}
         disabled={isDisabled}
-        className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all group ${getButtonBgClass()} ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+        className={`flex-shrink-0 ${variant === 'minimal' ? 'w-10 h-10' : 'w-12 h-12'} rounded-xl flex items-center justify-center transition-all group ${getButtonBgClass()} ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
       >
         <UploadContent state={state} progress={progress} errorMessage={errorMessage} />
       </button>

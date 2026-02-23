@@ -57,20 +57,26 @@ export default function Home() {
 
           {/* --- HERO SECTION --- */}
           <section className="relative py-12 sm:py-20 lg:py-32 px-4 sm:px-6 overflow-hidden">
-            {/* RetroGrid removed for performance - saves ~50ms TBT */}
             <div className="relative max-w-6xl mx-auto">
               <HeroContent />
             </div>
           </section>
 
-          {/* --- RECENT WORKS --- */}
+          {/* --- TESTIMONIALS (IMMEDIATE SOCIAL PROOF) --- */}
+          <div className="min-h-[400px]">
+            <TestimonialCarousel />
+          </div>
+
+          {/* --- RECENT WORKS (AUTHORITY) --- */}
           <RecentWorks />
 
-          {/* --- URGENCY STATS --- */}
-          <UrgencyStats />
-
-          {/* --- BIO SECTION --- */}
+          {/* --- BIO SECTION (HUMAN CONNECTION) --- */}
           <BioSection />
+
+          {/* --- WHY CHOOSE US (TRUST & QUALITY) --- */}
+          <div className="min-h-[600px]">
+            <WhyChooseUs />
+          </div>
 
           {/* --- USER-SPECIFIC SECTIONS (Residential/Business) --- */}
           <UserSpecificSections />
@@ -83,15 +89,8 @@ export default function Home() {
             <HowItWorks />
           </div>
 
-          {/* --- TESTIMONIALS --- */}
-          <div className="min-h-[400px]">
-            <TestimonialCarousel />
-          </div>
-
-          {/* --- WHY CHOOSE US --- */}
-          <div className="min-h-[600px]">
-            <WhyChooseUs />
-          </div>
+          {/* --- URGENCY STATS (PUSHED LOWER) --- */}
+          <UrgencyStats />
 
           {/* --- TRUST BADGES --- */}
           <div className="min-h-[200px]">

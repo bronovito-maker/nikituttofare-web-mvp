@@ -79,19 +79,19 @@ export function ChatWelcome({ onOptionSelect }: ChatWelcomeProps) {
             </ClientAnimationWrapper>
 
             <ClientAnimationWrapper delay={0.3} duration={0.5}>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-2xl px-4">
+                <div className="grid grid-cols-4 gap-2 sm:gap-4 w-full max-w-2xl px-2 sm:px-4">
                     {QUICK_ACTIONS.map((action) => {
                         const Icon = action.icon;
                         return (
                             <button
                                 key={action.id}
                                 onClick={() => onOptionSelect(action.message)}
-                                className="group flex flex-col items-center gap-3 p-4 sm:p-5 bg-card rounded-2xl border border-border hover:border-accent shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                                className="group flex flex-col items-center gap-1.5 sm:gap-3 p-2 sm:p-5 bg-card rounded-2xl border border-border hover:border-accent shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                             >
-                                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} ${action.shadowColor} shadow-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                                    <Icon className="w-6 h-6 text-white" />
+                                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${action.color} ${action.shadowColor} shadow-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                                    <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                                 </div>
-                                <span className="text-sm font-semibold text-card-foreground group-hover:text-primary transition-colors">
+                                <span className="text-[10px] sm:text-sm font-semibold text-card-foreground group-hover:text-primary transition-colors text-center leading-tight">
                                     {action.label}
                                 </span>
                             </button>

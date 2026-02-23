@@ -95,7 +95,7 @@ export function TestimonialCarousel() {
                         Cosa Dicono i Clienti
                     </h2>
                     <p className="text-muted-foreground text-lg">
-                        Testimonianze reali da Google Business Profile
+                        Testimonianze reali da Google
                     </p>
                 </div>
 
