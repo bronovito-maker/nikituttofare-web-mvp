@@ -6,32 +6,31 @@ import { Card, CardContent } from '@/components/ui/card';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { ContactForm } from '@/components/contact/contact-form';
-import { COMPANY_PHONE, COMPANY_PHONE_LINK } from '@/lib/constants';
+import { EMERGENCY_PHONE, EMERGENCY_PHONE_LINK, WHATSAPP_LINK, GENERAL_PHONE } from '@/lib/constants';
 
 export const metadata: Metadata = {
     title: 'Contatti - NikiTuttoFare | Pronto Intervento Rimini H24',
-    description: 'Hai un&apos;emergenza idraulica, elettrica o di climatizzazione? Contatta NikiTuttoFare. Rispondiamo H24 a Rimini, Riccione e zone limitrofe.',
+    description: 'Hai un\'emergenza idraulica, elettrica o di climatizzazione? Contatta NikiTuttoFare. Rispondiamo H24 a Rimini, Riccione e zone limitrofe.',
 };
 
 export default function ContactPage() {
-    const whatsappNumber = '+393461027447';
-    const whatsappUrl = `https://wa.me/${whatsappNumber.replace('+', '')}?text=Ciao Niki, ho bisogno di assistenza`;
+    const whatsappUrl = WHATSAPP_LINK + "?text=Ciao Niki, ho bisogno di assistenza";
     const supportEmail = 'bronovito@gmail.com';
 
     const contactMethods = [
         {
             icon: <PhoneCall className="h-6 w-6 text-red-500 animate-pulse" />,
             title: 'Numero Rosso (Emergenze)',
-            value: COMPANY_PHONE,
+            value: EMERGENCY_PHONE,
             description: 'Disponibile H24 per guasti urgenti.',
-            link: COMPANY_PHONE_LINK,
+            link: EMERGENCY_PHONE_LINK,
             cta: 'Chiama Ora',
             variant: 'destructive' as const,
         },
         {
             icon: <MessageSquare className="h-6 w-6 text-[#25D366]" />,
             title: 'WhatsApp Diretto',
-            value: '+39 346 102 7447',
+            value: '+39 ' + GENERAL_PHONE,
             description: 'Invia foto del guasto per un preventivo rapido.',
             link: whatsappUrl,
             cta: 'Scrivici su WA',

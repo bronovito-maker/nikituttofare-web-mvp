@@ -1,6 +1,6 @@
 'use client';
 
-import { Zap, ShieldCheck, FileCheck, Smartphone, Star } from 'lucide-react';
+import { Zap, ShieldCheck, FileCheck, Smartphone, Star as StarIcon } from 'lucide-react';
 import { BenefitsGrid, type BenefitItem } from '@/components/ui/benefits-grid';
 
 const BENEFITS: readonly BenefitItem[] = [
@@ -42,10 +42,12 @@ export function WhyChooseUs() {
                 title={
                     <div className="flex flex-col items-center gap-4">
                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-full">
-                            <Star className="w-3 h-3 text-blue-600 fill-blue-600" />
+                            <StarIcon className="w-3 h-3 text-blue-600 fill-blue-600" />
                             <span className="text-[10px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-400">Artigiano 4.0</span>
                         </div>
-                        <>Perché affidarti a me?</>
+                        <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-foreground">
+                            Perché affidarti a me?
+                        </h2>
                     </div>
                 }
                 subtitle="Dimentica i soliti call center. Per ogni guasto in casa, hai un professionista romagnolo che ci mette la faccia."

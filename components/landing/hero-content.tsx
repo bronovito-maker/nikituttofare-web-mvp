@@ -114,7 +114,7 @@ export function HeroContent({ cityName, serviceName }: HeroContentProps) {
 
           {/* Secondary CTA - WhatsApp */}
           <a
-            href="https://wa.me/393793394421"
+            href="https://wa.me/393461027447?text=Ciao%20Niki%2C%20ho%20bisogno%20del%20tuo%20aiuto"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center h-16 px-10 text-xl font-bold rounded-full border-2 border-green-500/30 bg-green-50/50 dark:bg-green-950/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-950/40 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-green-500/5"
