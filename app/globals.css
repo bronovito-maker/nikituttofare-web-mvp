@@ -143,7 +143,6 @@
    ======================================== */
 
 @layer utilities {
-
   /* Scrollbar Hide */
   .scrollbar-hide {
     -ms-overflow-style: none;
@@ -238,5 +237,10 @@
   /* Accessibility: Touch target expansion */
   .touch-target-expansion {
     @apply relative before:content-[''] before:absolute before:inset-[-12px] before:z-10;
+  }
+
+  /* Dynamic Viewport Height for mobile/FB IAB */
+  .min-h-dvh {
+    min-height: 100dvh;
   }
 }
