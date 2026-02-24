@@ -47,14 +47,14 @@ interface CookieConsentContextType {
 
 const defaultPreferences: CookiePreferences = {
     essential: true,
-    analytics: false,
-    marketing: false,
+    analytics: true,
+    marketing: true,
 };
 
 const CookieConsentContext = createContext<CookieConsentContextType | null>(null);
 
 export function CookieConsentProvider({ children }: Readonly<{ children: ReactNode }>) {
-    const [status, setStatus] = useState<ConsentStatus>('pending');
+    const [status, setStatus] = useState<ConsentStatus>('accepted');
     const [preferences, setPreferences] = useState<CookiePreferences>(defaultPreferences);
     const [showBanner, setShowBanner] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
@@ -68,17 +68,13 @@ export function CookieConsentProvider({ children }: Readonly<{ children: ReactNo
                 const data: ConsentData = JSON.parse(stored);
                 setStatus(data.status);
                 setPreferences(data.preferences);
-                setShowBanner(false);
             } catch {
-                // Invalid data, show banner
-                setShowBanner(true);
+                // Invalid data, keep default (accepted)
             }
-        } else {
-            // No consent yet, show banner after delay
-            const timer = setTimeout(() => setShowBanner(true), 1500);
-            return () => clearTimeout(timer);
         }
 
+        // Always ensure banner is hidden for this specific request
+        setShowBanner(false);
         setIsLoaded(true);
     }, []);
 

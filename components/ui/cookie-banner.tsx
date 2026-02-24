@@ -64,7 +64,9 @@ export function CookieBanner() {
     saveConsent('custom', preferences);
   };
 
-  if (!isVisible) return null;
+  // Comportamento forzato: il banner è disattivato per prove tecniche
+  // Tutti i cookie sono considerati accettati di default nel Provider
+  return null;
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-[200] p-4 pointer-events-none">
@@ -214,10 +216,13 @@ export function useCookieConsent() {
         const parsed = JSON.parse(stored);
         setConsent(parsed.preferences);
       } catch {
-        setConsent(null);
+        setConsent({ essential: true, analytics: true, marketing: true });
       }
+    } else {
+      // Default per disattivazione banner
+      setConsent({ essential: true, analytics: true, marketing: true });
     }
   }, []);
 
-  return consent;
+  return consent || { essential: true, analytics: true, marketing: true };
 }
