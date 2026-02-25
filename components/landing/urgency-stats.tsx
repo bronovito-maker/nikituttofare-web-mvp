@@ -153,7 +153,7 @@ export function UrgencyStats({ cityName }: UrgencyStatsProps) {
                                 </span>
                             </div>
                             <p className="text-emerald-900 dark:text-emerald-100 font-bold text-base sm:text-lg leading-tight text-center md:text-left">
-                                Nikita è operativo: <span className="font-medium opacity-90">oggi sono tra Rimini e Riccione. Scrivimi ora per un intervento rapido!</span>
+                                Niki è operativo: <span className="font-medium opacity-90">oggi sono tra Rimini e Riccione. Scrivimi ora per un intervento rapido!</span>
                             </p>
                         </div>
 

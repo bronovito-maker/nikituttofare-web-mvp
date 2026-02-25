@@ -103,7 +103,7 @@ export function SiteHeader({ showUserTypeToggle = false, cityName }: Readonly<Si
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
                         </span>
-                        <span className="hidden xl:inline">Nikita è operativo a <strong>{cityName ? `${cityName} e dintorni` : 'Rimini e Riccione'}</strong></span>
+                        <span className="hidden xl:inline">Niki è operativo a <strong>{cityName ? `${cityName} e dintorni` : 'Rimini e Riccione'}</strong></span>
                     </div>
 
                     <div className="hidden md:flex items-center gap-2">

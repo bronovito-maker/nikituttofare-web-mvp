@@ -74,7 +74,7 @@ export function RecentWorks() {
 
                             <div className="mt-8 pt-6 border-t border-border/50 flex items-center justify-between">
                                 <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">
-                                    NIKI TUTTOFARE • 2026
+                                    NIKI TUTTOFARE • RIMINI • 2026
                                 </span>
                                 <div className="flex -space-x-2">
                                     {[1, 2, 3].map(i => (
@@ -90,7 +90,7 @@ export function RecentWorks() {
                         href="/chat"
                         className="inline-flex items-center gap-2 px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white rounded-full font-bold text-lg shadow-xl shadow-orange-500/20 transition-all hover:scale-105 active:scale-95 group"
                     >
-                        Vuoi un risultato così a casa tua? Chiedi il costo all&apos;assistente di Nikita
+                        Vuoi un risultato così a casa tua? Contattami!
                         <Zap className="w-5 h-5 fill-current group-hover:animate-pulse" />
                     </Link>
                 </div>

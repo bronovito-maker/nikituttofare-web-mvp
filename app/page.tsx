@@ -35,9 +35,6 @@ const WhyChooseUs = dynamic(() => import('@/components/landing/why-choose-us').t
 const TechnicianCTA = dynamic(() => import('@/components/landing/technician-cta').then(mod => mod.TechnicianCTA), {
   loading: () => <div className="min-h-[400px]" />
 });
-const TrustBadges = dynamic(() => import('@/components/landing/trust-badges').then(mod => mod.TrustBadges), {
-  loading: () => <div className="min-h-[200px]" />
-});
 const FAQSection = dynamic(() => import('@/components/landing/faq-section').then(mod => mod.FAQSection), {
   loading: () => <div className="min-h-[600px]" />
 });
@@ -94,11 +91,6 @@ export default function Home() {
 
           {/* --- URGENCY STATS (PUSHED LOWER) --- */}
           <UrgencyStats />
-
-          {/* --- TRUST BADGES --- */}
-          <div className="min-h-[200px]">
-            <TrustBadges />
-          </div>
 
           {/* --- TECHNICIAN CTA --- */}
           <div className="min-h-[400px]">

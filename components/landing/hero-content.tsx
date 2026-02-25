@@ -17,7 +17,7 @@ export function HeroContent({ cityName, serviceName }: HeroContentProps) {
   const { userType } = useUserType();
 
   const mainTitle = userType === 'residential'
-    ? "Ciao, sono Nikita. Il tuo tuttofare di fiducia a Rimini e dintorni."
+    ? "Ciao, sono Niki. Il tuo tuttofare di fiducia a Rimini e dintorni."
     : "Impianti Sempre Operativi.";
 
   const subTitle = userType === 'residential'

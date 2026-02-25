@@ -10,7 +10,7 @@ const TESTIMONIALS = [
         location: 'Rimini',
         avatar: '👩',
         rating: 5,
-        quote: 'Nikita ha eseguito diversi lavoretti in casa ed è stato veramente bravo, pulito, veloce e soprattutto onesto. Lo straconsiglio vivamente.',
+        quote: 'Niki ha eseguito diversi lavoretti in casa ed è stato veramente bravo, pulito, veloce e soprattutto onesto. Lo straconsiglio vivamente.',
     },
     {
         id: 2,
@@ -26,7 +26,7 @@ const TESTIMONIALS = [
         location: 'Local Guide',
         avatar: '👨‍🔧',
         rating: 5,
-        quote: 'Bravo ragazzo serio, preciso, pulito, affidabile e con tanta professionalità. Lo consiglio per vari lavori in casa. Bravo Nikita.',
+        quote: 'Bravo ragazzo serio, preciso, pulito, affidabile e con tanta professionalità. Lo consiglio per vari lavori in casa. Bravo Niki.',
     },
     {
         id: 4,
@@ -58,7 +58,7 @@ const TESTIMONIALS = [
         location: 'Rimini',
         avatar: '👨‍🔬',
         rating: 5,
-        quote: 'Ho contattato Nikita per un problema idraulico a Rimini. Intervento rapido e risolutivo. Una sicurezza.',
+        quote: 'Ho contattato Niki per un problema idraulico a Rimini. Intervento rapido e risolutivo. Una sicurezza.',
     },
 ];
 
