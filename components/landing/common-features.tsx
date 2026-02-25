@@ -1,23 +1,22 @@
 'use client';
 
 import { ShieldCheck, Clock, Star } from 'lucide-react';
-import { useUserType } from './user-type-context';
-
-export function CommonFeatures() {
-  const { userType } = useUserType();
+export function CommonFeatures({ type }: { type?: 'residential' | 'business' }) {
+  // Use residential by default, as business has its own page
+  const userType = type ?? 'residential';
 
   return (
     <section id="common-features" className="py-20 px-4 sm:px-6 bg-background">
       <div className="max-w-7xl mx-auto">
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-foreground">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-foreground text-balance">
             {userType === 'residential' ? "Sono di qui, mica un call center." : "Il Tuo Partner Tecnologico e Locale."}
           </h2>
-          <p className="text-lg text-muted-foreground font-light px-2">
+          <p className="text-lg text-muted-foreground font-light px-2 text-balance">
             {userType === 'residential' ? (
-              <>Conosciamo ogni via di Rimini e Riccione. Tecnologia per eliminare l&apos;ansia, artigiani per risolvere il problema.</>
+              <>Conosco ogni via di Rimini e Riccione. Tecnologia per eliminare l&apos;ansia, io per risolvere il problema.</>
             ) : (
-              <>Uniamo l&apos;efficienza della tecnologia alla conoscenza profonda del territorio. <br />
+              <>Unisco l&apos;efficienza della tecnologia alla mia conoscenza profonda del territorio. <br className="hidden sm:block" />
                 La soluzione ideale per la continuità operativa del tuo business in Romagna.</>
             )}
           </p>
@@ -37,7 +36,7 @@ export function CommonFeatures() {
             iconBg="from-purple-600 to-purple-500"
             number="02"
             title={userType === 'residential' ? "Prezzi Chiari" : "Costi Trasparenti, Nessuna Sorpresa"}
-            desc={userType === 'residential' ? "Niente 'faccio un prezzo a occhio'. Usiamo i listini ufficiali Emilia-Romagna. Quello che vedi è quello che paghi." : "Preventivi dettagliati basati su listini ufficiali, con piani di manutenzione programmata per una gestione budget chiara e prevedibile."}
+            desc={userType === 'residential' ? "Niente 'faccio un prezzo a occhio'. Uso i listini ufficiali Emilia-Romagna. Quello che vedi è quello che paghi." : "Preventivi dettagliati basati su listini ufficiali, con piani di manutenzione programmata per una gestione budget chiara e prevedibile."}
             features={userType === 'residential' ? ["Stima Costi Immediata", "Listini Regionali", "Pagamento In-App"] : ["Preventivi Personalizzati", "Piani di Manutenzione", "Flessibilità di Pagamento"]}
           />
           <PremiumFeatureCard

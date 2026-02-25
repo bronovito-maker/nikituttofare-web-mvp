@@ -4,7 +4,6 @@ import dynamic from 'next/dynamic';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { StickyActionNav } from '@/components/landing/sticky-action-nav';
-import { UserTypeProvider } from '@/components/landing/user-type-context';
 import { HeroContent } from '@/components/landing/hero-content';
 import { fetchSeoData } from '@/lib/seo-data';
 
@@ -59,8 +58,8 @@ export async function generateMetadata({ params }: { params: Promise<Readonly<{ 
     if (!city) return {};
 
     return {
-        title: `Idraulico, Elettricista e Fabbro a ${city.name} | NikiTuttoFare`,
-        description: `Cerchi un professionista a ${city.name}? Intervento rapido in 60 minuti per emergenze idrauliche, elettriche e serrature. Prezzi chiari e zero sorprese.`,
+        title: `Tuttofare a ${city.name} - Rapido, Onesto e Pulito | NikiTuttoFare`,
+        description: `Cerchi un tuttofare a ${city.name}? Nikita interviene subito per emergenze idrauliche, elettriche e di fabbro. Prezzi chiari, massima pulizia e recensioni a 5 stelle. Contattami ora!`,
         alternates: {
             canonical: `https://nikituttofare.it/${city.slug}`,
         }
@@ -77,76 +76,74 @@ export default async function CityPage({ params }: { params: Promise<Readonly<{ 
     }
 
     return (
-        <UserTypeProvider>
-            <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-blue-100 dark:selection:bg-blue-900 pb-20 sm:pb-0">
+        <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-blue-100 dark:selection:bg-blue-900 pb-20 sm:pb-0">
 
-                {/* --- SITE HEADER --- */}
-                <SiteHeader showUserTypeToggle={true} cityName={city.name} />
+            {/* --- SITE HEADER --- */}
+            <SiteHeader cityName={city.name} />
 
-                <main className="flex-1">
+            <main className="flex-1">
 
-                    {/* --- HERO SECTION --- */}
-                    <section className="relative py-12 sm:py-20 lg:py-32 px-4 sm:px-6 overflow-hidden">
-                        <div className="relative max-w-6xl mx-auto">
-                            <HeroContent cityName={city.name} />
-                        </div>
-                    </section>
-
-                    {/* --- URGENCY STATS --- */}
-                    <UrgencyStats cityName={city.name} />
-
-                    {/* --- USER-SPECIFIC SECTIONS (Residential/Business) --- */}
-                    <UserSpecificSections />
-
-                    {/* --- TERRA-TERRA SERVICES GRID --- */}
-                    <ServicesGrid />
-
-                    {/* --- HOW IT WORKS --- */}
-                    <div className="min-h-[500px]">
-                        <HowItWorks />
+                {/* --- HERO SECTION --- */}
+                <section className="relative py-12 sm:py-20 lg:py-32 px-4 sm:px-6 overflow-hidden">
+                    <div className="relative max-w-6xl mx-auto">
+                        <HeroContent cityName={city.name} />
                     </div>
+                </section>
 
-                    {/* --- TESTIMONIALS --- */}
-                    <div className="min-h-[400px]">
-                        <TestimonialCarousel />
-                    </div>
+                {/* --- URGENCY STATS --- */}
+                <UrgencyStats cityName={city.name} />
 
-                    {/* --- WHY CHOOSE US --- */}
-                    <div className="min-h-[600px]">
-                        <WhyChooseUs />
-                    </div>
+                {/* --- USER-SPECIFIC SECTIONS (Residential/Business) --- */}
+                <UserSpecificSections />
 
-                    {/* --- TRUST BADGES --- */}
-                    <div className="min-h-[200px]">
-                        <TrustBadges />
-                    </div>
+                {/* --- TERRA-TERRA SERVICES GRID --- */}
+                <ServicesGrid />
 
-                    {/* --- TECHNICIAN CTA --- */}
-                    <div className="min-h-[400px]">
-                        <TechnicianCTA />
-                    </div>
+                {/* --- HOW IT WORKS --- */}
+                <div className="min-h-[500px]">
+                    <HowItWorks />
+                </div>
 
-                    {/* --- FAQ --- */}
-                    <div className="min-h-[600px]">
-                        <FAQSection />
-                    </div>
+                {/* --- TESTIMONIALS --- */}
+                <div className="min-h-[400px]">
+                    <TestimonialCarousel />
+                </div>
 
-                    {/* --- DIRECT CONTACT --- */}
-                    <div className="min-h-[300px]">
-                        <DirectContact />
-                    </div>
+                {/* --- WHY CHOOSE US --- */}
+                <div className="min-h-[600px]">
+                    <WhyChooseUs />
+                </div>
 
-                    {/* --- COMMON FEATURES --- */}
-                    <CommonFeatures />
+                {/* --- TRUST BADGES --- */}
+                <div className="min-h-[200px]">
+                    <TrustBadges />
+                </div>
 
-                </main>
+                {/* --- TECHNICIAN CTA --- */}
+                <div className="min-h-[400px]">
+                    <TechnicianCTA />
+                </div>
 
-                {/* --- MOBILE THUMB ZONE NAV --- */}
-                <StickyActionNav />
+                {/* --- FAQ --- */}
+                <div className="min-h-[600px]">
+                    <FAQSection />
+                </div>
 
-                {/* FOOTER PREMIUM */}
-                <SiteFooter />
-            </div>
-        </UserTypeProvider>
+                {/* --- DIRECT CONTACT --- */}
+                <div className="min-h-[300px]">
+                    <DirectContact />
+                </div>
+
+                {/* --- COMMON FEATURES --- */}
+                <CommonFeatures />
+
+            </main>
+
+            {/* --- MOBILE THUMB ZONE NAV --- */}
+            <StickyActionNav />
+
+            {/* FOOTER PREMIUM */}
+            <SiteFooter />
+        </div>
     );
 }

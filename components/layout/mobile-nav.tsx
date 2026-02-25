@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { m, AnimatePresence } from 'framer-motion';
-import { Menu, Home, Info, MessageSquare, LogIn, HardHat, LogOut, LayoutDashboard } from 'lucide-react';
+import { Menu, Home, Info, MessageSquare, LogIn, HardHat, LogOut, LayoutDashboard, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
 import { Sun, Moon } from 'lucide-react';
@@ -52,6 +52,8 @@ export function MobileNav() {
 
     const baseMenuItems = [
         { href: '/', label: 'Home', icon: Home },
+        { href: '/servizi', label: 'Servizi', icon: HardHat },
+        { href: '/business', label: 'Clienti Business', icon: Building2 },
         { href: '/about', label: 'Chi Siamo', icon: Info },
         { href: '/chat', label: 'Parla con Niki', icon: MessageSquare },
     ];

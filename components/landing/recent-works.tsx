@@ -30,6 +30,14 @@ const RECENT_WORKS = [
         badge: "Riparazione & Falegnameria 🛠️",
         icon: <Settings className="w-5 h-5" />,
     },
+    {
+        client: "Marco",
+        location: "Rimini",
+        title: "Montaggio Arredi d'Autore",
+        description: "Assemblaggio meticoloso di una libreria di design e mobili zona giorno. Marco cercava qualcuno che non graffiasse il legno e curasse ogni allineamento. Risultato? Stabilità impeccabile e ordine assoluto.",
+        badge: "Cura del Legno 🪵",
+        icon: <Home className="w-5 h-5" />,
+    },
 ];
 
 export function RecentWorks() {

@@ -1,12 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { MessageCircle, Star, Zap, ShieldCheck, Sparkles } from 'lucide-react';
 import { BlurText } from '@/components/react-bits/BlurText';
-import { COMPANY_PHONE_LINK } from '@/lib/constants';
-import { TechnicianPreview } from '@/components/landing/technician-preview';
-import { useUserType } from './user-type-context';
 
 interface HeroContentProps {
   cityName?: string;
@@ -14,161 +12,115 @@ interface HeroContentProps {
 }
 
 export function HeroContent({ cityName, serviceName }: HeroContentProps) {
-  const { userType } = useUserType();
+  // Simplified Content (Residential by default)
+  const headline = serviceName && cityName
+    ? `Riparazioni e Manutenzione ${serviceName} a ${cityName}`
+    : "Riparazioni e Manutenzione a Rimini e Riccione";
 
-  const mainTitle = userType === 'residential'
-    ? "Ciao, sono Niki. Il tuo tuttofare di fiducia a Rimini e dintorni."
-    : "Impianti Sempre Operativi.";
-
-  const subTitle = userType === 'residential'
-    ? "Risolvo i tuoi guasti in casa in meno di 2 ore. Trasparenza totale, pulizia e garanzia sui lavori."
-    : "Il Tuo Business non si Ferma Mai.";
-
-  const hookTitle = "Un guasto ti sta rovinando la giornata?";
+  const bullets = [
+    { icon: <Zap className="h-5 w-5 text-orange-500" />, text: "Riparazioni Rapide" },
+    { icon: <ShieldCheck className="h-5 w-5 text-blue-500" />, text: "Prezzi Trasparenti" },
+    { icon: <Sparkles className="h-5 w-5 text-emerald-500" />, text: "Pulizia Garantita" },
+  ];
 
   return (
-    <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
-      {/* Text Content */}
-      <div className="text-center lg:text-left space-y-6 sm:space-y-8">
-        {/* Profile + Hook */}
-        <div className="flex flex-col lg:flex-row items-center lg:items-end gap-4 lg:gap-6 justify-center lg:justify-start">
-          {userType === 'residential' && (
-            <div className="relative group">
-              <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-orange-500/20 shadow-xl shadow-orange-500/10 rotate-3 transition-transform group-hover:rotate-0">
-                <img
-                  src="/team-photo.png"
-                  alt="Nikita Bronovs"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="absolute -bottom-2 -right-2 bg-green-500 rounded-full p-1 border-2 border-background shadow-lg">
-                <span className="block w-2.5 h-2.5 bg-white rounded-full animate-pulse" />
-              </div>
-            </div>
-          )}
-          <div className="space-y-2 text-center lg:text-left">
-            <div className="inline-flex items-center justify-center lg:justify-start">
-              <span className={`px-3 py-1.5 rounded-full border text-[10px] font-bold uppercase tracking-widest shadow-sm transition-colors ${userType === 'residential'
-                ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800/50 text-orange-700 dark:text-orange-400'
-                : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                }`}>
-                {userType === 'residential' ? `✓ Pronto Intervento H24` : '✓ Partner Horeca & Corporate'}
-              </span>
-            </div>
-            {userType === 'residential' && (
-              <p className="text-orange-600 dark:text-orange-400 font-bold text-lg md:text-xl tracking-tight animate-pulse">
-                {hookTitle}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-4">
+    <div className="flex flex-col items-center lg:items-start lg:grid lg:grid-cols-[1.2fr_0.8fr] gap-12 lg:gap-16">
+      {/* Left Column: Text & CTAs */}
+      <div className="w-full text-center lg:text-left space-y-8">
+        <div className="space-y-6">
           <BlurText
-            key={`${userType}-personal-title`}
-            text={mainTitle}
+            text={headline}
             as="h1"
-            className="text-3xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-foreground leading-[1.1] pb-1 max-md:opacity-100 max-md:animate-none max-md:filter-none text-balance"
+            className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tighter text-foreground leading-[1.1] text-balance"
             delay={0.05}
           />
-          <p className="text-lg sm:text-2xl font-medium text-muted-foreground leading-relaxed max-w-2xl mx-auto lg:mx-0 text-balance">
-            {subTitle}
-          </p>
+
+          {/* Scan-friendly Bullet Points */}
+          <div className="flex flex-col sm:flex-row lg:flex-row gap-3 sm:gap-6 justify-center lg:justify-start">
+            {bullets.map((bullet, idx) => (
+              <div key={idx} className="flex items-center gap-3 justify-center lg:justify-start group">
+                <div className="p-1.5 rounded-lg bg-secondary/50 group-hover:bg-secondary transition-colors">
+                  {bullet.icon}
+                </div>
+                <span className="text-base font-bold text-foreground/90 tracking-tight whitespace-nowrap">
+                  {bullet.text}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* CSS-only animation for performance (no JS hydration overhead) */}
-        <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0 leading-relaxed font-light md:opacity-0 md:animate-lcp-entry max-md:!opacity-100 text-balance" style={{ animationDelay: '0.4s' }}>
-          {userType === 'residential' ? (
-            <>
-              <span className="font-semibold text-foreground">Non aspettare che peggiori.</span> Il miglior servizio di{' '}
-              <strong>tuttofare {cityName ? 'nella tua zona' : 'a Rimini e dintorni'}</strong>, con intervento garantito <span className="font-bold text-blue-600 dark:text-blue-400">entro 2 ore</span>
-              {cityName && <span className="text-blue-600 dark:text-blue-400 md:hidden font-medium"> a {cityName}</span>}.
-            </>
-          ) : (
-            <>
-              Mantieni la tua operatività al massimo con la mia assistenza tecnica H24. Soluzioni proattive e interventi rapidi per <strong>Hotel, Ristoranti e Stabilimenti</strong> della Riviera Romagnola, garantendo continuità e conformità.
-            </>
-          )}
-        </p>
+        {/* Primary Action Row */}
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            <Button
+              asChild
+              className="h-16 px-8 text-xl rounded-2xl font-black shadow-xl bg-[#25D366] hover:bg-[#20ba59] text-white shadow-green-500/20 hover:scale-[1.03] active:scale-95 transition-all border-none"
+            >
+              <a
+                href="https://wa.me/393461027447?text=Ciao%20Niki%2C%20ho%20bisogno%20del%20tuo%20aiuto"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center"
+              >
+                <MessageCircle className="mr-2 h-6 w-6" />
+                WhatsApp
+              </a>
+            </Button>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4 md:opacity-0 md:animate-lcp-entry max-md:!opacity-100" style={{ animationDelay: '0.6s' }}>
-          <div className="flex flex-col items-center lg:items-start gap-2">
-            <Button asChild className={`h-16 px-10 text-xl rounded-full font-bold shadow-2xl transition-all hover:scale-105 active:scale-95 ${userType === 'residential'
-              ? 'bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white shadow-orange-500/30'
-              : 'bg-foreground text-background hover:bg-foreground/90'
-              }`}>
-              <Link href={userType === 'residential' ? "/chat" : "/contact"} className="flex items-center">
-                {userType === 'residential' ? 'Chiedi al mio assistente personale' : 'Richiedi una Consulenza Gratuita'}
-                <ArrowRight className="ml-2 h-6 w-6" />
+            <Button
+              asChild
+              className="h-16 px-8 text-xl rounded-2xl font-black shadow-xl bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20 hover:scale-[1.03] active:scale-95 transition-all border-none"
+            >
+              <Link href="/chat" className="flex items-center">
+                <Zap className="mr-2 h-6 w-6 fill-current" />
+                Parla con Niki
               </Link>
             </Button>
-            {userType === 'residential' && (
-              <p className="text-xs text-muted-foreground/80 font-medium tracking-wide flex items-center gap-1.5 ml-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                Disponibile ora a Rimini e dintorni
-              </p>
-            )}
           </div>
 
-          {/* Secondary CTA - WhatsApp */}
-          <a
-            href="https://wa.me/393461027447?text=Ciao%20Niki%2C%20ho%20bisogno%20del%20tuo%20aiuto"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center h-16 px-10 text-xl font-bold rounded-full border-2 border-green-500/30 bg-green-50/50 dark:bg-green-950/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-950/40 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-green-500/5"
-          >
-            Scrivimi su WhatsApp
-          </a>
+          {/* New Photo Placement (per user request: "dopo il titolo ed i tasti CTA") */}
+          <div className="relative pt-4 flex justify-center lg:justify-start">
+            <div className="relative group w-full max-w-[320px] aspect-[4/3] sm:aspect-video lg:aspect-square">
+              {/* Main Photo Container */}
+              <div className="absolute inset-0 rounded-[2rem] overflow-hidden bg-slate-100 dark:bg-slate-900 shadow-2xl transition-transform duration-500 group-hover:scale-[1.02] border-4 border-white dark:border-slate-800 z-10">
+                <Image
+                  src="/Gemini_Generated_Image_pezbepezbepezbep.png"
+                  alt="Nikita Bronovs - NikiTuttoFare"
+                  fill
+                  className="object-cover object-center group-hover:scale-105 transition-all duration-700"
+                  priority
+                />
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+              </div>
+
+              {/* Decorative Back Elements */}
+              <div className="absolute inset-2 bg-blue-600/10 rounded-[2.2rem] -rotate-2 group-hover:-rotate-3 transition-transform duration-500" />
+
+              {/* Dynamic Badge Status */}
+              <div className="absolute -top-3 -right-3 z-20 px-4 py-2 bg-emerald-500 text-white text-[10px] sm:text-xs font-black rounded-full border-2 border-background shadow-lg flex items-center gap-2 ring-4 ring-emerald-500/10 whitespace-nowrap">
+                <span className="block w-2 h-2 bg-white rounded-full animate-pulse" />
+                OPERATIVO OGGI SU RIMINI E DINTORNI
+              </div>
+            </div>
+          </div>
+
+          {/* Trust Row */}
+          <div className="flex items-center gap-2 justify-center lg:justify-start text-sm font-bold text-muted-foreground/60 uppercase tracking-widest pt-4">
+            <span>Recensioni Google</span>
+            <div className="flex text-orange-500/80">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Star key={i} className="h-3.5 w-3.5 fill-current" />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Visual Content - Right Column */}
-      <div className="hidden lg:block relative">
-        {userType === 'residential' ? (
-          <div className="relative">
-            <TechnicianPreview />
-            {/* Floating Trust Badge */}
-            <div className="absolute top-20 -left-10 bg-card/90 backdrop-blur-md p-4 rounded-xl shadow-lg border border-border border-l-4 border-l-green-500 max-w-[200px]">
-              <p className="text-xs font-bold text-muted-foreground uppercase opacity-70 mb-1">Garanzia</p>
-              <p className="text-sm font-semibold leading-tight">Copertura completa e garantita su ogni intervento.</p>
-            </div>
-          </div>
-        ) : (
-          <div className="relative p-6 bg-slate-100 dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl rotate-2">
-            {/* Mock Asset Dashboard */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b pb-4">
-                <div>
-                  <p className="text-sm font-bold text-slate-500">ASSET REPORT AZIENDALE</p>
-                  <p className="text-xl font-bold">Monitoraggio Impianti: OK</p>
-                </div>
-                <div className="p-2 bg-green-100 dark:bg-green-900 rounded text-green-700 dark:text-green-300 font-mono text-sm font-bold">
-                  COMPLIANCE ✅
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Verifica Semestrale</span>
-                  <span className="font-medium">Programmabile</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Copertura</span>
-                  <span className="font-medium">H24/7 (Premium)</span>
-                </div>
-                <div className="h-32 bg-slate-200 dark:bg-slate-800 rounded-lg flex flex-col items-center justify-center text-slate-400 gap-2">
-                  <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Efficienza Operativa</span>
-                  <div className="flex items-end gap-1 h-12">
-                    <div className="w-4 bg-blue-500/40 h-[60%] rounded-t-sm" />
-                    <div className="w-4 bg-blue-500/60 h-[80%] rounded-t-sm" />
-                    <div className="w-4 bg-blue-500/80 h-[100%] rounded-t-sm animate-pulse" />
-                    <div className="w-4 bg-blue-500/40 h-[70%] rounded-t-sm" />
-                    <div className="w-4 bg-blue-500/60 h-[90%] rounded-t-sm" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+      {/* Right Column: Empty or for other visual elements in the future */}
+      <div className="hidden lg:block">
+        {/* We keep the grid structure for future expansion or balancing spacing */}
       </div>
     </div>
   );

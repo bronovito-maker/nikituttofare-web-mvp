@@ -165,7 +165,7 @@ function TechnicianAcceptContent() {
       <header className="bg-white shadow-sm border-b border-slate-200">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
           <div className="relative h-10 w-10 overflow-hidden rounded-lg shadow">
-            <Image src="/logo_ntf.png" alt="NTF Logo" fill className="object-cover" />
+            <Image src="/logo_ntf.svg" alt="NikiTuttoFare Logo" fill className="object-cover" />
           </div>
           <div>
             <h1 className="text-lg font-bold text-slate-900">NikiTuttoFare</h1>

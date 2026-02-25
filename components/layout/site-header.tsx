@@ -5,22 +5,19 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { UserTypeToggle } from '@/components/landing/user-type-toggle';
 import { MessageCircle, LayoutDashboard, LogOut } from 'lucide-react';
 import { MobileNav } from '@/components/layout/mobile-nav';
 import { createBrowserClient } from '@/lib/supabase-browser';
 import { useEffect, useState } from 'react';
-import { useUserType } from '@/components/landing/user-type-context';
 
 interface SiteHeaderProps {
-    showUserTypeToggle?: boolean;
     cityName?: string;
 }
 
-export function SiteHeader({ showUserTypeToggle = false, cityName }: Readonly<SiteHeaderProps>) {
+export function SiteHeader({ cityName }: Readonly<SiteHeaderProps>) {
     const pathname = usePathname();
     const isAboutPage = pathname === '/about';
-    const [user, setUser] = useState<any>(null); // Keeping any for now to match current types, but adding safety
+    const [user, setUser] = useState<any>(null);
     const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
@@ -47,34 +44,32 @@ export function SiteHeader({ showUserTypeToggle = false, cityName }: Readonly<Si
                 <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                     <Link href="/" className="flex items-center gap-2 sm:gap-3">
                         <div className="relative h-9 sm:h-11 w-9 sm:w-11 overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow flex-shrink-0">
-                            <Image src="/logo_ntf.png" alt="NTF Logo" fill className="object-cover" priority />
+                            <Image src="/logo_ntf.svg" alt="NikiTuttoFare Logo" fill className="object-cover" priority />
                         </div>
                         <div className="flex flex-col">
                             <span className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-foreground leading-none">
-                                <span className="sm:hidden">NTF</span>
-                                <span className="hidden sm:inline">Niki<span className="text-blue-600 dark:text-blue-400">Tuttofare</span></span>
+                                Niki<span className="text-blue-600 dark:text-blue-400">Tuttofare</span>
                             </span>
                             <span className="hidden sm:block text-xs text-muted-foreground font-medium">Pronto Intervento H24</span>
                         </div>
                     </Link>
                 </div>
 
-                {/* Center Toggle - Desktop (Only if enabled) */}
-                {showUserTypeToggle && (
-                    <div className="hidden md:flex flex-1 justify-center px-4">
-                        <HeaderUserTypeToggle />
-                    </div>
-                )}
-
                 {/* Right Actions */}
                 <div className="flex items-center gap-2 sm:gap-4">
                     {/* Navigation Links or Contextual CTA */}
                     <nav className="hidden md:flex items-center gap-4 mr-2">
                         <Link
-                            href="/contact"
-                            className={`text-sm font-medium transition-colors ${pathname === '/contact' ? 'text-blue-600 font-bold' : 'text-muted-foreground hover:text-foreground'}`}
+                            href="/servizi"
+                            className={`text-sm font-medium transition-colors ${pathname === '/servizi' ? 'text-blue-600 font-bold' : 'text-muted-foreground hover:text-foreground'}`}
                         >
-                            Contatti
+                            Servizi
+                        </Link>
+                        <Link
+                            href="/business"
+                            className={`text-sm font-medium transition-colors ${pathname === '/business' ? 'text-blue-600 font-bold' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                            Business
                         </Link>
                         {isAboutPage ? (
                             <Button
@@ -92,7 +87,7 @@ export function SiteHeader({ showUserTypeToggle = false, cityName }: Readonly<Si
                                 href="/about"
                                 className={`text-sm font-medium transition-colors ${pathname === '/about' ? 'text-blue-600 font-bold' : 'text-muted-foreground hover:text-foreground'}`}
                             >
-                                Chi Siamo
+                                Chi Sono
                             </Link>
                         )}
                     </nav>
@@ -137,18 +132,6 @@ export function SiteHeader({ showUserTypeToggle = false, cityName }: Readonly<Si
                     </div>
                 </div>
             </div>
-
-            {/* Mobile Toggle Row (Only if enabled) */}
-            {showUserTypeToggle && (
-                <div className="md:hidden border-t border-border bg-card/50 p-2 flex justify-center">
-                    <HeaderUserTypeToggle />
-                </div>
-            )}
         </header>
     );
-}
-
-function HeaderUserTypeToggle() {
-    const { userType, setUserType } = useUserType();
-    return <UserTypeToggle value={userType} onChange={setUserType} />;
 }

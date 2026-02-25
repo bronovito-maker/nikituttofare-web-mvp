@@ -14,7 +14,7 @@ export default function PrivacyPage() {
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
             <div className="relative h-10 w-10 overflow-hidden rounded-lg shadow-md">
-              <Image src="/logo_ntf.png" alt="NTF Logo" fill className="object-cover" />
+              <Image src="/logo_ntf.svg" alt="NikiTuttoFare Logo" fill className="object-cover" />
             </div>
             <span className="text-lg font-bold text-slate-900">
               Niki<span className="text-blue-600">Tuttofare</span>

@@ -14,6 +14,7 @@ const SERVICE_ICONS: Record<string, any> = {
     caldaie: Flame,
     spurgo: Wrench,
     antennista: Antenna,
+    montaggio: Settings,
 };
 
 export function ServicesGrid() {

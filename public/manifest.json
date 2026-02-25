@@ -9,13 +9,16 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/logo_ntf.png",
+      "src": "/logo_ntf.svg",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
   ],
-  "categories": ["business", "lifestyle"],
+  "categories": [
+    "business",
+    "lifestyle"
+  ],
   "lang": "it",
   "dir": "ltr"
 }

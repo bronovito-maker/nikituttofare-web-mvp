@@ -66,7 +66,7 @@ export function DirectContact() {
                                 </Link>
                             </Button>
                             <span className="text-xs text-slate-300 font-medium tracking-wide">
-                                Numero Rosso • Rispondiamo sempre
+                                Numero Rosso • Rispondo sempre
                             </span>
                         </div>
                     </div>

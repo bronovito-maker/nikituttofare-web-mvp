@@ -2,10 +2,10 @@ import dynamic from 'next/dynamic';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { StickyActionNav } from '@/components/landing/sticky-action-nav';
-import { UserTypeProvider } from '@/components/landing/user-type-context';
 import { HeroContent } from '@/components/landing/hero-content';
 import { RecentWorks } from '@/components/landing/recent-works';
 import { BioSection } from '@/components/landing/bio-section';
+import { SmallJobsCallout } from '@/components/landing/small-jobs-callout';
 
 // Lazy load below-the-fold sections
 const UrgencyStats = dynamic(() => import('@/components/landing/urgency-stats').then(mod => ({ default: mod.UrgencyStats })), {
@@ -19,7 +19,6 @@ const CommonFeatures = dynamic(() => import('@/components/landing/common-feature
 });
 
 // Dynamic imports for below-the-fold components (non-critical)
-// Loading fallbacks prevent CLS during hydration
 const HowItWorks = dynamic(() => import('@/components/landing/how-it-works').then(mod => mod.HowItWorks), {
   loading: () => <div className="min-h-[500px]" />
 });
@@ -32,92 +31,80 @@ const TestimonialCarousel = dynamic(() => import('@/components/landing/testimoni
 const WhyChooseUs = dynamic(() => import('@/components/landing/why-choose-us').then(mod => mod.WhyChooseUs), {
   loading: () => <div className="min-h-[600px]" />
 });
-const TechnicianCTA = dynamic(() => import('@/components/landing/technician-cta').then(mod => mod.TechnicianCTA), {
-  loading: () => <div className="min-h-[400px]" />
-});
 const FAQSection = dynamic(() => import('@/components/landing/faq-section').then(mod => mod.FAQSection), {
-  loading: () => <div className="min-h-[600px]" />
-});
-const ServicesGrid = dynamic(() => import('@/components/landing/services-grid').then(mod => ({ default: mod.ServicesGrid })), {
   loading: () => <div className="min-h-[600px]" />
 });
 
 export default function Home() {
   return (
-    <UserTypeProvider>
-      <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-blue-100 dark:selection:bg-blue-900 pb-20 sm:pb-0">
+    <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-blue-100 dark:selection:bg-blue-900 pb-20 sm:pb-0">
+      {/* --- SITE HEADER --- */}
+      <SiteHeader />
 
-        {/* --- SITE HEADER --- */}
-        <SiteHeader showUserTypeToggle={true} />
+      <main className="flex-1">
 
-        <main className="flex-1">
-
-          {/* --- HERO SECTION --- */}
-          <section className="relative py-12 sm:py-20 lg:py-32 px-4 sm:px-6 overflow-hidden">
-            <div className="relative max-w-6xl mx-auto">
-              <HeroContent />
-            </div>
-          </section>
-
-          <div id="reviews" className="min-h-[400px]">
-            <TestimonialCarousel />
+        {/* --- HERO SECTION --- */}
+        <section className="relative py-12 sm:py-20 lg:py-32 px-4 sm:px-6 overflow-hidden">
+          <div className="relative max-w-6xl mx-auto">
+            <HeroContent />
           </div>
+        </section>
 
-          {/* --- RECENT WORKS (AUTHORITY) --- */}
-          <div id="works">
-            <RecentWorks />
-          </div>
+        <div id="reviews" className="min-h-[400px]">
+          <TestimonialCarousel />
+        </div>
 
-          {/* --- BIO SECTION (HUMAN CONNECTION) --- */}
-          <div id="about">
-            <BioSection />
-          </div>
+        {/* --- RECENT WORKS (AUTHORITY) --- */}
+        <div id="works">
+          <RecentWorks />
+        </div>
 
-          {/* --- WHY CHOOSE US (TRUST & QUALITY) --- */}
-          <div className="min-h-[600px]">
-            <WhyChooseUs />
-          </div>
+        {/* --- BIO SECTION (HUMAN CONNECTION) --- */}
+        <div id="about">
+          <BioSection />
+        </div>
 
-          {/* --- USER-SPECIFIC SECTIONS (Residential/Business) --- */}
-          <UserSpecificSections />
+        {/* --- WHY CHOOSE US (TRUST & QUALITY) --- */}
+        <div className="min-h-[600px]">
+          <WhyChooseUs />
+        </div>
 
-          {/* --- TERRA-TERRA SERVICES GRID --- */}
-          <ServicesGrid />
+        {/* --- USER-SPECIFIC SECTIONS (Residential/Business) --- */}
+        <UserSpecificSections />
 
-          {/* --- HOW IT WORKS --- */}
-          <div className="min-h-[500px]">
-            <HowItWorks />
-          </div>
 
-          {/* --- URGENCY STATS (PUSHED LOWER) --- */}
-          <UrgencyStats />
+        {/* --- HOW IT WORKS --- */}
+        <div className="min-h-[500px]">
+          <HowItWorks />
+        </div>
 
-          {/* --- TECHNICIAN CTA --- */}
-          <div className="min-h-[400px]">
-            <TechnicianCTA />
-          </div>
+        {/* --- URGENCY STATS (PUSHED LOWER) --- */}
+        <UrgencyStats />
 
-          {/* --- FAQ --- */}
-          <div className="min-h-[600px]">
-            <FAQSection />
-          </div>
 
-          {/* --- DIRECT CONTACT --- */}
-          <div className="min-h-[300px]">
-            <DirectContact />
-          </div>
+        {/* --- FAQ --- */}
+        <div className="min-h-[600px]">
+          <FAQSection />
+        </div>
 
-          {/* --- COMMON FEATURES --- */}
-          <CommonFeatures />
+        {/* --- SMALL JOBS CALLOUT --- */}
+        <SmallJobsCallout />
 
-        </main>
+        {/* --- DIRECT CONTACT --- */}
+        <div className="min-h-[300px]">
+          <DirectContact />
+        </div>
 
-        {/* --- MOBILE THUMB ZONE NAV --- */}
-        <StickyActionNav />
+        {/* --- COMMON FEATURES --- */}
+        <CommonFeatures />
 
-        {/* FOOTER PREMIUM */}
-        <SiteFooter />
-      </div>
-    </UserTypeProvider>
+      </main>
+
+      {/* --- MOBILE THUMB ZONE NAV --- */}
+      <StickyActionNav />
+
+      {/* FOOTER PREMIUM */}
+      <SiteFooter />
+    </div>
   );
 }

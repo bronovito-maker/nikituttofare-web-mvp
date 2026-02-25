@@ -59,7 +59,7 @@ export function ChatWelcome({ onOptionSelect }: ChatWelcomeProps) {
                             Lui è sui cantieri o a casa di un cliente in questo momento, ma io sono qui per farti un <strong>preventivo immediato</strong>, prenotare un appuntamento o rispondere ai tuoi dubbi tecnici.
                         </p>
                         <p className="text-muted-foreground text-xs sm:text-sm font-medium">
-                            Risparmia tempo e prova la mia velocità, oppure se preferisci scrivigli direttamente su WhatsApp!
+                            Risparmia tempo e prova la mia velocità, oppure se preferisci scrivimi direttamente su WhatsApp!
                         </p>
                         <div className="pt-2">
                             <a

@@ -14,7 +14,8 @@ export function HandymanFooter() {
                         <nav className="flex flex-col gap-3">
                             <Link href="/" className="text-sm font-bold text-white/60 hover:text-white transition-colors">Homepage</Link>
                             <Link href="/services" className="text-sm font-bold text-white/60 hover:text-white transition-colors">Servizi</Link>
-                            <Link href="/about" className="text-sm font-bold text-white/60 hover:text-white transition-colors">Chi siamo</Link>
+                            <Link href="/about" className="text-sm font-bold text-white/60 hover:text-white transition-colors">Chi sono</Link>
+                            <Link href="/technician" className="text-sm font-bold text-orange-500/80 hover:text-orange-400 transition-colors">Lavora con me</Link>
                         </nav>
                     </div>
 

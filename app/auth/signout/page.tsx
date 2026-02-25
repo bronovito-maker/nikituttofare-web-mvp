@@ -70,7 +70,7 @@ export default function SignOutPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
                     <Link href="/" className="flex items-center gap-2 sm:gap-3">
                         <div className="relative h-9 sm:h-11 w-9 sm:w-11 overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                            <Image src="/logo_ntf.png" alt="NTF Logo" fill className="object-cover" />
+                            <Image src="/logo_ntf.svg" alt="NikiTuttoFare Logo" fill className="object-cover" />
                         </div>
                         <div className="hidden sm:flex flex-col">
                             <span className="text-base sm:text-lg font-black tracking-tight text-foreground leading-none">
