@@ -62,16 +62,19 @@ export default function Home() {
             </div>
           </section>
 
-          {/* --- TESTIMONIALS (IMMEDIATE SOCIAL PROOF) --- */}
-          <div className="min-h-[400px]">
+          <div id="reviews" className="min-h-[400px]">
             <TestimonialCarousel />
           </div>
 
           {/* --- RECENT WORKS (AUTHORITY) --- */}
-          <RecentWorks />
+          <div id="works">
+            <RecentWorks />
+          </div>
 
           {/* --- BIO SECTION (HUMAN CONNECTION) --- */}
-          <BioSection />
+          <div id="about">
+            <BioSection />
+          </div>
 
           {/* --- WHY CHOOSE US (TRUST & QUALITY) --- */}
           <div className="min-h-[600px]">
