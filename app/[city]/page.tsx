@@ -144,6 +144,38 @@ export default async function CityPage({ params }: { params: Promise<Readonly<{ 
 
             {/* FOOTER PREMIUM */}
             <SiteFooter />
+
+            {/* --- SCHEMA MARKUP (SEO TECNICA) --- */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "HandymanService",
+                        "name": `NikiTuttofare a ${city.name}`,
+                        "image": "https://nikituttofare.it/team-photo.png",
+                        "@id": `https://nikituttofare.it/${city.slug}`,
+                        "url": `https://nikituttofare.it/${city.slug}`,
+                        "telephone": "3461027447",
+                        "priceRange": "€€",
+                        "address": {
+                            "@type": "PostalAddress",
+                            "addressLocality": city.name,
+                            "addressRegion": city.province,
+                            "addressCountry": "IT"
+                        },
+                        "areaServed": {
+                            "@type": "City",
+                            "name": city.name
+                        },
+                        "provider": {
+                            "@type": "LocalBusiness",
+                            "name": "NikiTuttofare",
+                            "telephone": "3461027447"
+                        }
+                    })
+                }}
+            />
         </div>
     );
 }

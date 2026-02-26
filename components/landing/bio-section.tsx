@@ -7,7 +7,7 @@ import { ArrowRight, Quote } from 'lucide-react';
 
 export function BioSection() {
     return (
-        <section className="py-24 px-4 sm:px-6 relative overflow-hidden">
+        <section className="py-16 sm:py-24 px-4 sm:px-6 relative overflow-hidden">
             <div className="max-w-6xl mx-auto">
                 <div className="grid md:grid-cols-2 gap-16 items-center">
                     {/* Visual Part */}
@@ -38,7 +38,7 @@ export function BioSection() {
                                 <span className="w-8 h-[2px] bg-orange-500"></span>
                                 <span>Chi Sono</span>
                             </div>
-                            <h2 className="text-4xl sm:text-5xl font-black text-foreground leading-tight">
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-foreground leading-tight">
                                 Dietro la tecnologia, <br />
                                 <span className="text-gradient">c&apos;è una promessa.</span>
                             </h2>

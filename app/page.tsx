@@ -50,7 +50,8 @@ export default function Home() {
           </div>
         </section>
 
-        <div id="reviews" className="min-h-[400px]">
+        {/* --- REVIEWS (SOCIAL PROOF) --- */}
+        <div id="reviews">
           <TestimonialCarousel />
         </div>
 
@@ -64,36 +65,26 @@ export default function Home() {
           <BioSection />
         </div>
 
-        {/* --- WHY CHOOSE US (TRUST & QUALITY) --- */}
-        <div className="min-h-[600px]">
-          <WhyChooseUs />
-        </div>
+        {/* --- WHY CHOOSE US --- */}
+        <WhyChooseUs />
 
         {/* --- USER-SPECIFIC SECTIONS (Residential/Business) --- */}
         <UserSpecificSections />
 
-
         {/* --- HOW IT WORKS --- */}
-        <div className="min-h-[500px]">
-          <HowItWorks />
-        </div>
+        <HowItWorks />
 
-        {/* --- URGENCY STATS (PUSHED LOWER) --- */}
+        {/* --- URGENCY STATS --- */}
         <UrgencyStats />
 
-
         {/* --- FAQ --- */}
-        <div className="min-h-[600px]">
-          <FAQSection />
-        </div>
+        <FAQSection />
 
         {/* --- SMALL JOBS CALLOUT --- */}
         <SmallJobsCallout />
 
         {/* --- DIRECT CONTACT --- */}
-        <div className="min-h-[300px]">
-          <DirectContact />
-        </div>
+        <DirectContact />
 
         {/* --- COMMON FEATURES --- */}
         <CommonFeatures />

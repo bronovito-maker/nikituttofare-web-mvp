@@ -12,6 +12,7 @@ import { BlurText } from '@/components/react-bits/BlurText';
 import { ClientAnimationWrapper } from '@/components/ui/client-animation-wrapper';
 import { LoadingSpinner } from '@/components/ui/loading-dots';
 import { createBrowserClient } from '@/lib/supabase-browser';
+import { SiteHeader } from '@/components/layout/site-header';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -65,31 +66,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
 
-      {/* Header Minimal */}
-      <header className="sticky top-0 z-50 w-full border-b border-border/30 bg-background/75 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 sm:gap-3">
-            <div className="relative h-9 sm:h-11 w-9 sm:w-11 overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <Image src="/logo_ntf.svg" alt="NikiTuttoFare Logo" fill className="object-cover" />
-            </div>
-            <div className="hidden sm:flex flex-col">
-              <span className="text-base sm:text-lg font-black tracking-tight text-foreground leading-none">
-                Niki<span className="text-blue-600 dark:text-blue-400">Tuttofare</span>
-              </span>
-              <span className="text-xs text-muted-foreground font-medium">Pronto Intervento H24</span>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-3 sm:px-4 py-1.5 rounded-full border border-emerald-200/50 dark:border-emerald-900/50">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600 dark:bg-emerald-500"></span>
-            </span>
-            <span className="hidden sm:inline">Operativi H24</span>
-            <span className="sm:hidden">H24</span>
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center px-4 py-12 sm:py-16 relative">

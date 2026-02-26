@@ -10,68 +10,97 @@ export function DirectContact() {
     const personalTel = GENERAL_PHONE_LINK;
 
     return (
-        <section className="py-12 px-4 max-w-4xl mx-auto">
-            <Card className="bg-slate-900 border-slate-800 shadow-xl overflow-hidden relative">
-                <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none transform rotate-12">
-                    {/* Stylized Nokia-like Robust Phone SVG */}
-                    <svg width="120" height="200" viewBox="0 0 60 100" fill="currentColor" className="text-slate-400">
-                        <rect x="10" y="10" width="40" height="80" rx="5" stroke="currentColor" strokeWidth="2" fill="none" />
-                        <rect x="15" y="20" width="30" height="20" rx="2" fill="currentColor" />
-                        <rect x="15" y="45" width="30" height="30" fill="none" />
-                        <circle cx="20" cy="50" r="2" fill="currentColor" />
-                        <circle cx="30" cy="50" r="2" fill="currentColor" />
-                        <circle cx="40" cy="50" r="2" fill="currentColor" />
-                        <circle cx="20" cy="60" r="2" fill="currentColor" />
-                        <circle cx="30" cy="60" r="2" fill="currentColor" />
-                        <circle cx="40" cy="60" r="2" fill="currentColor" />
-                        <circle cx="20" cy="70" r="2" fill="currentColor" />
-                        <circle cx="30" cy="70" r="2" fill="currentColor" />
-                        <circle cx="40" cy="70" r="2" fill="currentColor" />
-                    </svg>
+        <section className="py-16 sm:py-24 px-4 bg-transparent relative z-10">
+            <div className="max-w-5xl mx-auto space-y-8">
+                <div className="text-center">
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-foreground tracking-tight">
+                        Parliamo di persona?
+                    </h2>
                 </div>
+                <Card className="
+                relative border-0 overflow-hidden transition-all duration-500
+                /* LIGHT MODE: PREMIUM WHITE */
+                bg-white shadow-[0_20px_50px_rgba(0,0,0,0.06)]
+                /* DARK MODE: GLASSMORPHISM */
+                dark:bg-[#121212]/80 dark:backdrop-blur-xl dark:border dark:border-white/10 dark:shadow-[0_20px_50px_rgba(0,0,0,0.2)]
+            ">
+                    {/* Subtle Gradient Glow for Dark Mode */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-purple-500/5 opacity-0 dark:opacity-100 pointer-events-none" />
 
-                <CardContent className="p-8 md:p-12 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
-                    <div className="space-y-4 max-w-lg">
-                        <h2 className="text-2xl md:text-3xl font-bold text-white">
-                            Hai un&apos;urgenza o preferisci parlare con una persona?
-                        </h2>
-                        <p className="text-slate-300 text-lg">
-                            Salta l&apos;intelligenza artificiale e mettiti subito in contatto con me.
-                        </p>
+                    <div className="absolute top-0 right-0 p-8 opacity-[0.03] dark:opacity-[0.07] pointer-events-none transform rotate-12">
+                        {/* Stylized Nokia-like Robust Phone SVG */}
+                        <svg width="180" height="280" viewBox="0 0 60 100" fill="currentColor" className="text-blue-600 dark:text-blue-400">
+                            <rect x="10" y="10" width="40" height="80" rx="5" stroke="currentColor" strokeWidth="2" fill="none" />
+                            <rect x="15" y="20" width="30" height="20" rx="2" fill="currentColor" />
+                            <rect x="15" y="45" width="30" height="30" fill="none" />
+                            <circle cx="20" cy="50" r="2" fill="currentColor" />
+                            <circle cx="30" cy="50" r="2" fill="currentColor" />
+                            <circle cx="40" cy="50" r="2" fill="currentColor" />
+                            <circle cx="20" cy="60" r="2" fill="currentColor" />
+                            <circle cx="30" cy="60" r="2" fill="currentColor" />
+                            <circle cx="40" cy="60" r="2" fill="currentColor" />
+                            <circle cx="20" cy="70" r="2" fill="currentColor" />
+                            <circle cx="30" cy="70" r="2" fill="currentColor" />
+                            <circle cx="40" cy="70" r="2" fill="currentColor" />
+                        </svg>
                     </div>
 
-                    <div className="flex flex-col gap-4 w-full md:w-auto">
-                        {/* Personal Number - Using a distinct style */}
-                        <Button asChild size="lg" variant="outline" className="bg-white hover:bg-slate-100 text-slate-900 border-2 border-slate-200 font-bold h-auto py-4">
-                            <Link href={personalTel} className="flex items-center justify-center gap-2">
-                                <PhoneCall className="h-5 w-5 shrink-0" />
-                                <span>Cellulare Personale</span>
-                            </Link>
-                        </Button>
+                    <CardContent className="p-8 md:p-14 text-center md:text-left flex flex-col lg:flex-row items-center justify-between gap-10 relative z-10">
+                        <div className="space-y-6 max-w-xl">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-full text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider">
+                                <PhoneCall className="w-3.5 h-3.5" />
+                                Contatto Diretto
+                            </div>
+                            <h2 className="text-3xl md:text-4xl font-black text-[#1A1A1B] dark:text-white leading-tight tracking-tight">
+                                Hai un&apos;urgenza o preferisci parlare con una persona?
+                            </h2>
+                            <p className="text-slate-600 dark:text-slate-300 text-lg md:text-xl font-medium leading-relaxed">
+                                Salta l&apos;intelligenza artificiale e mettiti subito in contatto con me. Rispondo personalmente a ogni chiamata.
+                            </p>
+                        </div>
 
-                        {/* WhatsApp Button - using dark text for better contrast */}
-                        <Button asChild size="lg" className="bg-[#25D366] hover:bg-[#128C7E] text-slate-900 border-0 font-bold h-auto py-4">
-                            <Link href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2">
-                                <WhatsappIcon className="h-5 w-5 shrink-0" />
-                                <span>WhatsApp Diretto</span>
-                            </Link>
-                        </Button>
-
-                        {/* Red Number Button - Emergency */}
-                        <div className="flex flex-col gap-1 items-center w-full">
-                            <Button asChild variant="destructive" size="lg" className="w-full h-auto py-4 bg-red-600 hover:bg-red-700 font-bold border-2 border-red-500 shadow-lg shadow-red-900/20 whitespace-normal text-center">
-                                <Link href={emergencyTel} className="flex items-center justify-center gap-2">
-                                    <PhoneCall className="h-5 w-5 animate-pulse shrink-0" />
-                                    <span>Emergenze H24</span>
+                        <div className="flex flex-col gap-4 w-full sm:w-[320px] shrink-0">
+                            {/* Personal Number - Using a distinct style */}
+                            <Button asChild size="lg" variant="outline" className="
+                            bg-white hover:bg-slate-50 text-slate-900 border-border dark:border-white/10 font-bold h-14 rounded-2xl shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]
+                        ">
+                                <Link href={personalTel} className="flex items-center justify-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                                        <PhoneCall className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <span>Cellulare Personale</span>
                                 </Link>
                             </Button>
-                            <span className="text-xs text-slate-300 font-medium tracking-wide">
-                                Numero Rosso • Rispondo sempre
-                            </span>
+
+                            {/* WhatsApp Button */}
+                            <Button asChild size="lg" className="
+                            bg-[#25D366] hover:bg-[#22c35e] text-white border-0 font-bold h-14 rounded-2xl shadow-lg shadow-emerald-500/10 transition-all hover:scale-[1.02] active:scale-[0.98]
+                        ">
+                                <Link href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3">
+                                    <WhatsappIcon className="h-5 w-5 shrink-0" />
+                                    <span>WhatsApp Diretto</span>
+                                </Link>
+                            </Button>
+
+                            {/* Red Number Button - Emergency */}
+                            <div className="flex flex-col gap-2 items-center w-full pt-2">
+                                <Button asChild variant="destructive" size="lg" className="
+                                w-full h-16 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 font-black rounded-2xl shadow-xl shadow-red-500/20 border-0 transition-all hover:scale-[1.02] active:scale-[0.98]
+                            ">
+                                    <Link href={emergencyTel} className="flex items-center justify-center gap-3">
+                                        <PhoneCall className="h-5 w-5 animate-pulse shrink-0 fill-current" />
+                                        <span className="uppercase tracking-tight text-lg">Emergenze H24</span>
+                                    </Link>
+                                </Button>
+                                <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest px-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                    Numero Rosso • Rispondo sempre
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+            </div>
         </section>
     );
 }

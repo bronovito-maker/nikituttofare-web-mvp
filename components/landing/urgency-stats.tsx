@@ -140,8 +140,16 @@ export function UrgencyStats({ cityName }: UrgencyStatsProps) {
     }, [cityName]);
 
     return (
-        <div className="w-full py-10 sm:py-16">
-            <div className="max-w-6xl mx-auto px-4 space-y-8 sm:space-y-12">
+        <section className="w-full py-16 sm:py-24">
+            <div className="max-w-6xl mx-auto px-4 space-y-12">
+                <div className="text-center max-w-3xl mx-auto mb-12 space-y-4">
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-foreground">
+                        Trasparenza in numeri
+                    </h2>
+                    <p className="text-lg text-muted-foreground">
+                        Non solo parole: ecco i risultati concreti del mio impegno quotidiano in tutta la Romagna.
+                    </p>
+                </div>
                 {/* Nikita Live Status Bar - Personal & Friendly */}
                 <div className="relative group overflow-hidden bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800/50 rounded-3xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
@@ -211,6 +219,6 @@ export function UrgencyStats({ cityName }: UrgencyStatsProps) {
                     })}
                 </div>
             </div>
-        </div>
+        </section>
     );
 }

@@ -79,33 +79,6 @@ export function HeroContent({ cityName, serviceName }: HeroContentProps) {
             </Button>
           </div>
 
-          {/* New Photo Placement (per user request: "dopo il titolo ed i tasti CTA") */}
-          <div className="relative pt-4 flex justify-center lg:justify-start">
-            <div className="relative group w-full max-w-[320px] aspect-[4/3] sm:aspect-video lg:aspect-square">
-              {/* Main Photo Container */}
-              <div className="absolute inset-0 rounded-[2rem] overflow-hidden bg-slate-100 dark:bg-slate-900 shadow-2xl transition-transform duration-500 group-hover:scale-[1.02] border-4 border-white dark:border-slate-800 z-10">
-                <Image
-                  src="/Gemini_Generated_Image_pezbepezbepezbep.png"
-                  alt="Nikita Bronovs - NikiTuttoFare"
-                  fill
-                  className="object-cover object-center group-hover:scale-105 transition-all duration-700"
-                  priority
-                />
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
-              </div>
-
-              {/* Decorative Back Elements */}
-              <div className="absolute inset-2 bg-blue-600/10 rounded-[2.2rem] -rotate-2 group-hover:-rotate-3 transition-transform duration-500" />
-
-              {/* Dynamic Badge Status */}
-              <div className="absolute -top-3 -right-3 z-20 px-4 py-2 bg-emerald-500 text-white text-[10px] sm:text-xs font-black rounded-full border-2 border-background shadow-lg flex items-center gap-2 ring-4 ring-emerald-500/10 whitespace-nowrap">
-                <span className="block w-2 h-2 bg-white rounded-full animate-pulse" />
-                OPERATIVO OGGI SU RIMINI E DINTORNI
-              </div>
-            </div>
-          </div>
-
           {/* Trust Row */}
           <div className="flex items-center gap-2 justify-center lg:justify-start text-sm font-bold text-muted-foreground/60 uppercase tracking-widest pt-4">
             <span>Recensioni Google</span>
@@ -118,9 +91,31 @@ export function HeroContent({ cityName, serviceName }: HeroContentProps) {
         </div>
       </div>
 
-      {/* Right Column: Empty or for other visual elements in the future */}
-      <div className="hidden lg:block">
-        {/* We keep the grid structure for future expansion or balancing spacing */}
+      {/* Right Column: Hero Image */}
+      <div className="w-full flex justify-center lg:justify-end lg:items-center mt-8 lg:mt-0">
+        <div className="relative group w-full max-w-[400px] lg:max-w-[500px] aspect-[4/3] sm:aspect-video lg:aspect-square">
+          {/* Main Photo Container */}
+          <div className="absolute inset-0 rounded-[2rem] overflow-hidden bg-slate-100 dark:bg-slate-900 shadow-2xl transition-transform duration-500 group-hover:scale-[1.02] border-4 border-white dark:border-slate-800 z-10">
+            <Image
+              src="/Gemini_Generated_Image_pezbepezbepezbep.png"
+              alt="Nikita Bronovs - NikiTuttoFare"
+              fill
+              className="object-cover object-center group-hover:scale-105 transition-all duration-700"
+              priority
+            />
+            {/* Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+          </div>
+
+          {/* Decorative Back Elements */}
+          <div className="absolute inset-2 bg-blue-600/10 rounded-[2.2rem] -rotate-2 group-hover:-rotate-3 transition-transform duration-500" />
+
+          {/* Dynamic Badge Status */}
+          <div className="absolute -top-3 -right-3 z-20 px-4 py-2 bg-emerald-500 text-white text-[10px] sm:text-xs font-black rounded-full border-2 border-background shadow-lg flex items-center gap-2 ring-4 ring-emerald-500/10 whitespace-nowrap">
+            <span className="block w-2 h-2 bg-white rounded-full animate-pulse" />
+            OPERATIVO OGGI SU RIMINI E DINTORNI
+          </div>
+        </div>
       </div>
     </div>
   );

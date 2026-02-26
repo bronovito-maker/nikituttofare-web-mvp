@@ -57,11 +57,11 @@ function ThinkingDots() {
   return (
     <div className="flex items-center justify-center gap-1.5">
       <div className="w-2.5 h-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full animate-bounce-thinking"
-           style={{ animationDelay: '0ms' }} />
+        style={{ animationDelay: '0ms' }} />
       <div className="w-2.5 h-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full animate-bounce-thinking"
-           style={{ animationDelay: '150ms' }} />
+        style={{ animationDelay: '150ms' }} />
       <div className="w-2.5 h-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full animate-bounce-thinking"
-           style={{ animationDelay: '300ms' }} />
+        style={{ animationDelay: '300ms' }} />
       <style jsx>{`
         @keyframes bounce-thinking {
           0%, 60%, 100% { transform: translateY(0); opacity: 0.7; }
@@ -129,11 +129,11 @@ function PulseRings() {
     <div className="relative w-12 h-12 flex items-center justify-center">
       <div className="absolute w-3 h-3 bg-blue-500 rounded-full" />
       <div className="absolute w-6 h-6 border-2 border-blue-400 rounded-full animate-pulse-ring"
-           style={{ animationDelay: '0ms' }} />
+        style={{ animationDelay: '0ms' }} />
       <div className="absolute w-9 h-9 border-2 border-blue-300 rounded-full animate-pulse-ring"
-           style={{ animationDelay: '400ms' }} />
+        style={{ animationDelay: '400ms' }} />
       <div className="absolute w-12 h-12 border-2 border-blue-200 rounded-full animate-pulse-ring"
-           style={{ animationDelay: '800ms' }} />
+        style={{ animationDelay: '800ms' }} />
       <style jsx>{`
         @keyframes pulse-ring {
           0% { transform: scale(0.5); opacity: 0; }
@@ -151,22 +151,40 @@ function PulseRings() {
 // Animation 5: Typing Effect (like typewriter)
 function TypingEffect() {
   const [dots, setDots] = useState('');
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  const messages = [
+    "Analizzo la tua richiesta",
+    "Sto cercando la soluzione migliore",
+    "Verifico la disponibilità",
+    "Preparo i dettagli per il tecnico"
+  ];
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const dotsInterval = setInterval(() => {
       setDots((prev) => (prev.length >= 3 ? '' : prev + '.'));
     }, 400);
-    return () => clearInterval(interval);
+
+    const messageInterval = setInterval(() => {
+      setMessageIndex((prev) => (prev + 1) % messages.length);
+    }, 3000);
+
+    return () => {
+      clearInterval(dotsInterval);
+      clearInterval(messageInterval);
+    };
   }, []);
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">
-        Sto pensando
-      </span>
-      <span className="text-blue-500 font-bold w-4 text-left">
-        {dots}
-      </span>
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-slate-600 dark:text-slate-400 font-medium min-h-[20px] transition-all duration-500">
+          {messages[messageIndex]}
+        </span>
+        <span className="text-blue-500 font-bold w-4 text-left">
+          {dots}
+        </span>
+      </div>
     </div>
   );
 }

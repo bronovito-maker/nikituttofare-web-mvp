@@ -5,13 +5,6 @@ import { BenefitsGrid, type BenefitItem } from '@/components/ui/benefits-grid';
 
 const BENEFITS: readonly BenefitItem[] = [
     {
-        icon: Smartphone,
-        title: 'Rapporto Diretto',
-        description: "Niente call center o attese infinite. Parli direttamente con me o con il mio assistente digitale per fissare l'intervento. Ci metto la faccia e la firma su ogni lavoro.",
-        color: 'text-amber-500',
-        bgColor: 'bg-amber-500/10',
-    },
-    {
         icon: FileCheck,
         title: 'Onestà Certificata',
         description: 'Uso il listino prezzi ufficiale per garantirti la massima trasparenza. Niente prezzi inventati sul momento: sai sempre quanto spendi prima di iniziare.',
@@ -45,7 +38,7 @@ export function WhyChooseUs() {
                             <StarIcon className="w-3 h-3 text-blue-600 fill-blue-600" />
                             <span className="text-[10px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-400">Artigiano 4.0</span>
                         </div>
-                        <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-foreground">
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-foreground">
                             Perché affidarti a me?
                         </h2>
                     </div>

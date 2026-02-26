@@ -66,6 +66,12 @@ export function SiteHeader({ cityName }: Readonly<SiteHeaderProps>) {
                             Servizi
                         </Link>
                         <Link
+                            href="/prezzi"
+                            className={`text-sm font-medium transition-colors ${pathname === '/prezzi' ? 'text-blue-600 font-bold' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                            Prezzi
+                        </Link>
+                        <Link
                             href="/business"
                             className={`text-sm font-medium transition-colors ${pathname === '/business' ? 'text-blue-600 font-bold' : 'text-muted-foreground hover:text-foreground'}`}
                         >

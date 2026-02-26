@@ -1,6 +1,6 @@
-// hooks/useN8NChat.tsx
 import { useState, useEffect } from 'react';
 import { Message } from '@/lib/types';
+import { sanitizeChatInput } from '@/lib/chat-utils';
 
 const CHAT_SESSION_KEY = 'chat_session_id';
 
@@ -49,7 +49,13 @@ export const useN8NChat = () => {
   }, []);
 
   const sendMessage = async (userMessage: string, userId?: string) => {
-    // 1. Mostra subito il messaggio dell'utente
+    // 0. Sanitize input
+    const sanitizedInput = sanitizeChatInput(userMessage);
+    if (!sanitizedInput && !userMessage.includes('[UTENTE HA CARICATO UNA FOTO:')) {
+      return; // Non inviare messaggi vuoti o solo tag HTML
+    }
+
+    // 1. Mostra subito il messaggio dell'utente (usiamo il messaggio originale per la UI ma sanificato per il backend)
     const newUserMsg: Message = { role: 'user', content: userMessage, id: Date.now().toString() };
     setMessages((prev) => [...prev, newUserMsg]);
     setSuggestions([]); // Clear previous suggestions
@@ -69,7 +75,7 @@ export const useN8NChat = () => {
           "x-chat-token": securityToken
         },
         body: JSON.stringify({
-          message: userMessage,
+          message: sanitizedInput, // Usiamo il testo pulito
           chatId: chatId,
           userId: userId // Passiamo l'ID utente se presente
         }),

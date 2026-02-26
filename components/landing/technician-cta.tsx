@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 const TECH_BENEFITS = [
     { icon: Users, text: 'Job Board con richieste continue' },
     { icon: Zap, text: 'Accetta lavori con Magic Link' },
-    { icon: CreditCard, text: 'Pagamenti sicuri e puntuali' },
+    { icon: CreditCard, text: 'Pagamenti garantiti senza pensieri' },
     { icon: Calendar, text: 'Gestisci la tua agenda, zero burocrazia' },
 ];
 

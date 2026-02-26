@@ -24,29 +24,21 @@ const RECENT_WORKS = [
     },
     {
         client: "Federico",
-        location: "Misano Adriatico",
+        location: "San Marino",
         title: "Riparazioni Meccaniche e Cucina",
         description: "Sistemazione anta cucina fuori asse, riparazione cerniere lavastoviglie e livellamento del cancelletto esterno che non agganciava più la serratura. Piccoli problemi risolti definitivamente in un unico pomeriggio.",
         badge: "Riparazione & Falegnameria 🛠️",
         icon: <Settings className="w-5 h-5" />,
-    },
-    {
-        client: "Marco",
-        location: "Rimini",
-        title: "Montaggio Arredi d'Autore",
-        description: "Assemblaggio meticoloso di una libreria di design e mobili zona giorno. Marco cercava qualcuno che non graffiasse il legno e curasse ogni allineamento. Risultato? Stabilità impeccabile e ordine assoluto.",
-        badge: "Cura del Legno 🪵",
-        icon: <Home className="w-5 h-5" />,
-    },
+    }
 ];
 
 export function RecentWorks() {
     return (
-        <section className="py-16 px-4 sm:px-6 bg-slate-50/50 dark:bg-slate-900/20">
+        <section className="py-16 sm:py-24 px-4 sm:px-6 relative overflow-hidden">
             <div className="max-w-6xl mx-auto">
                 <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
                     <div className="space-y-2 text-center md:text-left">
-                        <h2 className="text-3xl md:text-4xl font-black tracking-tight text-foreground">
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-foreground">
                             Ultimi lavori eseguiti a Rimini e dintorni
                         </h2>
                         <p className="text-muted-foreground text-lg">
@@ -82,7 +74,7 @@ export function RecentWorks() {
 
                             <div className="mt-8 pt-6 border-t border-border/50 flex items-center justify-between">
                                 <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">
-                                    NIKI TUTTOFARE • RIMINI • 2026
+                                    NIKI TUTTOFARE • {work.location} • 2026
                                 </span>
                                 <div className="flex -space-x-2">
                                     {[1, 2, 3].map(i => (

@@ -5,35 +5,35 @@ export function HowItWorks() {
     const steps = [
         {
             icon: MessageSquare,
-            title: 'Chatta con Niki',
-            description: 'Descrivi il problema come se parlassi a un amico. Foto? Ancora meglio.',
-            lightIconBg: 'bg-blue-100 text-blue-600',
+            title: "Chatta con Niki",
+            description: "Raccontami il guasto in chat sul sito o su whatsapp. Se mi mandi una foto, posso capire il problema ancora più velocemente. Se hai fretta mi puoi chiamare.",
+            lightIconBg: "bg-blue-100 text-blue-600",
         },
         {
             icon: Sparkles,
-            title: 'Analisi Istantanea',
-            description: "L'AI analizza il guasto, mi invia i dettagli e organizza il mio intervento prioritario.",
-            lightIconBg: 'bg-purple-100 text-purple-600',
+            title: "Organizzo l'uscita",
+            description: "Il mio assistente mi gira subito i tuoi dati. Questo mi permette di capire cosa serve e preparare i pezzi di ricambio necessari.",
+            lightIconBg: "bg-purple-100 text-purple-600",
         },
         {
             icon: Wrench,
-            title: 'Arrivo da te',
-            description: 'Ti contatto in pochi minuti e intervengo personalmente entro 2 ore.',
-            lightIconBg: 'bg-orange-100 text-orange-600',
+            title: "Arrivo da te",
+            description: "Ti confermo l'orario e arrivo a casa tua entro 2 ore per le emergenze, con tutto il necessario per risolvere.",
+            lightIconBg: "bg-orange-100 text-orange-600",
         },
         {
             icon: CheckCircle,
-            title: 'Problema Risolto',
-            description: 'Lavoro fatto, pagamento digitale, fattura automatica. Tutto tracciato.',
-            lightIconBg: 'bg-emerald-100 text-emerald-600',
+            title: "Problema Risolto",
+            description: "Lavoro eseguito a regola d'arte, pulizia finale e ricevuta cartacea o digitale rilasciata sul posto. Semplice e garantito.",
+            lightIconBg: "bg-emerald-100 text-emerald-600",
         },
     ];
 
     return (
-        <section className="py-12 md:py-24 bg-slate-50 dark:bg-black/50 overflow-hidden">
+        <section className="py-16 sm:py-24 bg-slate-50 dark:bg-black/50 overflow-hidden">
             <div className="container max-w-6xl mx-auto px-4">
-                <h2 className="text-3xl md:text-5xl font-black text-center mb-16 tracking-tight text-foreground">
-                    Come Funziona
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-center mb-16 tracking-tight text-foreground">
+                    Come funziona
                 </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">

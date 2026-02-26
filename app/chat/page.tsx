@@ -492,6 +492,8 @@ const MARKDOWN_COMPONENTS = {
   p: ({ node: _node, ...props }: ComponentPropsWithoutRef<'p'> & { node?: any }) => <p {...props} className="mb-2 last:mb-0" />
 };
 
+import Image from 'next/image';
+
 function MessageBubble({ message, isLast }: { readonly message: any; readonly isLast: boolean }) {
   const isUser = message.role === 'user';
 
@@ -528,12 +530,14 @@ function MessageBubble({ message, isLast }: { readonly message: any; readonly is
           } px-4 py-3 space-y-2 overflow-hidden`}
       >
         {imageUrl && (
-          <div className="relative w-full h-48 sm:h-56 mb-2 rounded-lg overflow-hidden border border-white/20">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+          <div className="relative w-full h-48 sm:h-56 mb-2 rounded-lg overflow-hidden border border-white/20 bg-slate-100 dark:bg-slate-800">
+            <Image
               src={imageUrl}
-              alt="Uploaded"
-              className="object-cover w-full h-full"
+              alt="Uploaded photo"
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 85vw, 400px"
+              priority={isLast}
             />
           </div>
         )}

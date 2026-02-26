@@ -6,7 +6,7 @@ export function CommonFeatures({ type }: { type?: 'residential' | 'business' }) 
   const userType = type ?? 'residential';
 
   return (
-    <section id="common-features" className="py-20 px-4 sm:px-6 bg-background">
+    <section id="common-features" className="py-16 sm:py-24 px-4 sm:px-6 bg-background">
       <div className="max-w-7xl mx-auto">
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-foreground text-balance">
@@ -37,7 +37,7 @@ export function CommonFeatures({ type }: { type?: 'residential' | 'business' }) 
             number="02"
             title={userType === 'residential' ? "Prezzi Chiari" : "Costi Trasparenti, Nessuna Sorpresa"}
             desc={userType === 'residential' ? "Niente 'faccio un prezzo a occhio'. Uso i listini ufficiali Emilia-Romagna. Quello che vedi è quello che paghi." : "Preventivi dettagliati basati su listini ufficiali, con piani di manutenzione programmata per una gestione budget chiara e prevedibile."}
-            features={userType === 'residential' ? ["Stima Costi Immediata", "Listini Regionali", "Pagamento In-App"] : ["Preventivi Personalizzati", "Piani di Manutenzione", "Flessibilità di Pagamento"]}
+            features={userType === 'residential' ? ["Stima Costi Immediata", "Listini Regionali", "Ricevuta Garantita"] : ["Preventivi Personalizzati", "Piani di Manutenzione", "Trasparenza Totale"]}
           />
           <PremiumFeatureCard
             icon={<ShieldCheck className="w-6 h-6 text-white" />}

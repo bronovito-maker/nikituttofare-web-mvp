@@ -56,7 +56,7 @@ export function ChatWelcome({ onOptionSelect }: ChatWelcomeProps) {
                             L&apos;assistente digitale di Niki
                         </h2>
                         <p className="text-muted-foreground text-sm sm:text-lg max-w-lg mx-auto leading-relaxed">
-                            Lui è sui cantieri o a casa di un cliente in questo momento, ma io sono qui per farti un <strong>preventivo immediato</strong>, prenotare un appuntamento o rispondere ai tuoi dubbi tecnici.
+                            Niki è sui cantieri o a casa di un cliente in questo momento, ma io sono qui per farti un <strong>preventivo immediato</strong>, prenotare un appuntamento o rispondere ai tuoi dubbi tecnici.
                         </p>
                         <p className="text-muted-foreground text-xs sm:text-sm font-medium">
                             Risparmia tempo e prova la mia velocità, oppure se preferisci scrivimi direttamente su WhatsApp!
