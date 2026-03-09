@@ -1,4 +1,5 @@
 import type { CapacitorConfig } from '@capacitor/cli';
+import { KeyboardResize } from '@capacitor/keyboard';
 
 const config: CapacitorConfig = {
   appId: 'com.nikituttofare.techapp',
@@ -7,6 +8,17 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://www.nikituttofare.com/technician/dashboard',
     cleartext: true
+  },
+  plugins: {
+    Keyboard: {
+      resize: KeyboardResize.None,
+    },
+    SplashScreen: {
+      launchShowDuration: 2000,
+      backgroundColor: "#131314",
+      showSpinner: false,
+      androidScaleType: "CENTER_CROP"
+    }
   }
 };
 

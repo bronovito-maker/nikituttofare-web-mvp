@@ -2,9 +2,11 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '../ui/markdown-renderer';
 import { App } from '@capacitor/app';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
+import { Keyboard } from '@capacitor/keyboard';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -23,6 +25,7 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
     const [isTyping, setIsTyping] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
     const scrollRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const hasInitialized = useRef(false);
@@ -42,7 +45,7 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
         }
     }, [messages, isTyping]);
 
-    // Body scroll lock & Capacitor Back Button
+    // Body scroll lock, Keyboard & Capacitor Back Button
     useEffect(() => {
         if (isExpanded) {
             document.body.style.overflow = 'hidden';
@@ -52,12 +55,23 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
                 setIsExpanded(false);
             });
 
+            // Handle Keyboard for layout stability
+            const kShowListener = Keyboard.addListener('keyboardWillShow', (info: any) => {
+                setKeyboardHeight(info.keyboardHeight);
+            });
+            const kHideListener = Keyboard.addListener('keyboardWillHide', () => {
+                setKeyboardHeight(0);
+            });
+
             return () => {
                 document.body.style.overflow = 'unset';
-                backListener.then((l: { remove: () => any }) => l.remove());
+                backListener.then(l => l.remove());
+                kShowListener.then(l => l.remove());
+                kHideListener.then(l => l.remove());
             };
         } else {
             document.body.style.overflow = 'unset';
+            setKeyboardHeight(0);
         }
     }, [isExpanded]);
 
@@ -106,50 +120,46 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
                 }
             }
 
-            // @ts-ignore
-            const SpeechRecognitionJS = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognitionJS) {
-                alert("Il tuo browser o dispositivo non supporta il riconoscimento vocale classico.");
+            if (isRecording) {
+                await SpeechRecognition.stop();
+                setIsRecording(false);
                 return;
             }
 
-            const recognition = new SpeechRecognitionJS();
-            recognition.lang = 'it-IT';
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
-
-            recognition.onstart = () => {
-                setIsRecording(true);
-            };
-
-            recognition.onresult = (event: any) => {
-                const transcript = event.results[0][0].transcript;
-                if (transcript) {
-                    setInput(transcript);
-                }
-            };
-
-            recognition.onerror = (event: any) => {
-                console.error('Speech recognition error:', event.error);
-                setIsRecording(false);
-                if (event.error === 'not-allowed') {
-                    alert("Permesso microfono negato. Controlla le impostazioni dell'app.");
-                }
-            };
-
-            recognition.onend = () => {
-                setIsRecording(false);
-            };
-
-            try {
-                recognition.start();
-            } catch (e) {
-                console.error('Speech recognition start failed:', e);
-                setIsRecording(false);
+            const isAvailable = await SpeechRecognition.available();
+            if (!isAvailable) {
+                alert("Il riconoscimento vocale non è disponibile su questo dispositivo.");
+                return;
             }
+
+            setIsRecording(true);
+
+            await SpeechRecognition.start({
+                language: 'it-IT',
+                partialResults: true,
+                popup: false,
+            });
+
+            // Listen for results
+            const resultListener = await (SpeechRecognition as any).addListener('partialResults', (data: any) => {
+                if (data.matches && data.matches.length > 0) {
+                    setInput(data.matches[0]);
+                }
+            });
+
+            // Auto-stop after 5 seconds of silence or manual stop
+            setTimeout(async () => {
+                try {
+                    await SpeechRecognition.stop();
+                    setIsRecording(false);
+                    // cleanup listener if needed, though typically done on unmount or next start
+                } catch (e) { }
+            }, 10000);
+
         } catch (error) {
-            console.error('Voice input initialization failed:', error);
+            console.error('Voice input failed:', error);
             setIsRecording(false);
+            alert("Errore nell'avvio del microfono. Riprova.");
         }
     };
 
@@ -166,44 +176,49 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
     };
 
     return (
-        <div className={`flex flex-col transition-all duration-300 ease-in-out bg-slate-900 border border-slate-800 overflow-hidden backdrop-blur-xl
-            ${isExpanded
-                ? 'fixed inset-0 z-[10002] rounded-none shadow-2xl pt-[env(safe-area-inset-top,20px)] pb-[env(safe-area-inset-bottom,20px)]'
-                : 'h-[500px] rounded-3xl relative'
-            }`}>
+        <div className={cn(
+            "flex flex-col transition-all duration-500 ease-in-out bg-background border border-white/10 overflow-hidden shadow-2xl",
+            isExpanded
+                ? 'fixed inset-0 z-[10002] rounded-none pt-[env(safe-area-inset-top,20px)] pb-[env(safe-area-inset-bottom,20px)]'
+                : 'h-[500px] rounded-[2.5rem] relative'
+        )}>
 
             {/* Header */}
-            <div className="sticky top-0 z-10 p-4 border-b border-slate-800 bg-slate-900 flex items-center justify-between">
+            <div className="sticky top-0 z-20 px-6 py-4 border-b border-white/5 bg-background/80 backdrop-blur-xl flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-xl shadow-lg shadow-blue-500/20">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center text-xl shadow-lg shadow-indigo-500/20">
                         🤖
                     </div>
                     <div>
-                        <h3 className="font-bold text-sm">Niki Assistant</h3>
+                        <h3 className="font-bold text-sm tracking-tight">Niki Assistant</h3>
                         <div className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                            <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Online</span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">Active Now</span>
                         </div>
                     </div>
                 </div>
 
-                <button
-                    onClick={() => setIsExpanded(!isExpanded)}
-                    className={`p-2 transition-colors group ${isExpanded ? 'bg-red-500/10 text-red-500 rounded-full' : 'hover:bg-slate-700 text-slate-400 rounded-lg'}`}
-                    title={isExpanded ? "Chiudi" : "Tutto schermo"}
-                >
-                    {isExpanded ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:scale-110 transition-transform"><path d="M15 3h6v6" /><path d="M9 21H3v-6" /><path d="M21 3l-7 7" /><path d="M3 21l7-7" /></svg>
-                    )}
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className={cn(
+                            "flex items-center justify-center h-10 w-10 transition-all rounded-xl border border-white/5",
+                            isExpanded ? "bg-red-500/10 text-red-500 hover:bg-red-500/20" : "bg-accent/5 hover:bg-accent/10 text-muted-foreground"
+                        )}
+                    >
+                        {isExpanded ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6" /><path d="M9 21H3v-6" /><path d="M21 3l-7 7" /><path d="M3 21l7-7" /></svg>
+                        )}
+                    </button>
+                </div>
             </div>
 
             {/* Messages Area */}
             <div
                 ref={scrollRef}
-                className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide bg-gradient-to-b from-transparent to-slate-900/20"
+                className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide bg-gradient-to-b from-accent/5 to-transparent pt-8 overscroll-contain"
             >
                 {messages.filter(m => !m.isHidden).length === 0 && !isTyping && (
                     <div className="h-full flex flex-col items-center justify-center text-center p-8">
@@ -242,7 +257,10 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 bg-slate-800/30 border-t border-slate-800 pb-safe shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.5)]">
+            <div
+                className="p-4 bg-slate-800/30 border-t border-slate-800 pb-safe shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.5)]"
+                style={{ paddingBottom: isExpanded ? `${keyboardHeight}px` : undefined }}
+            >
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => fileInputRef.current?.click()}

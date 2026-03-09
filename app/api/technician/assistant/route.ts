@@ -115,13 +115,19 @@ export async function POST(req: NextRequest) {
 
         let result;
         if (image) {
-            const base64Data = image.split(',')[1] || image;
+            // Estrai il mimeType e i dati base64 dal data URL
+            const mimeMatch = image.match(/^data:([^;]+);base64,/);
+            const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
+            const base64Data = image.replace(/^data:([^;]+);base64,/, "");
+
+            console.log(`[AI Assistant] Processing image with mimeType: ${mimeType}`);
+
             result = await model.generateContent([
                 systemPrompt,
                 {
                     inlineData: {
                         data: base64Data,
-                        mimeType: "image/jpeg"
+                        mimeType: mimeType
                     }
                 },
                 message || "Analizza questa foto del cantiere e dammi suggerimenti tecnici."

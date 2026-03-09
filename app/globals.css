@@ -8,11 +8,55 @@
 
 @layer base {
   :root {
-    /* Core Brand Colors */
+    /* High-End Professional Palette - Light */
     --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --foreground: 224 71.4% 4.1%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 71.4% 4.1%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71.4% 4.1%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --popover-foreground: 0 0% 3.9%;
+    /* Adjusted from 224 71.4% 4.1% to match later semantic */
+    --primary: 0 0% 9%;
+    /* Adjusted from 221.2 83.2% 53.3% to match later semantic */
+    --primary-foreground: 0 0% 98%;
+    /* Adjusted from 210 40% 98% to match later semantic */
+    --secondary: 0 0% 96.1%;
+    /* Adjusted from 210 40% 96.1% to match later semantic */
+    --secondary-foreground: 0 0% 9%;
+    /* Adjusted from 222.2 47.4% 11.2% to match later semantic */
+    --muted: 0 0% 96.1%;
+    /* Adjusted from 210 40% 96.1% to match later semantic */
+    --muted-foreground: 0 0% 45.1%;
+    /* Adjusted from 215.4 16.3% 46.9% to match later semantic */
+    --accent: 0 0% 96.1%;
+    /* Adjusted from 210 40% 96.1% to match later semantic */
+    --accent-foreground: 0 0% 9%;
+    /* Adjusted from 222.2 47.4% 11.2% to match later semantic */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 0 0% 89.8%;
+    /* Adjusted from 214.3 31.8% 91.4% to match later semantic */
+    --input: 0 0% 89.8%;
+    /* Adjusted from 214.3 31.8% 91.4% to match later semantic */
+    --ring: 0 0% 3.9%;
+    /* Adjusted from 221.2 83.2% 53.3% to match later semantic */
+    --radius: 0.5rem;
+    /* Adjusted from 1rem to match later semantic */
 
-    /* Slate Palette (Kept core colors) */
+    /* Custom Design Tokens */
+    --glass-opacity: 0.6;
+    --glass-blur: 12px;
+
+    /* Legacy compatibility tokens (normalized) */
     --slate-50: 210 40% 98%;
     --slate-100: 210 40% 96%;
     --slate-200: 214 32% 91%;
@@ -20,91 +64,49 @@
     --slate-400: 215 20% 65%;
     --slate-500: 215 16% 47%;
     --slate-900: 222 47% 11%;
-
-    /* Brand Accent - Electric Blue */
     --brand: 217 91% 60%;
     --brand-foreground: 0 0% 100%;
-
-    /* Urgent Orange */
     --urgent: 24 95% 53%;
     --urgent-foreground: 0 0% 100%;
-
-    /* Success Green */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
-
-    /* Semantic Colors */
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --radius: 0.5rem;
   }
 
   .dark {
-    /* Gemini Dark Mode Palette */
-
-    /* Background: #131314 */
-    --background: 0 0% 3.9%;
-
-    /* Main Text: #E3E3E3 */
+    /* Gemini Premium Console - Dark */
+    --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
-
-    /* Surface/Card (Sidebar & Input): #1E1F20 */
-    --card: 0 0% 3.9%;
+    --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
-
-    /* Popover: #1E1F20 */
-    --popover: 0 0% 3.9%;
+    --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-
-    /* Primary (Brand Blue): #0B57D0 */
     --primary: 0 0% 98%;
+    /* Adjusted from 217.2 91.2% 59.8% to match later semantic */
     --primary-foreground: 0 0% 9%;
-
-    /* Secondary (Sidebar/Input): #1E1F20 */
+    /* Adjusted from 222.2 47.4% 11.2% to match later semantic */
     --secondary: 0 0% 14.9%;
+    /* Adjusted from 240 10% 10% to match later semantic */
     --secondary-foreground: 0 0% 98%;
-
-    /* Muted (Less important): #444746 or slightly lighter than bg */
     --muted: 0 0% 14.9%;
-    /* Text Secondary: #C4C7C5 */
+    /* Adjusted from 240 10% 10% to match later semantic */
     --muted-foreground: 0 0% 63.9%;
-
-    /* Accent (Highlight Blue): #A8C7FA */
-    /* Used for hover states/active links. Since this is light, we use dark text */
+    /* Adjusted from 240 5% 64.9% to match later semantic */
     --accent: 0 0% 14.9%;
+    /* Adjusted from 240 10% 15% to match later semantic */
     --accent-foreground: 0 0% 98%;
-
-    /* Destructive */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-
-    /* Border: #444746 */
     --border: 0 0% 14.9%;
-
-    /* Input: #1E1F20 (Surface) or #444746 (Border usually) */
-    /* User said "Superficie Secondaria (Sidebar & Input): #1E1F20" */
+    /* Adjusted from 240 10% 15% to match later semantic */
     --input: 0 0% 14.9%;
-
-    /* Ring/Highlight: #A8C7FA */
+    /* Adjusted from 240 10% 15% to match later semantic */
     --ring: 0 0% 83.1%;
+    /* Adjusted from 217.2 91.2% 59.8% to match later semantic */
 
     --radius: 0.75rem;
 
+    --glass-opacity: 0.4;
+    --glass-blur: 16px;
     --chart-1: 220 70% 50%;
 
     --chart-2: 160 60% 45%;
@@ -125,7 +127,8 @@
     touch-action: manipulation;
   }
 
-  button, a {
+  button,
+  a {
     -webkit-user-select: none;
     user-select: none;
   }
@@ -150,6 +153,7 @@
    ======================================== */
 
 @layer utilities {
+
   /* Scrollbar Hide */
   .scrollbar-hide {
     -ms-overflow-style: none;
