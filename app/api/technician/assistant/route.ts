@@ -47,11 +47,13 @@ export async function POST(req: NextRequest) {
         }
 
         // 2. Recupero Memoria Progetto
-        const { data: memory } = await supabase
+        const memoryQuery = await supabase
             .from('assistant_project_memory' as any)
             .select('*')
             .eq('ticket_id', ticketId)
             .single();
+
+        const memory = memoryQuery.data as any;
 
         // Recupero inventario disponibile se abbiamo il tenant id
         let inventoryContext = 'Nessun materiale attualmente in inventario / Magazzino non disponibile.';

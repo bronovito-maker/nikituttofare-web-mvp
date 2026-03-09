@@ -17,15 +17,15 @@ export async function POST(req: NextRequest) {
         }
 
         // Verifica autorizzazione
-        const { data: ticketRes, error: ticketError } = await supabase
+        const ticketQuery = await supabase
             .from('tickets')
             .select('*')
             .eq('id', ticketId)
             .single();
 
-        const ticket = ticketRes as any;
+        const ticket = ticketQuery.data as any;
 
-        if (ticketError || !ticket) {
+        if (ticketQuery.error || !ticket) {
             return NextResponse.json({ error: 'Ticket non trovato' }, { status: 404 });
         }
 
