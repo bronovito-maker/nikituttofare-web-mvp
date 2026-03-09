@@ -1,232 +1,143 @@
-import { createServerClient } from '@/lib/supabase-server'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
+// app/technician/jobs/[id]/page.tsx
+'use client';
 
-import { Phone, MapPin, CheckCircle, ArrowLeft, Navigation, Banknote, CreditCard } from 'lucide-react'
-import Link from 'next/link'
-import Image from 'next/image'
-import { redirect } from 'next/navigation'
-import { completeJob, addJobNote } from '@/app/actions/technician-actions'
-import { markTicketAsPaid, type PaymentMethod } from '@/app/actions/payment-actions'
+import { useEffect, useState, use } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import AssistantChat from '@/components/technician/AssistantChat';
+import InventoryManager from '@/components/technician/InventoryManager';
+import { ExtendedTicket } from '@/lib/types/internal-app';
+import { createBrowserClient } from '@/lib/supabase-browser';
 
-// Payment Status Badge Component
-function PaymentStatusBadge({ status }: { status: string | null }) {
-    if (status === 'paid') {
-        return (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30">
-                <Banknote className="w-3.5 h-3.5" />
-                PAGATO
-            </span>
-        )
-    }
-    return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30">
-            <CreditCard className="w-3.5 h-3.5" />
-            IN ATTESA DI PAGAMENTO
-        </span>
-    )
-}
+export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
+    const router = useRouter();
+    const [job, setJob] = useState<ExtendedTicket | null>(null);
+    const [loading, setLoading] = useState(true);
+    const supabase = createBrowserClient();
 
-export default async function JobOperationalPage({ params }: { params: Promise<Readonly<{ id: string }>> }) {
-    const supabase = await createServerClient()
-    const { id } = await params
+    useEffect(() => {
+        const fetchJob = async () => {
+            const { data, error } = await supabase
+                .from('tickets')
+                .select('*')
+                .eq('id', id)
+                .single();
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return redirect('/login')
+            if (data) setJob(data as ExtendedTicket);
+            setLoading(false);
+        };
+        fetchJob();
+    }, [id, supabase]);
 
-    const { data: ticket } = await supabase
-        .from('tickets')
-        .select('*')
-        .eq('id', id)
-        .single()
+    if (loading) return (
+        <div className="min-h-screen bg-[#0F172A] flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+    );
 
-    if (!ticket || ticket.assigned_technician_id !== user.id) {
-        return redirect('/technician/jobs')
-    }
-
-    // Fetch previous notes (messages with specific metadata)
-    const { data: notes } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('ticket_id', id)
-        // @ts-ignore
-        .contains('meta_data', { type: 'internal_note' })
-        .order('created_at', { ascending: false })
-
-    const isPaid = ticket.payment_status === 'paid'
-    const isResolved = ticket.status === 'resolved'
+    if (!job) return (
+        <div className="min-h-screen bg-[#0F172A] text-white p-8 text-center text-slate-400">
+            Intervento non trovato.
+        </div>
+    );
 
     return (
-        <div className="min-h-screen bg-background text-foreground font-sans pb-24">
-            {/* Top Bar */}
-            <div className="sticky top-0 bg-background/90 backdrop-blur-md border-b border-border p-4 flex items-center gap-4 z-50">
-                <Link href="/technician/jobs" className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
-                    <ArrowLeft className="w-6 h-6" />
-                </Link>
-                <div className="flex-1">
-                    <h1 className="font-bold text-lg leading-none text-foreground">Intervento in Corso</h1>
-                    <span className="text-xs text-emerald-500 dark:text-emerald-400">Assigned</span>
+        <div className="min-h-screen bg-[#0F172A] text-white pb-24">
+            {/* Hero Header */}
+            <div className="bg-slate-900 border-b border-slate-800 p-6">
+                <div className="max-w-4xl mx-auto flex justify-between items-start">
+                    <div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <button onClick={() => router.back()} className="text-slate-400">←</button>
+                            <span className="text-xs font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-1 rounded">
+                                {job.category}
+                            </span>
+                        </div>
+                        <h1 className="text-2xl font-bold">{job.customer_name}</h1>
+                        <p className="text-slate-400 text-sm mt-1">📍 {job.address}, {job.city}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase border ${job.priority === 'urgent' ? 'border-red-500/30 bg-red-500/10 text-red-500' : 'border-slate-700 bg-slate-800/50 text-slate-400'
+                            }`}>
+                            {job.priority}
+                        </span>
+                        <div className="text-xs text-slate-500 font-medium">#{job.id.slice(0, 8)}</div>
+                    </div>
                 </div>
-                {/* Payment Status Badge */}
-                <PaymentStatusBadge status={ticket.payment_status} />
             </div>
 
-            <div className="p-4 space-y-6">
-                {/* Customer Card */}
-                <section className="bg-card rounded-xl p-5 border border-border">
-                    <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-1">Cliente</h2>
-                            <p className="text-xl font-semibold text-foreground">{ticket.customer_name || 'Cliente Guest'}</p>
-                        </div>
-                        <Button size="icon" className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white" asChild>
-                            <a href={`tel:${ticket.contact_phone || ''}`}>
-                                <Phone className="w-5 h-5" />
-                            </a>
-                        </Button>
+            <div className="max-w-4xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column: Details & Actions */}
+                <div className="lg:col-span-2 space-y-6">
+                    {/* Quick Actions */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <a href={`tel:${job.contact_phone}`} className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 p-4 rounded-2xl font-bold transition-all active:scale-95 shadow-lg shadow-green-500/20">
+                            📞 Chiama
+                        </a>
+                        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address + ' ' + job.city)}`} target="_blank" className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 p-4 rounded-2xl font-bold transition-all active:scale-95 border border-slate-700">
+                            🗺️ Mappa
+                        </a>
                     </div>
 
-                    <div className="flex items-start gap-3 bg-secondary/50 p-3 rounded-lg border border-border">
-                        <MapPin className="w-5 h-5 text-muted-foreground mt-1" />
-                        <div className="flex-1">
-                            <p className="text-sm text-foreground">{ticket.address}, {ticket.city || ''}</p>
-                            <a
-                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((ticket.address || '') + ' ' + (ticket.city || ''))}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-emerald-500 dark:text-emerald-400 font-medium mt-1 inline-flex items-center gap-1 hover:underline"
-                            >
-                                <Navigation className="w-3 h-3" /> Apri Mappe
-                            </a>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Problem Detail */}
-                <section>
-                    <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">Dettaglio Problema</h2>
-                    <div className="bg-card rounded-xl p-4 border border-border">
-                        <p className="text-foreground leading-relaxed">{ticket.description}</p>
-                        {ticket.photo_url && (
-                            <div className="mt-4 rounded-lg overflow-hidden border border-border relative aspect-video w-full">
-                                <Image
-                                    src={ticket.photo_url}
-                                    alt="Foto guasto"
-                                    fill
-                                    className="object-contain"
-                                    sizes="(max-width: 768px) 100vw, 800px"
-                                />
-                            </div>
-                        )}
-                    </div>
-                </section>
-
-                {/* Internal Notes */}
-                <section>
-                    <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">Note Tecniche</h2>
-                    <div className="bg-card rounded-xl p-4 border border-border space-y-4">
-                        <form action={async (formData) => {
-                            'use server'
-                            const note = formData.get('note') as string
-                            if (note) await addJobNote(id, note)
-                        }}>
-                            <Textarea
-                                name="note"
-                                placeholder="Aggiungi una nota interna..."
-                                className="bg-secondary/50 border-border text-foreground focus:border-emerald-500 mb-2"
-                            />
-                            <Button type="submit" variant="secondary" size="sm" className="w-full text-xs">
-                                Salva Nota
-                            </Button>
-                        </form>
-
-                        <div className="space-y-3 pt-2">
-                            {notes?.map((note) => (
-                                <div key={note.id} className="text-sm bg-secondary/50 p-3 rounded border border-border">
-                                    <p className="text-foreground">{note.content}</p>
-                                    <span className="text-[10px] text-muted-foreground block mt-1 text-right">
-                                        {new Date(note.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-            </div>
-
-            {/* Sticky Bottom Actions */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 border-t border-border backdrop-blur z-50 space-y-3">
-                {/* Payment Action - Only show if not resolved */}
-                {!isResolved && !isPaid && (
-                    <div className="flex gap-3">
-                        <form action={async (formData) => {
-                            'use server'
-                            const method = formData.get('method') as PaymentMethod
-                            await markTicketAsPaid(id, method)
-                        }} className="flex-1">
-                            <input type="hidden" name="method" value="cash" />
-                            <Button
-                                type="submit"
-                                variant="outline"
-                                size="lg"
-                                className="w-full border-amber-500/50 text-amber-500 dark:text-amber-400 hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-300 h-12"
-                            >
-                                <Banknote className="w-5 h-5 mr-2" />
-                                💵 Contanti
-                            </Button>
-                        </form>
-                        <form action={async (formData) => {
-                            'use server'
-                            const method = formData.get('method') as PaymentMethod
-                            await markTicketAsPaid(id, method)
-                        }} className="flex-1">
-                            <input type="hidden" name="method" value="card" />
-                            <Button
-                                type="submit"
-                                variant="outline"
-                                size="lg"
-                                className="w-full border-blue-500/50 text-blue-500 dark:text-blue-400 hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-300 h-12"
-                            >
-                                <CreditCard className="w-5 h-5 mr-2" />
-                                💳 POS
-                            </Button>
-                        </form>
-                    </div>
-                )}
-
-                {/* Already Paid Indicator */}
-                {isPaid && !isResolved && (
-                    <div className="text-center py-2 px-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                        <p className="text-sm text-emerald-500 dark:text-emerald-400 font-medium">✓ Pagamento registrato</p>
-                    </div>
-                )}
-
-                {/* Complete Job Button */}
-                {!isResolved && (
-                    <form action={async () => {
-                        'use server'
-                        await completeJob(id)
-                    }}>
-                        <Button
-                            type="submit"
-                            size="lg"
-                            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-14 text-lg shadow-[0_0_20px_rgba(16,185,129,0.3)]"
-                        >
-                            <CheckCircle className="w-6 h-6 mr-2" /> LAVORO COMPLETATO
-                        </Button>
-                    </form>
-                )}
-
-                {/* Resolved State */}
-                {isResolved && (
-                    <div className="text-center py-4">
-                        <p className="text-emerald-500 dark:text-emerald-400 font-bold text-lg">✅ Lavoro Completato</p>
-                        <p className="text-muted-foreground text-sm mt-1">
-                            {isPaid ? 'Pagamento ricevuto' : 'In attesa di pagamento'}
+                    {/* Description */}
+                    <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl backdrop-blur-xl">
+                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                            <span className="p-2 bg-blue-500/10 rounded-lg text-blue-400 text-sm">📋</span>
+                            Descrizione Problema
+                        </h2>
+                        <p className="text-slate-300 leading-relaxed text-sm whitespace-pre-wrap">
+                            {job.description}
                         </p>
                     </div>
-                )}
+
+                    {/* Assistant AI Integrated */}
+                    <div>
+                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2 ml-2">
+                            <span className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400 text-sm">🤖</span>
+                            Niki AI Assistant
+                        </h2>
+                        <AssistantChat ticketId={job.id} />
+                    </div>
+
+                    {/* Inventory Manager */}
+                    <div className="mt-8">
+                        <InventoryManager
+                            tenantId={job.tenant_id}
+                            jobId={job.id}
+                            technicianId={job.assigned_technician_id || job.created_by_technician_id || ''}
+                        />
+                    </div>
+                </div>
+
+                {/* Right Column: Status & Timeline */}
+                <div className="space-y-6">
+                    <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl backdrop-blur-xl">
+                        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-tighter mb-4">Stato Intervento</h2>
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                                <span className="text-sm font-medium">Stato</span>
+                                <span className="text-sm font-bold text-green-400">{job.status.replace('_', ' ')}</span>
+                            </div>
+                            <div className="flex justify-between items-center bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                                <span className="text-sm font-medium">Programmato</span>
+                                <span className="text-sm font-bold">{job.scheduled_at ? new Date(job.scheduled_at).toLocaleDateString() : 'N/D'}</span>
+                            </div>
+                        </div>
+                        <button className="w-full mt-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl font-bold shadow-xl shadow-blue-500/10 hover:from-blue-500 hover:to-indigo-500 transition-all active:scale-95">
+                            🏁 Chiudi Intervento
+                        </button>
+                    </div>
+
+                    <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl backdrop-blur-xl">
+                        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-tighter mb-4">Note Rapide</h2>
+                        <textarea
+                            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 placeholder:text-slate-600 h-24"
+                            placeholder="Aggiungi appunti..."
+                        ></textarea>
+                    </div>
+                </div>
             </div>
         </div>
-    )
+    );
 }

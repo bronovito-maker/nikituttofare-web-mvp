@@ -24,8 +24,12 @@ export default async function TechnicianDashboard() {
         .single();
 
     if (profile?.role !== 'technician') {
+        // Se non è un tecnico, non deve stare qui
         redirect('/dashboard');
     }
+
+    // Se siamo qui, è un tecnico. Ma la "Vera" dashboard ora è la lista lavori
+    redirect('/technician/jobs');
 
     // Count pending tickets in technician's city? (Simplification for MVP: Just count all 'pending_verification' or 'new')
     // For a real app, we'd filter by city.
@@ -38,7 +42,7 @@ export default async function TechnicianDashboard() {
     const { count: activeJobsCount } = await supabase
         .from('tickets')
         .select('*', { count: 'exact', head: true })
-        .eq('assigned_technician_id', user.id)
+        .eq('assigned_technician_id', user!.id)
         .neq('status', 'resolved');
 
     return (
@@ -47,12 +51,12 @@ export default async function TechnicianDashboard() {
             {/* Welcome Section */}
             <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                    <h2 className="text-2xl font-bold tracking-tight text-foreground">Ciao, {profile.full_name?.split(' ')[0] ?? ''}</h2>
+                    <h2 className="text-2xl font-bold tracking-tight text-foreground">Ciao, {profile?.full_name?.split(' ')[0] ?? ''}</h2>
                     <p className="text-muted-foreground">Ecco il riepilogo della tua attività.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Badge variant={profile.is_active ? 'default' : 'secondary'} className={profile.is_active ? 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/20' : 'bg-secondary text-muted-foreground border border-border'}>
-                        {profile.is_active ? 'In Servizio' : 'Offline'}
+                    <Badge variant={profile?.is_active ? 'default' : 'secondary'} className={profile?.is_active ? 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/20' : 'bg-secondary text-muted-foreground border border-border'}>
+                        {profile?.is_active ? 'In Servizio' : 'Offline'}
                     </Badge>
                 </div>
             </div>
@@ -67,7 +71,7 @@ export default async function TechnicianDashboard() {
                 </Card>
                 <Card className="bg-card border-border shadow-md">
                     <CardContent className="p-6 flex flex-col items-center justify-center text-center">
-                        <span className="text-4xl font-bold text-emerald-400 mb-2">{profile.loyalty_points || 0}</span>
+                        <span className="text-4xl font-bold text-emerald-400 mb-2">{profile?.loyalty_points || 0}</span>
                         <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Punti / Rating</span>
                     </CardContent>
                 </Card>

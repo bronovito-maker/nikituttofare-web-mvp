@@ -1,222 +1,189 @@
-'use server'
+// app/actions/technician-actions.ts
+'use server';
 
-import { createServerClient, createAdminClient } from '@/lib/supabase-server'
-import { revalidatePath } from 'next/cache'
-import { TechnicianLoginSchema, TicketActionSchema, AddNoteSchema } from '@/lib/schemas'
-import { ZodError } from 'zod'
+import { createServerClient } from '@/lib/supabase-server';
+import { getCurrentUser } from '@/lib/supabase-helpers';
+import { CreateManualJobParams, ExtendedTicket } from '@/lib/types/internal-app';
+import { revalidatePath } from 'next/cache';
 
-// Helper to handle Zod Errors nicely
-function handleZodError(error: unknown) {
-    if (error instanceof ZodError) {
-        return { success: false, message: error.errors[0].message }
+/**
+ * Crea un nuovo lavoro manualmente (es. da chiamata telefonica)
+ */
+export async function createManualJob(params: CreateManualJobParams) {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Non autorizzato');
+
+    const supabase = await createServerClient();
+
+    // 1. Verifichiamo il ruolo dell'utente (deve essere admin o tecnico)
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+    if (profile?.role !== 'admin' && profile?.role !== 'technician') {
+        throw new Error('Permessi insufficienti');
     }
-    throw error // Re-throw other errors (auth, database) to be handled by caller or Next.js
+
+    // 2. Inserimento ticket con campi estesi
+    const { data, error } = await supabase
+        .from('tickets')
+        .insert({
+            category: params.category,
+            description: params.description,
+            customer_name: params.customer_name,
+            contact_phone: params.contact_phone,
+            city: params.city,
+            address: params.address,
+            priority: params.priority || 'medium',
+            status: 'confirmed',
+            source: 'phone_manual',
+            scheduled_at: params.scheduled_at || null,
+            assigned_technician_id: user.id,
+        } as any)
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Errore creazione lavoro manuale:', error);
+        return { success: false, error: error.message };
+    }
+
+    revalidatePath('/technician/jobs');
+    return { success: true, data: data as ExtendedTicket };
 }
 
-export async function acceptJob(ticketIdIn: string) {
+/**
+ * Recupera i lavori assegnati al tecnico corrente
+ */
+export async function getMyJobs() {
+    const user = await getCurrentUser();
+    if (!user) return [];
+
+    const supabase = await createServerClient();
+
+    const { data, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('assigned_technician_id', user.id)
+        .order('scheduled_at', { ascending: true, nullsFirst: false });
+
+    if (error) {
+        console.error('Errore recupero lavori:', error);
+        return [];
+    }
+
+    return (data || []) as ExtendedTicket[];
+}
+
+/**
+ * Gestisce il login del tecnico tramite numero di telefono e PIN
+ */
+export async function loginTechnician(phone: string, pin: string) {
+    const supabase = await createServerClient();
+
     try {
-        const { ticketId } = TicketActionSchema.parse({ ticketId: ticketIdIn });
+        // 1. Cerchiamo il profilo tramite il numero di telefono
+        const cleanPhone = phone.replace(/\D/g, '');
 
-        const supabase = await createServerClient()
-
-        // 1. Get current user
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
-        if (authError || !user) {
-            throw new Error('Non autenticato')
-        }
-
-        // 2. Refresh session/role check
-        const { data: profile, error: profileError } = await supabase
+        // Cerchiamo tutti i tecnici (solitamente sono pochi, max qualche decina/centinaia)
+        // per fare un confronto flessibile lato server ed evitare problemi di formato DB
+        const { data: profiles, error: profileError } = await (supabase as any)
             .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single()
+            .select('email, role, pin, phone, full_name')
+            .eq('role', 'technician');
 
-        if (profileError || profile?.role !== 'technician') {
-            throw new Error('Accesso negato: Solo i tecnici possono accettare lavori')
+        if (profileError || !profiles) {
+            console.error('Errore query profili:', profileError);
+            return { success: false, message: 'Errore durante la ricerca del tecnico.' };
         }
 
-        // 3. Check ticket availability
-        const { data: ticket, error: ticketError } = await supabase
-            .from('tickets')
-            .select('id, status, assigned_technician_id')
-            .eq('id', ticketId)
-            .single()
+        // Cerchiamo il match: il numero inserito deve essere contenuto nel numero DB (o viceversa)
+        const profile = profiles.find((p: any) => {
+            const dbPhoneClean = (p.phone || '').replace(/\D/g, '');
+            return dbPhoneClean.includes(cleanPhone) || cleanPhone.includes(dbPhoneClean);
+        });
 
-        if (ticketError || !ticket) {
-            throw new Error('Ticket non trovato')
+        if (!profile) {
+            console.error('Nessun match trovato per:', cleanPhone);
+            return { success: false, message: 'Tecnico non trovato. Verifica il numero.' };
         }
 
-        if (ticket.assigned_technician_id) {
-            if (ticket.assigned_technician_id === user.id) {
-                return { success: true, message: "Hai già accettato questo lavoro" }
-            }
-            throw new Error('Questo lavoro è già stato preso da un altro tecnico')
+        if (profile.pin !== pin) {
+            return { success: false, message: 'PIN errato.' };
         }
 
-        // 4. Assign Job
-        console.log(`[acceptJob] Attempting update for ticket ${ticketId} with technician ${user.id}`);
-        const { error: updateError, data: updateData } = await supabase
-            .from('tickets')
-            .update({
-                assigned_technician_id: user.id,
-                status: 'assigned',
-                assigned_at: new Date().toISOString()
-            })
-            .eq('id', ticketId)
-            .is('assigned_technician_id', null)
-            .select();
-
-        if (updateError) {
-            console.error('[acceptJob] Update error:', updateError);
-            throw new Error(`Impossibile accettare il lavoro: ${updateError.message}`);
-        }
-
-        if (!updateData || updateData.length === 0) {
-            console.warn('[acceptJob] Update successful but 0 rows affected. Was the ticket already taken?');
-            throw new Error('Questo lavoro è appena stato preso da un altro tecnico (concurrency).');
-        }
-
-        console.log('[acceptJob] Successfully assigned ticket:', updateData[0].id);
-
-        revalidatePath('/technician')
-        revalidatePath(`/technician/job/${ticketId}`)
-
-        return { success: true }
-    } catch (error) {
-        if (error instanceof ZodError) return { success: false, message: error.errors[0].message }
-        throw error
-    }
-}
-
-export async function completeJob(ticketIdIn: string) {
-    try {
-        const { ticketId } = TicketActionSchema.parse({ ticketId: ticketIdIn });
-
-        const supabase = await createServerClient()
-
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
-        if (authError || !user) throw new Error('Non autenticato')
-
-        const { data: ticket } = await supabase
-            .from('tickets')
-            .select('assigned_technician_id, status')
-            .eq('id', ticketId)
-            .single()
-
-        if (!ticket || ticket.assigned_technician_id !== user.id) {
-            throw new Error('Non autorizzato. Questo incarico non è tuo.')
-        }
-
-        const { error } = await supabase
-            .from('tickets')
-            .update({
-                status: 'resolved',
-                completed_at: new Date().toISOString()
-            })
-            .eq('id', ticketId)
-
-        if (error) {
-            console.error('Error completing job:', error)
-            throw new Error('Errore durante la chiusura del lavoro')
-        }
-
-        revalidatePath('/technician')
-        return { success: true }
-    } catch (error) {
-        if (error instanceof ZodError) return { success: false, message: error.errors[0].message }
-        throw error
-    }
-}
-
-
-
-export async function addJobNote(ticketIdIn: string, noteContent: string) {
-    try {
-        const { ticketId, content } = AddNoteSchema.parse({ ticketId: ticketIdIn, content: noteContent });
-
-        const supabase = await createServerClient()
-
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) throw new Error('Non autenticato')
-
-        // Check ownership (security)
-        const { data: ticket } = await supabase
-            .from('tickets')
-            .select('assigned_technician_id')
-            .eq('id', ticketId)
-            .single()
-
-        if (!ticket || ticket.assigned_technician_id !== user.id) {
-            throw new Error('Non autorizzato')
-        }
-
-        // Insert internal note
-        const { error } = await supabase
-            .from('messages')
-            .insert({
-                ticket_id: ticketId,
-                content: content,
-                role: 'system',
-                meta_data: { type: 'internal_note', author_id: user.id }
-            })
-
-        if (error) {
-            console.error(error)
-            throw new Error('Errore salvataggio nota')
-        }
-
-        revalidatePath(`/technician/jobs/${ticketId}`)
-        return { success: true }
-    } catch (error) {
-        if (error instanceof ZodError) return { success: false, message: error.errors[0].message }
-        throw error
-    }
-}
-
-
-export async function loginTechnician(phoneIn: string, pinIn: string) {
-    try {
-        const { phone, pin } = TechnicianLoginSchema.parse({ phone: phoneIn, pin: pinIn });
-
-        // Use Admin client for initial lookup (bypass RLS to find associated email)
-        const admin = createAdminClient()
-
-        // 1. Smart Normalization: keep only digits
-        const cleanInput = phone.replace(/\D/g, '')
-        // We look for the last 10 digits to be flexible with country codes (+39, 0039, etc.)
-        const lastDigits = cleanInput.slice(-10)
-
-        console.log(`[loginTechnician] Smart Match attempt clean=${cleanInput} search digits=${lastDigits}`)
-
-        // 2. Lookup on public.profiles using admin client
-        const { data: profile, error: profileError } = await admin
-            .from('profiles')
-            .select('email, role')
-            .eq('role', 'technician')
-            .ilike('phone', `%${lastDigits}`)
-            .single()
-
-        if (profileError || !profile || !profile.email) {
-            console.error(`[loginTechnician] Profile not found for search %${lastDigits}:`, profileError)
-            return { success: false, message: 'Numero non registrato o non autorizzato come tecnico.' }
-        }
-
-        // 3. Perform Auth with server client to set session cookies
-        const supabase = await createServerClient()
         const { error: authError } = await supabase.auth.signInWithPassword({
             email: profile.email,
-            password: `${pin}ntf`
-        })
+            password: pin,
+        });
 
         if (authError) {
-            console.error(`[loginTechnician] Auth failed for ${profile.email}:`, authError)
-            return { success: false, message: 'PIN non valido.' }
+            console.error('Errore Auth:', authError);
+            return { success: false, message: 'Errore di autenticazione.' };
         }
 
-        return { success: true }
-    } catch (error) {
-        if (error instanceof ZodError) return { success: false, message: error.errors[0].message }
-        throw error
+        // Dopo il login, aggiorniamo i metadati dell'utente per includere il ruolo
+        // Questo serve per i controlli client-side immediati (es. SiteHeader)
+        await supabase.auth.updateUser({
+            data: { role: 'technician' }
+        });
+
+        return { success: true };
+    } catch (err) {
+        console.error('Errore login:', err);
+        return { success: false, message: 'Errore interno.' };
     }
+}
+
+/**
+ * Accetta un incarico tecnico assegnandoselo
+ */
+export async function acceptJob(ticketId: string) {
+    const user = await getCurrentUser();
+    if (!user) return { success: false, message: 'Non autorizzato' };
+
+    const supabase = await createServerClient();
+    const { error } = await supabase
+        .from('tickets')
+        .update({
+            status: 'assigned',
+            assigned_technician_id: user.id
+        } as any)
+        .eq('id', ticketId);
+
+    if (error) {
+        console.error('Errore acceptJob:', error);
+        return { success: false, message: error.message };
+    }
+
+    revalidatePath('/technician/jobs');
+    revalidatePath(`/technician/jobs/${ticketId}`);
+    return { success: true };
+}
+
+/**
+ * Segna un intervento come completato/risolto
+ */
+export async function completeJob(ticketId: string) {
+    const user = await getCurrentUser();
+    if (!user) return { success: false, message: 'Non autorizzato' };
+
+    const supabase = await createServerClient();
+    const { error } = await supabase
+        .from('tickets')
+        .update({
+            status: 'resolved'
+        } as any)
+        .eq('id', ticketId);
+
+    if (error) {
+        console.error('Errore completeJob:', error);
+        return { success: false, message: error.message };
+    }
+
+    revalidatePath('/technician/jobs');
+    revalidatePath(`/technician/jobs/${ticketId}`);
+    return { success: true };
 }

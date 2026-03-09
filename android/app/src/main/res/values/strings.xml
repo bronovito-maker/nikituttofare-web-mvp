@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">NikiTuttoFare</string>
+    <string name="title_activity_main">NikiTuttoFare</string>
+    <string name="package_name">com.nikituttofare.techapp</string>
+    <string name="custom_url_scheme">com.nikituttofare.techapp</string>
+</resources>

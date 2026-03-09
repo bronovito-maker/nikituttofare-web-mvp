@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Menu, Home, MapPin, Briefcase, User, LogOut, ArrowLeft, X } from 'lucide-react';
+import { Menu, Home, MapPin, Briefcase, User, LogOut, ArrowLeft, X, Package } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useEffect, useState } from 'react';
 
@@ -25,6 +25,7 @@ export function TechnicianNav() {
         { href: '/technician/dashboard', label: 'Bacheca', icon: Home },
         { href: '/technician/claim', label: 'Nuovi Lavori', icon: MapPin },
         { href: '/technician/jobs', label: 'I Miei Interventi', icon: Briefcase },
+        { href: '/technician/inventory', label: 'Furgone', icon: Package },
         { href: '/technician/profile', label: 'Profilo', icon: User },
     ];
 
@@ -34,8 +35,8 @@ export function TechnicianNav() {
 
     if (!isMounted) {
         return (
-            <header className="sticky top-0 z-[9999] w-full border-b border-border bg-background/80 backdrop-blur-xl shadow-sm h-16">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
+            <header className="sticky top-0 z-[9999] w-full border-b border-border bg-background/80 backdrop-blur-xl shadow-sm pt-[env(safe-area-inset-top)]">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2 sm:gap-3">
                         <div className="h-9 sm:h-11 w-9 sm:w-11 rounded-full bg-muted animate-pulse" />
                         <div className="h-4 w-24 bg-muted animate-pulse rounded" />
@@ -46,7 +47,7 @@ export function TechnicianNav() {
     }
 
     return (
-        <header className="sticky top-0 z-[9999] w-full border-b border-border bg-background/80 backdrop-blur-xl shadow-sm">
+        <header className="sticky top-0 z-[9999] w-full border-b border-border bg-background/80 backdrop-blur-xl shadow-sm pt-[env(safe-area-inset-top)]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
 
                 {/* Mobile Menu & Logo */}
@@ -63,11 +64,11 @@ export function TechnicianNav() {
                                 <span className="sr-only">Menu Tecnico</span>
                             </Button>
                         </SheetTrigger>
-                        <SheetContent side="left" className="w-[300px] sm:w-[350px] pr-0 [&>button]:hidden rounded-r-[2rem] border-r-border/50 bg-background/95 backdrop-blur-xl z-[10001] shadow-2xl">
+                        <SheetContent side="left" className="w-[300px] sm:w-[350px] pr-0 [&>button]:hidden rounded-r-[2rem] border-r-border/50 bg-background/95 backdrop-blur-xl z-[10001] shadow-2xl pt-[env(safe-area-inset-top)]">
                             <SheetTitle className="sr-only">Menu Navigazione Tecnico</SheetTitle>
 
                             {/* Static Toggle in Drawer */}
-                            <div className="absolute top-2.5 left-4 md:hidden">
+                            <div className="absolute top-[calc(env(safe-area-inset-top)+0.625rem)] left-4 md:hidden">
                                 <Button
                                     variant="ghost"
                                     size="icon"

@@ -12,6 +12,11 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
+  // Prevenzione: Se un tecnico finisce qui, mandalo alla sua dashboard
+  if (user.user_metadata?.role === 'technician') {
+    redirect('/technician/jobs');
+  }
+
   // Fetch tickets server-side
   const { data: tickets, error } = await supabase
     .from('tickets')

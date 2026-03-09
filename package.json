@@ -24,6 +24,9 @@
   },
   "dependencies": {
     "@auth/core": "^0.34.1",
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -62,6 +65,7 @@
     "react-leaflet": "^5.0.0",
     "react-markdown": "^10.1.0",
     "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
     "resend": "^3.4.0",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",

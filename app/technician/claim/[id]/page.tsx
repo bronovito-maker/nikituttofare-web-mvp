@@ -9,14 +9,14 @@ import { Button } from '@/components/ui/button';
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
-    params: {
+    params: Promise<{
         id: string;
-    };
+    }>;
 }
 
 export default async function ClaimPage({ params }: PageProps) {
     const supabase = await createServerClient();
-    const ticketId = params.id;
+    const { id: ticketId } = await params;
 
     // 1. Auth & Role Check
     const { data: { user } } = await supabase.auth.getUser();

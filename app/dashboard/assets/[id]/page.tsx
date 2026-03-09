@@ -9,13 +9,14 @@ import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 
 interface PageProps {
-    params: {
+    params: Promise<{
         id: string;
-    };
+    }>;
 }
 
 export default async function AssetPassportPage({ params }: Readonly<PageProps>) {
     const supabase = await createServerClient();
+    const { id } = await params;
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -26,7 +27,7 @@ export default async function AssetPassportPage({ params }: Readonly<PageProps>)
     const { data: asset, error: assetError } = await supabase
         .from('user_assets')
         .select('*')
-        .eq('id', params.id)
+        .eq('id', id)
         .eq('user_id', user.id)
         .single();
 
@@ -38,7 +39,7 @@ export default async function AssetPassportPage({ params }: Readonly<PageProps>)
     const { data: history } = await supabase
         .from('tickets')
         .select('*')
-        .eq('asset_id', params.id)
+        .eq('asset_id', id)
         .eq('status', 'resolved')
         .order('completed_at', { ascending: false });
 

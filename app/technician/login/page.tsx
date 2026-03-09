@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { loginTechnician } from '@/app/actions/technician-actions';
+import { loginTechnician } from '../../actions/technician-actions';
 import { HardHat, ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -20,7 +20,7 @@ function TechnicianLoginForm() {
   const supabase = createBrowserClient();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get('next') || searchParams.get('redirect') || '/technician/dashboard';
+  const redirectUrl = searchParams.get('next') || searchParams.get('redirect') || '/technician/jobs';
 
   // 1. VERIFICA FORMATO TELEFONO
   const handlePhoneSubmit = async () => {
