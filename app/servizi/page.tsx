@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { ServicesGrid } from '@/components/landing/services-grid';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
@@ -26,12 +27,12 @@ export default function ServicesPage() {
                             se posso aiutarti ti darò un preventivo in pochi minuti.
                         </p>
                         <div className="pt-4">
-                            <a
+                            <Link
                                 href="/chat"
                                 className="inline-flex h-14 px-10 items-center justify-center rounded-full bg-white text-blue-600 font-bold text-lg hover:scale-105 transition-transform"
                             >
                                 Parla con Niki
-                            </a>
+                            </Link>
                         </div>
                     </div>
                 </section>

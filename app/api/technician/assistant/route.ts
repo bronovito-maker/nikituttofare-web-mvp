@@ -25,15 +25,33 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Ticket ID mancante' }, { status: 400 });
         }
 
-        // 1. Recupero Memoria Progetto e Dettagli Ticket
-        // Casting 'as any' necessario perché i tipi generati non includono ancora le nuove tabelle/colonne
-        const [ticketRes, memoryRes] = await Promise.all([
-            supabase.from('tickets').select('*').eq('id', ticketId).single(),
-            supabase.from('assistant_project_memory' as any).select('*').eq('ticket_id', ticketId).single()
-        ]);
+        // 1. Recupero Dettagli Ticket con controllo autorizzazione
+        const { data: ticketRes, error: ticketError } = await supabase
+            .from('tickets')
+            .select('*')
+            .eq('id', ticketId)
+            .single();
 
-        const ticket = ticketRes.data as any;
-        const memory = memoryRes.data as any;
+        const ticket = ticketRes as any;
+
+        if (ticketError || !ticket) {
+            return NextResponse.json({ error: 'Ticket non trovato' }, { status: 404 });
+        }
+
+        // SICUREZZA: Verifica che il tecnico sia l'assegnatario o il creatore
+        const isAuthorized = ticket.assigned_technician_id === user.id || ticket.created_by_technician_id === user.id;
+
+        if (!isAuthorized) {
+            console.warn(`Tentativo di accesso non autorizzato al ticket ${ticketId} da parte dell'utente ${user.id}`);
+            return NextResponse.json({ error: 'Non hai i permessi per accedere a questo intervento' }, { status: 403 });
+        }
+
+        // 2. Recupero Memoria Progetto
+        const { data: memory } = await supabase
+            .from('assistant_project_memory' as any)
+            .select('*')
+            .eq('ticket_id', ticketId)
+            .single();
 
         // Recupero inventario disponibile se abbiamo il tenant id
         let inventoryContext = 'Nessun materiale attualmente in inventario / Magazzino non disponibile.';
@@ -133,7 +151,7 @@ export async function POST(req: NextRequest) {
                         {
                             method: "GET",
                             headers: {
-                                "X-TYPESENSE-API-KEY": "BB2uGetxL9CCej15O4hdDoXJav6pT8lW",
+                                "X-TYPESENSE-API-KEY": process.env.TYPESENSE_API_KEY || "",
                                 "Content-Type": "application/json"
                             }
                         }
@@ -152,8 +170,8 @@ export async function POST(req: NextRequest) {
                                 nome: doc.name || "N/A",
                                 prezzo: doc.seller_offer_116?.price ? `${Number(doc.seller_offer_116.price).toFixed(2)} €` : "N/A",
                                 quantita_disponibile: doc.seller_offer_116?.qty || 0,
-                                sku: doc.sku || "N/A",
-                                reparto: `${doc.smart_department_code || ''} > ${doc.smart_subdepartment_code || ''}`.trim(),
+                                corsia: doc.att_10637 || doc.smart_subdepartment_code || "N/A",
+                                reparto: doc.smart_department_code || "N/A",
                                 url: doc.url || "N/A"
                             }
                         });

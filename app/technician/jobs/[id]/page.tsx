@@ -124,8 +124,34 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                 <span className="text-sm font-bold">{job.scheduled_at ? new Date(job.scheduled_at).toLocaleDateString() : 'N/D'}</span>
                             </div>
                         </div>
-                        <button className="w-full mt-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl font-bold shadow-xl shadow-blue-500/10 hover:from-blue-500 hover:to-indigo-500 transition-all active:scale-95">
-                            🏁 Chiudi Intervento
+                        <button
+                            disabled={loading || job.status === 'resolved'}
+                            onClick={async () => {
+                                if (confirm('Sei sicuro di voler chiudere questo intervento?')) {
+                                    try {
+                                        setLoading(true);
+                                        const res = await fetch('/api/technician/close-job', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ ticketId: job.id, summary: 'Intervento completato dal tecnico.' })
+                                        });
+                                        if (res.ok) {
+                                            router.push('/technician/jobs');
+                                        } else {
+                                            alert('Errore durante la chiusura del lavoro.');
+                                        }
+                                    } catch (e) {
+                                        console.error(e);
+                                    } finally {
+                                        setLoading(false);
+                                    }
+                                }
+                            }}
+                            className={`w-full mt-6 py-4 rounded-2xl font-bold shadow-xl transition-all active:scale-95 ${job.status === 'resolved'
+                                ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-blue-500/10 hover:from-blue-500 hover:to-indigo-500 shadow-xl'
+                                }`}>
+                            🏁 {job.status === 'resolved' ? 'Intervento Chiuso' : 'Chiudi Intervento'}
                         </button>
                     </div>
 

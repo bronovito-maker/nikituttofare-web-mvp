@@ -20,6 +20,7 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
     const [loading, setLoading] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const hasInitialized = useRef(false);
@@ -77,29 +78,44 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
         // @ts-ignore
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            alert("Il tuo browser non supporta il riconoscimento vocale.");
+            alert("Il tuo browser o dispositivo non supporta il riconoscimento vocale.");
             return;
         }
 
         const recognition = new SpeechRecognition();
         recognition.lang = 'it-IT';
-        recognition.start();
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
 
-        setIsTyping(true);
+        recognition.onstart = () => {
+            setIsRecording(true);
+        };
 
         recognition.onresult = (event: any) => {
             const transcript = event.results[0][0].transcript;
-            setInput(transcript);
-            setIsTyping(false);
+            if (transcript) {
+                setInput(transcript);
+            }
         };
 
-        recognition.onerror = () => {
-            setIsTyping(false);
+        recognition.onerror = (event: any) => {
+            console.error('Speech recognition error:', event.error);
+            setIsRecording(false);
+            if (event.error === 'not-allowed') {
+                alert("Permesso microfono negato. Controlla le impostazioni dell'app.");
+            }
         };
 
         recognition.onend = () => {
-            setIsTyping(false);
+            setIsRecording(false);
         };
+
+        try {
+            recognition.start();
+        } catch (e) {
+            console.error('Speech recognition start failed:', e);
+            setIsRecording(false);
+        }
     };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -205,10 +221,10 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
                     </button>
                     <button
                         onClick={startVoiceInput}
-                        className="p-3 bg-slate-800 rounded-xl hover:bg-slate-700 transition-colors text-slate-400 hover:text-white"
+                        className={`p-3 rounded-xl transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
                         title="Dettato Vocale"
                     >
-                        🎙️
+                        {isRecording ? '🔴' : '🎙️'}
                     </button>
                     <input
                         type="file"
