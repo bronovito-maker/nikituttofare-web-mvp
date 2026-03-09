@@ -36,12 +36,16 @@ export async function POST(req: NextRequest) {
         const memory = memoryRes.data as any;
 
         // Recupero inventario disponibile se abbiamo il tenant id
-        let inventoryContext = 'Catalogo inventario non disponibile.';
+        let inventoryContext = 'Nessun materiale attualmente in inventario / Magazzino non disponibile.';
         if (ticket?.tenant_id) {
             const inventoryRes = await (supabase as any).from('inventory_items').select('name, sku, quantity_at_hand, unit_of_measure').eq('tenant_id', ticket.tenant_id);
-            if (inventoryRes.data) {
+            if (inventoryRes.data && inventoryRes.data.length > 0) {
                 const availableItems = inventoryRes.data.filter((item: any) => item.quantity_at_hand > 0);
-                inventoryContext = availableItems.map((i: any) => `- ${i.name} (SKU: ${i.sku || 'N/A'}) - Disp: ${i.quantity_at_hand} ${i.unit_of_measure}`).join('\n');
+                if (availableItems.length > 0) {
+                    inventoryContext = availableItems.map((i: any) => `- ${i.name} (SKU: ${i.sku || 'N/A'}) - Disp: ${i.quantity_at_hand} ${i.unit_of_measure}`).join('\n');
+                } else {
+                    inventoryContext = "Tutti gli articoli in inventario sono esauriti (quantità 0).";
+                }
             }
         }
 
@@ -85,7 +89,7 @@ export async function POST(req: NextRequest) {
         }] as any;
 
         const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash", // Utilizzo flash per tool calling stabile
+            model: "gemini-flash-lite-latest", // Utilizzo flash per tool calling stabile
             tools: tools
         });
 
@@ -120,59 +124,55 @@ export async function POST(req: NextRequest) {
             if (call && call.name === 'cerca_materiale_tecnomat') {
                 const searchQuery = (call.args as any).query;
 
-                // --- PROXY CALL TRAMITE SAAS (WEB UNLOCKER) ---
-                // Utilizziamo ScraperAPI per aggirare il blocco Datadome di Tecnomat.
-                // Inserire l'API Key in .env come SCRAPER_API_KEY
                 let toolResultData;
-                const apiKey = process.env.SCRAPER_API_KEY;
+                try {
+                    // Bypass nativo tramite le API pubbliche di Typesense (motore di ricerca usato da Tecnomat)
+                    // Nessun blocco DataDome su questo endpoint!
+                    const typesenseRes = await fetch(
+                        `https://eap1gtvsjbd4xhiyp-1.a1.typesense.net/collections/tm_prod_products_1_116/documents/search?q=${encodeURIComponent(searchQuery)}&query_by=name&per_page=5`,
+                        {
+                            method: "GET",
+                            headers: {
+                                "X-TYPESENSE-API-KEY": "BB2uGetxL9CCej15O4hdDoXJav6pT8lW",
+                                "Content-Type": "application/json"
+                            }
+                        }
+                    );
 
-                if (apiKey) {
-                    try {
-                        // Creiamo l'URL effettivo dell'API di ricerca nascosta di Tecnomat
-                        const targetUrl = encodeURIComponent(`https://www.tecnomat.it/api/v1/search?text=${encodeURIComponent(searchQuery)}`);
-                        // Costruiamo l'URL per ScraperAPI con bypass antibot (opzione premium consigliata per WAF)
-                        const proxyUrl = `http://api.scraperapi.com?api_key=${apiKey}&url=${targetUrl}&premium=true`;
+                    if (!typesenseRes.ok) {
+                        throw new Error(`Typesense error: ${typesenseRes.status}`);
+                    }
 
-                        const proxyRes = await fetch(proxyUrl, {
-                            method: 'GET'
+                    const data = await typesenseRes.json();
+
+                    if (data.hits && data.hits.length > 0) {
+                        const risultati = data.hits.map((hit: any) => {
+                            const doc = hit.document;
+                            return {
+                                nome: doc.name || "N/A",
+                                prezzo: doc.seller_offer_116?.price ? `${Number(doc.seller_offer_116.price).toFixed(2)} €` : "N/A",
+                                quantita_disponibile: doc.seller_offer_116?.qty || 0,
+                                sku: doc.sku || "N/A",
+                                reparto: `${doc.smart_department_code || ''} > ${doc.smart_subdepartment_code || ''}`.trim(),
+                                url: doc.url || "N/A"
+                            }
                         });
 
-                        if (!proxyRes.ok) {
-                            throw new Error(`Proxy error: ${proxyRes.status}`);
-                        }
-
-                        // L'API di Tecnomat restituisce JSON
-                        const rawData = await proxyRes.json();
-
-                        // Mappiamo i risultati in un formato sintetico per Niki AI
-                        const products = rawData.results?.slice(0, 5).map((p: any) => ({
-                            nome: p.name,
-                            prezzo: `${p.price?.formattedValue || 'N/A'}`,
-                            disponibilita: p.stock?.stockLevel > 0 ? `Disponibile (${p.stock.stockLevel})` : 'Esaurito',
-                            reparto: p.categories?.[0]?.name || 'Generico'
-                        })) || [];
-
                         toolResultData = {
-                            negozio: "Tecnomat",
+                            negozio: "Tecnomat Rimini",
                             query_cercata: searchQuery,
-                            risultati: products.length > 0 ? products : "Nessun prodotto trovato."
+                            risultati: risultati
                         };
-
-                    } catch (e: any) {
-                        console.error("Scraper Proxy Error:", e);
-                        toolResultData = { error: "Impossibile recuperare i dari via ScraperAPI: " + e.message };
+                    } else {
+                        toolResultData = {
+                            negozio: "Tecnomat Rimini",
+                            query_cercata: searchQuery,
+                            nota: "Nessun prodotto trovato per questa ricerca."
+                        };
                     }
-                } else {
-                    // Fallback Demo Response (finché non metti l'API KEY)
-                    toolResultData = {
-                        negozio: "Tecnomat Rimini",
-                        query_cercata: searchQuery,
-                        risultati: [
-                            { nome: "Articolo Correlato Premium a " + searchQuery, prezzo: "24.90 €", disponibilita: "Alta (25 pz)", corsia: "Corsia 15, Reparto D" },
-                            { nome: "Articolo Base a " + searchQuery, prezzo: "12.50 €", disponibilita: "Bassa (2 pz)", corsia: "Corsia 15, Reparto D" }
-                        ],
-                        nota: "Attenzione: questo è un risultato demo. Inserisci la SCRAPER_API_KEY nel file .env per i dati reali."
-                    };
+                } catch (e: any) {
+                    console.error("Typesense Direct Fetch Error:", e);
+                    toolResultData = { error: "Impossibile recuperare i dati da Tecnomat: " + e.message };
                 }
 
                 // Restituisci il risultato al modello
