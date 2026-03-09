@@ -24,7 +24,9 @@
   },
   "dependencies": {
     "@auth/core": "^0.34.1",
+    "@capacitor-community/speech-recognition": "^7.0.1",
     "@capacitor/android": "^8.2.0",
+    "@capacitor/app": "^8.0.1",
     "@capacitor/cli": "^8.2.0",
     "@capacitor/core": "^8.2.0",
     "@google/generative-ai": "^0.24.1",

@@ -113,27 +113,49 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 {/* Right Column: Status & Timeline */}
                 <div className="space-y-6">
                     <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl backdrop-blur-xl">
-                        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-tighter mb-4">Stato Intervento</h2>
+                        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-tighter mb-4">Chiusura Intervento</h2>
                         <div className="space-y-4">
-                            <div className="flex justify-between items-center bg-slate-800/50 p-3 rounded-xl border border-slate-700">
-                                <span className="text-sm font-medium">Stato</span>
-                                <span className="text-sm font-bold text-green-400">{job.status.replace('_', ' ')}</span>
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1 ml-1">Importo Pagato (€)</label>
+                                <input
+                                    type="number"
+                                    placeholder="0.00"
+                                    id="paymentAmount"
+                                    className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                                />
                             </div>
-                            <div className="flex justify-between items-center bg-slate-800/50 p-3 rounded-xl border border-slate-700">
-                                <span className="text-sm font-medium">Programmato</span>
-                                <span className="text-sm font-bold">{job.scheduled_at ? new Date(job.scheduled_at).toLocaleDateString() : 'N/D'}</span>
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1 ml-1">Metodo Pagamento</label>
+                                <select
+                                    id="paymentMethod"
+                                    className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 appearance-none"
+                                >
+                                    <option value="cash">Contanti</option>
+                                    <option value="card">Carta/POS</option>
+                                    <option value="bank_transfer">Bonifico</option>
+                                    <option value="other">Altro</option>
+                                </select>
                             </div>
                         </div>
+
                         <button
                             disabled={loading || job.status === 'resolved'}
                             onClick={async () => {
-                                if (confirm('Sei sicuro di voler chiudere questo intervento?')) {
+                                const amount = (document.getElementById('paymentAmount') as HTMLInputElement)?.value;
+                                const method = (document.getElementById('paymentMethod') as HTMLSelectElement)?.value;
+
+                                if (confirm(`Chiudere l'intervento con un incasso di €${amount || '0'}?`)) {
                                     try {
                                         setLoading(true);
                                         const res = await fetch('/api/technician/close-job', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ ticketId: job.id, summary: 'Intervento completato dal tecnico.' })
+                                            body: JSON.stringify({
+                                                ticketId: job.id,
+                                                summary: 'Intervento completato dal tecnico.',
+                                                actualPaymentAmount: amount ? parseFloat(amount) : 0,
+                                                paymentMethod: method
+                                            })
                                         });
                                         if (res.ok) {
                                             router.push('/technician/jobs');

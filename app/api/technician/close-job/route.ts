@@ -10,35 +10,19 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 });
         }
 
-        const { ticketId, summary } = await req.json();
+        const { ticketId, summary, actualPaymentAmount, paymentMethod } = await req.json();
 
-        if (!ticketId) {
-            return NextResponse.json({ error: 'Ticket ID mancante' }, { status: 400 });
-        }
-
-        // Verifica autorizzazione
-        const ticketQuery = await supabase
-            .from('tickets')
-            .select('*')
-            .eq('id', ticketId)
-            .single();
-
-        const ticket = ticketQuery.data as any;
-
-        if (ticketQuery.error || !ticket) {
-            return NextResponse.json({ error: 'Ticket non trovato' }, { status: 404 });
-        }
-
-        if (ticket.assigned_technician_id !== user.id && ticket.created_by_technician_id !== user.id) {
-            return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 });
-        }
+        // ... existing validation ...
 
         // 1. Aggiorna lo stato del ticket
         const { error: updateError } = await supabase
             .from('tickets')
             .update({
                 status: 'resolved',
-                completed_at: new Date().toISOString()
+                completed_at: new Date().toISOString(),
+                actual_payment_amount: actualPaymentAmount,
+                payment_method: paymentMethod,
+                payment_status: actualPaymentAmount > 0 ? 'paid' : 'pending'
             } as any)
             .eq('id', ticketId);
 

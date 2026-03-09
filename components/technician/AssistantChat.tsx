@@ -3,6 +3,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { MarkdownRenderer } from '../ui/markdown-renderer';
+import { App } from '@capacitor/app';
+import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -40,6 +42,25 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
         }
     }, [messages, isTyping]);
 
+    // Body scroll lock & Capacitor Back Button
+    useEffect(() => {
+        if (isExpanded) {
+            document.body.style.overflow = 'hidden';
+
+            // Listen for Capacitor back button
+            const backListener = App.addListener('backButton', () => {
+                setIsExpanded(false);
+            });
+
+            return () => {
+                document.body.style.overflow = 'unset';
+                backListener.then((l: { remove: () => any }) => l.remove());
+            };
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+    }, [isExpanded]);
+
     const sendMessage = async (message: string, image?: string, isHidden: boolean = false) => {
         if (!message && !image) return;
 
@@ -74,46 +95,60 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
         }
     };
 
-    const startVoiceInput = () => {
-        // @ts-ignore
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            alert("Il tuo browser o dispositivo non supporta il riconoscimento vocale.");
-            return;
-        }
-
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'it-IT';
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
-
-        recognition.onstart = () => {
-            setIsRecording(true);
-        };
-
-        recognition.onresult = (event: any) => {
-            const transcript = event.results[0][0].transcript;
-            if (transcript) {
-                setInput(transcript);
-            }
-        };
-
-        recognition.onerror = (event: any) => {
-            console.error('Speech recognition error:', event.error);
-            setIsRecording(false);
-            if (event.error === 'not-allowed') {
-                alert("Permesso microfono negato. Controlla le impostazioni dell'app.");
-            }
-        };
-
-        recognition.onend = () => {
-            setIsRecording(false);
-        };
-
+    const startVoiceInput = async () => {
         try {
-            recognition.start();
-        } catch (e) {
-            console.error('Speech recognition start failed:', e);
+            const hasPermission = await SpeechRecognition.checkPermissions();
+            if (hasPermission.speechRecognition !== 'granted') {
+                const requested = await SpeechRecognition.requestPermissions();
+                if (requested.speechRecognition !== 'granted') {
+                    alert("Permesso microfono negato. Controlla le impostazioni dell'app.");
+                    return;
+                }
+            }
+
+            // @ts-ignore
+            const SpeechRecognitionJS = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognitionJS) {
+                alert("Il tuo browser o dispositivo non supporta il riconoscimento vocale classico.");
+                return;
+            }
+
+            const recognition = new SpeechRecognitionJS();
+            recognition.lang = 'it-IT';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => {
+                setIsRecording(true);
+            };
+
+            recognition.onresult = (event: any) => {
+                const transcript = event.results[0][0].transcript;
+                if (transcript) {
+                    setInput(transcript);
+                }
+            };
+
+            recognition.onerror = (event: any) => {
+                console.error('Speech recognition error:', event.error);
+                setIsRecording(false);
+                if (event.error === 'not-allowed') {
+                    alert("Permesso microfono negato. Controlla le impostazioni dell'app.");
+                }
+            };
+
+            recognition.onend = () => {
+                setIsRecording(false);
+            };
+
+            try {
+                recognition.start();
+            } catch (e) {
+                console.error('Speech recognition start failed:', e);
+                setIsRecording(false);
+            }
+        } catch (error) {
+            console.error('Voice input initialization failed:', error);
             setIsRecording(false);
         }
     };
@@ -131,14 +166,14 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
     };
 
     return (
-        <div className={`flex flex-col transition-all duration-300 ease-in-out bg-slate-900/50 border border-slate-800 overflow-hidden backdrop-blur-xl
+        <div className={`flex flex-col transition-all duration-300 ease-in-out bg-slate-900 border border-slate-800 overflow-hidden backdrop-blur-xl
             ${isExpanded
-                ? 'fixed inset-0 z-[100] rounded-none md:inset-4 md:rounded-3xl shadow-2xl'
+                ? 'fixed inset-0 z-[10002] rounded-none shadow-2xl pt-[env(safe-area-inset-top,20px)] pb-[env(safe-area-inset-bottom,20px)]'
                 : 'h-[500px] rounded-3xl relative'
             }`}>
 
             {/* Header */}
-            <div className="p-4 border-b border-slate-800 bg-slate-800/50 flex items-center justify-between">
+            <div className="sticky top-0 z-10 p-4 border-b border-slate-800 bg-slate-900 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-xl shadow-lg shadow-blue-500/20">
                         🤖
@@ -154,14 +189,11 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
 
                 <button
                     onClick={() => setIsExpanded(!isExpanded)}
-                    className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-slate-400 group"
-                    title={isExpanded ? "Rimpicciolisci" : "Tutto schermo"}
+                    className={`p-2 transition-colors group ${isExpanded ? 'bg-red-500/10 text-red-500 rounded-full' : 'hover:bg-slate-700 text-slate-400 rounded-lg'}`}
+                    title={isExpanded ? "Chiudi" : "Tutto schermo"}
                 >
                     {isExpanded ? (
-                        <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-blue-400">
-                            Chiudi
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3" /><path d="M21 8h-3a2 2 0 0 1-2-2V3" /><path d="M3 16h3a2 2 0 0 1 2 2v3" /><path d="M16 21v-3a2 2 0 0 1 2-2h3" /></svg>
-                        </span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     ) : (
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:scale-110 transition-transform"><path d="M15 3h6v6" /><path d="M9 21H3v-6" /><path d="M21 3l-7 7" /><path d="M3 21l7-7" /></svg>
                     )}
