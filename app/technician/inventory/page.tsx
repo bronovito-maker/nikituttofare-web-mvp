@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase-browser';
 import { TechnicianNav } from '@/components/technician/technician-nav';
@@ -10,6 +10,9 @@ import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+
+const DEFAULT_TENANT_ID =
+    (process.env.NEXT_PUBLIC_DEFAULT_TENANT_ID || '').trim() || 'rimini';
 
 export default function InventoryPage() {
     const [items, setItems] = useState<InventoryItem[]>([]);
@@ -33,24 +36,7 @@ export default function InventoryPage() {
         unit_of_measure: 'pz'
     });
 
-    useEffect(() => {
-        const checkAuthAndLoad = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                router.push('/technician/login');
-                return;
-            }
-            const tId = user.user_metadata?.tenant_id;
-            setTenantId(tId);
-
-            if (tId) {
-                await loadItems(tId);
-            }
-        };
-        checkAuthAndLoad();
-    }, [router, supabase]);
-
-    const loadItems = async (tId: string) => {
+    const loadItems = useCallback(async (tId: string) => {
         setLoading(true);
         const { data } = await (supabase as any)
             .from('inventory_items')
@@ -60,7 +46,49 @@ export default function InventoryPage() {
 
         if (data) setItems(data as InventoryItem[]);
         setLoading(false);
-    };
+    }, [supabase]);
+
+    useEffect(() => {
+        const checkAuthAndLoad = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                router.push('/technician/login');
+                return;
+            }
+
+            const metadataTenant =
+                typeof user.user_metadata?.tenant_id === 'string'
+                    ? user.user_metadata.tenant_id
+                    : null;
+            const cachedTenant =
+                typeof window !== 'undefined' ? localStorage.getItem('ntf_tenant_id') : null;
+            const resolvedTenant = metadataTenant || cachedTenant || DEFAULT_TENANT_ID;
+
+            setTenantId(resolvedTenant);
+
+            if (!metadataTenant && resolvedTenant) {
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('ntf_tenant_id', resolvedTenant);
+                }
+                toast.warning(`Tenant non presente nel profilo: uso fallback "${resolvedTenant}"`);
+                try {
+                    await supabase.auth.updateUser({ data: { tenant_id: resolvedTenant } });
+                } catch {
+                    // Non bloccare UX se update metadata non va a buon fine
+                }
+            }
+
+            if (resolvedTenant) {
+                await loadItems(resolvedTenant);
+                return;
+            }
+
+            // Evita spinner infinito anche in fallback estremo
+            setLoading(false);
+            toast.error('Impossibile determinare il tenant per questo account');
+        };
+        checkAuthAndLoad();
+    }, [router, supabase, loadItems]);
 
     const handleSave = async (e?: React.FormEvent) => {
         e?.preventDefault();
