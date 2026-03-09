@@ -29,6 +29,32 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const hasInitialized = useRef(false);
+    const isRecordingRef = useRef(false);
+    const autoStopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const speechListenersRef = useRef<Array<{ remove: () => Promise<void> }>>([]);
+
+    const setRecordingState = (next: boolean) => {
+        isRecordingRef.current = next;
+        setIsRecording(next);
+    };
+
+    const cleanupSpeechListeners = async () => {
+        for (const listener of speechListenersRef.current) {
+            try {
+                await listener.remove();
+            } catch {
+                // no-op
+            }
+        }
+        speechListenersRef.current = [];
+    };
+
+    const clearAutoStopTimeout = () => {
+        if (autoStopTimeoutRef.current) {
+            clearTimeout(autoStopTimeoutRef.current);
+            autoStopTimeoutRef.current = null;
+        }
+    };
 
     useEffect(() => {
         if (!hasInitialized.current) {
@@ -44,6 +70,13 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [messages, isTyping]);
+
+    useEffect(() => {
+        return () => {
+            clearAutoStopTimeout();
+            cleanupSpeechListeners();
+        };
+    }, []);
 
     // Body scroll lock, Keyboard & Capacitor Back Button
     useEffect(() => {
@@ -109,7 +142,24 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
         }
     };
 
+    const stopVoiceInput = async () => {
+        clearAutoStopTimeout();
+        try {
+            await SpeechRecognition.stop();
+        } catch (e) {
+            console.error('Stop failed:', e);
+        } finally {
+            await cleanupSpeechListeners();
+            setRecordingState(false);
+        }
+    };
+
     const startVoiceInput = async () => {
+        if (isRecordingRef.current) {
+            await stopVoiceInput();
+            return;
+        }
+
         try {
             const hasPermission = await SpeechRecognition.checkPermissions();
             if (hasPermission.speechRecognition !== 'granted') {
@@ -120,19 +170,46 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
                 }
             }
 
-            if (isRecording) {
-                await SpeechRecognition.stop();
-                setIsRecording(false);
-                return;
-            }
-
             const isAvailable = await SpeechRecognition.available();
             if (!isAvailable) {
                 alert("Il riconoscimento vocale non è disponibile su questo dispositivo.");
                 return;
             }
 
-            setIsRecording(true);
+            // Cleanup any existing listeners before starting (defensive)
+            try {
+                await (SpeechRecognition as any).removeAllListeners();
+            } catch (e) { }
+            await cleanupSpeechListeners();
+
+            // Add listeners for robust state management
+            const partialListener = await (SpeechRecognition as any).addListener('partialResults', (data: any) => {
+                if (data.matches && data.matches.length > 0) {
+                    setInput(data.matches[0]);
+                }
+            });
+            speechListenersRef.current.push(partialListener);
+
+            const listeningStateListener = await (SpeechRecognition as any).addListener('listeningState', (data: any) => {
+                if (data.status === 'started' || data.status === 'listening') {
+                    setRecordingState(true);
+                    return;
+                }
+                if (data.status === 'stopped' || data.status === 'inactive') {
+                    clearAutoStopTimeout();
+                    setRecordingState(false);
+                }
+            });
+            speechListenersRef.current.push(listeningStateListener);
+
+            const errorListener = await (SpeechRecognition as any).addListener('error', (err: any) => {
+                console.error('SpeechRecognition error event:', err);
+                clearAutoStopTimeout();
+                setRecordingState(false);
+            });
+            speechListenersRef.current.push(errorListener);
+
+            setRecordingState(true);
 
             await SpeechRecognition.start({
                 language: 'it-IT',
@@ -140,25 +217,19 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
                 popup: false,
             });
 
-            // Listen for results
-            const resultListener = await (SpeechRecognition as any).addListener('partialResults', (data: any) => {
-                if (data.matches && data.matches.length > 0) {
-                    setInput(data.matches[0]);
+            // Auto-stop safety timeout
+            clearAutoStopTimeout();
+            autoStopTimeoutRef.current = setTimeout(async () => {
+                if (isRecordingRef.current) {
+                    await stopVoiceInput();
                 }
-            });
-
-            // Auto-stop after 5 seconds of silence or manual stop
-            setTimeout(async () => {
-                try {
-                    await SpeechRecognition.stop();
-                    setIsRecording(false);
-                    // cleanup listener if needed, though typically done on unmount or next start
-                } catch (e) { }
-            }, 10000);
+            }, 15000);
 
         } catch (error) {
             console.error('Voice input failed:', error);
-            setIsRecording(false);
+            clearAutoStopTimeout();
+            await cleanupSpeechListeners();
+            setRecordingState(false);
             alert("Errore nell'avvio del microfono. Riprova.");
         }
     };

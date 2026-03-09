@@ -187,3 +187,48 @@ export async function completeJob(ticketId: string) {
     revalidatePath(`/technician/jobs/${ticketId}`);
     return { success: true };
 }
+
+/**
+ * Aggiorna la data/ora programmata di un intervento
+ */
+export async function updateTicketSchedule(ticketId: string, scheduledAt: string) {
+    const user = await getCurrentUser();
+    if (!user) return { success: false, message: 'Non autorizzato' };
+
+    const supabase = await createServerClient();
+
+    // Verifichiamo che l'intervento sia assegnato a questo tecnico (o sia un admin)
+    const { data: ticket, error: fetchError } = await supabase
+        .from('tickets')
+        .select('assigned_technician_id')
+        .eq('id', ticketId)
+        .single();
+
+    if (fetchError || !ticket) {
+        return { success: false, message: 'Intervento non trovato' };
+    }
+
+    if (ticket.assigned_technician_id !== user.id) {
+        // Controlliamo se è un admin
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        if (profile?.role !== 'admin') {
+            return { success: false, message: 'Non hai i permessi per modificare questo intervento' };
+        }
+    }
+
+    const { error } = await supabase
+        .from('tickets')
+        .update({
+            scheduled_at: scheduledAt
+        } as any)
+        .eq('id', ticketId);
+
+    if (error) {
+        console.error('Errore updateTicketSchedule:', error);
+        return { success: false, message: error.message };
+    }
+
+    revalidatePath('/technician/jobs');
+    revalidatePath(`/technician/jobs/${ticketId}`);
+    return { success: true };
+}

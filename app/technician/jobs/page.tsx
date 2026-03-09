@@ -61,7 +61,7 @@ export default function TechnicianJobsPage() {
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {jobs.map((job) => (
                         <Link key={job.id} href={`/technician/jobs/${job.id}`} className="group">
-                            <Card className="h-full bg-card/40 backdrop-blur-sm border-white/5 hover:border-blue-600/30 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-600/10 rounded-[2rem] overflow-hidden flex flex-col group-hover:-translate-y-1">
+                            <Card className="h-full bg-card/40 backdrop-blur-sm border-white/20 hover:border-blue-600/30 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-600/10 rounded-[2rem] overflow-hidden flex flex-col group-hover:-translate-y-1">
                                 <CardHeader className="pb-3 relative">
                                     <div className="absolute top-0 right-0 p-4">
                                         <Badge
@@ -95,7 +95,11 @@ export default function TechnicianJobsPage() {
                                             <div className="w-8 h-8 rounded-lg bg-amber-600/10 flex items-center justify-center">
                                                 <Calendar className="w-4 h-4 text-amber-600" />
                                             </div>
-                                            <span>{job.scheduled_at ? new Date(job.scheduled_at).toLocaleDateString('it-IT') : new Date(job.created_at).toLocaleDateString('it-IT')}</span>
+                                            <span>
+                                                {job.scheduled_at
+                                                    ? new Date(job.scheduled_at).toLocaleString('it-IT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                                    : new Date(job.created_at).toLocaleString('it-IT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                            </span>
                                         </div>
                                     </div>
                                 </CardContent>

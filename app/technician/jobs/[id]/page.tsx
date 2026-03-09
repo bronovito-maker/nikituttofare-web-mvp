@@ -3,6 +3,8 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { updateTicketSchedule } from '@/app/actions/technician-actions';
+import { toast } from 'sonner';
 import AssistantChat from '@/components/technician/AssistantChat';
 import InventoryManager from '@/components/technician/InventoryManager';
 import { ExtendedTicket } from '@/lib/types/internal-app';
@@ -11,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Phone, Navigation, Clock, CheckCircle2, AlertCircle, Euro, CreditCard, ChevronLeft } from 'lucide-react';
+import { MapPin, Phone, Navigation, Clock, CheckCircle2, AlertCircle, Euro, CreditCard, ChevronLeft, Calendar } from 'lucide-react';
 
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -129,14 +131,57 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
                     {/* Descrizione Card */}
                     <Card className="bg-card/40 backdrop-blur-sm border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
-                        <CardHeader className="p-8 pb-0">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-2xl bg-blue-600/10 flex items-center justify-center">
-                                    <Clock className="w-5 h-5 text-blue-600" />
+                        <div className="p-6 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                                        <Calendar className="w-5 h-5 text-amber-500" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black transform uppercase tracking-widest text-muted-foreground/50">Programmato per</p>
+                                        <p className="text-sm font-bold text-foreground">
+                                            {job.scheduled_at
+                                                ? new Date(job.scheduled_at).toLocaleString('it-IT', { day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' })
+                                                : 'Da programmare'}
+                                        </p>
+                                    </div>
                                 </div>
-                                <CardTitle className="text-xl font-bold">Dettagli Intervento</CardTitle>
+                                <div className="relative">
+                                    <input
+                                        type="datetime-local"
+                                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                                        onChange={async (e) => {
+                                            const val = e.target.value;
+                                            if (!val) return;
+                                            try {
+                                                const res = await updateTicketSchedule(job.id, new Date(val).toISOString());
+                                                if (res.success) {
+                                                    toast.success('Orario aggiornato correttamente');
+                                                    setJob(prev => prev ? { ...prev, scheduled_at: new Date(val).toISOString() } : null);
+                                                } else {
+                                                    toast.error('Errore: ' + res.message);
+                                                }
+                                            } catch (err) {
+                                                toast.error('Errore durante l\'aggiornamento dell\'orario');
+                                            }
+                                        }}
+                                    />
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-amber-500/10 hover:text-amber-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                                    </Button>
+                                </div>
                             </div>
-                        </CardHeader>
+
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                                    <MapPin className="w-5 h-5 text-blue-500" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black transform uppercase tracking-widest text-muted-foreground/50">Luogo Intervento</p>
+                                    <p className="text-sm font-bold text-foreground line-clamp-1">{job.address}</p>
+                                </div>
+                            </div>
+                        </div>
                         <CardContent className="p-8 pt-6 space-y-6">
                             <div className="p-5 rounded-3xl bg-accent/5 border border-white/5 text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
                                 {job.description}
