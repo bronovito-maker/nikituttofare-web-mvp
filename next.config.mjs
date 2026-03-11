@@ -17,7 +17,7 @@ const nextConfig = {
   // Questa opzione risolve problemi di compatibilità con alcune librerie
   // Risolve il warning sui lockfile multipli
   outputFileTracingRoot: path.join(__dirname),
-  output: "standalone", // <--- AGGIUNGI QUESTA RIGA (Fix 404 Vercel)
+  output: "standalone", // <--- Ripristinato per compatibilità Vercel/Server Actions
 
   // Workaround per InvariantError di Turbopack in Next.js 16.1.6
   experimental: {

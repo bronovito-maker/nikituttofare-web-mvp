@@ -60,9 +60,10 @@ export interface CreateManualJobParams {
   category: string;
   description: string;
   customer_name: string;
-  contact_phone: number;
+  contact_phone: string | number;
   city: string;
   address: string;
   scheduled_at?: string;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
+  user_id?: string | null;
 }

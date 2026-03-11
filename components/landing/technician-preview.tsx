@@ -1,6 +1,7 @@
 'use client';
 
 import { Star, ShieldCheck } from 'lucide-react';
+import Image from 'next/image';
 
 export function TechnicianPreview() {
     return (
@@ -27,8 +28,8 @@ export function TechnicianPreview() {
                     <div className="relative w-14 h-14">
                         <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-background shadow-md">
                             {/* Nikita's avatar placeholder - consistent with hero */}
-                            <div className="w-full h-full bg-slate-200 dark:bg-slate-700 flex items-center overflow-hidden">
-                                <img src="/team-photo.png" alt="Nikita" className="w-full h-full object-cover" />
+                            <div className="w-full h-full bg-slate-200 dark:bg-slate-700 flex items-center overflow-hidden relative">
+                                <Image src="/team-photo.png" alt="Nikita" fill className="object-cover" />
                             </div>
                         </div>
                         <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5">

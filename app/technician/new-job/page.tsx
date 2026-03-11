@@ -1,14 +1,19 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createManualJob } from '@/app/actions/technician-actions';
+import { createManualJob, searchCustomers } from '@/app/actions/technician-actions';
 import { CreateManualJobParams } from '@/lib/types/internal-app';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { X } from 'lucide-react';
 
 export default function NewJobPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [suggestions, setSuggestions] = useState<{ id: string | null; full_name: string; phone: any; address: string; city: string }[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
     const [formData, setFormData] = useState<CreateManualJobParams>({
         category: 'generic',
@@ -18,7 +23,13 @@ export default function NewJobPage() {
         city: '',
         address: '',
         priority: 'medium',
-        scheduled_at: new Date().toISOString().slice(0, 16),
+        scheduled_at: (() => {
+            const now = new Date();
+            const offset = now.getTimezoneOffset() * 60000;
+            const localISOTime = new Date(now.getTime() - offset).toISOString().slice(0, 16);
+            return localISOTime;
+        })(),
+        user_id: null,
     });
 
     const categories = [
@@ -30,15 +41,59 @@ export default function NewJobPage() {
         { value: 'generic', label: 'Generico 📦', color: '#8B5CF6' },
     ];
 
+    const handleSearch = async (query: string) => {
+        if (query.length < 2) {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+
+        setIsSearching(true);
+        try {
+            console.log('Searching for:', query);
+            const results = await searchCustomers(query);
+            console.log('Results received:', results);
+            setSuggestions(results);
+            setShowSuggestions(true); // Mostriamo comunque se abbiamo avviato la ricerca
+        } catch (err) {
+            console.error('Search error:', err);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const selectCustomer = (customer: { id: string | null; full_name: string; contact_phone: any; address: string; city: string }) => {
+        // Log per debug
+        console.log('Customer selected:', customer);
+        
+        setFormData((prev: CreateManualJobParams) => ({
+            ...prev,
+            customer_name: customer.full_name || '',
+            contact_phone: customer.contact_phone ? String(customer.contact_phone) : (prev.contact_phone || ''),
+            address: customer.address || prev.address,
+            city: customer.city || prev.city,
+            user_id: customer.id,
+        }));
+        setShowSuggestions(false);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
 
         try {
+            // Convertiamo l'orario locale (datetime-local) in un oggetto Date
+            // e poi in ISO string (UTC) per il database. 
+            // Questo evita lo shift di 1 ora se Supabase riceve una stringa senza offset.
+            const scheduledAtISO = formData.scheduled_at 
+                ? new Date(formData.scheduled_at).toISOString() 
+                : null;
+
             const result = await createManualJob({
                 ...formData,
                 contact_phone: Number(formData.contact_phone),
+                scheduled_at: scheduledAtISO as any
             });
 
             if (result.success) {
@@ -55,7 +110,19 @@ export default function NewJobPage() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData((prev: CreateManualJobParams) => {
+            const newState = { ...prev, [name]: value };
+            // Se l'utente modifica il nome a mano dopo aver selezionato un cliente, resettiamo lo user_id
+            if (name === 'customer_name') {
+                newState.user_id = null;
+            }
+            return newState;
+        });
+
+        if (name === 'customer_name') {
+            if (searchTimeout.current) clearTimeout(searchTimeout.current);
+            searchTimeout.current = setTimeout(() => handleSearch(value), 300);
+        }
     };
 
     return (
@@ -70,11 +137,10 @@ export default function NewJobPage() {
                     </div>
                     <button
                         onClick={() => router.back()}
-                        className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors"
+                        className="p-2 bg-slate-800 text-white rounded-full hover:bg-slate-700 transition-colors shadow-lg border border-slate-700/50"
+                        aria-label="Chiudi"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="6 18L18 6M6 6l12 12" />
-                        </svg>
+                        <X className="w-6 h-6" />
                     </button>
                 </header>
 
@@ -93,7 +159,7 @@ export default function NewJobPage() {
                                 <button
                                     key={cat.value}
                                     type="button"
-                                    onClick={() => setFormData(p => ({ ...p, category: cat.value }))}
+                                    onClick={() => setFormData((p: CreateManualJobParams) => ({ ...p, category: cat.value as any }))}
                                     className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${formData.category === cat.value
                                             ? 'border-blue-500 bg-blue-500/10 scale-105 shadow-lg shadow-blue-500/10'
                                             : 'border-slate-800 bg-slate-900/50 grayscale opacity-60 hover:grayscale-0 hover:opacity-100'
@@ -114,16 +180,53 @@ export default function NewJobPage() {
                         </h2>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
+                            <div className="space-y-2 relative">
                                 <label className="text-xs text-slate-400 uppercase tracking-wider ml-1">Nome Completo</label>
                                 <input
                                     required
                                     name="customer_name"
                                     value={formData.customer_name}
                                     onChange={handleChange}
-                                    className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                    onFocus={() => {
+                                        if (formData.customer_name.length >= 2) {
+                                            handleSearch(formData.customer_name);
+                                        }
+                                    }}
+                                    onBlur={() => setTimeout(() => setShowSuggestions(false), 300)}
+                                    className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all pr-10"
                                     placeholder="es. Mario Rossi"
                                 />
+                                {isSearching && (
+                                    <div className="absolute right-3 top-[38px] animate-spin h-5 w-5 border-2 border-indigo-500 border-t-transparent rounded-full" />
+                                )}
+                                {showSuggestions && formData.customer_name.length >= 2 && (
+                                    <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden max-h-48 overflow-y-auto">
+                                        {isSearching ? (
+                                            <div className="px-4 py-3 text-slate-400 text-sm flex items-center gap-2">
+                                                <div className="animate-spin h-3 w-3 border-2 border-indigo-500 border-t-transparent rounded-full" />
+                                                Ricerca in corso...
+                                            </div>
+                                        ) : suggestions.length > 0 ? (
+                                            suggestions.map((s: any, i: number) => (
+                                                <button
+                                                    key={i}
+                                                    type="button"
+                                                    onClick={() => selectCustomer(s)}
+                                                    className="w-full text-left px-4 py-3 hover:bg-slate-700 transition-colors border-b border-slate-700/50 last:border-none flex flex-col"
+                                                >
+                                                    <span className="font-bold text-sm text-white">{s.full_name}</span>
+                                                    <span className="text-[10px] text-slate-400 capitalize">
+                                                        {s.city} • {s.address} ({s.contact_phone})
+                                                    </span>
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="px-4 py-3 text-slate-400 text-sm italic bg-slate-800/80">
+                                                Nessun cliente trovato nello storico
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs text-slate-400 uppercase tracking-wider ml-1">Telefono</label>

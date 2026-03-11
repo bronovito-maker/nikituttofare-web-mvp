@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Bot } from 'lucide-react';
 
 type AnimationType = 'dots' | 'wave' | 'shimmer' | 'typing';
@@ -153,12 +153,12 @@ function TypingEffect() {
   const [dots, setDots] = useState('');
   const [messageIndex, setMessageIndex] = useState(0);
 
-  const messages = [
+  const messages = useMemo(() => [
     "Analizzo la tua richiesta",
     "Sto cercando la soluzione migliore",
     "Verifico la disponibilità",
     "Preparo i dettagli per il tecnico"
-  ];
+  ], []);
 
   useEffect(() => {
     const dotsInterval = setInterval(() => {
@@ -173,7 +173,7 @@ function TypingEffect() {
       clearInterval(dotsInterval);
       clearInterval(messageInterval);
     };
-  }, []);
+  }, [messages]);
 
   return (
     <div className="flex flex-col gap-1">

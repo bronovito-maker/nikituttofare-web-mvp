@@ -1,7 +1,7 @@
 // app/actions/technician-actions.ts
 'use server';
 
-import { createServerClient } from '@/lib/supabase-server';
+import { createServerClient, createAdminClient } from '@/lib/supabase-server';
 import { getCurrentUser } from '@/lib/supabase-helpers';
 import { CreateManualJobParams, ExtendedTicket } from '@/lib/types/internal-app';
 import { revalidatePath } from 'next/cache';
@@ -41,6 +41,7 @@ export async function createManualJob(params: CreateManualJobParams) {
             source: 'phone_manual',
             scheduled_at: params.scheduled_at || null,
             assigned_technician_id: user.id,
+            user_id: params.user_id || null,
         } as any)
         .select()
         .single();
@@ -67,7 +68,7 @@ export async function getMyJobs() {
         .from('tickets')
         .select('*')
         .eq('assigned_technician_id', user.id)
-        .order('scheduled_at', { ascending: true, nullsFirst: false });
+        .order('created_at', { ascending: false });
 
     if (error) {
         console.error('Errore recupero lavori:', error);
@@ -230,5 +231,142 @@ export async function updateTicketSchedule(ticketId: string, scheduledAt: string
 
     revalidatePath('/technician/jobs');
     revalidatePath(`/technician/jobs/${ticketId}`);
+    return { success: true };
+}
+
+/**
+ * Ricerca clienti per nome per il pre-popolamento dei campi
+ */
+export async function searchCustomers(query: string) {
+    if (!query || query.length < 2) return [];
+
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Non autorizzato');
+
+    const supabase = createAdminClient();
+
+    // Cerchiamo i dati storici direttamente nella tabella tickets
+    console.log('[searchCustomers] Avvio ricerca per:', query);
+    let queryBuilder = supabase
+        .from('tickets')
+        .select(`
+            customer_name,
+            contact_phone,
+            address,
+            city
+        `);
+
+    // Se la query sembra un numero di telefono, cerchiamo per telefono, altrimenti per nome
+    const isPhoneQuery = /^\d+$/.test(query.replace(/\s/g, ''));
+    
+    if (isPhoneQuery) {
+        // Se è un numero, cerchiamo corrispondenza esatta nel telefono o parziale nel nome
+        const phoneValue = parseInt(query.replace(/\s/g, ''), 10);
+        if (!isNaN(phoneValue)) {
+            queryBuilder = queryBuilder.or(`contact_phone.eq.${phoneValue},customer_name.ilike.%${query}%`);
+        } else {
+            queryBuilder = queryBuilder.ilike('customer_name', `%${query}%`);
+        }
+    } else {
+        queryBuilder = queryBuilder.ilike('customer_name', `%${query}%`);
+    }
+
+    const { data, error } = await queryBuilder
+        .order('created_at', { ascending: false })
+        .limit(30);
+
+    console.log('[searchCustomers] Risultati trovati:', (data || []).length);
+
+    if (error) {
+        console.error('Errore ricerca clienti in tickets:', error);
+        return [];
+    }
+
+    // Filtriamo i duplicati basandoci su nome e telefono
+    const uniqueCustomers = new Map();
+    (data || []).forEach((t: any) => {
+        const key = `${t.customer_name}-${t.contact_phone}`;
+        if (!uniqueCustomers.has(key)) {
+            uniqueCustomers.set(key, {
+                id: null,
+                full_name: t.customer_name,
+                contact_phone: t.contact_phone,
+                address: t.address || '',
+                city: t.city || '',
+            });
+        }
+    });
+
+    return Array.from(uniqueCustomers.values()).slice(0, 5);
+}
+
+/**
+ * Recupera la cronologia dei messaggi per un ticket
+ */
+export async function getChatHistory(ticketId: string) {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Non autorizzato');
+
+    const supabase = await createServerClient();
+
+    const { data, error } = await supabase
+        .from('messages')
+        .select('role, content, created_at')
+        .eq('ticket_id', ticketId)
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.error('Errore recupero cronologia:', error);
+        return [];
+    }
+
+    return data;
+}
+
+/**
+ * Recupera la lista della spesa per un ticket dalla memoria assistente
+ */
+export async function getShoppingList(ticketId: string) {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Non autorizzato');
+
+    const supabase = await createServerClient();
+
+    const { data, error } = await supabase
+        .from('assistant_project_memory' as any)
+        .select('open_items')
+        .eq('ticket_id', ticketId)
+        .single();
+
+    if (error && error.code !== 'PGRST116') { // Ignoriamo "no rows"
+        console.error('Errore recupero lista spesa:', error);
+        return [];
+    }
+
+    return (data as any)?.open_items || [];
+}
+
+/**
+ * Aggiorna la lista della spesa (salva l'intero array)
+ */
+export async function updateShoppingList(ticketId: string, items: any[]) {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Non autorizzato');
+
+    const supabase = await createServerClient();
+
+    const { error } = await supabase
+        .from('assistant_project_memory' as any)
+        .upsert({ 
+            ticket_id: ticketId, 
+            open_items: items,
+            updated_at: new Date().toISOString()
+        } as any);
+
+    if (error) {
+        console.error('Errore aggiornamento lista spesa:', error);
+        return { success: false, error: error.message };
+    }
+
     return { success: true };
 }

@@ -4,5 +4,6 @@
         "projectKey": "bronovito-maker_nikituttofare-web-mvp"
     },
     "css.lint.unknownAtRules": "ignore",
-    "scss.lint.unknownAtRules": "ignore"
+    "scss.lint.unknownAtRules": "ignore",
+    "java.configuration.updateBuildConfiguration": "automatic"
 }

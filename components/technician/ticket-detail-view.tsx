@@ -5,6 +5,7 @@ import { MapPin, Calendar, Clock, Banknote, ArrowLeft, MessageCircle, User, Maxi
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ShoppingListContainer } from './ShoppingListContainer';
 import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Database } from '@/lib/database.types';
@@ -254,6 +255,11 @@ export function TicketDetailView({
                                     </div>
                                 </div>
                             </div>
+                        )}
+
+                        {/* SHOPPING LIST INTEGRATION */}
+                        {ticket.id && (
+                            <ShoppingListContainer ticketId={ticket.id} />
                         )}
                     </div>
 

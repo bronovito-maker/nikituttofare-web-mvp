@@ -2,6 +2,7 @@
 
 import { Heart, Sparkles } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import Image from 'next/image';
 
 export function SmallJobsCallout() {
     return (
@@ -28,8 +29,8 @@ export function SmallJobsCallout() {
                                     &quot;Ti hanno detto che il lavoro è troppo piccolo? Chiamami. Per me non esistono piccoli lavori, esistono solo clienti che hanno bisogno di una mano.&quot;
                                 </h3>
                                 <div className="flex items-center justify-center md:justify-start gap-3">
-                                    <div className="w-10 h-10 rounded-full border-2 border-orange-500/20 overflow-hidden">
-                                        <img src="/team-photo.png" alt="Niki" className="w-full h-full object-cover" />
+                                    <div className="w-10 h-10 rounded-full border-2 border-orange-500/20 overflow-hidden relative">
+                                        <Image src="/team-photo.png" alt="Niki" fill className="object-cover" />
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold text-foreground">Il Tuo Tuttofare Niki</p>
