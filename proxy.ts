@@ -41,12 +41,13 @@ export async function proxy(request: NextRequest) {
     // =========================================================================
     const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms https://cdn.zirel.org;
     style-src 'self' 'unsafe-inline';
-    img-src 'self' blob: data: https://mqgkominidcysyakcbio.supabase.co https://*.openstreetmap.org;
+    img-src 'self' blob: data: https://mqgkominidcysyakcbio.supabase.co https://*.openstreetmap.org https://*.zirel.org;
     font-src 'self' data:;
-    connect-src 'self' https://mqgkominidcysyakcbio.supabase.co wss://mqgkominidcysyakcbio.supabase.co https://*.sentry.io https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms https://c.bing.com;
+    connect-src 'self' https://mqgkominidcysyakcbio.supabase.co wss://mqgkominidcysyakcbio.supabase.co https://*.sentry.io https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms https://c.bing.com https://*.zirel.org wss://*.zirel.org;
     worker-src 'self' blob:;
+    frame-src 'self' https://*.zirel.org;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
@@ -58,7 +59,7 @@ export async function proxy(request: NextRequest) {
     response.headers.set("X-Frame-Options", "DENY");
     response.headers.set("X-Content-Type-Options", "nosniff");
     response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-    response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    response.headers.set("Permissions-Policy", "camera=(self), microphone=(self), geolocation=()");
     response.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
 
     // =========================================================================

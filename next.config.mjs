@@ -145,14 +145,14 @@ const nextConfig = {
     // CSP Policy (formatted for readability)
     const cspDirectives = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms https://c.bing.com https://t.clarity.ms",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms https://c.bing.com https://t.clarity.ms https://cdn.zirel.org",
       "style-src 'self' 'unsafe-inline'",
       // CRITICAL FIX: Added c.clarity.ms explicitly
-      "img-src 'self' blob: data: https://*.clarity.ms https://c.clarity.ms https://c.bing.com https://*.supabase.co https://*.openstreetmap.org https://tile.openstreetmap.org",
+      "img-src 'self' blob: data: https://*.clarity.ms https://c.clarity.ms https://c.bing.com https://*.supabase.co https://*.openstreetmap.org https://tile.openstreetmap.org https://*.zirel.org",
       "font-src 'self' data:",
-      "connect-src 'self' https://*.sentry.io https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms https://c.clarity.ms https://c.bing.com https://*.supabase.co https://t.clarity.ms",
+      "connect-src 'self' https://*.sentry.io https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms https://c.clarity.ms https://c.bing.com https://*.supabase.co https://t.clarity.ms https://*.zirel.org wss://*.zirel.org",
       "worker-src 'self' blob:",
-      "frame-src 'self' https://*.clarity.ms",
+      "frame-src 'self' https://*.clarity.ms https://*.zirel.org",
       "object-src 'none'",
       "base-uri 'self'",
     ].join('; ');
