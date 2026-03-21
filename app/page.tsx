@@ -1,4 +1,5 @@
 import dynamic from 'next/dynamic';
+import Script from 'next/script';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { StickyActionNav } from '@/components/landing/sticky-action-nav';
@@ -38,6 +39,12 @@ const FAQSection = dynamic(() => import('@/components/landing/faq-section').then
 export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-blue-100 dark:selection:bg-blue-900 pb-20 sm:pb-0">
+      <Script
+        src="https://cdn.zirel.org/widget.js"
+        data-tenant-id="zrl_nikituttofare"
+        strategy="afterInteractive"
+      />
+
       {/* --- SITE HEADER --- */}
       <SiteHeader />
 
