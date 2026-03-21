@@ -150,7 +150,7 @@ const nextConfig = {
       // CRITICAL FIX: Added c.clarity.ms explicitly
       "img-src 'self' blob: data: https://*.clarity.ms https://c.clarity.ms https://c.bing.com https://*.supabase.co https://*.openstreetmap.org https://tile.openstreetmap.org https://*.zirel.org",
       "font-src 'self' data:",
-      "connect-src 'self' https://*.sentry.io https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms https://c.clarity.ms https://c.bing.com https://*.supabase.co https://t.clarity.ms https://*.zirel.org wss://*.zirel.org",
+      "connect-src 'self' https://*.sentry.io https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms https://c.clarity.ms https://c.bing.com https://*.supabase.co https://t.clarity.ms https://*.zirel.org wss://*.zirel.org https://*.up.railway.app",
       "worker-src 'self' blob:",
       "frame-src 'self' https://*.clarity.ms https://*.zirel.org",
       "object-src 'none'",

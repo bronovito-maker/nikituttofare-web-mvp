@@ -45,7 +45,7 @@ export async function proxy(request: NextRequest) {
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: https://mqgkominidcysyakcbio.supabase.co https://*.openstreetmap.org https://*.zirel.org;
     font-src 'self' data:;
-    connect-src 'self' https://mqgkominidcysyakcbio.supabase.co wss://mqgkominidcysyakcbio.supabase.co https://*.sentry.io https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms https://c.bing.com https://*.zirel.org wss://*.zirel.org;
+    connect-src 'self' https://mqgkominidcysyakcbio.supabase.co wss://mqgkominidcysyakcbio.supabase.co https://*.sentry.io https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms https://c.bing.com https://*.zirel.org wss://*.zirel.org https://*.up.railway.app;
     worker-src 'self' blob:;
     frame-src 'self' https://*.zirel.org;
     object-src 'none';
