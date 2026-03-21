@@ -18,7 +18,6 @@ export async function POST(req: NextRequest) {
         if (!user) {
             return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 });
         }
-no zirel
         const body = await req.json();
         const { ticketId, message, image, history = [] } = body;
 
