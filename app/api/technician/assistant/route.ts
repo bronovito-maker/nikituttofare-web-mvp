@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
         if (!user) {
             return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 });
         }
-
+no zirel
         const body = await req.json();
         const { ticketId, message, image, history = [] } = body;
 
@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
             if (h.content) {
                 parts.push({ text: h.content });
             }
-            
+
             // Garantiamo che ci sia almeno un part
             if (parts.length === 0) {
                 parts.push({ text: "..." });
@@ -176,7 +176,7 @@ export async function POST(req: NextRequest) {
         if (image) {
             const base64Data = image.replace(/^data:([^;]+);base64,/, "");
             const mimeType = image.match(/^data:([^;]+);base64,/)?.[1] || "image/jpeg";
-            
+
             currentMessageParts.push({
                 inlineData: {
                     data: base64Data,
@@ -197,7 +197,7 @@ export async function POST(req: NextRequest) {
 
         // Inizia la sessione di chat
         const chat = model.startChat({ history: chatHistory });
-        
+
         // Primo invio: User -> Assistente
         let result = await chat.sendMessage(currentMessageParts);
 
@@ -206,12 +206,12 @@ export async function POST(req: NextRequest) {
         // quando usiamo `chat.sendMessage` ripetutamente per i risultati dei tool.
         let response = result.response;
         let calls = response.functionCalls() || [];
-        
+
         while (calls.length > 0) {
             const resultsForModel: any[] = [];
             for (const call of calls) {
                 console.log(`[AI Assistant] Tool Call: ${call.name}`, call.args);
-                
+
                 if (call.name === 'cerca_materiale_tecnomat') {
                     const searchQuery = (call.args as any).query;
                     try {
@@ -243,7 +243,7 @@ export async function POST(req: NextRequest) {
 
                                 // Pulizia titolo
                                 const nome = (doc.name || "N/A").replace(/\s+/g, ' ').trim();
-                                
+
                                 // Cerchiamo di ottenere un'immagine di qualità migliore se disponibile
                                 const imageUrl = doc.image || doc.small_image || doc.thumbnail || "N/A";
 
@@ -257,13 +257,13 @@ export async function POST(req: NextRequest) {
                                 }
                             })
                         } : { nota: "Nessun prodotto trovato per questa ricerca." };
-                        
-                        resultsForModel.push({ 
-                            functionResponse: { name: 'cerca_materiale_tecnomat', response: toolResultData } 
+
+                        resultsForModel.push({
+                            functionResponse: { name: 'cerca_materiale_tecnomat', response: toolResultData }
                         });
                     } catch (e: any) {
-                        resultsForModel.push({ 
-                            functionResponse: { name: 'cerca_materiale_tecnomat', response: { error: "Errore durante la ricerca: " + e.message } } 
+                        resultsForModel.push({
+                            functionResponse: { name: 'cerca_materiale_tecnomat', response: { error: "Errore durante la ricerca: " + e.message } }
                         });
                     }
                 }
@@ -276,21 +276,21 @@ export async function POST(req: NextRequest) {
                             .select('open_items')
                             .eq('ticket_id', ticketId)
                             .single() as any);
-                        
+
                         const items = currentMemory?.open_items || [];
                         items.push({ nome, sku, prezzo, url, added_at: new Date().toISOString() });
-                        await supabase.from('assistant_project_memory' as any).upsert({ 
-                            ticket_id: ticketId, 
+                        await supabase.from('assistant_project_memory' as any).upsert({
+                            ticket_id: ticketId,
                             open_items: items,
                             updated_at: new Date().toISOString()
                         } as any);
-                        
-                        resultsForModel.push({ 
-                            functionResponse: { name: 'aggiungi_a_lista_spesa', response: { success: true, message: "Prodotto aggiunto correttamente alla lista della spesa." } } 
+
+                        resultsForModel.push({
+                            functionResponse: { name: 'aggiungi_a_lista_spesa', response: { success: true, message: "Prodotto aggiunto correttamente alla lista della spesa." } }
                         });
                     } catch (e: any) {
-                        resultsForModel.push({ 
-                            functionResponse: { name: 'aggiungi_a_lista_spesa', response: { success: false, error: e.message } } 
+                        resultsForModel.push({
+                            functionResponse: { name: 'aggiungi_a_lista_spesa', response: { success: false, error: e.message } }
                         });
                     }
                 }
@@ -326,8 +326,8 @@ export async function POST(req: NextRequest) {
 
     } catch (error: any) {
         console.error('AI Assistant Error:', error);
-        return NextResponse.json({ 
-            error: 'Errore assistente AI', 
+        return NextResponse.json({
+            error: 'Errore assistente AI',
             details: error.message,
             content: "⚠️ Si è verificato un errore durante l'elaborazione. Per favore riprova."
         }, { status: 500 });
