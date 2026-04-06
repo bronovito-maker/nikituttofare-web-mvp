@@ -240,7 +240,7 @@ export async function createTicket({
   } catch (error) {
     console.error('Error in createTicket:', error);
     // Fallback a ticket mock
-    return {
+    const mockTicket: any = {
       id: `ticket-${Date.now()}`,
       user_id: userId,
       status: status,
@@ -267,6 +267,7 @@ export async function createTicket({
       review_text: null,
       review_created_at: null,
     };
+    return mockTicket;
   }
 }
 
