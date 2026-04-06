@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase-browser';
-import { TechnicianNav } from '@/components/technician/technician-nav';
 import { InventoryItem } from '@/lib/actions/inventory';
 import { Search, Mic, Plus, Trash2, Check, X, AlertTriangle, Package, Loader2, Save } from 'lucide-react';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
@@ -20,6 +19,7 @@ export default function InventoryPage() {
     const [loading, setLoading] = useState(true);
     const [tenantId, setTenantId] = useState<string | null>(null);
     const [isListening, setIsListening] = useState(false);
+    const [voiceText, setVoiceText] = useState('');
     const [isParsing, setIsParsing] = useState(false);
     const [pendingItems, setPendingItems] = useState<any[]>([]);
     const supabase = createBrowserClient();
@@ -118,11 +118,17 @@ export default function InventoryPage() {
              setIsListening(false);
              if (isNative) {
                  try { await SpeechRecognition.stop(); } catch(e) {}
+                 if ((window as any)._invPartialListener) {
+                     try { await (window as any)._invPartialListener.remove(); } catch(e) {}
+                     (window as any)._invPartialListener = null;
+                 }
              } else if ((window as any)._invWebSpeechRec) {
                  (window as any)._invWebSpeechRec.stop();
              }
              return;
         }
+
+        const currentText = voiceText ? voiceText + " " : "";
 
         if (!isNative) {
             // Web fallback
@@ -133,18 +139,21 @@ export default function InventoryPage() {
             }
             const rec = new SpeechRecog();
             rec.lang = 'it-IT';
-            rec.continuous = false;
-            rec.interimResults = false;
+            rec.continuous = true;
+            rec.interimResults = true;
             (window as any)._invWebSpeechRec = rec;
             rec.onstart = () => setIsListening(true);
             rec.onresult = (e: any) => {
-                let finalTranscription = '';
-                for (let i = 0; i < e.results.length; i++) {
-                    finalTranscription += e.results[i][0].transcript;
+                let finalTranscript = '';
+                let interimTranscript = '';
+                for (let i = e.resultIndex; i < e.results.length; ++i) {
+                    if (e.results[i].isFinal) {
+                        finalTranscript += e.results[i][0].transcript;
+                    } else {
+                        interimTranscript += e.results[i][0].transcript;
+                    }
                 }
-                if (finalTranscription) {
-                    processTranscription(finalTranscription);
-                }
+                setVoiceText(currentText + finalTranscript + interimTranscript);
             };
             rec.onend = () => setIsListening(false);
             rec.start();
@@ -159,13 +168,13 @@ export default function InventoryPage() {
                 }
 
                 setIsListening(true);
-                let finalTranscription = '';
 
                 partialListener = await (SpeechRecognition as any).addListener('partialResults', (data: any) => {
                     if (data.matches && data.matches.length > 0) {
-                        finalTranscription = data.matches[0];
+                        setVoiceText(currentText + data.matches[0]);
                     }
                 });
+                (window as any)._invPartialListener = partialListener;
 
                 await SpeechRecognition.start({
                     language: 'it-IT',
@@ -173,26 +182,35 @@ export default function InventoryPage() {
                     popup: false,
                 });
 
-                setTimeout(async () => {
-                    if (!isListening) return; // already stopped naturally
-                    await SpeechRecognition.stop();
-                    setIsListening(false);
-                    if (partialListener) {
-                        await partialListener.remove();
-                    }
-                    if (finalTranscription) {
-                        processTranscription(finalTranscription);
-                    }
-                }, 8000);
-
             } catch (error) {
                 setIsListening(false);
                 if (partialListener) {
-                    await partialListener.remove();
+                    try { await partialListener.remove(); } catch(e) {}
                 }
                 toast.error('Errore microfono: ' + (error as any)?.message);
             }
         }
+    };
+
+    const handleProcessAI = async () => {
+        if (!voiceText.trim() || isParsing) return;
+        
+        // Stop listening se è attivo
+        if (isListening) {
+             setIsListening(false);
+             const platform = typeof window !== 'undefined' ? (window as any).Capacitor?.getPlatform() : 'web';
+             if (platform !== 'web') {
+                 try { await SpeechRecognition.stop(); } catch(e) {}
+                 if ((window as any)._invPartialListener) {
+                     try { await (window as any)._invPartialListener.remove(); } catch(e) {}
+                     (window as any)._invPartialListener = null;
+                 }
+             } else if ((window as any)._invWebSpeechRec) {
+                 (window as any)._invWebSpeechRec.stop();
+             }
+        }
+
+        processTranscription(voiceText);
     };
 
     const processTranscription = async (text: string) => {
@@ -203,8 +221,11 @@ export default function InventoryPage() {
                 body: JSON.stringify({ transcription: text })
             });
             const data = await res.json();
-            if (data.items) {
+            if (data.items && data.items.length > 0) {
                 setPendingItems(data.items);
+                setVoiceText(''); // Cancella l'input dopo il paring con successo
+            } else {
+                toast.error('Nessun materiale trovato o testo non comprensibile.');
             }
         } catch (err) {
             toast.error('Errore parsing AI');
@@ -251,33 +272,56 @@ export default function InventoryPage() {
 
     return (
         <div className="min-h-screen bg-[#0F172A] text-white pb-32">
-            <TechnicianNav />
-
             <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex flex-col gap-6">
                     <div>
                         <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">MAGAZZINO</h1>
                         <p className="text-slate-400 text-sm font-medium">Gestisci scorte e materiali del furgone</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            onClick={startVoiceAdd}
-                            disabled={isListening || isParsing}
-                            className={cn(
-                                "rounded-2xl h-12 px-6 font-bold transition-all shadow-lg",
-                                isListening ? "bg-red-500 animate-pulse hover:bg-red-600" : "bg-blue-600/10 text-blue-400 border border-blue-500/20 hover:bg-blue-600/20"
-                            )}
-                        >
-                            {isListening ? <Mic className="w-5 h-5 mr-2" /> : <Mic className="w-5 h-5 mr-2 opacity-70" />}
-                            {isListening ? 'Ascolto...' : 'Voce'}
-                        </Button>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex-1 relative flex items-center pr-2 bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl focus-within:ring-2 focus-within:ring-blue-500/50 transition-all shadow-lg overflow-hidden">
+                            <input 
+                                type="text" 
+                                placeholder="Descrivi il materiale (es. 5 prese 10A)..."
+                                value={voiceText}
+                                onChange={(e) => setVoiceText(e.target.value)}
+                                className="w-full bg-transparent pl-5 pr-2 py-4 text-sm focus:outline-none placeholder:text-slate-500 text-white"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && voiceText.trim() && !isParsing) {
+                                        e.preventDefault();
+                                        handleProcessAI();
+                                    }
+                                }}
+                            />
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={startVoiceAdd}
+                                className={cn(
+                                    "rounded-full w-10 h-10 hover:bg-white/5 transition-colors shrink-0",
+                                    isListening ? "text-red-500 animate-pulse bg-red-500/10" : "text-blue-400"
+                                )}
+                            >
+                                <Mic className="w-5 h-5" />
+                            </Button>
+                            <Button
+                               size="sm"
+                               onClick={handleProcessAI}
+                               disabled={!voiceText.trim() || isParsing}
+                               className="ml-2 rounded-xl px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold h-10 shrink-0"
+                            >
+                                Analizza
+                            </Button>
+                        </div>
+                        
                         <Button
                             onClick={() => setShowForm(!showForm)}
-                            className="bg-white text-black hover:bg-white/90 rounded-2xl h-12 px-6 font-bold shadow-lg"
+                            className="bg-white text-black hover:bg-white/90 rounded-2xl h-[56px] px-6 font-bold shadow-lg shrink-0 w-full sm:w-auto"
                         >
                             <Plus className="w-5 h-5 mr-2" />
-                            Aggiungi
+                            Manuale
                         </Button>
                     </div>
                 </div>
