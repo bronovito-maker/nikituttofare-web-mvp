@@ -2,6 +2,9 @@ import { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ProductCard, ProductMetadata } from '@/components/technician/ProductCard';
+import { PartnerCard } from '@/components/technician/PartnerCard';
+import { FornitoreCard } from '@/components/technician/FornitoreCard';
+import { WhatsappCard } from '@/components/technician/WhatsappCard';
 
 interface MarkdownRendererProps {
     content: string;
@@ -56,6 +59,95 @@ export function MarkdownRenderer({ content, className = '', onProductAdd }: Mark
                     return <pre className="bg-slate-800 p-2 rounded text-slate-500 text-[10px] overflow-x-auto">{String(children)}</pre>;
                 }
             }
+
+            if (!inline && lang === 'partner') {
+                 try {
+                    let rawContent = String(children).trim();
+                    rawContent = rawContent.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '').trim();
+                    if (!rawContent || !rawContent.startsWith('{')) {
+                        return <pre className="bg-slate-800 p-2 rounded text-slate-400 text-xs overflow-x-auto whitespace-pre-wrap font-mono">{rawContent}</pre>;
+                    }
+
+                    const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+                    const jsonStr = jsonMatch ? jsonMatch[0] : rawContent;
+                    
+                    try {
+                        const data = JSON.parse(jsonStr);
+                        // We import PartnerCard dynamically if needed, 
+                        // but since we need it let's just make sure it's available.
+                        return <PartnerCard partner={data} className="my-3" />;
+                    } catch (parseErr) {
+                        return (
+                            <div className="relative group my-3">
+                                <pre className="bg-slate-800/50 p-3 rounded-lg border border-red-500/20 text-slate-400 text-xs overflow-x-auto whitespace-pre-wrap font-mono">
+                                    {rawContent}
+                                </pre>
+                                <div className="absolute top-2 right-2 text-[10px] text-red-400 opacity-50">Dati partner errati</div>
+                            </div>
+                        );
+                    }
+                } catch (e) {
+                    return <pre className="bg-slate-800 p-2 rounded text-slate-500 text-[10px] overflow-x-auto my-3">{String(children)}</pre>;
+                }
+            }
+
+            if (!inline && (lang === 'fornitore' || lang === 'magazzino')) {
+                try {
+                   let rawContent = String(children).trim();
+                   rawContent = rawContent.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '').trim();
+                   if (!rawContent || !rawContent.startsWith('{')) {
+                       return <pre className="bg-slate-800 p-2 rounded text-slate-400 text-xs overflow-x-auto whitespace-pre-wrap font-mono">{rawContent}</pre>;
+                   }
+
+                   const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+                   const jsonStr = jsonMatch ? jsonMatch[0] : rawContent;
+                   
+                   try {
+                       const data = JSON.parse(jsonStr);
+                       return <FornitoreCard fornitore={data} className="my-3" />;
+                   } catch (parseErr) {
+                       return (
+                           <div className="relative group my-3">
+                               <pre className="bg-slate-800/50 p-3 rounded-lg border border-red-500/20 text-slate-400 text-xs overflow-x-auto whitespace-pre-wrap font-mono">
+                                   {rawContent}
+                               </pre>
+                               <div className="absolute top-2 right-2 text-[10px] text-red-400 opacity-50">Dati fornitore errati</div>
+                           </div>
+                       );
+                   }
+               } catch (e) {
+                   return <pre className="bg-slate-800 p-2 rounded text-slate-500 text-[10px] overflow-x-auto my-3">{String(children)}</pre>;
+               }
+           }
+
+            if (!inline && lang === 'whatsapp') {
+                try {
+                   let rawContent = String(children).trim();
+                   rawContent = rawContent.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '').trim();
+                   if (!rawContent || !rawContent.startsWith('{')) {
+                       return <pre className="bg-slate-800 p-2 rounded text-slate-400 text-xs overflow-x-auto whitespace-pre-wrap font-mono">{rawContent}</pre>;
+                   }
+
+                   const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+                   const jsonStr = jsonMatch ? jsonMatch[0] : rawContent;
+                   
+                   try {
+                       const data = JSON.parse(jsonStr);
+                       return <WhatsappCard data={data} className="my-3" />;
+                   } catch (parseErr) {
+                       return (
+                           <div className="relative group my-3">
+                               <pre className="bg-slate-800/50 p-3 rounded-lg border border-red-500/20 text-slate-400 text-xs overflow-x-auto whitespace-pre-wrap font-mono">
+                                   {rawContent}
+                               </pre>
+                               <div className="absolute top-2 right-2 text-[10px] text-red-400 opacity-50">Dati whatsapp errati</div>
+                           </div>
+                       );
+                   }
+               } catch (e) {
+                   return <pre className="bg-slate-800 p-2 rounded text-slate-500 text-[10px] overflow-x-auto my-3">{String(children)}</pre>;
+               }
+           }
             
             return (
                 <code className="bg-slate-800 px-1 rounded text-pink-400 font-mono text-xs" {...props}>

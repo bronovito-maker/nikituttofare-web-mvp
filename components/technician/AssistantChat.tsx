@@ -167,8 +167,11 @@ const ChatInput = memo(({ onSend, isExpanded, loading }: {
     };
 
     return (
-        <div className="p-4 bg-slate-800/30 border-t border-slate-800 pb-safe shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.5)]"
-             style={{ paddingBottom: isExpanded ? `${keyboardHeight}px` : undefined }}>
+        <div className={cn(
+                "p-4 bg-slate-800/30 border-t border-slate-800 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.5)] transition-all",
+                isExpanded && keyboardHeight === 0 ? "pb-safe" : ""
+            )}
+            style={{ paddingBottom: isExpanded && keyboardHeight > 0 ? `${keyboardHeight}px` : undefined }}>
             
             {/* Image Preview Area */}
             {selectedImage && (
@@ -262,6 +265,7 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
             } catch (err) { console.error('Initial history load failed:', err); }
         };
         initChat();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ticketId]);
 
     useEffect(() => {
@@ -335,7 +339,7 @@ export default function AssistantChat({ ticketId }: AssistantChatProps) {
     return (
         <div className={cn(
             "flex flex-col transition-all duration-500 bg-background border border-white/10 overflow-hidden shadow-2xl",
-            isExpanded ? 'fixed inset-0 z-[10002] rounded-none' : 'h-[500px] rounded-[2.5rem] relative'
+            isExpanded ? 'fixed inset-0 z-[10002] rounded-none pt-safe' : 'h-[500px] rounded-[2.5rem] relative'
         )}>
             <ChatHeader isExpanded={isExpanded} onToggleExpand={() => setIsExpanded(!isExpanded)} />
             

@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      assistant_project_memory: {
+        Row: {
+          created_at: string
+          id: string
+          last_tools_used: string | null
+          open_items: Json | null
+          summary: string | null
+          ticket_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_tools_used?: string | null
+          open_items?: Json | null
+          summary?: string | null
+          ticket_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_tools_used?: string | null
+          open_items?: Json | null
+          summary?: string | null
+          ticket_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_project_memory_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_assets: {
         Row: {
           brand: string | null
@@ -58,6 +96,167 @@ export type Database = {
           {
             foreignKeyName: "customer_assets_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          minimum_quantity_alert: number | null
+          name: string
+          quantity_at_hand: number
+          sku: string | null
+          tenant_id: string
+          unit_cost: number | null
+          unit_of_measure: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          minimum_quantity_alert?: number | null
+          name: string
+          quantity_at_hand?: number
+          sku?: string | null
+          tenant_id: string
+          unit_cost?: number | null
+          unit_of_measure?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          minimum_quantity_alert?: number | null
+          name?: string
+          quantity_at_hand?: number
+          sku?: string | null
+          tenant_id?: string
+          unit_cost?: number | null
+          unit_of_measure?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      inventory_movements: {
+        Row: {
+          created_at: string
+          id: string
+          inventory_item_id: string
+          job_id: string | null
+          movement_type: string
+          notes: string | null
+          quantity: number
+          technician_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inventory_item_id: string
+          job_id?: string | null
+          movement_type: string
+          notes?: string | null
+          quantity: number
+          technician_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inventory_item_id?: string
+          job_id?: string | null
+          movement_type?: string
+          notes?: string | null
+          quantity?: number
+          technician_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_inventory_usage: {
+        Row: {
+          created_at: string
+          id: string
+          inventory_item_id: string
+          job_id: string
+          notes: string | null
+          quantity_used: number
+          technician_id: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inventory_item_id: string
+          job_id: string
+          notes?: string | null
+          quantity_used: number
+          technician_id?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inventory_item_id?: string
+          job_id?: string
+          notes?: string | null
+          quantity_used?: number
+          technician_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_inventory_usage_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_inventory_usage_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_inventory_usage_technician_id_fkey"
+            columns: ["technician_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -383,40 +582,52 @@ export type Database = {
       }
       technician_notifications: {
         Row: {
+          body: string | null
           id: string
           message_content: string | null
           meta_data: Json | null
           notification_type: string
+          priority: string | null
+          scheduled_for: string | null
           sent_at: string
           status: string
           technician_id: string | null
           telegram_message_id: string | null
           ticket_id: string
           token_id: string | null
+          type: string | null
         }
         Insert: {
+          body?: string | null
           id?: string
           message_content?: string | null
           meta_data?: Json | null
           notification_type?: string
+          priority?: string | null
+          scheduled_for?: string | null
           sent_at?: string
           status?: string
           technician_id?: string | null
           telegram_message_id?: string | null
           ticket_id: string
           token_id?: string | null
+          type?: string | null
         }
         Update: {
+          body?: string | null
           id?: string
           message_content?: string | null
           meta_data?: Json | null
           notification_type?: string
+          priority?: string | null
+          scheduled_for?: string | null
           sent_at?: string
           status?: string
           technician_id?: string | null
           telegram_message_id?: string | null
           ticket_id?: string
           token_id?: string | null
+          type?: string | null
         }
         Relationships: [
           {
@@ -437,21 +648,26 @@ export type Database = {
       }
       tickets: {
         Row: {
+          actual_duration_minutes: number | null
+          actual_payment_amount: number | null
           address: string | null
           ai_paused: boolean | null
           asset_id: string | null
           assigned_at: string | null
           assigned_technician_id: string | null
+          assistant_thread_id: string | null
           category: string
           chat_session_id: string | null
           city: string | null
           completed_at: string | null
           contact_phone: number | null
           created_at: string
+          created_by_technician_id: string | null
           customer_name: string | null
           description: string
           id: string
           meta_data: Json | null
+          payment_method: string | null
           payment_status: string
           photo_url: string | null
           price_range_max: number | null
@@ -460,25 +676,33 @@ export type Database = {
           rating: number | null
           review_created_at: string | null
           review_text: string | null
+          scheduled_at: string | null
+          source: string | null
           status: string
           user_id: string | null
+          work_summary: string | null
         }
         Insert: {
+          actual_duration_minutes?: number | null
+          actual_payment_amount?: number | null
           address?: string | null
           ai_paused?: boolean | null
           asset_id?: string | null
           assigned_at?: string | null
           assigned_technician_id?: string | null
+          assistant_thread_id?: string | null
           category: string
           chat_session_id?: string | null
           city?: string | null
           completed_at?: string | null
           contact_phone?: number | null
           created_at?: string
+          created_by_technician_id?: string | null
           customer_name?: string | null
           description: string
           id?: string
           meta_data?: Json | null
+          payment_method?: string | null
           payment_status?: string
           photo_url?: string | null
           price_range_max?: number | null
@@ -487,25 +711,33 @@ export type Database = {
           rating?: number | null
           review_created_at?: string | null
           review_text?: string | null
+          scheduled_at?: string | null
+          source?: string | null
           status?: string
           user_id?: string | null
+          work_summary?: string | null
         }
         Update: {
+          actual_duration_minutes?: number | null
+          actual_payment_amount?: number | null
           address?: string | null
           ai_paused?: boolean | null
           asset_id?: string | null
           assigned_at?: string | null
           assigned_technician_id?: string | null
+          assistant_thread_id?: string | null
           category?: string
           chat_session_id?: string | null
           city?: string | null
           completed_at?: string | null
           contact_phone?: number | null
           created_at?: string
+          created_by_technician_id?: string | null
           customer_name?: string | null
           description?: string
           id?: string
           meta_data?: Json | null
+          payment_method?: string | null
           payment_status?: string
           photo_url?: string | null
           price_range_max?: number | null
@@ -514,8 +746,11 @@ export type Database = {
           rating?: number | null
           review_created_at?: string | null
           review_text?: string | null
+          scheduled_at?: string | null
+          source?: string | null
           status?: string
           user_id?: string | null
+          work_summary?: string | null
         }
         Relationships: [
           {
@@ -533,6 +768,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tickets_created_by_technician_id_fkey"
+            columns: ["created_by_technician_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tickets_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -540,6 +782,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      trusted_partners: {
+        Row: {
+          category: string
+          city: string
+          created_at: string
+          id: string
+          internal_notes: string | null
+          name: string
+          phone: string | null
+          rating: number | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          city: string
+          created_at?: string
+          id?: string
+          internal_notes?: string | null
+          name: string
+          phone?: string | null
+          rating?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          city?: string
+          created_at?: string
+          id?: string
+          internal_notes?: string | null
+          name?: string
+          phone?: string | null
+          rating?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_assets: {
         Row: {

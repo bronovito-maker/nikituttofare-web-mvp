@@ -98,7 +98,7 @@ function ChatContent() {
         // Convert DB messages to Chat Interface format
         const historyFormatted = history.map((msg: any) => ({
           id: msg.id,
-          role: msg.sender_role === 'user' ? 'user' : 'assistant', // adapt based on DB column
+          role: msg.role === 'user' ? 'user' : 'assistant',
           content: msg.content,
           created_at: msg.created_at
         }));

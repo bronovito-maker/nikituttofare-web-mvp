@@ -75,61 +75,84 @@ export async function POST(req: NextRequest) {
         }
 
         const systemPrompt = `
-      Sei Niki AI, assistente tecnico per l'intervento: "${ticket?.description}".
+      Sei "Jarvis", l'assistente tecnico operativo sul campo per l'intervento: "${ticket?.description}".
       
+      COMPITI PRINCIPALI:
+      1. DIAGNOSTICA ESPERTA: Se il tecnico descrive un guasto (es. "caldaia non fa tic tic"), comportati da ingegnere diagnostico esperto. Usa le tue conoscenze o le ricerche web (googleSearch) per fornire cause probabili e test specifici da eseguire sul posto. Rispondi con sintesi estrema e bullet point.
+      2. TROVA PARTNER E PREVENTIVI: Se serve un tecnico per sabato o per quote, usa 'cerca_partner_locali'. Genera sempre il link per contattarli con 'genera_messaggio_whatsapp' precompilato con la descrizione del problema e urgenza.
+      3. TROVA MATERIALI/FORNITORI: Usa googleSearch o le tue conoscenze per trovare ferramenta, termoidrauliche o brico aperti vicino al tecnico (es. Riccione/Rimini). Mostra i risultati usando la card magazzino.
+
       CONTESTO MAGAZZINO (Materiali disponibili subito):
       ${inventoryContext}
 
       REGOLE MANDATORIE (SINTESI ESTREMA):
       1. SINTESI: Solo frasi brevi e tecniche. Mai discorsivo.
-      2. RICERCA: Se serve materiale NON presente in magazzino, usa 'cerca_materiale_tecnomat' immediatamente.
-      3. VISUAL CARDS: Per ogni prodotto trovato, genera un blocco 'product'. 
-         IMPORTANTE: Inserisci SEMPRE una riga vuota PRIMA e DOPO ogni blocco \` \` \` product.
-         Esempio:
-         Ecco il materiale:
-
-         \`\`\`product
-         { "nome": "...", ... }
-         \`\`\`
-
-         Aggiungo alla lista?
-      4. AZIONE: Chiedi sempre "Aggiungo alla lista?" dopo aver mostrato le card.
-      5. NO TABELLE.
-      6. WARNING: Solo per procedure pericolose.
+      2. VISUAL CARDS: Devi usare SEMPRE blocchi JSON per dati strutturati:
+         - Prodotto (Tecnomat): \`\`\`product\n{ "nome": "...", "prezzo": "...", "sku": "...", "corsia": "...", "url": "..." }\n\`\`\`
+         - Partner (Professionista): \`\`\`partner\n{ "nome": "...", "telefono": "...", "categoria": "...", "citta": "...", "rating": 5, "note": "..." }\n\`\`\`
+         - Fornitore: \`\`\`fornitore\n{ "nome": "...", "indirizzo": "...", "orari": "...", "telefono": "..." }\n\`\`\`
+         - Messaggio WhatsApp: \`\`\`whatsapp\n{ "numero": "...", "testo": "...", "link_whatsapp": "..." }\n\`\`\`
+         IMPORTANTE: Inserisci SEMPRE una riga vuota PRIMA e DOPO ogni blocco JSON.
+      3. DELEGA CHIAMATE: Quando trovi un partner, proponi di contattarlo generando un link WhatsApp (genera_messaggio_whatsapp). Usa testo BREVE e DIRETTO: "Ciao, cerchiamo disponibilità per [Problema] in [Zona] questo Sabato. Puoi farci un preventivo?". Usa SEMPRE la card \`\`\`whatsapp\`\`\` per mostrare l'esito.
+      4. NO TABELLE. Usa le Visual Cards.
     `;
 
-        const tools = [{
-            functionDeclarations: [
-                {
-                    name: "cerca_materiale_tecnomat",
-                    description: "Cerca un prodotto fisico nel catalogo di Tecnomat Rimini. Usa questo strumento SOLO E SEMPRE quando il tecnico ti chiede informazioni su listini esterni, materiali da comprare, novità o prezzi da Tecnomat.",
-                    parameters: {
-                        type: SchemaType.OBJECT,
-                        properties: {
-                            query: {
-                                type: SchemaType.STRING,
-                                description: "Il termine di ricerca esatto, marca o SKU (es. 'Smalto bianco all'acqua', 'Tasselli fischer', 'Trapano bosch')"
-                            }
-                        },
-                        required: ["query"]
+        const tools = [
+            {
+                functionDeclarations: [
+                    {
+                        name: "cerca_materiale_tecnomat",
+                        description: "Cerca un prodotto fisico nel catalogo di Tecnomat Rimini. Usa questo strumento SOLO E SEMPRE quando il tecnico ti chiede informazioni su listini esterni, materiali da comprare, novità o prezzi da Tecnomat.",
+                        parameters: {
+                            type: SchemaType.OBJECT,
+                            properties: {
+                                query: { type: SchemaType.STRING, description: "Il termine di ricerca esatto, marca o SKU (es. 'Smalto bianco all'acqua')" }
+                            },
+                            required: ["query"]
+                        }
+                    },
+                    {
+                        name: "aggiungi_a_lista_spesa",
+                        description: "Salva un materiale o prodotto nella lista della spesa permanente dell'intervento.",
+                        parameters: {
+                            type: SchemaType.OBJECT,
+                            properties: {
+                                nome: { type: SchemaType.STRING, description: "Nome del prodotto" },
+                                sku: { type: SchemaType.STRING, description: "Codice SKU del prodotto" },
+                                prezzo: { type: SchemaType.STRING, description: "Prezzo stimato" },
+                                url: { type: SchemaType.STRING, description: "URL del prodotto" }
+                            },
+                            required: ["nome"]
+                        }
+                    },
+                    {
+                        name: "cerca_partner_locali",
+                        description: "Cerca tecnici, artigiani o ditte specializzate nella zona (es. caldaista, idraulico, elettricista, fabbro). Restituisce i contatti dei partner fidati con recensioni e note.",
+                        parameters: {
+                            type: SchemaType.OBJECT,
+                            properties: {
+                                categoria: { type: SchemaType.STRING, description: "La categoria del professionista (es. 'caldaista', 'elettricista', 'fabbro', 'idraulico')" },
+                                citta: { type: SchemaType.STRING, description: "Città (es. 'Riccione', 'Rimini')" }
+                            },
+                            required: ["categoria"]
+                        }
+                    },
+                    {
+                        name: "genera_messaggio_whatsapp",
+                        description: "Genera un link WhatsApp per contattare un partner. Fai questo quando trovi un partner e vuoi proporre subito al tecnico di scrivergli.",
+                        parameters: {
+                            type: SchemaType.OBJECT,
+                            properties: {
+                                numero: { type: SchemaType.STRING, description: "Numero di telefono del destinatario" },
+                                testo: { type: SchemaType.STRING, description: "Testo del messaggio, che spiega il problema e chiede disponibilità" }
+                            },
+                            required: ["numero", "testo"]
+                        }
                     }
-                },
-                {
-                    name: "aggiungi_a_lista_spesa",
-                    description: "Salva un materiale o prodotto nella lista della spesa permanente dell'intervento. Usa questo strumento quando il tecnico conferma di voler acquistare un prodotto trovato o quando identifichi materiale necessario mancante.",
-                    parameters: {
-                        type: SchemaType.OBJECT,
-                        properties: {
-                            nome: { type: SchemaType.STRING, description: "Nome del prodotto" },
-                            sku: { type: SchemaType.STRING, description: "Codice SKU del prodotto (se disponibile)" },
-                            prezzo: { type: SchemaType.STRING, description: "Prezzo stimato" },
-                            url: { type: SchemaType.STRING, description: "URL del prodotto (se disponibile)" }
-                        },
-                        required: ["nome"]
-                    }
-                }
-            ]
-        }] as any;
+                ]
+            },
+            { googleSearch: {} }
+        ] as any;
 
         const model = genAI.getGenerativeModel({
             model: "gemini-2.5-pro", // Versione Pro 2.5 disponibile nell'ambiente
@@ -292,6 +315,47 @@ export async function POST(req: NextRequest) {
                             functionResponse: { name: 'aggiungi_a_lista_spesa', response: { success: false, error: e.message } }
                         });
                     }
+                }
+
+                if (call.name === 'cerca_partner_locali') {
+                    const { categoria, citta } = call.args as any;
+                    try {
+                        let query = supabase.from('trusted_partners').select('*').ilike('category', `%${categoria}%`);
+                        if (citta) {
+                            query = query.ilike('city', `%${citta}%`);
+                        }
+                        const { data, error } = await query.order('rating', { ascending: false }).limit(3);
+                        if (error) throw error;
+                        
+                        resultsForModel.push({
+                            functionResponse: { name: 'cerca_partner_locali', response: {
+                                risultati: (data || []).map(p => ({
+                                    nome: p.name,
+                                    categoria: p.category,
+                                    citta: p.city,
+                                    telefono: p.phone,
+                                    rating: p.rating,
+                                    note: p.internal_notes,
+                                })),
+                                nota: (data && data.length > 0) ? "" : "Nessun partner trovato per questa categoria."
+                            } }
+                        });
+                    } catch (e: any) {
+                        resultsForModel.push({ functionResponse: { name: 'cerca_partner_locali', response: { error: e.message } } });
+                    }
+                }
+
+                if (call.name === 'genera_messaggio_whatsapp') {
+                    const { numero, testo } = call.args as any;
+                    let cleanNum = String(numero).replace(/[^\d+]/g, '');
+                    if (!cleanNum.startsWith('+39') && !cleanNum.startsWith('39') && cleanNum.length === 10) {
+                        cleanNum = '+39' + cleanNum;
+                    }
+                    const url = `https://wa.me/${cleanNum.replace('+', '')}?text=${encodeURIComponent(testo)}`;
+                    
+                    resultsForModel.push({
+                        functionResponse: { name: 'genera_messaggio_whatsapp', response: { numero: cleanNum, link_whatsapp: url, testo: testo } }
+                    });
                 }
             }
 
