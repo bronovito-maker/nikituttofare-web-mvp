@@ -110,16 +110,18 @@ const ChatInput = memo(({ onSend, isExpanded, loading }: {
 
     useEffect(() => {
         if (!isExpanded) return;
-        const isNative = typeof window !== 'undefined' && (window as any).Capacitor?.getPlatform() !== 'web';
+        const platform = typeof window !== 'undefined' ? (window as any).Capacitor?.getPlatform() : 'web';
         let kShowListener: any, kHideListener: any;
-        if (isNative) {
+        
+        // Only manually offset keyboard on iOS, since Capacitor Android handles it by resizing the webview.
+        if (platform === 'ios') {
             kShowListener = Keyboard.addListener('keyboardWillShow', (info) => setKeyboardHeight(info.keyboardHeight));
             kHideListener = Keyboard.addListener('keyboardWillHide', () => setKeyboardHeight(0));
+            return () => {
+                if (kShowListener) kShowListener.then((l: any) => l.remove());
+                if (kHideListener) kHideListener.then((l: any) => l.remove());
+            };
         }
-        return () => {
-            if (kShowListener) kShowListener.then((l: any) => l.remove());
-            if (kHideListener) kHideListener.then((l: any) => l.remove());
-        };
     }, [isExpanded]);
 
     const handleSend = () => {
@@ -131,27 +133,80 @@ const ChatInput = memo(({ onSend, isExpanded, loading }: {
     };
 
     const startVoiceInput = async () => {
+        const platform = typeof window !== 'undefined' ? (window as any).Capacitor?.getPlatform() : 'web';
+        const isNative = platform !== 'web';
+
         if (isRecordingRef.current) {
             setIsRecording(false);
             isRecordingRef.current = false;
-            // Native stop logic...
+            if (isNative) {
+                try {
+                    await SpeechRecognition.stop();
+                } catch (e) {
+                    console.error("Error stopping native voice:", e);
+                }
+            } else if ((window as any)._webSpeechRec) {
+                (window as any)._webSpeechRec.stop();
+            }
             return;
         }
         
-        const isNative = typeof window !== 'undefined' && (window as any).Capacitor?.getPlatform() !== 'web';
         if (!isNative) {
             // Web Fallback
             const SpeechRecog = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
             if (!SpeechRecog) return;
             const rec = new SpeechRecog();
             rec.lang = 'it-IT';
+            rec.continuous = false;
+            rec.interimResults = true;
+            (window as any)._webSpeechRec = rec;
             rec.onstart = () => { setIsRecording(true); isRecordingRef.current = true; };
-            rec.onresult = (e: any) => setInput(e.results[0][0].transcript);
+            rec.onresult = (e: any) => {
+                let current = '';
+                for (let i = 0; i < e.results.length; i++) {
+                    current += e.results[i][0].transcript;
+                }
+                setInput(current);
+            };
             rec.onend = () => { setIsRecording(false); isRecordingRef.current = false; };
             rec.start();
         } else {
-            // Native logic simplified for brevity here, normally we call SpeechRecognition plugin
-            setIsRecording(true); isRecordingRef.current = true;
+            // Native Logic using Capacitor SpeechRecognition
+            try {
+                const perm = await SpeechRecognition.checkPermissions();
+                if (perm.speechRecognition !== 'granted') {
+                    const req = await SpeechRecognition.requestPermissions();
+                    if (req.speechRecognition !== 'granted') {
+                        setIsRecording(false);
+                        isRecordingRef.current = false;
+                        return;
+                    }
+                }
+
+                setIsRecording(true); 
+                isRecordingRef.current = true;
+                
+                // Remove previous listener if any
+                if ((window as any)._partialSpeechListener) {
+                    await (window as any)._partialSpeechListener.remove();
+                }
+                
+                (window as any)._partialSpeechListener = await (SpeechRecognition as any).addListener('partialResults', (data: any) => {
+                    if (data.matches && data.matches.length > 0) {
+                        setInput(data.matches[0]);
+                    }
+                });
+
+                await SpeechRecognition.start({
+                    language: 'it-IT',
+                    partialResults: true,
+                    popup: false,
+                });
+            } catch (error) {
+                console.error("Native speech recognition error:", error);
+                setIsRecording(false); 
+                isRecordingRef.current = false;
+            }
         }
     };
 

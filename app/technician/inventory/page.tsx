@@ -110,46 +110,88 @@ export default function InventoryPage() {
     };
 
     const startVoiceAdd = async () => {
-        let partialListener: { remove: () => Promise<void> } | null = null;
-        try {
-            const perm = await SpeechRecognition.checkPermissions();
-            if (perm.speechRecognition !== 'granted') {
-                const req = await SpeechRecognition.requestPermissions();
-                if (req.speechRecognition !== 'granted') return;
+        const platform = typeof window !== 'undefined' ? (window as any).Capacitor?.getPlatform() : 'web';
+        const isNative = platform !== 'web';
+
+        if (isListening) {
+             // Stop listening
+             setIsListening(false);
+             if (isNative) {
+                 try { await SpeechRecognition.stop(); } catch(e) {}
+             } else if ((window as any)._invWebSpeechRec) {
+                 (window as any)._invWebSpeechRec.stop();
+             }
+             return;
+        }
+
+        if (!isNative) {
+            // Web fallback
+            const SpeechRecog = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+            if (!SpeechRecog) {
+                toast.error('Riconoscimento vocale non supportato dal browser.');
+                return;
             }
-
-            setIsListening(true);
-            let finalTranscription = '';
-
-            partialListener = await (SpeechRecognition as any).addListener('partialResults', (data: any) => {
-                if (data.matches && data.matches.length > 0) {
-                    finalTranscription = data.matches[0];
-                }
-            });
-
-            await SpeechRecognition.start({
-                language: 'it-IT',
-                partialResults: true,
-                popup: false,
-            });
-
-            setTimeout(async () => {
-                await SpeechRecognition.stop();
-                setIsListening(false);
-                if (partialListener) {
-                    await partialListener.remove();
+            const rec = new SpeechRecog();
+            rec.lang = 'it-IT';
+            rec.continuous = false;
+            rec.interimResults = false;
+            (window as any)._invWebSpeechRec = rec;
+            rec.onstart = () => setIsListening(true);
+            rec.onresult = (e: any) => {
+                let finalTranscription = '';
+                for (let i = 0; i < e.results.length; i++) {
+                    finalTranscription += e.results[i][0].transcript;
                 }
                 if (finalTranscription) {
                     processTranscription(finalTranscription);
                 }
-            }, 8000);
+            };
+            rec.onend = () => setIsListening(false);
+            rec.start();
+        } else {
+            // Native Logic
+            let partialListener: { remove: () => Promise<void> } | null = null;
+            try {
+                const perm = await SpeechRecognition.checkPermissions();
+                if (perm.speechRecognition !== 'granted') {
+                    const req = await SpeechRecognition.requestPermissions();
+                    if (req.speechRecognition !== 'granted') return;
+                }
 
-        } catch (error) {
-            setIsListening(false);
-            if (partialListener) {
-                await partialListener.remove();
+                setIsListening(true);
+                let finalTranscription = '';
+
+                partialListener = await (SpeechRecognition as any).addListener('partialResults', (data: any) => {
+                    if (data.matches && data.matches.length > 0) {
+                        finalTranscription = data.matches[0];
+                    }
+                });
+
+                await SpeechRecognition.start({
+                    language: 'it-IT',
+                    partialResults: true,
+                    popup: false,
+                });
+
+                setTimeout(async () => {
+                    if (!isListening) return; // already stopped naturally
+                    await SpeechRecognition.stop();
+                    setIsListening(false);
+                    if (partialListener) {
+                        await partialListener.remove();
+                    }
+                    if (finalTranscription) {
+                        processTranscription(finalTranscription);
+                    }
+                }, 8000);
+
+            } catch (error) {
+                setIsListening(false);
+                if (partialListener) {
+                    await partialListener.remove();
+                }
+                toast.error('Errore microfono: ' + (error as any)?.message);
             }
-            toast.error('Errore microfono');
         }
     };
 
