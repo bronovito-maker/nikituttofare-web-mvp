@@ -1,7 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getInventoryItems, insertJobInventoryUsage, getJobInventoryUsages, removeJobInventoryUsage, InventoryItem } from '@/lib/actions/inventory';
+import { Mic } from 'lucide-react';
+import { SpeechRecognition } from '@capacitor-community/speech-recognition';
+import { cn } from '@/lib/utils';
 
 interface InventoryManagerProps {
     tenantId: string;
@@ -17,6 +20,10 @@ export default function InventoryManager({ tenantId, jobId, technicianId }: Inve
     const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
     const [quantity, setQuantity] = useState(1);
     const [isSaving, setIsSaving] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
+    const [isParsing, setIsParsing] = useState(false);
+    const isRecordingRef = useRef(false);
+    const voiceTextRef = useRef('');
 
     useEffect(() => {
         const loadData = async () => {
@@ -58,6 +65,151 @@ export default function InventoryManager({ tenantId, jobId, technicianId }: Inve
         } else {
             alert(result.error);
         }
+    };
+
+    const startVoiceInput = async (e?: React.TouchEvent | React.MouseEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (isRecordingRef.current) return;
+
+        voiceTextRef.current = '';
+        setSearchQuery('');
+
+        const platform = typeof window !== 'undefined' ? (window as any).Capacitor?.getPlatform() : 'web';
+        const isNative = platform !== 'web';
+        
+        if (!isNative) {
+            // Web Fallback
+            const SpeechRecog = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+            if (!SpeechRecog) return;
+            const rec = new SpeechRecog();
+            rec.lang = 'it-IT';
+            rec.continuous = false;
+            rec.interimResults = true;
+            (window as any)._webSpeechRecInv = rec;
+            rec.onstart = () => { setIsRecording(true); isRecordingRef.current = true; };
+            rec.onresult = (e: any) => {
+                let current = '';
+                for (let i = 0; i < e.results.length; i++) {
+                    current += e.results[i][0].transcript;
+                }
+                voiceTextRef.current = current;
+                setSearchQuery(current);
+                setSelectedItem(null);
+            };
+            rec.onend = () => { 
+                setIsRecording(false); 
+                isRecordingRef.current = false; 
+                processSmartMatch(voiceTextRef.current);
+            };
+            rec.start();
+        } else {
+            // Native Logic using Capacitor SpeechRecognition
+            try {
+                const perm = await SpeechRecognition.checkPermissions();
+                if (perm.speechRecognition !== 'granted') {
+                    const req = await SpeechRecognition.requestPermissions();
+                    if (req.speechRecognition !== 'granted') {
+                        setIsRecording(false);
+                        isRecordingRef.current = false;
+                        return;
+                    }
+                }
+
+                setIsRecording(true); 
+                isRecordingRef.current = true;
+                
+                if ((window as any)._partialSpeechListenerInv) {
+                    await (window as any)._partialSpeechListenerInv.remove();
+                }
+                
+                (window as any)._partialSpeechListenerInv = await (SpeechRecognition as any).addListener('partialResults', (data: any) => {
+                    if (data.matches && data.matches.length > 0) {
+                        voiceTextRef.current = data.matches[0];
+                        setSearchQuery(data.matches[0]);
+                        setSelectedItem(null);
+                    }
+                });
+
+                await SpeechRecognition.start({
+                    language: 'it-IT',
+                    partialResults: true,
+                    popup: false,
+                });
+            } catch (error) {
+                console.error("Native speech recognition error:", error);
+                setIsRecording(false); 
+                isRecordingRef.current = false;
+            }
+        }
+    };
+
+    const stopVoiceInput = async (e?: React.TouchEvent | React.MouseEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (!isRecordingRef.current) return;
+
+        const platform = typeof window !== 'undefined' ? (window as any).Capacitor?.getPlatform() : 'web';
+        const isNative = platform !== 'web';
+
+        setIsRecording(false);
+        isRecordingRef.current = false;
+        
+        if (isNative) {
+            try {
+                await SpeechRecognition.stop();
+                processSmartMatch(voiceTextRef.current);
+            } catch (err) {
+                console.error("Error stopping native voice:", err);
+            }
+        } else if ((window as any)._webSpeechRecInv) {
+            (window as any)._webSpeechRecInv.stop();
+        }
+    };
+
+    const processSmartMatch = async (text: string) => {
+        if (!text || !text.trim()) return;
+        setIsParsing(true);
+        try {
+            const res = await fetch('/api/technician/inventory/smart-match', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transcription: text, mode: 'discharge' })
+            });
+            const data = await res.json();
+            
+            if (data.matched && data.matched.length > 0) {
+                let successCount = 0;
+                setIsSaving(true);
+                for (const match of data.matched) {
+                    const result = await insertJobInventoryUsage(tenantId, jobId, match.inventoryItemId, match.quantity, technicianId);
+                    if (result.success) successCount++;
+                }
+                
+                const usageData = await getJobInventoryUsages(jobId);
+                setUsages(usageData || []);
+                setIsSaving(false);
+                
+                let message = `Dettatura completata! Aggiunti ${successCount} articoli correttamente.`;
+                if (data.unmatched && data.unmatched.length > 0) {
+                    message += `\nAttenzione, alcuni articoli non sono nel catalogo: ${data.unmatched.map((u: any) => u.nameMentioned).join(', ')}.`;
+                }
+                alert(message);
+            } else if (data.unmatched && data.unmatched.length > 0) {
+                alert(`Nessun articolo corrispondente trovato nel magazzino. Rilevati: ${data.unmatched.map((u: any) => u.nameMentioned).join(', ')}`);
+            } else {
+                alert('Nessun articolo chiaro rilevato dalla voce.');
+            }
+        } catch (error) {
+            alert("Errore durante l'analisi AI del magazzino.");
+        }
+        setIsParsing(false);
+        setSearchQuery('');
+        voiceTextRef.current = '';
     };
 
     const filteredItems = items.filter(item =>
@@ -102,16 +254,42 @@ export default function InventoryManager({ tenantId, jobId, technicianId }: Inve
                 <h4 className="text-sm font-semibold text-slate-300 mb-3">Aggiungi Materiale da Furgone/Magazzino</h4>
 
                 <div className="space-y-4">
-                    <input
-                        type="text"
-                        placeholder="Cerca materiale per nome o SKU..."
-                        value={searchQuery}
-                        onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                            setSelectedItem(null); // Resetta la selezione quando si cerca
-                        }}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                    />
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="text"
+                            placeholder="Cerca materiale per nome o SKU..."
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setSelectedItem(null); // Resetta la selezione quando si cerca
+                            }}
+                            className="w-full flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        />
+                        <button 
+                            onTouchStart={startVoiceInput}
+                            onTouchEnd={stopVoiceInput}
+                            onTouchCancel={stopVoiceInput}
+                            onMouseDown={startVoiceInput}
+                            onMouseUp={stopVoiceInput}
+                            onMouseLeave={stopVoiceInput}
+                            onContextMenu={(e) => e.preventDefault()}
+                            disabled={isParsing}
+                            className={cn(
+                                "p-3 rounded-xl transition-all select-none self-stretch flex items-center justify-center relative",
+                                isRecording ? "bg-red-500 text-white animate-pulse scale-110 shadow-lg shadow-red-500/20 border-red-500" : "bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700",
+                                isParsing ? "opacity-50 cursor-wait bg-blue-900 border-blue-500 text-blue-300" : ""
+                            )}
+                        >
+                            {isParsing ? (
+                                <svg className="animate-spin h-5 w-5 text-blue-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            ) : (
+                                <Mic className="w-5 h-5" />
+                            )}
+                        </button>
+                    </div>
 
                     {searchQuery && !selectedItem && (
                         <div className="bg-slate-800 border border-slate-700 rounded-xl max-h-48 overflow-y-auto">

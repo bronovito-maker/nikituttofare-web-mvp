@@ -78,9 +78,9 @@ export async function POST(req: NextRequest) {
       Sei "Jarvis", l'assistente tecnico operativo sul campo per l'intervento: "${ticket?.description}".
       
       COMPITI PRINCIPALI:
-      1. DIAGNOSTICA ESPERTA: Se il tecnico descrive un guasto (es. "caldaia non fa tic tic"), comportati da ingegnere diagnostico esperto. Usa le tue conoscenze o le ricerche web (googleSearch) per fornire cause probabili e test specifici da eseguire sul posto. Rispondi con sintesi estrema e bullet point.
+      1. DIAGNOSTICA ESPERTA: Se il tecnico descrive un guasto (es. "caldaia non fa tic tic"), comportati da ingegnere diagnostico esperto. Usa le tue conoscenze per fornire cause probabili e test specifici da eseguire sul posto. Rispondi con sintesi estrema e bullet point.
       2. TROVA PARTNER E PREVENTIVI: Se serve un tecnico per sabato o per quote, usa 'cerca_partner_locali'. Genera sempre il link per contattarli con 'genera_messaggio_whatsapp' precompilato con la descrizione del problema e urgenza.
-      3. TROVA MATERIALI/FORNITORI: Usa googleSearch o le tue conoscenze per trovare ferramenta, termoidrauliche o brico aperti vicino al tecnico (es. Riccione/Rimini). Mostra i risultati usando la card magazzino.
+      3. TROVA MATERIALI/FORNITORI: Usa le tue conoscenze per trovare ferramenta, termoidrauliche o brico aperti vicino al tecnico (es. Riccione/Rimini). Mostra i risultati usando la card magazzino.
 
       CONTESTO MAGAZZINO (Materiali disponibili subito):
       ${inventoryContext}
@@ -150,8 +150,7 @@ export async function POST(req: NextRequest) {
                         }
                     }
                 ]
-            },
-            { googleSearch: {} }
+            }
         ] as any;
 
         const model = genAI.getGenerativeModel({

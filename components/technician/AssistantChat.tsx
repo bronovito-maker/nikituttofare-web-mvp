@@ -113,8 +113,8 @@ const ChatInput = memo(({ onSend, isExpanded, loading }: {
         const platform = typeof window !== 'undefined' ? (window as any).Capacitor?.getPlatform() : 'web';
         let kShowListener: any, kHideListener: any;
         
-        // Only manually offset keyboard on iOS, since Capacitor Android handles it by resizing the webview.
-        if (platform === 'ios') {
+        // Handle keyboard offset for both iOS and Android since Capacitor Android utilizes KeyboardResize.None
+        if (platform === 'ios' || platform === 'android') {
             kShowListener = Keyboard.addListener('keyboardWillShow', (info) => setKeyboardHeight(info.keyboardHeight));
             kHideListener = Keyboard.addListener('keyboardWillHide', () => setKeyboardHeight(0));
             return () => {
@@ -132,24 +132,15 @@ const ChatInput = memo(({ onSend, isExpanded, loading }: {
         if (textareaRef.current) textareaRef.current.style.height = 'auto';
     };
 
-    const startVoiceInput = async () => {
+    const startVoiceInput = async (e?: React.TouchEvent | React.MouseEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (isRecordingRef.current) return;
+
         const platform = typeof window !== 'undefined' ? (window as any).Capacitor?.getPlatform() : 'web';
         const isNative = platform !== 'web';
-
-        if (isRecordingRef.current) {
-            setIsRecording(false);
-            isRecordingRef.current = false;
-            if (isNative) {
-                try {
-                    await SpeechRecognition.stop();
-                } catch (e) {
-                    console.error("Error stopping native voice:", e);
-                }
-            } else if ((window as any)._webSpeechRec) {
-                (window as any)._webSpeechRec.stop();
-            }
-            return;
-        }
         
         if (!isNative) {
             // Web Fallback
@@ -210,6 +201,30 @@ const ChatInput = memo(({ onSend, isExpanded, loading }: {
         }
     };
 
+    const stopVoiceInput = async (e?: React.TouchEvent | React.MouseEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (!isRecordingRef.current) return;
+
+        const platform = typeof window !== 'undefined' ? (window as any).Capacitor?.getPlatform() : 'web';
+        const isNative = platform !== 'web';
+
+        setIsRecording(false);
+        isRecordingRef.current = false;
+        
+        if (isNative) {
+            try {
+                await SpeechRecognition.stop();
+            } catch (err) {
+                console.error("Error stopping native voice:", err);
+            }
+        } else if ((window as any)._webSpeechRec) {
+            (window as any)._webSpeechRec.stop();
+        }
+    };
+
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -254,10 +269,16 @@ const ChatInput = memo(({ onSend, isExpanded, loading }: {
                     <ImageIcon className="w-5 h-5" />
                 </button>
                 <button 
-                    onClick={startVoiceInput} 
+                    onTouchStart={startVoiceInput}
+                    onTouchEnd={stopVoiceInput}
+                    onTouchCancel={stopVoiceInput}
+                    onMouseDown={startVoiceInput}
+                    onMouseUp={stopVoiceInput}
+                    onMouseLeave={stopVoiceInput}
+                    onContextMenu={(e) => e.preventDefault()}
                     className={cn(
-                        "p-3 rounded-xl transition-all",
-                        isRecording ? "bg-red-500 text-white animate-pulse" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                        "p-3 rounded-xl transition-all select-none",
+                        isRecording ? "bg-red-500 text-white animate-pulse scale-110 shadow-lg shadow-red-500/20" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
                     )}
                 >
                     <Mic className="w-5 h-5" />

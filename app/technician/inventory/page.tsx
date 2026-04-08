@@ -216,14 +216,37 @@ export default function InventoryPage() {
     const processTranscription = async (text: string) => {
         setIsParsing(true);
         try {
-            const res = await fetch('/api/technician/inventory/voice-parse', {
+            const res = await fetch('/api/technician/inventory/smart-match', {
                 method: 'POST',
-                body: JSON.stringify({ transcription: text })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transcription: text, mode: 'restock' })
             });
             const data = await res.json();
-            if (data.items && data.items.length > 0) {
-                setPendingItems(data.items);
-                setVoiceText(''); // Cancella l'input dopo il paring con successo
+            
+            const newPending: any[] = [];
+            if (data.matched) {
+                data.matched.forEach((m: any) => newPending.push({
+                   inventoryItemId: m.inventoryItemId,
+                   name: m.nameFromCatalog,
+                   quantity: m.quantity,
+                   unit: m.unit || 'pz',
+                   isNew: false
+                }));
+            }
+            if (data.unmatched) {
+                data.unmatched.forEach((u: any) => newPending.push({
+                   inventoryItemId: null,
+                   name: u.nameMentioned,
+                   quantity: u.quantity,
+                   unit: u.unit || 'pz',
+                   category: u.category || 'Varie',
+                   isNew: true
+                }));
+            }
+
+            if (newPending.length > 0) {
+                setPendingItems(newPending);
+                setVoiceText(''); 
             } else {
                 toast.error('Nessun materiale trovato o testo non comprensibile.');
             }
@@ -237,7 +260,7 @@ export default function InventoryPage() {
     const confirmBulkInsert = async () => {
         if (!tenantId || pendingItems.length === 0) return;
 
-        const toInsert = pendingItems.map(item => ({
+        const toInsert = pendingItems.filter(p => p.isNew).map(item => ({
             tenant_id: tenantId,
             name: item.name,
             quantity_at_hand: item.quantity,
@@ -247,12 +270,32 @@ export default function InventoryPage() {
             minimum_quantity_alert: 5
         }));
 
-        const { error } = await (supabase as any).from('inventory_items').insert(toInsert);
+        let hasError = false;
 
-        if (error) {
-            toast.error('Errore inserimento massivo');
+        // Inserimenti nuovi
+        if (toInsert.length > 0) {
+            const { error: insertErr } = await (supabase as any).from('inventory_items').insert(toInsert);
+            if (insertErr) hasError = true;
+        }
+
+        // Aggiornamenti esistenti
+        const toUpdate = pendingItems.filter(p => !p.isNew);
+        for (const item of toUpdate) {
+            const original = items.find(i => i.id === item.inventoryItemId);
+            const newQuantity = (original?.quantity_at_hand || 0) + item.quantity;
+            
+            const { error: updateErr } = await (supabase as any)
+                .from('inventory_items')
+                .update({ quantity_at_hand: newQuantity })
+                .eq('id', item.inventoryItemId);
+                
+            if (updateErr) hasError = true;
+        }
+
+        if (hasError) {
+            toast.error('Errore inserimento/aggiornamento parziale massivo');
         } else {
-            toast.success(`${pendingItems.length} articoli aggiunti`);
+            toast.success(`${pendingItems.length} articoli elaborati correttamente`);
             setPendingItems([]);
             loadItems(tenantId);
         }
@@ -349,9 +392,11 @@ export default function InventoryPage() {
                                 <div key={i} className="flex items-center justify-between bg-white/5 p-3 rounded-2xl border border-white/5">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-xs font-bold">
-                                            {item.quantity}
+                                            +{item.quantity}
                                         </div>
                                         <span className="font-bold text-sm">{item.name}</span>
+                                        {item.isNew && <span className="ml-2 text-[10px] font-bold bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/20 uppercase">Nuovo</span>}
+                                        {!item.isNew && <span className="ml-2 text-[10px] font-bold bg-slate-500/20 text-slate-300 px-2 py-0.5 rounded-full border border-slate-500/20 uppercase">Aggiunta Stock</span>}
                                     </div>
                                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{item.unit} • {item.category}</span>
                                 </div>
