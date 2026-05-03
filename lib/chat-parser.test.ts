@@ -9,10 +9,10 @@ const createResponse = (data: unknown) => ({
 
 describe('parseChatData', () => {
   const originalFetch = globalThis.fetch;
-  let fetchMock: Mock<[RequestInfo | URL, RequestInit?], Promise<unknown>>;
+  let fetchMock: Mock;
 
   beforeEach(() => {
-    fetchMock = vi.fn<[RequestInfo | URL, RequestInit?], Promise<unknown>>();
+    fetchMock = vi.fn();
     globalThis.fetch = fetchMock as unknown as typeof fetch;
   });
 

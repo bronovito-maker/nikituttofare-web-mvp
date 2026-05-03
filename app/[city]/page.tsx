@@ -6,6 +6,7 @@ import { SiteFooter } from '@/components/layout/site-footer';
 import { StickyActionNav } from '@/components/landing/sticky-action-nav';
 import { HeroContent } from '@/components/landing/hero-content';
 import { fetchSeoData } from '@/lib/seo-data';
+import { SEO_BASE_URL } from '@/lib/seo-config';
 
 // Lazy load below-the-fold sections
 const UrgencyStats = dynamic(() => import('@/components/landing/urgency-stats').then(mod => ({ default: mod.UrgencyStats })), {
@@ -61,7 +62,7 @@ export async function generateMetadata({ params }: { params: Promise<Readonly<{ 
         title: `Tuttofare a ${city.name} - Rapido, Onesto e Pulito | NikiTuttoFare`,
         description: `Cerchi un tuttofare a ${city.name}? Nikita interviene subito per emergenze idrauliche, elettriche e di fabbro. Prezzi chiari, massima pulizia e recensioni a 5 stelle. Contattami ora!`,
         alternates: {
-            canonical: `https://nikituttofare.it/${city.slug}`,
+            canonical: `${SEO_BASE_URL}/${city.slug}`,
         }
     };
 }
@@ -74,6 +75,50 @@ export default async function CityPage({ params }: { params: Promise<Readonly<{ 
     if (!city) {
         notFound();
     }
+    const cityUrl = `${SEO_BASE_URL}/${city.slug}`;
+    const cityJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "HandymanService",
+        "name": `NikiTuttofare a ${city.name}`,
+        "image": `${SEO_BASE_URL}/team-photo.png`,
+        "@id": cityUrl,
+        "url": cityUrl,
+        "telephone": "3461027447",
+        "priceRange": "€€",
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": city.name,
+            "addressRegion": city.province,
+            "addressCountry": "IT"
+        },
+        "areaServed": {
+            "@type": "City",
+            "name": city.name
+        },
+        "provider": {
+            "@type": "LocalBusiness",
+            "name": "NikiTuttofare",
+            "telephone": "3461027447"
+        }
+    };
+    const cityBreadcrumbJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": SEO_BASE_URL
+            },
+            {
+                "@type": "ListItem",
+                "position": 2,
+                "name": city.name,
+                "item": cityUrl
+            }
+        ]
+    };
 
     return (
         <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-blue-100 dark:selection:bg-blue-900 pb-20 sm:pb-0">
@@ -149,31 +194,13 @@ export default async function CityPage({ params }: { params: Promise<Readonly<{ 
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
-                    __html: JSON.stringify({
-                        "@context": "https://schema.org",
-                        "@type": "HandymanService",
-                        "name": `NikiTuttofare a ${city.name}`,
-                        "image": "https://nikituttofare.it/team-photo.png",
-                        "@id": `https://nikituttofare.it/${city.slug}`,
-                        "url": `https://nikituttofare.it/${city.slug}`,
-                        "telephone": "3461027447",
-                        "priceRange": "€€",
-                        "address": {
-                            "@type": "PostalAddress",
-                            "addressLocality": city.name,
-                            "addressRegion": city.province,
-                            "addressCountry": "IT"
-                        },
-                        "areaServed": {
-                            "@type": "City",
-                            "name": city.name
-                        },
-                        "provider": {
-                            "@type": "LocalBusiness",
-                            "name": "NikiTuttofare",
-                            "telephone": "3461027447"
-                        }
-                    })
+                    __html: JSON.stringify(cityJsonLd)
+                }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify(cityBreadcrumbJsonLd)
                 }}
             />
         </div>

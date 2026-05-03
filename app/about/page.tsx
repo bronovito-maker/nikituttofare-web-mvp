@@ -19,6 +19,7 @@ import {
 
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
+import { SEO_BASE_URL } from '@/lib/seo-config';
 
 export const metadata: Metadata = {
     title: 'Idraulico e Elettricista a Rimini e Riccione | Chi Sono - NikiTuttoFare',
@@ -33,8 +34,8 @@ export default function AboutPage() {
         name: 'NikiTuttoFare',
         alternateName: 'NikiTuttoFare Pronto Intervento',
         description: 'Servizio di pronto intervento H24 per emergenze idrauliche ed elettriche a Rimini, Riccione e provincia. Tecnico certificato locale.',
-        url: 'https://nikituttofare.it/about',
-        logo: 'https://nikituttofare.it/logo.png',
+        url: `${SEO_BASE_URL}/about`,
+        logo: `${SEO_BASE_URL}/logo_ntf.svg`,
         telephone: '+393461027447',
         priceRange: '$$',
         openingHoursSpecification: [

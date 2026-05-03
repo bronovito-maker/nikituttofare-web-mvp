@@ -43,7 +43,7 @@ export function WhatsappCard({ data, className }: WhatsappCardProps) {
                 <div className="bg-slate-900/60 rounded-lg p-3 text-sm text-slate-200 border border-slate-800 whitespace-pre-wrap relative">
                     {/* Fumetto tail (opzionale, per dare l'idea del messaggio) */}
                     <div className="absolute -left-2 top-4 w-4 h-4 bg-slate-900/60 rotate-45 border-l border-b border-slate-800 border-r-0 border-t-0" />
-                    <span className="relative z-10 italic">"{data.testo}"</span>
+                    <span className="relative z-10 italic">&quot;{data.testo}&quot;</span>
                 </div>
 
                 <div className="mt-2 flex gap-2">

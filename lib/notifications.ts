@@ -258,7 +258,7 @@ export async function notifyNewTicket(ticket: TicketNotificationData) {
   try {
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://nikituttofare.com';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.nikituttofare.com';
 
     if (!botToken || !chatId) {
       console.warn('Telegram non configurato - BOT_TOKEN o CHAT_ID mancanti');
@@ -457,7 +457,7 @@ export async function sendClientConfirmationEmail(
             
             <p style="color:#64748b;font-size:13px;margin-top:24px;text-align:center;">
               NikiTuttoFare - Pronto Intervento H24<br>
-              <a href="https://nikituttofare.com" style="color:#2563eb;">www.nikituttofare.com</a>
+              <a href="https://www.nikituttofare.com" style="color:#2563eb;">www.nikituttofare.com</a>
             </p>
           </div>
         </div>

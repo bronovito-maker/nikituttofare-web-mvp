@@ -13,11 +13,10 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-// ESM equivalent of __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Resolve script directory in both CJS and ESM runtimes
+const scriptPath = process.argv[1] ? path.resolve(process.argv[1]) : path.resolve('scripts/test-ai-responses.ts');
+const __dirname = path.dirname(scriptPath);
 
 // Tipi
 interface SimulatedUser {
@@ -420,4 +419,4 @@ async function main() {
   }
 }
 
-await main();
+void main();

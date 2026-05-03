@@ -30,12 +30,31 @@ const FAQ_ITEMS: FAQItem[] = [
 ];
 
 export function FAQSection() {
+    const faqJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: FAQ_ITEMS.map((item) => ({
+            '@type': 'Question',
+            name: item.question,
+            acceptedAnswer: {
+                '@type': 'Answer',
+                text: item.answer,
+            },
+        })),
+    };
+
     return (
-        <FAQAccordion
-            items={FAQ_ITEMS}
-            title="Domande Frequenti"
-            subtitle="Tutto quello che devi sapere su NikiTuttoFare"
-            sectionClassName="bg-background"
-        />
+        <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+            />
+            <FAQAccordion
+                items={FAQ_ITEMS}
+                title="Domande Frequenti"
+                subtitle="Tutto quello che devi sapere su NikiTuttoFare"
+                sectionClassName="bg-background"
+            />
+        </>
     );
 }

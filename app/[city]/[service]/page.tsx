@@ -7,6 +7,7 @@ import { StickyActionNav } from '@/components/landing/sticky-action-nav';
 import { HeroContent } from '@/components/landing/hero-content';
 import { SmallJobsCallout } from '@/components/landing/small-jobs-callout';
 import { fetchSeoData } from '@/lib/seo-data';
+import { SEO_BASE_URL } from '@/lib/seo-config';
 
 // Lazy load below-the-fold sections
 const UrgencyStats = dynamic(() => import('@/components/landing/urgency-stats').then(mod => ({ default: mod.UrgencyStats })), {
@@ -68,7 +69,7 @@ export async function generateMetadata({ params }: { params: Promise<Readonly<{ 
         title: `${service.name} a ${city.name} - Rapido, Onesto e Pulito | NikiTuttoFare`,
         description: `Hai un'urgenza con ${service.name} a ${city.name}? Nikita interviene in tempi brevi con prezzi trasparenti e massima pulizia. Leggi le recensioni a 5 stelle e contattami ora!`,
         alternates: {
-            canonical: `https://nikituttofare.it/${city.slug}/${service.slug}`,
+            canonical: `${SEO_BASE_URL}/${city.slug}/${service.slug}`,
         }
     };
 }
@@ -82,6 +83,57 @@ export default async function ServicePage({ params }: { params: Promise<Readonly
     if (!city || !service) {
         notFound();
     }
+    const cityUrl = `${SEO_BASE_URL}/${city.slug}`;
+    const serviceUrl = `${SEO_BASE_URL}/${city.slug}/${service.slug}`;
+    const serviceJsonLd = {
+        "@context": "https://schema.org",
+        "@type": service.schemaType || "HandymanService",
+        "name": `NikiTuttofare - ${service.name} a ${city.name}`,
+        "image": `${SEO_BASE_URL}/team-photo.png`,
+        "@id": serviceUrl,
+        "url": serviceUrl,
+        "telephone": "3461027447",
+        "priceRange": "€€",
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": city.name,
+            "addressRegion": city.province,
+            "addressCountry": "IT"
+        },
+        "areaServed": {
+            "@type": "City",
+            "name": city.name
+        },
+        "provider": {
+            "@type": "LocalBusiness",
+            "name": "NikiTuttofare",
+            "telephone": "3461027447"
+        }
+    };
+    const serviceBreadcrumbJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": SEO_BASE_URL
+            },
+            {
+                "@type": "ListItem",
+                "position": 2,
+                "name": city.name,
+                "item": cityUrl
+            },
+            {
+                "@type": "ListItem",
+                "position": 3,
+                "name": service.name,
+                "item": serviceUrl
+            }
+        ]
+    };
 
     return (
         <div className="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-blue-100 dark:selection:bg-blue-900 pb-20 sm:pb-0">
@@ -171,31 +223,13 @@ export default async function ServicePage({ params }: { params: Promise<Readonly
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
-                    __html: JSON.stringify({
-                        "@context": "https://schema.org",
-                        "@type": service.schemaType || "HandymanService",
-                        "name": `NikiTuttofare - ${service.name} a ${city.name}`,
-                        "image": "https://nikituttofare.it/team-photo.png",
-                        "@id": `https://nikituttofare.it/${city.slug}/${service.slug}`,
-                        "url": `https://nikituttofare.it/${city.slug}/${service.slug}`,
-                        "telephone": "3461027447",
-                        "priceRange": "€€",
-                        "address": {
-                            "@type": "PostalAddress",
-                            "addressLocality": city.name,
-                            "addressRegion": city.province,
-                            "addressCountry": "IT"
-                        },
-                        "areaServed": {
-                            "@type": "City",
-                            "name": city.name
-                        },
-                        "provider": {
-                            "@type": "LocalBusiness",
-                            "name": "NikiTuttofare",
-                            "telephone": "3461027447"
-                        }
-                    })
+                    __html: JSON.stringify(serviceJsonLd)
+                }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify(serviceBreadcrumbJsonLd)
                 }}
             />
         </div>

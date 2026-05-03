@@ -7,6 +7,7 @@ import { CookieBanner } from "@/components/ui/cookie-banner";
 import { AutoThemeWatcher } from "@/components/providers/auto-theme-watcher";
 import { AnimationProvider } from "@/components/providers/animation-provider";
 import { Toaster } from "sonner";
+import { ORGANIZATION_LOGO_URL, ORGANIZATION_NAME, ORGANIZATION_SAME_AS, SEO_BASE_URL } from "@/lib/seo-config";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -16,6 +17,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SEO_BASE_URL),
   title: "NikiTuttoFare - Pronto Intervento H24 Rimini, Riccione e Misano",
   description: "Il tuo tuttofare di fiducia a Rimini, Riccione e Misano Adriatico. Idraulici, Elettricisti e Fabbri esperti. Intervento garantito in 2 ore.",
   keywords: ["tuttofare Rimini", "tuttofare Riccione", "pronto intervento", "idraulico Rimini", "elettricista Riccione", "fabbro Misano", "H24", "riparazioni casa"],
@@ -24,6 +26,10 @@ export const metadata: Metadata = {
     title: "NikiTuttoFare - Pronto Intervento H24",
     description: "Manutenzione d'emergenza semplice e sicura. Preventivi AI, intervento in 60 minuti.",
     type: "website",
+    url: SEO_BASE_URL,
+  },
+  alternates: {
+    canonical: SEO_BASE_URL,
   },
   icons: {
     icon: "/logo_ntf.svg",
@@ -48,9 +54,37 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const globalJsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${SEO_BASE_URL}#organization`,
+        name: ORGANIZATION_NAME,
+        url: SEO_BASE_URL,
+        logo: ORGANIZATION_LOGO_URL,
+        sameAs: ORGANIZATION_SAME_AS,
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${SEO_BASE_URL}#website`,
+        url: SEO_BASE_URL,
+        name: ORGANIZATION_NAME,
+        publisher: {
+          "@id": `${SEO_BASE_URL}#organization`,
+        },
+        inLanguage: "it-IT",
+      },
+    ],
+  };
+
   return (
     <html lang="it" className={dmSans.variable} suppressHydrationWarning>
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(globalJsonLd) }}
+        />
         {/* PWA Manifest */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -95,4 +129,3 @@ export default function RootLayout({
     </html>
   );
 }
-
