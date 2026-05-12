@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Search, PackageSearch, Package, MapPin, AlertCircle } from 'lucide-react';
+import { Search, PackageSearch, Package, MapPin, AlertCircle, Sparkles, PlusCircle } from 'lucide-react';
 import './ricerca.css';
 
 interface ProductResult {
@@ -13,12 +13,18 @@ interface ProductResult {
     source: string;
 }
 
+interface AIInsights {
+    advice: string;
+    kit: string[];
+}
+
 export default function RicercaMateriali() {
     const [query, setQuery] = useState<string>('');
     const [negozio, setNegozio] = useState<string>('mix');
     const [sortPrice, setSortPrice] = useState<boolean>(false);
     
     const [results, setResults] = useState<ProductResult[]>([]);
+    const [aiInsights, setAiInsights] = useState<AIInsights | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
     const [hasSearched, setHasSearched] = useState<boolean>(false);
@@ -26,18 +32,21 @@ export default function RicercaMateriali() {
     // Usa https:// per evitare problemi di mixed content e CORS
     const API_BASE_URL = 'https://tecnomatsearch-production.up.railway.app';
 
-    const handleSearch = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (!query.trim()) return;
+    const handleSearch = async (e?: React.FormEvent<HTMLFormElement>, overrideQuery?: string) => {
+        if (e) e.preventDefault();
+        
+        const searchTerms = overrideQuery || query;
+        if (!searchTerms.trim()) return;
 
         setIsLoading(true);
         setError('');
         setResults([]);
+        setAiInsights(null);
         setHasSearched(true);
 
         try {
             const url = new URL(`${API_BASE_URL}/api/search`);
-            url.searchParams.append('q', query.trim());
+            url.searchParams.append('q', searchTerms.trim());
             url.searchParams.append('negozio', negozio);
             url.searchParams.append('n', '10');
             if (sortPrice) url.searchParams.append('sort_price', 'true');
@@ -50,6 +59,11 @@ export default function RicercaMateriali() {
 
             const data = await response.json();
 
+            // Mostra consigli AI se presenti
+            if (data.ai_insights) {
+                setAiInsights(data.ai_insights);
+            }
+
             if (data.results && data.results.length > 0) {
                 setResults(data.results);
             } else {
@@ -61,6 +75,11 @@ export default function RicercaMateriali() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleKitItemClick = (item: string) => {
+        setQuery(item);
+        handleSearch(undefined, item);
     };
 
     return (
@@ -127,6 +146,28 @@ export default function RicercaMateriali() {
                         <div className="loader-wrapper">
                             <div className="spinner"></div>
                             <p>Ricerca in corso nei sistemi... <br/><small>Bypass firewall in atto 🚀</small></p>
+                        </div>
+                    )}
+
+                    {!isLoading && aiInsights && (
+                        <div className="ai-section">
+                            <div className="ai-header">
+                                <Sparkles size={20} />
+                                Consigli di Nikituttofare
+                            </div>
+                            <div className="ai-advice">{aiInsights.advice}</div>
+                            <div className="ai-kit-container">
+                                {aiInsights.kit.map((item, idx) => (
+                                    <div 
+                                        key={idx} 
+                                        className="kit-tag"
+                                        onClick={() => handleKitItemClick(item)}
+                                    >
+                                        <PlusCircle size={16} />
+                                        {item}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
 
