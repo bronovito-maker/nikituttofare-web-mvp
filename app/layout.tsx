@@ -48,6 +48,7 @@ export const viewport: Viewport = {
 import { MicrosoftClarity } from "@/components/analytics/microsoft-clarity";
 import { VercelAnalyticsLazy } from "@/components/analytics/vercel-analytics-lazy";
 import { MetaPixel } from "@/components/analytics/meta-pixel";
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 
 export default function RootLayout({
   children,
@@ -94,11 +95,15 @@ export default function RootLayout({
         <link rel="preconnect" href="https://o4510796370214912.ingest.de.sentry.io" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://www.clarity.ms" />
         <link rel="preconnect" href="https://connect.facebook.net" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="preconnect" href="https://www.google-analytics.com" />
 
         {/* Fallback DNS Prefetch */}
         <link rel="dns-prefetch" href="https://mqgkominidcysyakcbio.supabase.co" />
         <link rel="dns-prefetch" href="https://o4510796370214912.ingest.de.sentry.io" />
         <link rel="dns-prefetch" href="https://connect.facebook.net" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://www.google-analytics.com" />
 
         {/*
           GDPR Compliance: Analytics scripts (Clarity, Meta Pixel, Vercel Analytics)
@@ -122,6 +127,7 @@ export default function RootLayout({
               <VercelAnalyticsLazy />
               <MicrosoftClarity />
               <MetaPixel />
+              <GoogleAnalytics />
             </AnimationProvider>
           </CookieConsentProvider>
         </ThemeProvider>
